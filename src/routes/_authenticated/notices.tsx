@@ -29,7 +29,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 const TONE_STYLES: Record<string, string> = {
-  premium: "from-[#FF7E5F] to-[#FEB47B]",
+  premium: "from-[var(--primary)] to-[var(--primary-glow)]",
   info: "from-blue-500 to-blue-600",
   success: "from-emerald-500 to-emerald-600",
   warning: "from-amber-500 to-orange-600",
@@ -71,19 +71,19 @@ function NoticesPage() {
     <div className="relative z-10 p-5 sm:p-8 lg:p-12 space-y-8 max-w-4xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FF7E5F]/10 border border-[#FF7E5F]/20 text-[#FF7E5F] text-[10px] font-bold uppercase tracking-widest shadow-sm mb-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--primary)]/10 border border-[var(--primary)]/20 text-[var(--primary)] text-[10px] font-bold uppercase tracking-widest shadow-sm mb-3">
             <Bell className="w-3 h-3" /> Notifications
           </div>
-          <h1 className="text-3xl font-extrabold text-[#2D1B0D] tracking-tight">
-            Broadcast <span className="text-[#FF7E5F]">Inbox</span>
+          <h1 className="text-3xl font-extrabold text-[var(--foreground)] tracking-tight">
+            Broadcast <span className="text-[var(--primary)]">Inbox</span>
           </h1>
-          <p className="text-sm text-[#7A5C45] mt-1">Updates, announcements, and news from Adspx.</p>
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">Updates, announcements, and news from Adspx.</p>
         </div>
         {unreadCount > 0 && (
           <Button 
             onClick={() => markAllMut.mutate()}
             disabled={markAllMut.isPending}
-            className="bg-white hover:bg-white/80 border-[#FFEDD5] text-[#7D6452] shadow-sm font-bold text-xs h-10 px-4 rounded-xl gap-2"
+            className="bg-white hover:bg-white/80 border-[var(--border)] text-[var(--muted-foreground)] shadow-sm font-bold text-xs h-10 px-4 rounded-xl gap-2"
           >
             <CheckCheck className="w-4 h-4" />
             Mark all read
@@ -93,15 +93,15 @@ function NoticesPage() {
 
       <div className="space-y-4">
         {q.isLoading && (
-          <div className="p-12 text-center text-[#A38D7D] animate-pulse font-medium">Loading inbox…</div>
+          <div className="p-12 text-center text-[var(--muted-foreground)] animate-pulse font-medium">Loading inbox…</div>
         )}
         {!q.isLoading && items.length === 0 && (
           <div className="p-20 text-center bg-white/40 backdrop-blur-xl border border-white/60 rounded-[32px] shadow-sm shadow-orange-900/5">
-            <div className="w-16 h-16 mx-auto rounded-3xl bg-[#FFF9F5] border border-[#FFEDD5] flex items-center justify-center mb-4">
-              <Bell className="w-8 h-8 text-[#A38D7D]" />
+            <div className="w-16 h-16 mx-auto rounded-3xl bg-[var(--muted)] border border-[var(--border)] flex items-center justify-center mb-4">
+              <Bell className="w-8 h-8 text-[var(--muted-foreground)]" />
             </div>
-            <h3 className="text-lg font-bold text-[#2D1B0D]">Your inbox is empty</h3>
-            <p className="text-sm text-[#7D6452] mt-1">We'll let you know when there's something new.</p>
+            <h3 className="text-lg font-bold text-[var(--foreground)]">Your inbox is empty</h3>
+            <p className="text-sm text-[var(--muted-foreground)] mt-1">We'll let you know when there's something new.</p>
           </div>
         )}
 
@@ -114,7 +114,7 @@ function NoticesPage() {
               onClick={() => !b.is_read && markMut.mutate(b.id)}
               className={`group relative overflow-hidden rounded-[28px] border transition-all duration-300 cursor-pointer ${
                 !b.is_read 
-                  ? "bg-white border-[#FF7E5F]/20 shadow-lg shadow-orange-500/5 ring-1 ring-[#FF7E5F]/5" 
+                  ? "bg-white border-[var(--primary)]/20 shadow-lg shadow-orange-500/5 ring-1 ring-[var(--primary)]/5" 
                   : "bg-white/40 border-white/60 hover:bg-white/60"
               }`}
             >
@@ -124,16 +124,16 @@ function NoticesPage() {
                     <Icon className="w-6 h-6 sm:w-7 sm:h-7" />
                   </div>
                   {!b.is_read && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#FF7E5F] border-2 border-white shadow-md animate-pulse" />
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--primary)] border-2 border-white shadow-md animate-pulse" />
                   )}
                 </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4 mb-2">
-                    <h3 className={`text-base sm:text-lg font-extrabold truncate ${!b.is_read ? "text-[#2D1B0D]" : "text-[#7A5C45]"}`}>
+                    <h3 className={`text-base sm:text-lg font-extrabold truncate ${!b.is_read ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"}`}>
                       {b.title}
                     </h3>
-                    <div className="flex items-center gap-2 text-[10px] sm:text-xs font-medium text-[#A38D7D] shrink-0">
+                    <div className="flex items-center gap-2 text-[10px] sm:text-xs font-medium text-[var(--muted-foreground)] shrink-0">
                       <Clock className="w-3 h-3" />
                       {timeAgo(b.created_at)}
                     </div>
@@ -150,8 +150,8 @@ function NoticesPage() {
                       </span>
                     )}
                     {!b.is_read && (
-                      <span className="text-[10px] font-bold text-[#FF7E5F] flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#FF7E5F]" />
+                      <span className="text-[10px] font-bold text-[var(--primary)] flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]" />
                         New
                       </span>
                     )}

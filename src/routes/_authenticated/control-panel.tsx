@@ -61,7 +61,7 @@ export const Route = createFileRoute("/_authenticated/control-panel")({
 });
 
 const font = { fontFamily: "'Outfit', system-ui, sans-serif" } as const;
-const PIE_COLORS = ["#FF7E5F", "#FEB47B", "#FFD4BB", "#7A5C45", "#FFEDD5", "#2D1B0D", "#4A3728", "#A8907A"];
+const PIE_COLORS = ["var(--primary)", "var(--primary-glow)", "var(--border)", "var(--muted-foreground)", "var(--border)", "var(--foreground)", "var(--muted-foreground)", "var(--muted-foreground)"];
 
 function AdminPage() {
   const navigate = useNavigate();
@@ -93,13 +93,13 @@ function AdminPage() {
   }, [navigate]);
 
   if (!adminChecked) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#FFF9F5] text-[#7A5C45] text-sm">Loading…</div>;
+    return <div className="min-h-screen flex items-center justify-center bg-[var(--muted)] text-[var(--muted-foreground)] text-sm">Loading…</div>;
   }
 
   return (
-    <div className="relative min-h-screen bg-[#FFF9F5] text-[#4A3728] overflow-hidden" style={font}>
-      <div className="fixed top-[-20%] left-[-10%] w-[55%] h-[55%] bg-[#FF7E5F]/15 blur-[160px] rounded-full pointer-events-none" />
-      <div className="fixed bottom-[-15%] right-[-15%] w-[55%] h-[55%] bg-[#FEB47B]/20 blur-[160px] rounded-full pointer-events-none" />
+    <div className="relative min-h-screen bg-[var(--muted)] text-[var(--muted-foreground)] overflow-hidden" style={font}>
+      <div className="fixed top-[-20%] left-[-10%] w-[55%] h-[55%] bg-[var(--primary)]/15 blur-[160px] rounded-full pointer-events-none" />
+      <div className="fixed bottom-[-15%] right-[-15%] w-[55%] h-[55%] bg-[var(--primary-glow)]/20 blur-[160px] rounded-full pointer-events-none" />
       <div className="relative z-10 p-5 sm:p-8 lg:p-12 space-y-8 max-w-[1600px] mx-auto">
         <Header />
         <Tabs defaultValue="overview" className="w-full">
@@ -140,14 +140,14 @@ function AdminPage() {
 function Header() {
   return (
     <div>
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 backdrop-blur-xl border border-white/80 text-[#FF7E5F] text-[10px] font-bold uppercase tracking-widest shadow-sm">
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 backdrop-blur-xl border border-white/80 text-[var(--primary)] text-[10px] font-bold uppercase tracking-widest shadow-sm">
         <ShieldCheck className="w-3 h-3" /> Admin · Live
       </div>
-      <h1 className="mt-3 text-4xl sm:text-5xl font-extrabold tracking-tight text-[#2D1B0D]">
+      <h1 className="mt-3 text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--foreground)]">
         Control{" "}
-        <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#FF7E5F] via-[#FEB47B] to-[#FF7E5F]">Panel</span>
+        <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--primary)] via-[var(--primary-glow)] to-[var(--primary)]">Panel</span>
       </h1>
-      <p className="mt-2 text-sm text-[#7A5C45]">Full system control · users, links, revenue, rules & analytics.</p>
+      <p className="mt-2 text-sm text-[var(--muted-foreground)]">Full system control · users, links, revenue, rules & analytics.</p>
     </div>
   );
 }
@@ -191,15 +191,15 @@ function OverviewTab() {
         <div className="h-72">
           <ResponsiveContainer>
             <LineChart data={ts.data ?? []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#FFD4BB" />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#7A5C45" }} />
-              <YAxis tick={{ fontSize: 10, fill: "#7A5C45" }} />
-              <Tooltip contentStyle={{ background: "#fff", border: "1px solid #FFD4BB", borderRadius: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
+              <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
+              <Tooltip contentStyle={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12 }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="total" stroke="#FF7E5F" strokeWidth={2} />
-              <Line type="monotone" dataKey="ours" stroke="#FEB47B" strokeWidth={2} />
-              <Line type="monotone" dataKey="offer" stroke="#2D1B0D" strokeWidth={2} />
-              <Line type="monotone" dataKey="bots" stroke="#A8907A" strokeWidth={2} strokeDasharray="4 4" />
+              <Line type="monotone" dataKey="total" stroke="var(--primary)" strokeWidth={2} />
+              <Line type="monotone" dataKey="ours" stroke="var(--primary-glow)" strokeWidth={2} />
+              <Line type="monotone" dataKey="offer" stroke="var(--foreground)" strokeWidth={2} />
+              <Line type="monotone" dataKey="bots" stroke="var(--muted-foreground)" strokeWidth={2} strokeDasharray="4 4" />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -210,11 +210,11 @@ function OverviewTab() {
           <div className="h-72">
             <ResponsiveContainer>
               <BarChart data={cty.data ?? []} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#FFD4BB" />
-                <XAxis type="number" tick={{ fontSize: 10, fill: "#7A5C45" }} />
-                <YAxis dataKey="country" type="category" tick={{ fontSize: 10, fill: "#7A5C45" }} width={50} />
-                <Tooltip contentStyle={{ background: "#fff", border: "1px solid #FFD4BB", borderRadius: 12 }} />
-                <Bar dataKey="count" fill="#FF7E5F" radius={[0, 8, 8, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
+                <YAxis dataKey="country" type="category" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={50} />
+                <Tooltip contentStyle={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12 }} />
+                <Bar dataKey="count" fill="var(--primary)" radius={[0, 8, 8, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -222,18 +222,18 @@ function OverviewTab() {
         <Panel icon={Users} title="Top users · by clicks">
           <div className="space-y-2">
             {(top.data ?? []).map((u, i) => (
-              <div key={u.id} className="flex items-center justify-between p-2 rounded-lg bg-white/60 border border-[#FFE4D0]">
+              <div key={u.id} className="flex items-center justify-between p-2 rounded-lg bg-white/60 border border-[var(--border)]">
                 <div className="flex items-center gap-3">
-                  <span className="w-7 h-7 rounded-full bg-gradient-to-br from-[#FF7E5F] to-[#FEB47B] text-white text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                  <span className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] text-white text-xs font-bold flex items-center justify-center">{i + 1}</span>
                   <div>
-                    <div className="text-sm font-semibold text-[#2D1B0D]">{u.email}</div>
-                    <div className="text-[10px] uppercase font-bold text-[#7A5C45]">{u.plan_slug}</div>
+                    <div className="text-sm font-semibold text-[var(--foreground)]">{u.email}</div>
+                    <div className="text-[10px] uppercase font-bold text-[var(--muted-foreground)]">{u.plan_slug}</div>
                   </div>
                 </div>
-                <span className="font-bold text-[#FF7E5F]">{(u.clicks_used ?? 0).toLocaleString()}</span>
+                <span className="font-bold text-[var(--primary)]">{(u.clicks_used ?? 0).toLocaleString()}</span>
               </div>
             ))}
-            {!top.data?.length && <div className="text-sm text-[#A8907A] p-4 text-center">No data yet.</div>}
+            {!top.data?.length && <div className="text-sm text-[var(--muted-foreground)] p-4 text-center">No data yet.</div>}
           </div>
         </Panel>
       </div>
@@ -337,14 +337,14 @@ function UsersTab() {
     <Panel icon={Users} title="Users" subtitle="Search · bulk ban · reset quota · plan switch · per-user detail">
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A8907A]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)]" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by email, plan, id…" className={`${inputCls} pl-10`} />
         </div>
-        <span className="text-xs text-[#7A5C45]">{selected.size} selected</span>
+        <span className="text-xs text-[var(--muted-foreground)]">{selected.size} selected</span>
         <Button
           size="sm"
           variant="outline"
-          className="border-[#FFD4BB] ml-auto"
+          className="border-[var(--border)] ml-auto"
           onClick={async () => {
             if (!confirm("Repair paid-plan quota mismatches from payment history? This will not renew plans or add days.")) return;
             try {
@@ -362,59 +362,59 @@ function UsersTab() {
 
 
       {selected.size > 0 && (
-        <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-[#FF7E5F]/10 to-[#FEB47B]/10 border border-[#FFD4BB] flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => bulkBanMut.mutate({ ids: [...selected], is_banned: true })} className="border-[#FFD4BB]"><Ban className="w-3 h-3 mr-1" />Ban</Button>
-          <Button size="sm" variant="outline" onClick={() => bulkBanMut.mutate({ ids: [...selected], is_banned: false })} className="border-[#FFD4BB]">Unban</Button>
-          <Button size="sm" variant="outline" onClick={() => { if (confirm(`Reset quota for ${selected.size} users?`)) resetMut.mutate({ ids: [...selected] }); }} className="border-[#FFD4BB]"><RotateCcw className="w-3 h-3 mr-1" />Reset quota</Button>
-          <select value={bulkPlan} onChange={(e) => setBulkPlan(e.target.value)} className="bg-white/80 border border-[#FFD4BB] rounded-lg px-2 py-1 text-xs">
+        <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-[var(--primary)]/10 to-[var(--primary-glow)]/10 border border-[var(--border)] flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => bulkBanMut.mutate({ ids: [...selected], is_banned: true })} className="border-[var(--border)]"><Ban className="w-3 h-3 mr-1" />Ban</Button>
+          <Button size="sm" variant="outline" onClick={() => bulkBanMut.mutate({ ids: [...selected], is_banned: false })} className="border-[var(--border)]">Unban</Button>
+          <Button size="sm" variant="outline" onClick={() => { if (confirm(`Reset quota for ${selected.size} users?`)) resetMut.mutate({ ids: [...selected] }); }} className="border-[var(--border)]"><RotateCcw className="w-3 h-3 mr-1" />Reset quota</Button>
+          <select value={bulkPlan} onChange={(e) => setBulkPlan(e.target.value)} className="bg-white/80 border border-[var(--border)] rounded-lg px-2 py-1 text-xs">
             <option value="">Move to plan…</option>
             {packages.data?.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}
           </select>
-          <Button size="sm" disabled={!bulkPlan} onClick={() => { bulkPlanMut.mutate({ ids: [...selected], package_slug: bulkPlan }); setBulkPlan(""); }} className="bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white border-0">Apply</Button>
+          <Button size="sm" disabled={!bulkPlan} onClick={() => { bulkPlanMut.mutate({ ids: [...selected], package_slug: bulkPlan }); setBulkPlan(""); }} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white border-0">Apply</Button>
         </div>
       )}
 
       <div className="overflow-x-auto -mx-2">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[#7A5C45]">
+            <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
               <Th><input type="checkbox" checked={selected.size > 0 && selected.size === filtered.length} onChange={toggleAll} /></Th>
               <Th>Email</Th><Th>Plan</Th><Th>Change</Th><Th>Links</Th><Th>Clicks</Th><Th>Ours</Th><Th>Started</Th><Th>Expires</Th><Th>Status</Th><Th></Th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((u) => (
-              <tr key={u.id} className="border-t border-[#FFE4D0]/60 hover:bg-white/40">
+              <tr key={u.id} className="border-t border-[var(--border)]/60 hover:bg-white/40">
                 <Td><input type="checkbox" checked={selected.has(u.id)} onChange={() => toggleOne(u.id)} /></Td>
-                <Td className="font-medium text-[#2D1B0D]">{u.email}</Td>
+                <Td className="font-medium text-[var(--foreground)]">{u.email}</Td>
                 <Td><Pill>{u.plan_slug}</Pill></Td>
                 <Td>
                   <select value={u.plan_slug} onChange={(e) => { if (e.target.value !== u.plan_slug && confirm(`Change ${u.email} to ${e.target.value}?`)) planMut.mutate({ user_id: u.id, package_slug: e.target.value }); }}
-                    className="bg-white/80 border border-[#FFD4BB] rounded-lg px-2 py-1 text-xs">
+                    className="bg-white/80 border border-[var(--border)] rounded-lg px-2 py-1 text-xs">
                     {packages.data?.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}
                     {!packages.data?.some((p) => p.slug === u.plan_slug) && <option value={u.plan_slug}>{u.plan_slug}</option>}
                   </select>
                 </Td>
-                <Td className="text-[#7A5C45]">{u.links_used} / {u.link_limit == null ? "∞" : u.link_limit}</Td>
-                <Td className="text-[#7A5C45]">{u.clicks_used.toLocaleString()}{u.click_quota == null ? " / ∞" : ` / ${u.click_quota.toLocaleString()}`}</Td>
-                <Td><span className="inline-flex px-2 py-0.5 rounded-md bg-gradient-to-r from-[#FF7E5F]/15 to-[#FEB47B]/15 text-[#FF7E5F] text-xs font-bold">{(u.ours_clicks ?? 0).toLocaleString()}</span></Td>
-                <Td className="text-[#7A5C45] text-xs whitespace-nowrap">{u.plan_started_at ? new Date(u.plan_started_at).toLocaleDateString() : "—"}</Td>
+                <Td className="text-[var(--muted-foreground)]">{u.links_used} / {u.link_limit == null ? "∞" : u.link_limit}</Td>
+                <Td className="text-[var(--muted-foreground)]">{u.clicks_used.toLocaleString()}{u.click_quota == null ? " / ∞" : ` / ${u.click_quota.toLocaleString()}`}</Td>
+                <Td><span className="inline-flex px-2 py-0.5 rounded-md bg-gradient-to-r from-[var(--primary)]/15 to-[var(--primary-glow)]/15 text-[var(--primary)] text-xs font-bold">{(u.ours_clicks ?? 0).toLocaleString()}</span></Td>
+                <Td className="text-[var(--muted-foreground)] text-xs whitespace-nowrap">{u.plan_started_at ? new Date(u.plan_started_at).toLocaleDateString() : "—"}</Td>
                 <Td className="text-xs whitespace-nowrap">{(() => {
                   if (u.plan_slug === "lifetime" || u.plan_slug === "unlimited") return <span className="text-emerald-600 font-semibold">Never</span>;
-                  if (!u.plan_expires_at) return <span className="text-[#7A5C45]">—</span>;
+                  if (!u.plan_expires_at) return <span className="text-[var(--muted-foreground)]">—</span>;
                   const exp = new Date(u.plan_expires_at);
                   const daysLeft = Math.ceil((exp.getTime() - Date.now()) / 86400000);
-                  const cls = daysLeft < 0 ? "text-rose-600 font-semibold" : daysLeft <= 3 ? "text-amber-600 font-semibold" : "text-[#7A5C45]";
+                  const cls = daysLeft < 0 ? "text-rose-600 font-semibold" : daysLeft <= 3 ? "text-amber-600 font-semibold" : "text-[var(--muted-foreground)]";
                   return <span className={cls} title={exp.toLocaleString()}>{exp.toLocaleDateString()} ({daysLeft < 0 ? `expired ${-daysLeft}d ago` : `${daysLeft}d left`})</span>;
                 })()}</Td>
                 <Td>{u.is_banned ? <span className="text-rose-600 font-semibold">Banned</span> : <span className="text-emerald-600 font-semibold">Active</span>}</Td>
                 <Td>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="outline" onClick={() => setDetailId(u.id)} className="border-[#FFD4BB]" title="View details"><Eye className="w-3 h-3" /></Button>
+                    <Button size="sm" variant="outline" onClick={() => setDetailId(u.id)} className="border-[var(--border)]" title="View details"><Eye className="w-3 h-3" /></Button>
                     <Button size="sm" variant="outline" disabled={imperBusyId === u.id} onClick={() => handleImpersonate(u)} className="border-amber-400 text-amber-700 hover:bg-amber-50" title="Sign in as this user">
                       <KeyRound className="w-3 h-3" />
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => banMut.mutate({ id: u.id, is_banned: !u.is_banned })} className="border-[#FFD4BB]">{u.is_banned ? "Unban" : "Ban"}</Button>
+                    <Button size="sm" variant="outline" onClick={() => banMut.mutate({ id: u.id, is_banned: !u.is_banned })} className="border-[var(--border)]">{u.is_banned ? "Unban" : "Ban"}</Button>
                   </div>
                 </Td>
               </tr>
@@ -426,7 +426,7 @@ function UsersTab() {
       <Dialog open={!!detailId} onOpenChange={(o) => !o && setDetailId(null)}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{detail.data?.profile?.email ?? "User detail"}</DialogTitle></DialogHeader>
-          {detail.isLoading && <div className="text-sm text-[#7A5C45]">Loading…</div>}
+          {detail.isLoading && <div className="text-sm text-[var(--muted-foreground)]">Loading…</div>}
           {detail.data && (
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-3 text-sm">
@@ -437,31 +437,31 @@ function UsersTab() {
               <div className="h-44">
                 <ResponsiveContainer>
                   <LineChart data={detail.data.trend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#FFD4BB" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                     <YAxis tick={{ fontSize: 10 }} />
                     <Tooltip />
-                    <Line type="monotone" dataKey="clicks" stroke="#FF7E5F" />
-                    <Line type="monotone" dataKey="bots" stroke="#A8907A" strokeDasharray="4 4" />
+                    <Line type="monotone" dataKey="clicks" stroke="var(--primary)" />
+                    <Line type="monotone" dataKey="bots" stroke="var(--muted-foreground)" strokeDasharray="4 4" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#7A5C45] mb-2">Links ({detail.data.links.length})</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)] mb-2">Links ({detail.data.links.length})</h3>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {detail.data.links.map((l) => (
-                    <div key={l.id} className="text-xs flex justify-between p-2 rounded bg-white/60 border border-[#FFE4D0]">
+                    <div key={l.id} className="text-xs flex justify-between p-2 rounded bg-white/60 border border-[var(--border)]">
                       <span className="font-mono">{l.short_code}</span>
-                      <span className="text-[#7A5C45]">{l.clicks_count} clicks · {l.bot_clicks_count} bots</span>
+                      <span className="text-[var(--muted-foreground)]">{l.clicks_count} clicks · {l.bot_clicks_count} bots</span>
                     </div>
                   ))}
                 </div>
               </div>
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#7A5C45] mb-2">Payments ({detail.data.payments.length})</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)] mb-2">Payments ({detail.data.payments.length})</h3>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {detail.data.payments.map((p) => (
-                    <div key={p.id} className="text-xs flex justify-between p-2 rounded bg-white/60 border border-[#FFE4D0]">
+                    <div key={p.id} className="text-xs flex justify-between p-2 rounded bg-white/60 border border-[var(--border)]">
                       <span>{new Date(p.created_at ?? "").toLocaleDateString()} · {p.package_slug}</span>
                       <span className="font-semibold">${Number(p.amount).toFixed(2)} · {p.status}</span>
                     </div>
@@ -500,30 +500,30 @@ function LinksTab() {
   return (
     <Panel icon={Link2} title="All links" subtitle="Force disable, edit destination, view click/bot stats">
       <div className="mb-4 relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A8907A]" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)]" />
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search short code, title, owner…" className={`${inputCls} pl-10`} />
       </div>
       <div className="overflow-x-auto -mx-2">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[#7A5C45]">
+            <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
               <Th>Code</Th><Th>Owner</Th><Th>Title</Th><Th>Destination</Th><Th>Clicks</Th><Th>Bots</Th><Th>Status</Th><Th></Th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((l) => (
-              <tr key={l.id} className="border-t border-[#FFE4D0]/60">
+              <tr key={l.id} className="border-t border-[var(--border)]/60">
                 <Td className="font-mono text-xs">{l.short_code}</Td>
-                <Td className="text-xs text-[#7A5C45]">{l.owner_email}</Td>
-                <Td>{l.title || <span className="text-[#A8907A]">—</span>}</Td>
-                <Td className="max-w-[280px] truncate text-xs"><a href={l.adsterra_url} target="_blank" rel="noreferrer" className="text-[#FF7E5F] hover:underline">{l.adsterra_url}</a></Td>
+                <Td className="text-xs text-[var(--muted-foreground)]">{l.owner_email}</Td>
+                <Td>{l.title || <span className="text-[var(--muted-foreground)]">—</span>}</Td>
+                <Td className="max-w-[280px] truncate text-xs"><a href={l.adsterra_url} target="_blank" rel="noreferrer" className="text-[var(--primary)] hover:underline">{l.adsterra_url}</a></Td>
                 <Td>{l.clicks_count.toLocaleString()}</Td>
-                <Td className="text-[#A8907A]">{l.bot_clicks_count.toLocaleString()}</Td>
+                <Td className="text-[var(--muted-foreground)]">{l.bot_clicks_count.toLocaleString()}</Td>
                 <Td>{l.is_active ? <span className="text-emerald-600 font-semibold">Active</span> : <span className="text-rose-600 font-semibold">Disabled</span>}</Td>
                 <Td>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="outline" onClick={() => toggleMut.mutate({ id: l.id, is_active: !l.is_active })} className="border-[#FFD4BB]">{l.is_active ? "Disable" : "Enable"}</Button>
-                    <Button size="sm" variant="outline" onClick={() => { const url = prompt("New destination URL:", l.adsterra_url); if (url) updateMut.mutate({ id: l.id, adsterra_url: url }); }} className="border-[#FFD4BB]">Edit</Button>
+                    <Button size="sm" variant="outline" onClick={() => toggleMut.mutate({ id: l.id, is_active: !l.is_active })} className="border-[var(--border)]">{l.is_active ? "Disable" : "Enable"}</Button>
+                    <Button size="sm" variant="outline" onClick={() => { const url = prompt("New destination URL:", l.adsterra_url); if (url) updateMut.mutate({ id: l.id, adsterra_url: url }); }} className="border-[var(--border)]">Edit</Button>
                     <Button size="sm" variant="outline" onClick={() => { if (confirm(`Delete link "${l.short_code}"?`)) delMut.mutate({ id: l.id }); }} className="border-rose-300 text-rose-600"><Trash2 className="w-3 h-3" /></Button>
                   </div>
                 </Td>
@@ -566,22 +566,22 @@ function RuleSection({ title, icon, listFnRef, upFnRef, delFnRef, keyName, showP
 
   return (
     <Panel icon={icon} title={title}>
-      <div className="mb-4"><Button onClick={() => setEdit({ rule_type: "ua", pattern: "", action: "safe", label: "", is_active: true, priority: showPriority ? 100 : undefined })} className="bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white border-0"><Plus className="w-4 h-4 mr-1" />New rule</Button></div>
+      <div className="mb-4"><Button onClick={() => setEdit({ rule_type: "ua", pattern: "", action: "safe", label: "", is_active: true, priority: showPriority ? 100 : undefined })} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white border-0"><Plus className="w-4 h-4 mr-1" />New rule</Button></div>
       <div className="overflow-x-auto -mx-2">
         <table className="w-full text-sm">
-          <thead><tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[#7A5C45]"><Th>Type</Th><Th>Pattern</Th><Th>Action</Th><Th>Label</Th>{showPriority && <Th>Pri</Th>}<Th>Active</Th><Th></Th></tr></thead>
+          <thead><tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]"><Th>Type</Th><Th>Pattern</Th><Th>Action</Th><Th>Label</Th>{showPriority && <Th>Pri</Th>}<Th>Active</Th><Th></Th></tr></thead>
           <tbody>
             {list.data?.map((r: any) => (
-              <tr key={r.id} className="border-t border-[#FFE4D0]/60">
+              <tr key={r.id} className="border-t border-[var(--border)]/60">
                 <Td><Pill>{r.rule_type}</Pill></Td>
                 <Td className="font-mono text-xs max-w-[280px] truncate">{r.pattern}</Td>
                 <Td><Pill>{r.action}</Pill></Td>
-                <Td className="text-[#7A5C45] text-xs">{r.label ?? "—"}</Td>
+                <Td className="text-[var(--muted-foreground)] text-xs">{r.label ?? "—"}</Td>
                 {showPriority && <Td>{(r as { priority?: number }).priority}</Td>}
                 <Td>{r.is_active ? <span className="text-emerald-600 font-semibold">Yes</span> : <span className="text-rose-600 font-semibold">No</span>}</Td>
                 <Td>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="outline" onClick={() => setEdit({ id: r.id, rule_type: r.rule_type, pattern: r.pattern, action: r.action, label: r.label ?? "", is_active: r.is_active, priority: (r as { priority?: number }).priority })} className="border-[#FFD4BB]">Edit</Button>
+                    <Button size="sm" variant="outline" onClick={() => setEdit({ id: r.id, rule_type: r.rule_type, pattern: r.pattern, action: r.action, label: r.label ?? "", is_active: r.is_active, priority: (r as { priority?: number }).priority })} className="border-[var(--border)]">Edit</Button>
                     <Button size="sm" variant="outline" onClick={() => { if (confirm("Delete?")) delMut.mutate({ id: r.id }); }} className="border-rose-300 text-rose-600"><Trash2 className="w-3 h-3" /></Button>
                   </div>
                 </Td>
@@ -601,7 +601,7 @@ function RuleSection({ title, icon, listFnRef, upFnRef, delFnRef, keyName, showP
               <Field label="Label (optional)"><input value={edit.label} onChange={(e) => setEdit({ ...edit, label: e.target.value })} className={inputCls} /></Field>
               {showPriority && <Field label="Priority (lower = earlier)"><input type="number" value={edit.priority ?? 100} onChange={(e) => setEdit({ ...edit, priority: Number(e.target.value) })} className={inputCls} /></Field>}
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={edit.is_active} onChange={(e) => setEdit({ ...edit, is_active: e.target.checked })} /> Active</label>
-              <Button onClick={() => upMut.mutate(edit)} disabled={upMut.isPending} className="w-full bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white border-0">{upMut.isPending ? "Saving…" : "Save"}</Button>
+              <Button onClick={() => upMut.mutate(edit)} disabled={upMut.isPending} className="w-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white border-0">{upMut.isPending ? "Saving…" : "Save"}</Button>
             </div>
           )}
         </DialogContent>
@@ -628,14 +628,14 @@ function GeoTab() {
         <input placeholder="CC (2 letters)" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={2} className={inputCls} />
         <input placeholder="Country name" value={name} onChange={(e) => setName(e.target.value)} className={`${inputCls} md:col-span-2`} />
         <select value={tier} onChange={(e) => setTier(Number(e.target.value))} className={inputCls}>{[1, 2, 3, 4, 5].map((t) => <option key={t} value={t}>Tier {t}</option>)}</select>
-        <Button onClick={() => upMut.mutate({ country_code: code, country_name: name || null, tier })} disabled={code.length !== 2} className="bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white border-0">Add / Update</Button>
+        <Button onClick={() => upMut.mutate({ country_code: code, country_name: name || null, tier })} disabled={code.length !== 2} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white border-0">Add / Update</Button>
       </div>
       <div className="overflow-x-auto -mx-2">
         <table className="w-full text-sm">
-          <thead><tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[#7A5C45]"><Th>Code</Th><Th>Name</Th><Th>Tier</Th><Th></Th></tr></thead>
+          <thead><tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]"><Th>Code</Th><Th>Name</Th><Th>Tier</Th><Th></Th></tr></thead>
           <tbody>
             {list.data?.map((r) => (
-              <tr key={r.country_code} className="border-t border-[#FFE4D0]/60">
+              <tr key={r.country_code} className="border-t border-[var(--border)]/60">
                 <Td className="font-mono font-bold">{r.country_code}</Td>
                 <Td>{r.country_name ?? "—"}</Td>
                 <Td><Pill>Tier {r.tier}</Pill></Td>
@@ -717,35 +717,35 @@ function TrafficTab() {
         <Field label="Injection threshold"><input type="number" min={100} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} className={inputCls} /></Field>
         <Field label="Injection count"><input type="number" min={1} value={count} onChange={(e) => setCount(Number(e.target.value))} className={inputCls} /></Field>
         <label className="sm:col-span-2 flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" checked={dailyOn} onChange={(e) => setDailyOn(e.target.checked)} className="w-4 h-4 accent-[#FF7E5F]" />
+          <input type="checkbox" checked={dailyOn} onChange={(e) => setDailyOn(e.target.checked)} className="w-4 h-4 accent-[var(--primary)]" />
           <span className="text-sm">Daily auto-redirect on first dashboard login</span>
         </label>
       </div>
 
-      <div className="mt-8 pt-6 border-t border-[#FFD4BB]">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-[#FF7E5F] mb-1">FB Ad-Review Protection</h3>
-        <p className="text-xs text-[#7A5C45] mb-4">নতুন লিংকের প্রথম ৬ ঘন্টা বা ২৫ ক্লিক পর্যন্ত FB/IG in-app browser-কে safe page দেখায় (ad reviewer যেন offer না দেখে)। <b>Ad approved হয়ে campaign run হলে এটা OFF করে দিন</b> — সব FB user offer পাবে, traffic 100% count হবে।</p>
-        <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/60 border border-[#FFD4BB]">
-          <input type="checkbox" checked={fbReviewOn} onChange={(e) => setFbReviewOn(e.target.checked)} className="w-5 h-5 accent-[#FF7E5F]" />
+      <div className="mt-8 pt-6 border-t border-[var(--border)]">
+        <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--primary)] mb-1">FB Ad-Review Protection</h3>
+        <p className="text-xs text-[var(--muted-foreground)] mb-4">নতুন লিংকের প্রথম ৬ ঘন্টা বা ২৫ ক্লিক পর্যন্ত FB/IG in-app browser-কে safe page দেখায় (ad reviewer যেন offer না দেখে)। <b>Ad approved হয়ে campaign run হলে এটা OFF করে দিন</b> — সব FB user offer পাবে, traffic 100% count হবে।</p>
+        <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/60 border border-[var(--border)]">
+          <input type="checkbox" checked={fbReviewOn} onChange={(e) => setFbReviewOn(e.target.checked)} className="w-5 h-5 accent-[var(--primary)]" />
           <span className="text-sm font-semibold">🛡️ Enable FB Ad-Review Protection (turn OFF after ad approved)</span>
         </label>
       </div>
 
 
-      <div className="mt-8 pt-6 border-t border-[#FFD4BB]">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-[#FF7E5F] mb-1">Signup Protection</h3>
-        <p className="text-xs text-[#7A5C45] mb-4">Master switch must be ON for any rule below to apply. Default OFF — turn ON when you're ready.</p>
+      <div className="mt-8 pt-6 border-t border-[var(--border)]">
+        <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--primary)] mb-1">Signup Protection</h3>
+        <p className="text-xs text-[var(--muted-foreground)] mb-4">Master switch must be ON for any rule below to apply. Default OFF — turn ON when you're ready.</p>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="sm:col-span-2 flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/60 border border-[#FFD4BB]">
-            <input type="checkbox" checked={spOn} onChange={(e) => setSpOn(e.target.checked)} className="w-5 h-5 accent-[#FF7E5F]" />
+          <label className="sm:col-span-2 flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/60 border border-[var(--border)]">
+            <input type="checkbox" checked={spOn} onChange={(e) => setSpOn(e.target.checked)} className="w-5 h-5 accent-[var(--primary)]" />
             <span className="text-sm font-semibold">🛡️ Enable Signup Protection (master switch)</span>
           </label>
-          <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/60 border border-[#FFE4D0]">
-            <input type="checkbox" checked={spGmail} onChange={(e) => setSpGmail(e.target.checked)} disabled={!spOn} className="w-4 h-4 accent-[#FF7E5F]" />
+          <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/60 border border-[var(--border)]">
+            <input type="checkbox" checked={spGmail} onChange={(e) => setSpGmail(e.target.checked)} disabled={!spOn} className="w-4 h-4 accent-[var(--primary)]" />
             <span className="text-sm">Allow only Gmail (@gmail.com)</span>
           </label>
-          <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/60 border border-[#FFE4D0]">
-            <input type="checkbox" checked={spBlock} onChange={(e) => setSpBlock(e.target.checked)} disabled={!spOn} className="w-4 h-4 accent-[#FF7E5F]" />
+          <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/60 border border-[var(--border)]">
+            <input type="checkbox" checked={spBlock} onChange={(e) => setSpBlock(e.target.checked)} disabled={!spOn} className="w-4 h-4 accent-[var(--primary)]" />
             <span className="text-sm">Block disposable / temp email domains</span>
           </label>
           <Field label="Max signups per IP per day (0 = unlimited)">
@@ -754,7 +754,7 @@ function TrafficTab() {
         </div>
       </div>
 
-      <div className="mt-6"><Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} className="bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white border-0"><Sparkles className="w-4 h-4 mr-1.5" />{saveMut.isPending ? "Saving…" : "Save settings"}</Button></div>
+      <div className="mt-6"><Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white border-0"><Sparkles className="w-4 h-4 mr-1.5" />{saveMut.isPending ? "Saving…" : "Save settings"}</Button></div>
     </Panel>
     </>
   );
@@ -774,7 +774,7 @@ function TrafficSnapshotPanel() {
     <Panel icon={TrendingUp} title="Live Traffic Snapshot (last 24h)" subtitle="Auto-refresh every 60s">
 
       {!d ? (
-        <div className="text-sm text-[#7A5C45]">Loading…</div>
+        <div className="text-sm text-[var(--muted-foreground)]">Loading…</div>
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -799,7 +799,7 @@ function TrafficSnapshotPanel() {
             </div>
           )}
           {d.botPct <= 40 && d.topBotReasons.length > 0 && (
-            <div className="mt-4 text-xs text-[#7A5C45]">
+            <div className="mt-4 text-xs text-[var(--muted-foreground)]">
               <b>Top bot reasons:</b> {d.topBotReasons.map((r) => `${r.key} (${r.count})`).join(" · ")}
             </div>
           )}
@@ -811,17 +811,17 @@ function TrafficSnapshotPanel() {
 
 
 // ===================== shared UI =====================
-const inputCls = "w-full bg-white/70 border border-[#FFD4BB] rounded-xl px-4 py-2.5 text-sm text-[#2D1B0D] placeholder:text-[#A8907A] focus:outline-none focus:border-[#FF7E5F] focus:bg-white/90 transition-all";
+const inputCls = "w-full bg-white/70 border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)] focus:bg-white/90 transition-all";
 
 function Kpi({ icon: Icon, label, value, sub, accent }: { icon: React.ComponentType<{ className?: string }>; label: string; value: React.ReactNode; sub?: string; accent?: boolean }) {
   return (
-    <div className={`relative rounded-2xl p-5 border backdrop-blur-xl shadow-[0_8px_30px_-12px_rgba(255,126,95,0.25)] ${accent ? "bg-gradient-to-br from-[#FF7E5F] to-[#FEB47B] border-white/40 text-white" : "bg-white/70 border-white/80 text-[#2D1B0D]"}`}>
+    <div className={`relative rounded-2xl p-5 border backdrop-blur-xl shadow-[0_8px_30px_-12px_rgba(255,126,95,0.25)] ${accent ? "bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] border-white/40 text-white" : "bg-white/70 border-white/80 text-[var(--foreground)]"}`}>
       <div className="flex items-center justify-between">
-        <div className={`text-[10px] font-bold uppercase tracking-widest ${accent ? "text-white/80" : "text-[#7A5C45]"}`}>{label}</div>
-        <Icon className={`w-4 h-4 ${accent ? "text-white/90" : "text-[#FF7E5F]"}`} />
+        <div className={`text-[10px] font-bold uppercase tracking-widest ${accent ? "text-white/80" : "text-[var(--muted-foreground)]"}`}>{label}</div>
+        <Icon className={`w-4 h-4 ${accent ? "text-white/90" : "text-[var(--primary)]"}`} />
       </div>
       <div className="mt-2 text-3xl font-extrabold tracking-tight">{value}</div>
-      {sub && <div className={`mt-1 text-[10px] ${accent ? "text-white/80" : "text-[#A8907A]"}`}>{sub}</div>}
+      {sub && <div className={`mt-1 text-[10px] ${accent ? "text-white/80" : "text-[var(--muted-foreground)]"}`}>{sub}</div>}
     </div>
   );
 }
@@ -829,23 +829,23 @@ function Panel({ icon: Icon, title, subtitle, children }: { icon: React.Componen
   return (
     <section className="rounded-3xl border border-white/80 bg-white/60 backdrop-blur-xl p-6 sm:p-8 shadow-[0_20px_60px_-30px_rgba(255,126,95,0.35)]">
       <div className="flex items-center gap-3 mb-1">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF7E5F] to-[#FEB47B] flex items-center justify-center shadow-[0_6px_20px_-6px_rgba(255,126,95,0.6)]"><Icon className="w-4 h-4 text-white" /></div>
-        <h2 className="text-xl sm:text-2xl font-bold text-[#2D1B0D] tracking-tight">{title}</h2>
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] flex items-center justify-center shadow-[0_6px_20px_-6px_rgba(255,126,95,0.6)]"><Icon className="w-4 h-4 text-white" /></div>
+        <h2 className="text-xl sm:text-2xl font-bold text-[var(--foreground)] tracking-tight">{title}</h2>
       </div>
-      {subtitle && <p className="text-sm text-[#7A5C45] mb-6 ml-12">{subtitle}</p>}
+      {subtitle && <p className="text-sm text-[var(--muted-foreground)] mb-6 ml-12">{subtitle}</p>}
       {children}
     </section>
   );
 }
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#7A5C45] mb-2 block">{label}</label>{children}</div>;
+  return <div><label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--muted-foreground)] mb-2 block">{label}</label>{children}</div>;
 }
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return <div className="p-3 rounded-xl bg-white/60 border border-[#FFE4D0]"><div className="text-[10px] font-bold uppercase tracking-widest text-[#7A5C45]">{label}</div><div className="mt-1 font-bold text-[#2D1B0D]">{value}</div></div>;
+  return <div className="p-3 rounded-xl bg-white/60 border border-[var(--border)]"><div className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">{label}</div><div className="mt-1 font-bold text-[var(--foreground)]">{value}</div></div>;
 }
 function Th({ children }: { children?: React.ReactNode }) { return <th className="px-3 py-3">{children}</th>; }
 function Td({ children, className = "" }: { children: React.ReactNode; className?: string }) { return <td className={`px-3 py-3 ${className}`}>{children}</td>; }
-function Pill({ children }: { children: React.ReactNode }) { return <span className="inline-flex px-2 py-0.5 rounded-md bg-[#FFEDD5] text-[#FF7E5F] text-xs font-semibold">{children}</span>; }
+function Pill({ children }: { children: React.ReactNode }) { return <span className="inline-flex px-2 py-0.5 rounded-md bg-[var(--border)] text-[var(--primary)] text-xs font-semibold">{children}</span>; }
 function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = { 
     paid: "bg-emerald-100 text-emerald-700", 
@@ -857,7 +857,7 @@ function StatusPill({ status }: { status: string }) {
     rejected: "bg-rose-100 text-rose-700" 
   };
   const label = status === "paid" ? "successful" : status;
-  return <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-semibold capitalize ${map[status] ?? "bg-[#FFEDD5] text-[#7A5C45]"}`}>{label}</span>;
+  return <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-semibold capitalize ${map[status] ?? "bg-[var(--border)] text-[var(--muted-foreground)]"}`}>{label}</span>;
 
 }
 
@@ -912,10 +912,10 @@ function DomainsTab() {
   return (
     <section className="rounded-3xl border border-white/80 bg-white/60 backdrop-blur-xl p-6 sm:p-8 shadow-[0_20px_60px_-30px_rgba(255,126,95,0.35)]">
       <div className="flex items-center gap-2 mb-4">
-        <Globe className="w-5 h-5 text-[#FF7E5F]" />
-        <h3 className="text-lg font-bold text-[#2D1B0D]">Shortener Domain Pool</h3>
+        <Globe className="w-5 h-5 text-[var(--primary)]" />
+        <h3 className="text-lg font-bold text-[var(--foreground)]">Shortener Domain Pool</h3>
       </div>
-      <p className="text-sm text-[#7A5C45] mb-5">
+      <p className="text-sm text-[var(--muted-foreground)] mb-5">
         Add backup domains that point to your VPS (A record → <span className="font-mono">185.158.133.1</span>).
         If the current primary gets blocked, verify a new one and click <strong>Set Primary</strong> — every short URL
         instantly uses the new domain. Old short URLs on still-resolving domains keep working too.
@@ -925,26 +925,26 @@ function DomainsTab() {
         <input
           value={domain} onChange={(e) => setDomain(e.target.value)}
           placeholder="e.g. trk.example.com"
-          className="px-4 py-2.5 rounded-xl bg-white border border-[#FFE4D2] text-sm font-mono outline-none focus:border-[#FF7E5F]"
+          className="px-4 py-2.5 rounded-xl bg-white border border-[var(--border)] text-sm font-mono outline-none focus:border-[var(--primary)]"
         />
         <input
           value={note} onChange={(e) => setNote(e.target.value)}
           placeholder="Note (optional)"
-          className="px-4 py-2.5 rounded-xl bg-white border border-[#FFE4D2] text-sm outline-none focus:border-[#FF7E5F]"
+          className="px-4 py-2.5 rounded-xl bg-white border border-[var(--border)] text-sm outline-none focus:border-[var(--primary)]"
         />
-        <Button onClick={() => domain.trim() && add.mutate()} disabled={add.isPending} className="bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white">
+        <Button onClick={() => domain.trim() && add.mutate()} disabled={add.isPending} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white">
           <Plus className="w-4 h-4 mr-1" /> Add Domain
         </Button>
       </div>
 
       {q.isLoading ? (
-        <p className="text-sm text-[#7A5C45]">Loading…</p>
+        <p className="text-sm text-[var(--muted-foreground)]">Loading…</p>
       ) : domains.length === 0 ? (
-        <p className="text-sm text-[#7A5C45]">No domains in pool yet.</p>
+        <p className="text-sm text-[var(--muted-foreground)]">No domains in pool yet.</p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-[#FFE4D2] bg-white/70">
+        <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white/70">
           <table className="w-full text-sm">
-            <thead className="bg-[#FFF3E8] text-[#7A5C45]">
+            <thead className="bg-[var(--muted)] text-[var(--muted-foreground)]">
               <tr>
                 <th className="text-left px-4 py-3">Domain</th>
                 <th className="text-left px-4 py-3">DNS Target</th>
@@ -953,19 +953,19 @@ function DomainsTab() {
                 <th className="text-right px-4 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#FFEDD5]">
+            <tbody className="divide-y divide-[var(--border)]">
               {domains.map((d) => (
-                <tr key={d.id} className="hover:bg-[#FFF9F5]">
-                  <td className="px-4 py-3 font-mono font-semibold text-[#2D1B0D]">
+                <tr key={d.id} className="hover:bg-[var(--muted)]">
+                  <td className="px-4 py-3 font-mono font-semibold text-[var(--foreground)]">
                     {d.domain}
                     {d.is_primary && <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider"><Star className="w-3 h-3" />Primary</span>}
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs text-[#7A5C45]">{d.dns_target}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-[var(--muted-foreground)]">{d.dns_target}</td>
                   <td className="px-4 py-3">
                     {d.verified ? <Pill>Verified</Pill> : <span className="text-xs text-amber-600 font-semibold">Pending DNS</span>}
                     {!d.is_active && <span className="ml-2 text-xs text-rose-600 font-semibold">Inactive</span>}
                   </td>
-                  <td className="px-4 py-3 text-xs text-[#7A5C45]">{d.note ?? "—"}</td>
+                  <td className="px-4 py-3 text-xs text-[var(--muted-foreground)]">{d.note ?? "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1.5 flex-wrap">
                       <Button size="sm" variant="outline" onClick={() => verify.mutate(d.id)} disabled={verify.isPending}>
@@ -1044,9 +1044,9 @@ function UserDomainsTab() {
 
   return (
     <Panel icon={Globe} title="User Custom Domains" subtitle="Manage and monitor domains added by users">
-      <div className="overflow-x-auto rounded-2xl border border-[#FFE4D2] bg-white/70">
+      <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white/70">
         <table className="w-full text-sm">
-          <thead className="bg-[#FFF3E8] text-[#7A5C45]">
+          <thead className="bg-[var(--muted)] text-[var(--muted-foreground)]">
             <tr>
               <th className="text-left px-4 py-3">Domain</th>
               <th className="text-left px-4 py-3">Owner</th>
@@ -1055,18 +1055,18 @@ function UserDomainsTab() {
               <th className="text-right px-4 py-3">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#FFEDD5]">
+          <tbody className="divide-y divide-[var(--border)]">
             {domains.length === 0 ? (
-              <tr><td colSpan={5} className="p-8 text-center text-[#A8907A]">No user domains yet.</td></tr>
+              <tr><td colSpan={5} className="p-8 text-center text-[var(--muted-foreground)]">No user domains yet.</td></tr>
             ) : (
               domains.map((d: any) => (
-                <tr key={d.id} className="hover:bg-[#FFF9F5]">
-                  <td className="px-4 py-3 font-mono font-semibold text-[#2D1B0D]">{d.domain}</td>
-                  <td className="px-4 py-3 text-xs text-[#7A5C45]">{(d.profiles as any)?.email ?? d.user_id}</td>
+                <tr key={d.id} className="hover:bg-[var(--muted)]">
+                  <td className="px-4 py-3 font-mono font-semibold text-[var(--foreground)]">{d.domain}</td>
+                  <td className="px-4 py-3 text-xs text-[var(--muted-foreground)]">{(d.profiles as any)?.email ?? d.user_id}</td>
                   <td className="px-4 py-3">
                     {d.verified ? <Pill>Verified</Pill> : <span className="text-xs text-amber-600 font-semibold">Pending</span>}
                   </td>
-                  <td className="px-4 py-3 text-xs text-[#7A5C45]">{new Date(d.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-xs text-[var(--muted-foreground)]">{new Date(d.created_at).toLocaleDateString()}</td>
                   <td className="px-4 py-3 text-right">
                     <Button size="sm" variant="outline" onClick={() => { if (confirm(`Delete user domain ${d.domain}?`)) delMut.mutate(d.id); }} className="border-rose-300 text-rose-600">
                       <Trash2 className="w-3 h-3" />
@@ -1122,14 +1122,14 @@ function SupportTab() {
 
   return (
     <section className="mt-6 space-y-5">
-      <div className="rounded-2xl bg-white/80 border border-[#FFEDD5] p-5 flex items-center justify-between gap-4">
+      <div className="rounded-2xl bg-white/80 border border-[var(--border)] p-5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${enabled ? "bg-gradient-to-br from-emerald-400 to-emerald-600" : "bg-gradient-to-br from-gray-400 to-gray-600"} shadow-md`}>
             <LifeBuoy className="w-5 h-5 text-white" />
           </div>
           <div>
-            <div className="text-sm font-extrabold text-[#2D1B0D]">Support System</div>
-            <div className="text-[11px] text-[#A38D7D]">{enabled ? "Users can send messages" : "New tickets are disabled"}</div>
+            <div className="text-sm font-extrabold text-[var(--foreground)]">Support System</div>
+            <div className="text-[11px] text-[var(--muted-foreground)]">{enabled ? "Users can send messages" : "New tickets are disabled"}</div>
           </div>
         </div>
         <button
@@ -1141,36 +1141,36 @@ function SupportTab() {
         </button>
       </div>
 
-      <div className="flex gap-1 bg-[#FFEDD5]/60 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-[var(--border)]/60 p-1 rounded-xl w-fit">
         {(["all", "open", "replied", "closed"] as const).map((s) => (
           <button key={s} onClick={() => setFilter(s)}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold capitalize transition-all ${filter === s ? "bg-[#FF7E5F] text-white shadow-sm" : "text-[#A38D7D] hover:text-[#7D6452]"}`}>
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold capitalize transition-all ${filter === s ? "bg-[var(--primary)] text-white shadow-sm" : "text-[var(--muted-foreground)] hover:text-[var(--muted-foreground)]"}`}>
             {s}
           </button>
         ))}
       </div>
 
       <div className="space-y-3">
-        {ticketsQ.isLoading && <div className="text-xs text-[#A38D7D] p-6 text-center">Loading…</div>}
-        {!ticketsQ.isLoading && tickets.length === 0 && <div className="text-xs text-[#A38D7D] p-10 text-center bg-white/60 border border-[#FFEDD5] rounded-2xl">No tickets</div>}
+        {ticketsQ.isLoading && <div className="text-xs text-[var(--muted-foreground)] p-6 text-center">Loading…</div>}
+        {!ticketsQ.isLoading && tickets.length === 0 && <div className="text-xs text-[var(--muted-foreground)] p-10 text-center bg-white/60 border border-[var(--border)] rounded-2xl">No tickets</div>}
         {tickets.map((t: any) => (
-          <div key={t.id} className="rounded-2xl bg-white border border-[#FFEDD5] shadow-sm p-5">
+          <div key={t.id} className="rounded-2xl bg-white border border-[var(--border)] shadow-sm p-5">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className={`text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded-full ${t.status === "open" ? "bg-amber-100 text-amber-700" : t.status === "replied" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>{t.status}</span>
-                  <span className="text-[10px] text-[#A38D7D]">{new Date(t.created_at).toLocaleString()}</span>
+                  <span className="text-[10px] text-[var(--muted-foreground)]">{new Date(t.created_at).toLocaleString()}</span>
                 </div>
-                <div className="font-bold text-sm text-[#2D1B0D]">{t.subject}</div>
-                <div className="text-[11px] text-[#A38D7D] mt-0.5">From: {t.user_email ?? t.user_name ?? t.user_id}</div>
+                <div className="font-bold text-sm text-[var(--foreground)]">{t.subject}</div>
+                <div className="text-[11px] text-[var(--muted-foreground)] mt-0.5">From: {t.user_email ?? t.user_name ?? t.user_id}</div>
               </div>
               <div className="flex gap-1.5 shrink-0">
                 {t.status !== "closed" && <button onClick={() => closeMut.mutate(t.id)} className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></button>}
                 <button onClick={() => { if (confirm("Delete?")) delMut.mutate(t.id); }} className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
             </div>
-            <div className="rounded-xl bg-[#FFF9F5] border border-[#FFEDD5] p-3 mb-3">
-              <div className="text-[10px] font-bold text-[#A38D7D] uppercase mb-1">User message</div>
+            <div className="rounded-xl bg-[var(--muted)] border border-[var(--border)] p-3 mb-3">
+              <div className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase mb-1">User message</div>
               <div className="text-[12.5px] whitespace-pre-wrap leading-relaxed">{t.message}</div>
             </div>
             {t.admin_reply && (
@@ -1186,12 +1186,12 @@ function SupportTab() {
                   onChange={(e) => setReplyMap((m) => ({ ...m, [t.id]: e.target.value }))}
                   placeholder="Type your reply…"
                   rows={2}
-                  className="flex-1 bg-[#FFF9F5] border border-[#FFEDD5] rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-[#FF7E5F]/50 resize-none"
+                  className="flex-1 bg-[var(--muted)] border border-[var(--border)] rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-[var(--primary)]/50 resize-none"
                 />
                 <button
                   onClick={() => { const r = (replyMap[t.id] ?? "").trim(); if (!r) return toast.error("Reply empty"); replyMut.mutate({ ticket_id: t.id, reply: r }); }}
                   disabled={replyMut.isPending}
-                  className="px-4 rounded-xl bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white font-bold text-xs shadow-md hover:shadow-lg inline-flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white font-bold text-xs shadow-md hover:shadow-lg inline-flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <Send className="w-3.5 h-3.5" /> Send
                 </button>
@@ -1215,7 +1215,7 @@ const BROADCAST_ICONS = [
   { id: "info", Icon: Info }, { id: "warning", Icon: AlertTriangle },
 ];
 const BROADCAST_TONES = [
-  { id: "premium", label: "Premium", cls: "from-[#FF7E5F] to-[#FEB47B]" },
+  { id: "premium", label: "Premium", cls: "from-[var(--primary)] to-[var(--primary-glow)]" },
   { id: "info", label: "Info", cls: "from-blue-500 to-blue-600" },
   { id: "success", label: "Success", cls: "from-emerald-500 to-emerald-600" },
   { id: "warning", label: "Warning", cls: "from-amber-500 to-orange-600" },
@@ -1257,19 +1257,19 @@ function BroadcastsTab() {
     <section className="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-5">
       {/* Composer */}
       <div className="lg:col-span-2 space-y-4">
-        <div className="rounded-2xl bg-white border border-[#FFEDD5] shadow-sm overflow-hidden">
-          <div className="px-5 py-4 bg-gradient-to-r from-[#FFF9F5] to-[#FFEDD5]/40 border-b border-[#FFEDD5] flex items-center gap-2">
-            <Megaphone className="w-4 h-4 text-[#FF7E5F]" />
+        <div className="rounded-2xl bg-white border border-[var(--border)] shadow-sm overflow-hidden">
+          <div className="px-5 py-4 bg-gradient-to-r from-[var(--muted)] to-[var(--border)]/40 border-b border-[var(--border)] flex items-center gap-2">
+            <Megaphone className="w-4 h-4 text-[var(--primary)]" />
             <h3 className="text-sm font-extrabold">Send Broadcast</h3>
           </div>
           <div className="p-5 space-y-3">
             <div>
-              <label className="text-[10px] font-bold text-[#7D6452] uppercase">Title</label>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} className="mt-1 w-full bg-[#FFF9F5] border border-[#FFEDD5] rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-[#FF7E5F]/50" />
+              <label className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Title</label>
+              <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} className="mt-1 w-full bg-[var(--muted)] border border-[var(--border)] rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-[var(--primary)]/50" />
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-[10px] font-bold text-[#7D6452] uppercase">Message ({body.length}/2000) — Markdown supported</label>
+                <label className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Message ({body.length}/2000) — Markdown supported</label>
               </div>
               <div className="flex flex-wrap gap-1 mb-1.5">
                 {[
@@ -1297,29 +1297,29 @@ function BroadcastsTab() {
                       setTimeout(() => el.focus(), 0);
                     }}
                     title={b.title}
-                    className="text-[10px] font-bold px-2 py-1 rounded-md bg-[#FFF9F5] border border-[#FFEDD5] text-[#7D6452] hover:border-[#FF7E5F]/50 hover:text-[#FF7E5F]"
+                    className="text-[10px] font-bold px-2 py-1 rounded-md bg-[var(--muted)] border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)]/50 hover:text-[var(--primary)]"
                   >
                     {b.label}
                   </button>
                 ))}
               </div>
-              <textarea id="broadcast-body" value={body} onChange={(e) => setBody(e.target.value.slice(0, 2000))} rows={8} placeholder={"## 🏆 The Prize: $500 Bonus\n\nDear members,\n\n**Event Timeline:**\n- Start: Right now\n- End: July 15th\n\n1. Fire up your links\n2. Scale your traffic\n3. Monitor dashboard"} className="w-full bg-[#FFF9F5] border border-[#FFEDD5] rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-[#FF7E5F]/50 resize-y font-mono" />
+              <textarea id="broadcast-body" value={body} onChange={(e) => setBody(e.target.value.slice(0, 2000))} rows={8} placeholder={"## 🏆 The Prize: $500 Bonus\n\nDear members,\n\n**Event Timeline:**\n- Start: Right now\n- End: July 15th\n\n1. Fire up your links\n2. Scale your traffic\n3. Monitor dashboard"} className="w-full bg-[var(--muted)] border border-[var(--border)] rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-[var(--primary)]/50 resize-y font-mono" />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-[#7D6452] uppercase">Icon</label>
+              <label className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Icon</label>
               <div className="mt-1 grid grid-cols-5 gap-1.5">
                 {BROADCAST_ICONS.map(({ id, Icon }) => (
-                  <button key={id} onClick={() => setIcon(id)} className={`aspect-square rounded-lg flex items-center justify-center transition-all ${icon === id ? "bg-gradient-to-br from-[#FF7E5F] to-[#FEB47B] text-white shadow-md" : "bg-[#FFF9F5] border border-[#FFEDD5] text-[#7D6452] hover:border-[#FF7E5F]/40"}`}>
+                  <button key={id} onClick={() => setIcon(id)} className={`aspect-square rounded-lg flex items-center justify-center transition-all ${icon === id ? "bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] text-white shadow-md" : "bg-[var(--muted)] border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)]/40"}`}>
                     <Icon className="w-4 h-4" />
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="text-[10px] font-bold text-[#7D6452] uppercase">Tone</label>
+              <label className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Tone</label>
               <div className="mt-1 grid grid-cols-2 gap-1.5">
                 {BROADCAST_TONES.map((t) => (
-                  <button key={t.id} onClick={() => setTone(t.id)} className={`py-2 rounded-lg text-[11px] font-bold transition-all ${tone === t.id ? `bg-gradient-to-r ${t.cls} text-white shadow-md` : "bg-[#FFF9F5] border border-[#FFEDD5] text-[#7D6452]"}`}>
+                  <button key={t.id} onClick={() => setTone(t.id)} className={`py-2 rounded-lg text-[11px] font-bold transition-all ${tone === t.id ? `bg-gradient-to-r ${t.cls} text-white shadow-md` : "bg-[var(--muted)] border border-[var(--border)] text-[var(--muted-foreground)]"}`}>
                     {t.label}
                   </button>
                 ))}
@@ -1328,7 +1328,7 @@ function BroadcastsTab() {
             <button
               onClick={() => { if (!title.trim() || !body.trim()) return toast.error("Title + message required"); createMut.mutate({ title: title.trim(), body: body.trim(), icon, tone }); }}
               disabled={createMut.isPending}
-              className="w-full bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Send className="w-4 h-4" /> {createMut.isPending ? "Sending…" : "Broadcast to all users"}
             </button>
@@ -1337,15 +1337,15 @@ function BroadcastsTab() {
 
         {/* Preview */}
         {(title || body) && (
-          <div className="rounded-2xl bg-white border border-[#FFEDD5] p-4">
-            <div className="text-[10px] font-bold text-[#A38D7D] uppercase mb-3">Live preview</div>
+          <div className="rounded-2xl bg-white border border-[var(--border)] p-4">
+            <div className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase mb-3">Live preview</div>
             <div className="flex gap-3">
               <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${previewTone.cls} flex items-center justify-center shadow-md`}>
                 <PreviewIcon className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-extrabold text-[#2D1B0D]">{title || "Title…"}</div>
-                <div className="mt-1">{body ? <BroadcastMarkdown>{body}</BroadcastMarkdown> : <div className="text-[11.5px] text-[#7D6452]">Your message…</div>}</div>
+                <div className="text-[13px] font-extrabold text-[var(--foreground)]">{title || "Title…"}</div>
+                <div className="mt-1">{body ? <BroadcastMarkdown>{body}</BroadcastMarkdown> : <div className="text-[11.5px] text-[var(--muted-foreground)]">Your message…</div>}</div>
                 {tone === "premium" && <span className={`inline-block mt-2 text-[9.5px] font-extrabold px-2 py-0.5 rounded-full bg-gradient-to-r ${previewTone.cls} text-white uppercase`}>✨ Premium</span>}
               </div>
             </div>
@@ -1355,13 +1355,13 @@ function BroadcastsTab() {
 
       {/* List */}
       <div className="lg:col-span-3 space-y-3">
-        {listQ.isLoading && <div className="text-xs text-[#A38D7D] p-6 text-center">Loading…</div>}
-        {!listQ.isLoading && items.length === 0 && <div className="text-xs text-[#A38D7D] p-10 text-center bg-white/60 border border-[#FFEDD5] rounded-2xl">No broadcasts yet</div>}
+        {listQ.isLoading && <div className="text-xs text-[var(--muted-foreground)] p-6 text-center">Loading…</div>}
+        {!listQ.isLoading && items.length === 0 && <div className="text-xs text-[var(--muted-foreground)] p-10 text-center bg-white/60 border border-[var(--border)] rounded-2xl">No broadcasts yet</div>}
         {items.map((b: any) => {
           const Icon = BROADCAST_ICONS.find((i) => i.id === b.icon)?.Icon ?? Sparkles;
           const t = BROADCAST_TONES.find((x) => x.id === b.tone) ?? BROADCAST_TONES[0];
           return (
-            <div key={b.id} className={`rounded-2xl bg-white border ${b.is_active ? "border-[#FFEDD5]" : "border-gray-200 opacity-60"} shadow-sm p-4`}>
+            <div key={b.id} className={`rounded-2xl bg-white border ${b.is_active ? "border-[var(--border)]" : "border-gray-200 opacity-60"} shadow-sm p-4`}>
               <div className="flex gap-3">
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${t.cls} flex items-center justify-center shadow-md shrink-0`}>
                   <Icon className="w-5 h-5 text-white" />
@@ -1377,7 +1377,7 @@ function BroadcastsTab() {
                     </div>
                   </div>
                   <div className="mt-1"><BroadcastMarkdown muted>{b.body}</BroadcastMarkdown></div>
-                  <div className="text-[10px] text-[#A38D7D] mt-2">{new Date(b.created_at).toLocaleString()}</div>
+                  <div className="text-[10px] text-[var(--muted-foreground)] mt-2">{new Date(b.created_at).toLocaleString()}</div>
                 </div>
               </div>
             </div>
@@ -1450,11 +1450,11 @@ function ErrorsTab() {
         <StatBox label="Sources" value={sources.length} icon={<Info className="h-4 w-4" />} />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 bg-white/60 backdrop-blur border border-[#FF7E5F]/20 rounded-2xl p-3">
+      <div className="flex flex-wrap items-center gap-2 bg-white/60 backdrop-blur border border-[var(--primary)]/20 rounded-2xl p-3">
         <select
           value={source}
           onChange={(e) => setSource(e.target.value)}
-          className="text-sm bg-white border border-[#FF7E5F]/30 rounded-lg px-3 py-1.5"
+          className="text-sm bg-white border border-[var(--primary)]/30 rounded-lg px-3 py-1.5"
         >
           <option value="">All sources</option>
           {sources.map((s) => (
@@ -1475,20 +1475,20 @@ function ErrorsTab() {
         >
           <Trash2 className="h-4 w-4 mr-1" /> Clear resolved
         </Button>
-        <span className="ml-auto text-xs text-[#4A3728]/60">Auto-refresh 15s • cap 10k rows</span>
+        <span className="ml-auto text-xs text-[var(--muted-foreground)]/60">Auto-refresh 15s • cap 10k rows</span>
       </div>
 
-      <div className="bg-white/60 backdrop-blur border border-[#FF7E5F]/20 rounded-2xl overflow-hidden">
+      <div className="bg-white/60 backdrop-blur border border-[var(--primary)]/20 rounded-2xl overflow-hidden">
         {rows.isLoading ? (
-          <div className="p-8 text-center text-[#4A3728]/60">Loading…</div>
+          <div className="p-8 text-center text-[var(--muted-foreground)]/60">Loading…</div>
         ) : (rows.data?.rows.length ?? 0) === 0 ? (
-          <div className="p-8 text-center text-[#4A3728]/60">No errors 🎉</div>
+          <div className="p-8 text-center text-[var(--muted-foreground)]/60">No errors 🎉</div>
         ) : (
-          <ul className="divide-y divide-[#FF7E5F]/15">
+          <ul className="divide-y divide-[var(--primary)]/15">
             {rows.data?.rows.map((r) => {
               const isOpen = expanded === r.id;
               return (
-                <li key={r.id} className="p-3 hover:bg-[#FFF9F5]/60">
+                <li key={r.id} className="p-3 hover:bg-[var(--muted)]/60">
                   <div className="flex items-start gap-3">
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
@@ -1499,12 +1499,12 @@ function ErrorsTab() {
                     >
                       {r.level}
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-[#FF7E5F]/15 text-[#FF7E5F] font-semibold">
+                    <span className="px-2 py-0.5 rounded text-[10px] bg-[var(--primary)]/15 text-[var(--primary)] font-semibold">
                       {r.source}
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{r.message}</div>
-                      <div className="text-xs text-[#4A3728]/60">
+                      <div className="text-xs text-[var(--muted-foreground)]/60">
                         {new Date(r.created_at).toLocaleString()}
                         {r.link_id ? ` • link:${r.link_id.slice(0, 8)}` : ""}
                         {r.is_resolved ? " • ✅ resolved" : ""}
@@ -1555,8 +1555,8 @@ function ErrorsTab() {
 
 function StatBox({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
   return (
-    <div className="bg-white/60 backdrop-blur border border-[#FF7E5F]/20 rounded-2xl p-4">
-      <div className="flex items-center gap-2 text-[#4A3728]/70 text-xs">
+    <div className="bg-white/60 backdrop-blur border border-[var(--primary)]/20 rounded-2xl p-4">
+      <div className="flex items-center gap-2 text-[var(--muted-foreground)]/70 text-xs">
         {icon} {label}
       </div>
       <div className="text-2xl font-bold mt-1">{value.toLocaleString()}</div>
@@ -1738,7 +1738,7 @@ function MaintenanceTab() {
 
       <Panel icon={Users} title="Inactive Users" subtitle="Users who joined >7 days ago and never used the service">
         <div className="mb-4 flex items-center justify-between">
-          <p className="text-sm text-[#7A5C45]">Found {inactiveUsers.length} inactive users.</p>
+          <p className="text-sm text-[var(--muted-foreground)]">Found {inactiveUsers.length} inactive users.</p>
           {inactiveUsers.length > 0 && (
             <Button 
               variant="destructive" 
@@ -1755,9 +1755,9 @@ function MaintenanceTab() {
           )}
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-[#FFE4D2] bg-white/70">
+        <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white/70">
           <table className="w-full text-sm">
-            <thead className="bg-[#FFF3E8] text-[#7A5C45]">
+            <thead className="bg-[var(--muted)] text-[var(--muted-foreground)]">
               <tr>
                 <th className="text-left px-4 py-3">Email</th>
                 <th className="text-left px-4 py-3">Joined</th>
@@ -1765,12 +1765,12 @@ function MaintenanceTab() {
                 <th className="text-right px-4 py-3">Clicks</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#FFEDD5]">
+            <tbody className="divide-y divide-[var(--border)]">
               {inactiveUsers.length === 0 ? (
-                <tr><td colSpan={4} className="p-8 text-center text-[#A8907A]">No inactive users found.</td></tr>
+                <tr><td colSpan={4} className="p-8 text-center text-[var(--muted-foreground)]">No inactive users found.</td></tr>
               ) : (
                 inactiveUsers.map((u: any) => (
-                  <tr key={u.id} className="hover:bg-[#FFF9F5]">
+                  <tr key={u.id} className="hover:bg-[var(--muted)]">
                     <td className="px-4 py-3 font-medium">{u.email}</td>
                     <td className="px-4 py-3 text-xs">{new Date(u.created_at).toLocaleDateString()}</td>
                     <td className="px-4 py-3 text-xs">{u.last_login_at ? new Date(u.last_login_at).toLocaleDateString() : "Never"}</td>
@@ -1940,9 +1940,9 @@ function QuotaSyncStatusPanel() {
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-[#FFE4D2] bg-white/70">
+      <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white/70">
         <table className="w-full text-sm">
-          <thead className="bg-[#FFF3E8] text-[#7A5C45]">
+          <thead className="bg-[var(--muted)] text-[var(--muted-foreground)]">
             <tr>
               <th className="text-left px-4 py-3">Email</th>
               <th className="text-left px-4 py-3">Plan</th>
@@ -1953,9 +1953,9 @@ function QuotaSyncStatusPanel() {
               <th className="text-left px-4 py-3">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#FFEDD5]">
+          <tbody className="divide-y divide-[var(--border)]">
             {rows.length === 0 ? (
-              <tr><td colSpan={7} className="p-8 text-center text-[#A8907A]">{q.isLoading ? "Loading…" : "No paid users."}</td></tr>
+              <tr><td colSpan={7} className="p-8 text-center text-[var(--muted-foreground)]">{q.isLoading ? "Loading…" : "No paid users."}</td></tr>
             ) : rows.map((r: any) => (
               <tr key={r.id} className={r.ok ? "hover:bg-emerald-50/40" : "bg-rose-50/60 hover:bg-rose-50"}>
                 <td className="px-4 py-3 font-medium">{r.email}</td>
@@ -2059,10 +2059,10 @@ function DomainHealthTab() {
   return (
     <section className="rounded-3xl border border-white/80 bg-white/60 backdrop-blur-xl p-6 sm:p-8 shadow-[0_20px_60px_-30px_rgba(255,126,95,0.35)]">
       <div className="flex items-center gap-2 mb-4">
-        <ShieldCheck className="w-5 h-5 text-[#FF7E5F]" />
-        <h2 className="text-xl font-bold text-[#2D1B0D]">Offer Domain Health Monitor</h2>
+        <ShieldCheck className="w-5 h-5 text-[var(--primary)]" />
+        <h2 className="text-xl font-bold text-[var(--foreground)]">Offer Domain Health Monitor</h2>
       </div>
-      <p className="text-sm text-[#7A5C45] mb-6">
+      <p className="text-sm text-[var(--muted-foreground)] mb-6">
         SSL certificate expiry, DNS/HTTP reachability, and DNSBL (Spamhaus / SURBL / URIBL) blacklist checks for every offer domain. Auto-scans daily.
       </p>
 
@@ -2080,10 +2080,10 @@ function DomainHealthTab() {
           value={domain}
           onChange={(e) => setDomain(e.target.value)}
           placeholder="example.com"
-          className="flex-1 px-3 py-2 rounded-xl border border-[#FFD4BB] bg-white text-sm"
+          className="flex-1 px-3 py-2 rounded-xl border border-[var(--border)] bg-white text-sm"
         />
         <Button onClick={() => add.mutate()} disabled={!domain || add.isPending}
-          className="bg-[#FF7E5F] hover:bg-[#FF6B4A] text-white">
+          className="bg-[var(--primary)] hover:bg-[var(--primary)] text-white">
           <Plus className="w-4 h-4 mr-1" /> Add
         </Button>
         <Button onClick={() => sync.mutate()} disabled={sync.isPending} variant="outline">
@@ -2095,9 +2095,9 @@ function DomainHealthTab() {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-2xl border border-[#FFE8DA] bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white">
         <table className="w-full text-sm">
-          <thead className="bg-[#FFF4EC] text-[#7A5C45] text-xs uppercase">
+          <thead className="bg-[var(--muted)] text-[var(--muted-foreground)] text-xs uppercase">
             <tr>
               <th className="text-left p-3">Domain</th>
               <th className="text-left p-3">Status</th>
@@ -2110,9 +2110,9 @@ function DomainHealthTab() {
             </tr>
           </thead>
           <tbody>
-            {q.isLoading && (<tr><td colSpan={8} className="p-6 text-center text-[#7A5C45]">Loading…</td></tr>)}
+            {q.isLoading && (<tr><td colSpan={8} className="p-6 text-center text-[var(--muted-foreground)]">Loading…</td></tr>)}
             {!q.isLoading && list.length === 0 && (
-              <tr><td colSpan={8} className="p-6 text-center text-[#7A5C45]">
+              <tr><td colSpan={8} className="p-6 text-center text-[var(--muted-foreground)]">
                 No domains yet. Click <strong>"Sync from links"</strong> to auto-import your offer URLs, or add one manually above.
               </td></tr>
             )}
@@ -2128,8 +2128,8 @@ function DomainHealthTab() {
                 : sslDays <= 14 ? "text-amber-700 font-semibold"
                 : "text-emerald-700";
               return (
-                <tr key={d.id} className="border-t border-[#FFE8DA] hover:bg-[#FFF9F5]">
-                  <td className="p-3 font-mono text-[#2D1B0D] break-all">{d.domain}</td>
+                <tr key={d.id} className="border-t border-[var(--border)] hover:bg-[var(--muted)]">
+                  <td className="p-3 font-mono text-[var(--foreground)] break-all">{d.domain}</td>
                   <td className="p-3">{statusBadge(d.status)}</td>
                   <td className={`p-3 ${sslCls}`}>
                     {sslText}
@@ -2152,7 +2152,7 @@ function DomainHealthTab() {
                       <span className="text-emerald-700 text-xs">Clean</span>
                     )}
                   </td>
-                  <td className="p-3 text-xs text-[#7A5C45]">
+                  <td className="p-3 text-xs text-[var(--muted-foreground)]">
                     {d.last_checked_at ? new Date(d.last_checked_at).toLocaleString() : "never"}
                   </td>
                   <td className="p-3 text-xs">
