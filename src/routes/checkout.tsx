@@ -6,7 +6,7 @@ import { useCart } from "@/lib/cart-context";
 export const Route = createFileRoute("/checkout")({
   head: () => ({
     meta: [
-      { title: "Secure Checkout — BreezySocial" },
+      { title: "Secure Checkout" },
       { name: "description", content: "Complete your order securely." },
       { name: "robots", content: "noindex,nofollow" },
     ],
