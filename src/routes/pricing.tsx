@@ -6,7 +6,7 @@ import { Wordmark } from "@/components/wordmark";
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing — Sleepox" },
+      { title: "Pricing — Adspx" },
       { name: "description", content: "Free forever with 1M clicks, $10 monthly Pro with 10M clicks, or $50 lifetime unlimited. Pay with crypto." },
     ],
   }),
@@ -72,7 +72,7 @@ function PricingPage() {
     <div className="min-h-screen bg-mesh text-foreground">
       <header className="border-b border-border/30 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link to="/" aria-label="Sleepox home">
+          <Link to="/" aria-label="Adspx home">
             <Wordmark size="md" />
           </Link>
           <nav className="flex gap-4 text-sm">

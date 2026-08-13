@@ -9,21 +9,21 @@ const NOT_FOUND_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-
 // h3's decodePathname throws URIError BEFORE middleware runs, killing the worker.
 // Node.js default: uncaughtException = process exit. We swallow it to keep PM2 workers alive.
 if (typeof process !== "undefined" && process.on) {
-  const g = globalThis as { __sleepox_handlers_installed?: boolean };
-  if (!g.__sleepox_handlers_installed) {
-    g.__sleepox_handlers_installed = true;
+  const g = globalThis as { __adspx_handlers_installed?: boolean };
+  if (!g.__adspx_handlers_installed) {
+    g.__adspx_handlers_installed = true;
     const shouldLogUriNoise = () => {
       const state = globalThis as typeof globalThis & {
-        __sleepoxUriNoiseMinute?: number;
-        __sleepoxUriNoiseCount?: number;
+        __adspxUriNoiseMinute?: number;
+        __adspxUriNoiseCount?: number;
       };
       const minute = Math.floor(Date.now() / 60_000);
-      if (state.__sleepoxUriNoiseMinute !== minute) {
-        state.__sleepoxUriNoiseMinute = minute;
-        state.__sleepoxUriNoiseCount = 0;
+      if (state.__adspxUriNoiseMinute !== minute) {
+        state.__adspxUriNoiseMinute = minute;
+        state.__adspxUriNoiseCount = 0;
       }
-      state.__sleepoxUriNoiseCount = (state.__sleepoxUriNoiseCount ?? 0) + 1;
-      return state.__sleepoxUriNoiseCount === 1 || state.__sleepoxUriNoiseCount % 500 === 0;
+      state.__adspxUriNoiseCount = (state.__adspxUriNoiseCount ?? 0) + 1;
+      return state.__adspxUriNoiseCount === 1 || state.__adspxUriNoiseCount % 500 === 0;
     };
 
     process.on("uncaughtException", (err: Error) => {
@@ -62,11 +62,11 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
 /**
  * SHORTENER-HOST SHIELD.
  *
- * On any host that is not the Sleepox SaaS domain (tekuc.com,
+ * On any host that is not the Adspx SaaS domain (tekuc.com,
  * breezysocial.com, user custom domains) every SaaS surface — sign-in,
  * pricing, dashboard, control panel — is hidden behind a plain 404.
  * Without this an ad reviewer can open `https://<ad-domain>/login`,
- * see "Sign in — Sleepox", and ban the domain for cloaking.
+ * see "Sign in — Adspx", and ban the domain for cloaking.
  *
  * Deny-list only: any path not listed passes straight through, so redirect
  * traffic (`/{code}`, `/r/{code}`, `/api/*`, assets) can never be affected.
@@ -84,7 +84,7 @@ const shortenerShield = createMiddleware().server(async ({ next, request }) => {
         headers: {
           "content-type": "text/html; charset=utf-8",
           // Never cache: a shared cache could otherwise serve this 404 for
-          // sleepox.com/login too. Vary on host for good measure.
+          // adspx.com/login too. Vary on host for good measure.
           "cache-control": "no-store",
           vary: "Host, X-Forwarded-Host",
         },

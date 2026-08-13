@@ -31,7 +31,7 @@ const TIMEOUT_MS = 9000;
 
 /** Words that must NEVER appear in HTML served from a shortener domain. */
 const SAAS_FINGERPRINTS = [
-  "sleepox",
+  "adspx",
   "link shortener",
   "short link manager",
   "adsterra",
@@ -41,7 +41,7 @@ const SAAS_FINGERPRINTS = [
 ];
 
 /** Response headers that would fingerprint our stack to a reviewer. */
-const LEAKY_HEADER_PREFIXES = ["x-sleepox", "x-cloak", "x-bot", "x-offer"];
+const LEAKY_HEADER_PREFIXES = ["x-adspx", "x-cloak", "x-bot", "x-offer"];
 
 export type Severity = "error" | "warn" | "info";
 
@@ -343,7 +343,7 @@ export async function scanDomain(
           url: codeUrl,
           message: `Internal debug header "${k}" is exposed to visitors`,
           evidence: `${k}: ${String(v).slice(0, 80)}`,
-          fix: "Remove the X-Sleepox-* / debug headers from the response in src/routes/r.$code.ts.",
+          fix: "Remove the X-Adspx-* / debug headers from the response in src/routes/r.$code.ts.",
         });
       }
     }
@@ -355,7 +355,7 @@ export async function scanDomain(
         url: codeUrl,
         message: "Real ad-click path is unreachable — traffic is being lost right now",
         evidence: mobile.error || "network error",
-        fix: "Check Nginx + PM2 on the VPS: cd /opt/sleepox-app-new && pm2 status && nginx -t",
+        fix: "Check Nginx + PM2 on the VPS: cd /opt/adspx-app-new && pm2 status && nginx -t",
       });
     }
   } else {
@@ -393,8 +393,8 @@ export async function runLeakSweep(domains: string[]) {
   const selfHosts = [
     ...domains,
     ...domains.map((d) => (d.startsWith("www.") ? d.slice(4) : `www.${d}`)),
-    "sleepox.com",
-    "www.sleepox.com",
+    "adspx.com",
+    "www.adspx.com",
   ];
 
   const perDomain = await Promise.all(

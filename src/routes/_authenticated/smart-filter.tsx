@@ -13,7 +13,7 @@ import {
 } from "@/lib/smart-filter.functions";
 
 export const Route = createFileRoute("/_authenticated/smart-filter")({
-  head: () => ({ meta: [{ title: "Smart Filter — Sleepox" }] }),
+  head: () => ({ meta: [{ title: "Smart Filter — Adspx" }] }),
   // Auth + admin check runs client-side (parent _authenticated layout is also client-only).
   component: SmartFilterPage,
 });

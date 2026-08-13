@@ -4,16 +4,16 @@
 // request, so newly-created codes appear automatically — no manual
 // regen needed.
 //
-// Host-aware: sleepox.com/sitemap.xml lists sleepox.com URLs,
+// Host-aware: adspx.com/sitemap.xml lists adspx.com URLs,
 // breezysocial.com/sitemap.xml lists breezysocial.com URLs. This matches
 // Google's "same host" rule (a sitemap can only list URLs on the same
 // host it's served from).
 import { createFileRoute } from "@tanstack/react-router";
-import { isSleepoxSaasHost } from "@/lib/site-hosts";
+import { isAdspxSaasHost } from "@/lib/site-hosts";
 
 // Public marketing routes (indexable). Internal/auth routes stay
 // excluded via robots.txt.
-const SLEEPOX_PATHS: Array<{ path: string; changefreq: string; priority: string }> = [
+const ADSPX_PATHS: Array<{ path: string; changefreq: string; priority: string }> = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
   { path: "/pricing", changefreq: "monthly", priority: "0.7" },
   { path: "/login", changefreq: "yearly", priority: "0.3" },
@@ -48,17 +48,17 @@ export const Route = createFileRoute("/sitemap.xml")({
         // Build the public origin from forwarded headers so the
         // sitemap reflects the host the crawler actually hit (not the
         // upstream localhost behind nginx).
-        const fwdHost = request.headers.get("x-forwarded-host") || request.headers.get("host") || "sleepox.com";
+        const fwdHost = request.headers.get("x-forwarded-host") || request.headers.get("host") || "adspx.com";
         const fwdProto = (request.headers.get("x-forwarded-proto") || "https").split(",")[0].trim();
         const origin = `${fwdProto}://${fwdHost.split(",")[0].trim()}`;
 
         // Only the SaaS host advertises SaaS pages. Every shortener /
         // custom domain gets the neutral content sitemap.
-        const isSaasHost = isSleepoxSaasHost(fwdHost.split(",")[0].trim());
+        const isSaasHost = isAdspxSaasHost(fwdHost.split(",")[0].trim());
         const isBreezy = !isSaasHost;
 
         const urls: string[] = [];
-        const STATIC_PATHS = isBreezy ? BREEZY_PATHS : SLEEPOX_PATHS;
+        const STATIC_PATHS = isBreezy ? BREEZY_PATHS : ADSPX_PATHS;
 
         for (const s of STATIC_PATHS) {
           urls.push(

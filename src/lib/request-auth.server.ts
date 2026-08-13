@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
 export async function getRequestAuth() {
-  const SUPABASE_URL = process.env.SUPABASE_URL || "https://supabase.sleepox.com";
+  const SUPABASE_URL = process.env.SUPABASE_URL || "https://supabase.adspx.com";
   const SUPABASE_PUBLISHABLE_KEY =
     process.env.SUPABASE_ANON_KEY ||
     process.env.SUPABASE_PUBLISHABLE_KEY ||

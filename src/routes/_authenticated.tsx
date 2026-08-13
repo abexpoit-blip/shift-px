@@ -193,7 +193,7 @@ function AuthenticatedLayout() {
   const SidebarContent = (
     <>
       <div className="flex items-center justify-between mb-12">
-        <Link to="/dashboard" aria-label="Sleepox dashboard">
+        <Link to="/dashboard" aria-label="Adspx dashboard">
           <BrandLogo />
         </Link>
         <button
@@ -303,7 +303,7 @@ function AuthenticatedLayout() {
 
       {/* Mobile top bar */}
       <div className="lg:hidden fixed top-0 inset-x-0 z-30 flex items-center justify-between px-5 py-4 backdrop-blur-2xl bg-white/70 border-b border-white/60">
-        <Link to="/dashboard" aria-label="Sleepox dashboard">
+        <Link to="/dashboard" aria-label="Adspx dashboard">
           <BrandLogo />
         </Link>
         <div className="flex items-center gap-2">

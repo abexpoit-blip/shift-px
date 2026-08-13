@@ -17,7 +17,7 @@ const PAID_PLANS = new Set([
 ]);
 
 // The public CNAME target every custom domain points to.
-export const CNAME_TARGET = "sleepox.com";
+export const CNAME_TARGET = "adspx.com";
 
 const domainRegex = /^(?!:\/\/)([a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,}$/;
 
@@ -151,7 +151,7 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!row) throw new Error("Domain not found.");
 
-    const txtName = `_sleepox-verify.${row.domain}`;
+    const txtName = `_adspx-verify.${row.domain}`;
 
     // Run all lookups in parallel for speed.
     const rootParts = row.domain.split(".");
@@ -168,7 +168,7 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
     const cnameOk = !!cnameAnswers.find((v) => v.toLowerCase().includes(CNAME_TARGET));
 
     // Fallback: some registrars flatten subdomain CNAMEs into A records at edge.
-    // If A record resolves to a Cloudflare/Sleepox-fronted IP, treat as OK.
+    // If A record resolves to a Cloudflare/Adspx-fronted IP, treat as OK.
     const aOk = aAnswers.length > 0 && cnameAnswers.length === 0
       ? await (async () => {
           // Look up A record of CNAME_TARGET; consider OK if they match.

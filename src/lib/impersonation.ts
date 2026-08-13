@@ -4,8 +4,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-const ADMIN_KEY = "__sleepox_admin_session__";
-const FLAG_KEY = "__sleepox_impersonating__";
+const ADMIN_KEY = "__adspx_admin_session__";
+const FLAG_KEY = "__adspx_impersonating__";
 
 export type ImpersonationFlag = {
   admin_email: string | null;

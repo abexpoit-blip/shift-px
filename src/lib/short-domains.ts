@@ -21,7 +21,7 @@ export const SHORT_DOMAINS = [
 
 export type ShortDomainHost = (typeof SHORT_DOMAINS)[number]["host"];
 
-const STORAGE_KEY = "sleepox.shortDomain";
+const STORAGE_KEY = "adspx.shortDomain";
 const DEFAULT_HOST: ShortDomainHost = "mefok.com";
 
 function isValidHost(h: string | null): h is ShortDomainHost {

@@ -14,12 +14,12 @@ import {
 } from "@/lib/custom-domains.functions";
 
 export const Route = createFileRoute("/_authenticated/domains")({
-  head: () => ({ meta: [{ title: "Custom Domains — Sleepox" }] }),
+  head: () => ({ meta: [{ title: "Custom Domains — Adspx" }] }),
   component: DomainsPage,
 });
 
 const display = { fontFamily: "'Space Grotesk', sans-serif" } as const;
-const CNAME_TARGET = "sleepox.com";
+const CNAME_TARGET = "adspx.com";
 
 // Registrar quick-links (fallback list; server also detects provider).
 const REGISTRARS = [
@@ -379,7 +379,7 @@ function DomainCard({
   };
 
   const cnameName = dom.domain;
-  const txtName = `_sleepox-verify.${dom.domain}`;
+  const txtName = `_adspx-verify.${dom.domain}`;
 
   const copyAll = () => {
     const text = `CNAME  ${cnameName}  →  ${CNAME_TARGET}\nTXT    ${txtName}  →  ${dom.verification_token}`;

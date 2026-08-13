@@ -13,7 +13,7 @@ import { debugLinkPreview, getMyPlan, type BotKey } from "@/lib/link-debugger.fu
 import { useShortDomain, SHORT_DOMAINS, FLAGGED_SHORT_DOMAINS } from "@/lib/short-domains";
 
 export const Route = createFileRoute("/_authenticated/link-debugger")({
-  head: () => ({ meta: [{ title: "Link Debugger — Sleepox" }] }),
+  head: () => ({ meta: [{ title: "Link Debugger — Adspx" }] }),
   component: LinkDebuggerPage,
 });
 
