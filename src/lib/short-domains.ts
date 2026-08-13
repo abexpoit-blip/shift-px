@@ -19,6 +19,15 @@ export const SHORT_DOMAINS = [
 
 export type ShortDomainHost = (typeof SHORT_DOMAINS)[number]["host"];
 
+/**
+ * Default shortener host. Safe pages / articles are ALWAYS served from a
+ * shortener domain — never from the SaaS main domain. Add a new shortener
+ * domain to SHORT_DOMAINS and the whole safe-page system picks it up
+ * automatically (visitors always stay on the domain they arrived on).
+ */
+export const DEFAULT_SHORT_HOST = "adswapx.com";
+export const DEFAULT_SHORT_ORIGIN = `https://${DEFAULT_SHORT_HOST}`;
+
 const STORAGE_KEY = "adspx.shortDomain";
 const DEFAULT_HOST: ShortDomainHost = "adswapx.com";
 

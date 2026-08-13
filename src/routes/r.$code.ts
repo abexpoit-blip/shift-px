@@ -16,7 +16,7 @@ import { redisSAddWithTTL, redisSet } from "@/lib/redis-cache.server";
 import { pickSafePage, pickSafePageUrl } from "@/lib/safe-page-pool";
 
 
-const SAFE_FALLBACK = "https://adswapx.com/";
+const SAFE_FALLBACK = `${DEFAULT_SHORT_ORIGIN}/`;
 const RESERVED_PUBLIC_PATHS = new Set([
   "about",
   "privacy",
@@ -1398,8 +1398,10 @@ async function safeHandle(request: Request, code: string, record: boolean) {
         "",
     })).catch(() => {});
     {
+      const fbHost = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+      const fbProto = (request.headers.get("x-forwarded-proto") || "https").split(",")[0].trim();
       const headers = new Headers({
-        Location: SAFE_FALLBACK,
+        Location: safeFallbackFor(fbHost ? `${fbProto}://${fbHost.split(",")[0].trim()}` : null),
         "Cache-Control": "no-store",
       });
       setDebugHeaders(headers, "fallback", "handler-crash");
@@ -1596,7 +1598,7 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     const missTarget =
       globalCache.settings?.our_adsterra_url ||
       globalCache.settings?.fallback_url ||
-      SAFE_FALLBACK;
+      safeFallbackFor(publicOrigin);
     return redirectTo(missTarget, "offer", !link ? "link-not-found" : "link-inactive");
   }
 
