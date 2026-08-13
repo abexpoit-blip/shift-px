@@ -1,0 +1,1 @@
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS adsterra_direct_link TEXT;

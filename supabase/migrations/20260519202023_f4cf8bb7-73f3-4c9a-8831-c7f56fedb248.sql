@@ -1,0 +1,10 @@
+CREATE INDEX IF NOT EXISTS idx_clicks_created_at ON public.clicks (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_clicks_link_id_created_at ON public.clicks (link_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_clicks_is_bot_created_at ON public.clicks (is_bot, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_clicks_country ON public.clicks (country) WHERE country IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_clicks_referer_host ON public.clicks (referer_host) WHERE referer_host IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_upgrade_requests_status_created_at ON public.upgrade_requests (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_profiles_created_at ON public.profiles (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_profiles_is_banned ON public.profiles (is_banned) WHERE is_banned = true;
+CREATE INDEX IF NOT EXISTS idx_links_status ON public.links (status);
+CREATE INDEX IF NOT EXISTS idx_links_user_id_created_at ON public.links (user_id, created_at DESC);
