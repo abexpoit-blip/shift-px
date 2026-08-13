@@ -9,7 +9,7 @@ import { getRequestOrigin } from "@/lib/request-origin.functions";
 export const Route = createFileRoute("/contact")({
   loader: async () => await getRequestOrigin(),
   head: ({ loaderData }) => {
-    const origin = loaderData?.origin ?? "https://{brand.host}";
+    const origin = loaderData?.origin ?? "https://adswapx.com";
     const brand = brandForOrigin(origin);
     const { meta, links } = buildOg({
       origin,

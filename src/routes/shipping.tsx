@@ -1,18 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useBrand } from "@/lib/brand-live";
 import { BreezyLayout } from "@/components/breezy/BreezyLayout";
+import { brandForOrigin } from "@/lib/brand-registry";
+import { getRequestOrigin } from "@/lib/request-origin.functions";
 import { SITE } from "@/lib/breezy-data";
 
 export const Route = createFileRoute("/shipping")({
-  head: () => ({
+  loader: async () => await getRequestOrigin(),
+  head: ({ loaderData }) => {
+    const origin = loaderData?.origin ?? "https://adswapx.com";
+    const brand = brandForOrigin(origin);
+    return {
     meta: [
       { title: `Shipping Policy — ${brand.name}` },
       { name: "description", content: `Shipping rates, delivery times, and international info for ${brand.name} orders. Free shipping over $50.` },
       { property: "og:title", content: `Shipping Policy — ${brand.name}` },
-      { property: "og:url", content: "/shipping" },
+      { property: "og:url", content: `${origin}/shipping` },
     ],
-    links: [{ rel: "canonical", href: "/shipping" }],
-  }),
+    links: [{ rel: "canonical", href: `${origin}/shipping` }],
+    };
+  },
   component: ShippingPage,
 });
 

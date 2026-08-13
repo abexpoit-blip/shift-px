@@ -3,12 +3,14 @@ import { useBrand } from "@/lib/brand-live";
 import { BreezyLayout } from "@/components/breezy/BreezyLayout";
 import { SITE } from "@/lib/breezy-data";
 import { buildOg } from "@/lib/og-meta";
+import { brandForOrigin } from "@/lib/brand-registry";
 import { getRequestOrigin } from "@/lib/request-origin.functions";
 
 export const Route = createFileRoute("/privacy")({
   loader: async () => await getRequestOrigin(),
   head: ({ loaderData }) => {
-    const origin = loaderData?.origin ?? "https://{brand.host}";
+    const origin = loaderData?.origin ?? "https://adswapx.com";
+    const brand = brandForOrigin(origin);
     const { meta, links } = buildOg({
       origin,
       path: "/privacy",

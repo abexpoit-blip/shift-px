@@ -1,18 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useBrand } from "@/lib/brand-live";
 import { BreezyLayout } from "@/components/breezy/BreezyLayout";
+import { brandForOrigin } from "@/lib/brand-registry";
+import { getRequestOrigin } from "@/lib/request-origin.functions";
 import { SITE } from "@/lib/breezy-data";
 
 export const Route = createFileRoute("/returns")({
-  head: () => ({
+  loader: async () => await getRequestOrigin(),
+  head: ({ loaderData }) => {
+    const origin = loaderData?.origin ?? "https://adswapx.com";
+    const brand = brandForOrigin(origin);
+    return {
     meta: [
       { title: `Returns & Refunds — ${brand.name}` },
       { name: "description", content: `30-day no-questions returns on every ${brand.name} product. Here's how it works.` },
       { property: "og:title", content: `Returns & Refunds — ${brand.name}` },
-      { property: "og:url", content: "/returns" },
+      { property: "og:url", content: `${origin}/returns` },
     ],
-    links: [{ rel: "canonical", href: "/returns" }],
-  }),
+    links: [{ rel: "canonical", href: `${origin}/returns` }],
+    };
+  },
   component: ReturnsPage,
 });
 
