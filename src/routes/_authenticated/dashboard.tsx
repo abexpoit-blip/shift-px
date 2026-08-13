@@ -501,44 +501,29 @@ function DashboardPage() {
             </Panel>
           </div>
 
-          {/* RIGHT COLUMN: account quota + region */}
+          {/* RIGHT COLUMN: payout progress + region */}
           <div className="space-y-5">
-            {/* Account Quota */}
+            {/* Payout progress — $1 per 50,000 verified human visits */}
             <Panel className="p-6">
-              <h4 className="text-base font-bold text-foreground" style={display}>Account Quota</h4>
+              <h4 className="text-base font-bold text-foreground" style={display}>Payout progress</h4>
+              <p className="text-xs text-muted-foreground mt-1">$1 for every 50,000 verified human visits.</p>
               <div className="mt-5 flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Plan</span>
-                <PlanBadge slug={(profile as any)?.plan_slug} size="lg" />
+                <span className="text-muted-foreground">Verified visits</span>
+                <span className="font-bold text-foreground tabular-nums">{fmtCompact(totalClicks)}</span>
               </div>
-              {(() => {
-                const exp = (profile as any)?.plan_expires_at as string | null | undefined;
-                if (!exp) {
-                  const slug = (profile as any)?.plan_slug;
-                  if (slug === "lifetime" || slug === "unlimited") {
-                    return <div className="mt-2 flex items-center justify-between text-xs"><span className="text-muted-foreground">Expires</span><span className="font-bold text-emerald-700">Never</span></div>;
-                  }
-                  return null;
-                }
-                const expDate = new Date(exp);
-                const daysLeft = Math.ceil((expDate.getTime() - Date.now()) / 86400000);
-                const expired = daysLeft <= 0;
-                return (
-                  <div className="mt-2 flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{expired ? "Expired" : "Expires in"}</span>
-                    <span className={`font-bold tabular-nums ${expired ? "text-red-600" : daysLeft <= 3 ? "text-amber-600" : "text-foreground"}`}>
-                      {expired ? expDate.toLocaleDateString() : `${daysLeft} day${daysLeft === 1 ? "" : "s"}`}
-                    </span>
-                  </div>
-                );
-              })()}
+              <div className="mt-2 flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Estimated earnings</span>
+                <span className="font-bold text-foreground tabular-nums">${payoutEarned.toFixed(2)}</span>
+              </div>
               <div className="mt-3 flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Redirects used</span>
-                <span className="font-bold text-foreground tabular-nums">{quotaLabel}</span>
+                <span className="text-muted-foreground">Next $1 milestone</span>
+                <span className="font-bold text-foreground tabular-nums">{fmtCompact(payoutRemaining)} visits left</span>
               </div>
               <div className="mt-2 h-2 bg-border rounded-full overflow-hidden">
-                <div className="h-full bg-primary-gradient shadow-glow" style={{ width: `${quotaPct}%` }} />
+                <div className="h-full bg-primary-gradient shadow-glow" style={{ width: `${payoutPct}%` }} />
               </div>
             </Panel>
+
 
             {/* Traffic by Region + Mobile Gauge */}
             <Panel className="p-6">
