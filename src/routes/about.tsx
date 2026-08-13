@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BreezyLayout } from "@/components/breezy/BreezyLayout";
 import { SITE } from "@/lib/breezy-data";
+import { useBrand } from "@/lib/brand-live";
 import { buildOg, absoluteUrl } from "@/lib/og-meta";
 import { getRequestOrigin } from "@/lib/request-origin.functions";
 
@@ -45,6 +46,7 @@ export const Route = createFileRoute("/about")({
 });
 
 function AboutPage() {
+  const brand = useBrand();
   return (
     <BreezyLayout>
       <section className="max-w-3xl mx-auto px-6 py-20">
@@ -56,7 +58,7 @@ function AboutPage() {
         </h1>
         <div className="prose prose-lg max-w-none text-[#5A554C] leading-relaxed space-y-5">
           <p>
-            BreezySocial started in {SITE.founded} when our founder, Mira Ostrowski, couldn't find a single sleep headphone that worked for a side sleeper. After a year of prototypes in her San Francisco apartment, the first BreezySocial product shipped to 312 backers — and the company was born.
+            {brand.name} started in {SITE.founded} when our founder, Mira Ostrowski, couldn't find a single sleep headphone that worked for a side sleeper. After a year of prototypes in her San Francisco apartment, the first {brand.name} product shipped to 312 backers — and the company was born.
           </p>
           <p>
             Today we're a team of 14 — designers, sleep researchers, hardware engineers, and editors — operating out of a small studio in the Mission District. We design and ship eight core products, each one obsessively iterated until it solves a real, daily problem. We don't do "smart" for its own sake. Every feature has to earn its place.
@@ -78,10 +80,10 @@ function AboutPage() {
             Get in touch
           </h2>
           <p>
-            We love hearing from customers — product questions, feedback, even tough criticism. Email us at <a href={`mailto:${SITE.email}`} className="text-[#5A7A55] underline">{SITE.email}</a> or reach out through our <a href="/contact" className="text-[#5A7A55] underline">contact page</a>.
+            We love hearing from customers — product questions, feedback, even tough criticism. Email us at <a href={`mailto:${brand.email}`} className="text-[#5A7A55] underline">{brand.email}</a> or reach out through our <a href="/contact" className="text-[#5A7A55] underline">contact page</a>.
           </p>
           <p className="text-sm text-[#9A9488] pt-8 border-t border-[#E8E2D5]">
-            BreezySocial Inc. · {SITE.address} · Founded {SITE.founded}
+            {brand.name} Inc. · {SITE.address} · Founded {SITE.founded}
           </p>
         </div>
       </section>
