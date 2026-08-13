@@ -9,6 +9,7 @@ import { useCart } from "@/lib/cart-context";
 import { buildOg, absoluteUrl } from "@/lib/og-meta";
 import { getRequestOrigin } from "@/lib/request-origin.functions";
 import { useRebrand } from "@/lib/brand-live";
+import { brandForOrigin, rebrand } from "@/lib/brand-registry";
 
 export const Route = createFileRoute("/shop/$slug")({
   loader: async ({ params }) => {
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/shop/$slug")({
   head: ({ loaderData, params }) => {
     const p = loaderData?.product;
     const origin = loaderData?.origin ?? "https://adswapx.com";
+    const b = brandForOrigin(origin);
     if (!p) return { meta: [{ title: "Product not found" }] };
     const imgPath = PRODUCT_IMAGES[p.slug];
     const imgUrl = imgPath ? absoluteUrl(origin, imgPath) : undefined;
@@ -35,7 +37,7 @@ export const Route = createFileRoute("/shop/$slug")({
         price: p.price,
         currency: "USD",
         availability: p.inStock ? "in stock" : "out of stock",
-        brand: SITE.name,
+        brand: b.name,
         condition: "new",
       },
     });
@@ -49,9 +51,9 @@ export const Route = createFileRoute("/shop/$slug")({
             "@context": "https://schema.org",
             "@type": "Product",
             name: p.name,
-            description: p.longDesc,
+            description: rebrand(p.longDesc, origin),
             image: imgUrl,
-            brand: { "@type": "Brand", name: SITE.name },
+            brand: { "@type": "Brand", name: b.name },
             sku: p.slug,
             offers: {
               "@type": "Offer",
