@@ -13,7 +13,7 @@ import {
 import { getDashboardData, refreshDashboardData, createLink, deleteLink, toggleLink } from "@/lib/links.functions";
 
 import { getPrimaryShortenerDomain } from "@/lib/shortener-domains.functions";
-import { isFlaggedShortDomain } from "@/lib/short-domains";
+import { DEFAULT_SHORT_HOST, DEFAULT_SHORT_ORIGIN, isFlaggedShortDomain } from "@/lib/short-domains";
 import { getClickResetNotice, dismissClickResetNotice } from "@/lib/click-reset.functions";
 import { BroadcastBell } from "@/components/broadcast-bell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -138,7 +138,7 @@ function DashboardPage() {
   const [selectedDomain, setSelectedDomain] = useState<string>("");
   const rawPrimary = primaryQ.data?.domain ?? "mefok.com";
   // Never hand out a Safe-Browsing-flagged domain, even if the DB still lists it.
-  const primaryDomain = isFlaggedShortDomain(rawPrimary) || rawPrimary === "adspx.com" ? "mefok.com" : rawPrimary;
+  const primaryDomain = isFlaggedShortDomain(rawPrimary) || rawPrimary === "adspx.com" ? DEFAULT_SHORT_HOST : rawPrimary;
   const customDomains = (dashQ.data?.customDomains ?? []).filter((d: string) => !isFlaggedShortDomain(d));
   // Built-in shortener domains always available + any user custom domains.
   const BUILTIN_DOMAINS = ["mefok.com", "skypq.com", "breezysocial.com"].filter(
@@ -343,7 +343,7 @@ function DashboardPage() {
                       type="url"
                       value={safe}
                       onChange={(e) => setSafe(e.target.value)}
-                      placeholder="https://adspx.com/"
+                      placeholder={`${DEFAULT_SHORT_ORIGIN}/`}
                       className={fieldCls}
                     />
                     <p className="text-[11px] text-[#A38D7D] mt-1">

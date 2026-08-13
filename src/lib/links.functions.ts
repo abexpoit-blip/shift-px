@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { DEFAULT_SHORT_ORIGIN } from "@/lib/short-domains";
 import { z } from "zod";
 import { getRequestAuth } from "@/lib/request-auth.server";
 
@@ -26,7 +27,7 @@ function normalizeLink(row: LinkRow) {
   return {
     ...row,
     adsterra_url: row.adsterra_url ?? row.adsterra_direct_link ?? row.destination_url ?? "",
-    safe_url: row.safe_url ?? (row.adsterra_direct_link ? row.destination_url : "https://adspx.com/") ?? "https://adspx.com/",
+    safe_url: row.safe_url ?? (row.adsterra_direct_link ? row.destination_url : DEFAULT_SHORT_ORIGIN + "/") ?? DEFAULT_SHORT_ORIGIN + "/",
     is_active: row.is_active ?? row.status === "active",
     blocked_countries: Array.isArray(row.blocked_countries) ? row.blocked_countries : [],
   };
@@ -267,7 +268,7 @@ export const createLink = createServerFn({ method: "POST" })
     }
     if (isReservedShortCode(code)) throw new Error("Reserved short code generated. Please try again.");
 
-    const safeUrlToStore = data.safe_url ?? "https://adspx.com/";
+    const safeUrlToStore = data.safe_url ?? DEFAULT_SHORT_ORIGIN + "/";
 
     const { data: linkData, error } = await context.supabase
       .from("links")

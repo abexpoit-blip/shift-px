@@ -10,13 +10,15 @@
  *  - Structured pick log returned to caller (for redirect audit log)
  */
 import { fetchIpv4 } from "@/lib/fetch-ipv4";
+import { isAdspxSaasHost } from "@/lib/site-hosts";
+import { DEFAULT_SHORT_ORIGIN } from "@/lib/short-domains";
 
 /**
  * Default content host used when the caller can't supply the serving origin.
  * MUST never be the SaaS host (adspx.com) — an ad reviewer following a safe
  * redirect must land on neutral content, not on the link-shortener product.
  */
-export const SAFE_CONTENT_ORIGIN = "https://adswapx.com";
+export const SAFE_CONTENT_ORIGIN = DEFAULT_SHORT_ORIGIN;
 
 /**
  * Real, indexable pages that exist in this app (see src/routes/*). Stored as
@@ -38,12 +40,32 @@ export const SAFE_PAGE_PATHS: readonly string[] = [
   "/about",
 ] as const;
 
-function normOrigin(origin?: string | null): string {
-  const o = (origin || SAFE_CONTENT_ORIGIN).trim().replace(/\/+$/, "");
-  // Never bounce safe traffic onto the SaaS host.
-  if (/^https?:\/\/(www\.)?adspx\.com$/i.test(o)) return SAFE_CONTENT_ORIGIN;
-  if (!/^https?:\/\//i.test(o)) return SAFE_CONTENT_ORIGIN;
-  return o;
+/**
+ * Resolve the origin a safe page must be served from.
+ *
+ * Rule: stay on whatever shortener domain the visitor already hit, so adding
+ * a brand new shortener domain needs ZERO code changes. Only when the caller
+ * gives us the SaaS host (or nothing usable) do we fall back to the default
+ * shortener origin — the SaaS main domain must never appear in an ad-review
+ * path, but it is never blocked either (it keeps serving the product).
+ */
+export function normOrigin(origin?: string | null): string {
+  const raw = (origin || "").trim().replace(/\/+$/, "");
+  if (!/^https?:\/\//i.test(raw)) return SAFE_CONTENT_ORIGIN;
+  let host = "";
+  try {
+    host = new URL(raw).hostname;
+  } catch {
+    return SAFE_CONTENT_ORIGIN;
+  }
+  // SaaS host, localhost, raw IP, preview host → use the default shortener.
+  if (isAdspxSaasHost(host)) return SAFE_CONTENT_ORIGIN;
+  return raw;
+}
+
+/** Absolute safe-page fallback URL for the origin the visitor is on. */
+export function safeFallbackFor(origin?: string | null): string {
+  return `${normOrigin(origin)}/`;
 }
 
 /** Absolute pool for a given serving origin. */
