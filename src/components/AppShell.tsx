@@ -63,7 +63,7 @@ function BalanceWidget({ balance }: { balance: number }) {
           transition-all duration-150"
       >
         <Wallet className="h-4 w-4 drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]" />
-      </Link>
+      </a>
     );
   }
 
@@ -82,7 +82,7 @@ function BalanceWidget({ balance }: { balance: number }) {
         className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-md bg-primary text-primary-foreground text-xs font-medium py-1.5 hover:opacity-90 transition"
       >
         Withdraw <ArrowRight className="h-3 w-3" />
-      </Link>
+      </a>
     </div>
   );
 }

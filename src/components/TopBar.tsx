@@ -259,7 +259,7 @@ export function TopBar({
                   className="block text-center text-xs text-primary hover:underline py-1"
                 >
                   View all messages
-                </Link>
+                </a>
               </div>
             </PopoverContent>
           </Popover>
@@ -300,18 +300,18 @@ export function TopBar({
               <DropdownMenuItem asChild>
                 <a href="/withdraw">
                   <Wallet className="h-4 w-4 mr-2" /> Withdraw
-                </Link>
+                </a>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <a href="/settings">
                   <Settings className="h-4 w-4 mr-2" /> Settings
-                </Link>
+                </a>
               </DropdownMenuItem>
               {isAdmin && (
                 <DropdownMenuItem asChild>
                   <a href="/admin">
                     <Shield className="h-4 w-4 mr-2" /> Admin Panel
-                  </Link>
+                  </a>
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
