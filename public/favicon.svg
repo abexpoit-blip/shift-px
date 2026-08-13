@@ -1,10 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FF7E5F"/>
-      <stop offset="1" stop-color="#FEB47B"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#ec4899"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#g)"/>
-  <path d="M44 22c-2-3-6-5-11-5-7 0-12 4-12 10 0 5 4 7 11 9 6 2 8 3 8 6 0 3-3 5-8 5-4 0-7-1-10-4l-3 5c4 4 8 5 13 5 8 0 13-4 13-11 0-6-4-8-12-10-5-1-7-3-7-5 0-3 3-5 7-5 3 0 6 1 8 4z" fill="#fff"/>
+  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
+  <!-- P -->
+  <path d="M14 46 V18 h11 a8 8 0 0 1 0 16 h-6 v12 z M19 22 v8 h6 a4 4 0 0 0 0-8 z" fill="#fff"/>
+  <!-- x -->
+  <path d="M32 28 h4.5 l3.5 5 l3.5-5 h4.5 l-5.7 8 l5.9 8 h-4.6 l-3.6-5.2 l-3.6 5.2 h-4.6 l5.9-8 z" fill="#fff"/>
+  <!-- pixel accents -->
+  <rect x="46" y="14" width="4" height="4" rx="1" fill="#fff" fill-opacity="0.9"/>
+  <rect x="52" y="18" width="2.5" height="2.5" rx="0.6" fill="#fff" fill-opacity="0.7"/>
 </svg>
