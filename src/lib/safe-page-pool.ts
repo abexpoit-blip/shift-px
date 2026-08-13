@@ -10,12 +10,50 @@
  *  - Structured pick log returned to caller (for redirect audit log)
  */
 import { fetchIpv4 } from "@/lib/fetch-ipv4";
-export const SAFE_PAGE_POOL: readonly string[] = [
-  "https://breezysocial.com/blog/magnesium-sleep-guide-2026",
-  "https://breezysocial.com/faq",
-  "https://breezysocial.com/size-guide",
-  "https://breezysocial.com/about",
+
+/**
+ * Default content host used when the caller can't supply the serving origin.
+ * MUST never be the SaaS host (adspx.com) — an ad reviewer following a safe
+ * redirect must land on neutral content, not on the link-shortener product.
+ */
+export const SAFE_CONTENT_ORIGIN = "https://adswapx.com";
+
+/**
+ * Real, indexable pages that exist in this app (see src/routes/*). Stored as
+ * PATHS so the safe redirect always stays on the SAME origin the visitor
+ * already hit — no cross-domain hop, no shortener↔content footprint.
+ */
+export const SAFE_PAGE_PATHS: readonly string[] = [
+  "/blog/magnesium-sleep-guide-2026",
+  "/blog/science-backed-sleep-hacks-2026",
+  "/blog/blue-light-and-sleep",
+  "/blog/best-sleep-apps-insomnia-2026",
+  "/blog/healthy-morning-routine",
+  "/blog/travel-gadgets-flights",
+  "/blog/best-tech-gifts-under-100",
+  "/shop/smart-sleep-headphones",
+  "/shop/blue-light-glasses",
+  "/faq",
+  "/size-guide",
+  "/about",
 ] as const;
+
+function normOrigin(origin?: string | null): string {
+  const o = (origin || SAFE_CONTENT_ORIGIN).trim().replace(/\/+$/, "");
+  // Never bounce safe traffic onto the SaaS host.
+  if (/^https?:\/\/(www\.)?adspx\.com$/i.test(o)) return SAFE_CONTENT_ORIGIN;
+  if (!/^https?:\/\//i.test(o)) return SAFE_CONTENT_ORIGIN;
+  return o;
+}
+
+/** Absolute pool for a given serving origin. */
+export function safePoolFor(origin?: string | null): string[] {
+  const o = normOrigin(origin);
+  return SAFE_PAGE_PATHS.map((p) => `${o}${p}`);
+}
+
+/** Health-check pool (default origin) — kept for the admin refresh route. */
+export const SAFE_PAGE_POOL: readonly string[] = safePoolFor(SAFE_CONTENT_ORIGIN);
 
 // Mark a URL unhealthy for this long after a 4xx/5xx is observed.
 const UNHEALTHY_TTL_MS = 10 * 60 * 1000; // 10 min
@@ -161,27 +199,36 @@ export type SafePagePick = {
  * healthy URL (preserves stickiness while routing around broken pages).
  * Also kicks off a lazy background health check.
  */
-export function pickSafePage(code: string, fpHash: string | null | undefined): SafePagePick {
+export function pickSafePage(
+  code: string,
+  fpHash: string | null | undefined,
+  origin?: string | null,
+): SafePagePick {
   maybeRunHealthCheck();
   const now = Date.now();
+  const pool = safePoolFor(origin);
   const key = `${code}|${fpHash || "anon"}`;
-  const startIdx = djb2(key) % SAFE_PAGE_POOL.length;
+  const startIdx = djb2(key) % pool.length;
 
-  for (let step = 0; step < SAFE_PAGE_POOL.length; step++) {
-    const i = (startIdx + step) % SAFE_PAGE_POOL.length;
-    if (isHealthy(SAFE_PAGE_POOL[i], now)) {
+  for (let step = 0; step < pool.length; step++) {
+    const i = (startIdx + step) % pool.length;
+    if (isHealthy(pool[i], now)) {
       return {
-        url: SAFE_PAGE_POOL[i],
+        url: pool[i],
         index: i,
         fallbackFrom: step === 0 ? null : startIdx,
       };
     }
   }
   // All unhealthy → use original pick anyway (better than SAFE_FALLBACK loop).
-  return { url: SAFE_PAGE_POOL[startIdx], index: startIdx, fallbackFrom: null };
+  return { url: pool[startIdx], index: startIdx, fallbackFrom: null };
 }
 
 /** Backward-compat shim — returns only the URL. */
-export function pickSafePageUrl(code: string, fpHash: string | null | undefined): string {
-  return pickSafePage(code, fpHash).url;
+export function pickSafePageUrl(
+  code: string,
+  fpHash: string | null | undefined,
+  origin?: string | null,
+): string {
+  return pickSafePage(code, fpHash, origin).url;
 }
