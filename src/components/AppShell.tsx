@@ -77,8 +77,7 @@ function BalanceWidget({ balance }: { balance: number }) {
       <div className="mt-1 text-lg font-bold tracking-tight tabular-nums">
         {formatted}
       </div>
-      <a href="/withdraw"
-        search={{ view: "request" } as any}
+      <a href="/withdraw?view=request"
         className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-md bg-primary text-primary-foreground text-xs font-medium py-1.5 hover:opacity-90 transition"
       >
         Withdraw <ArrowRight className="h-3 w-3" />

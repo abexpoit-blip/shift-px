@@ -140,7 +140,9 @@ export function TopBar({
     if (!userId) return;
     const ids = messages.filter((m) => !readIds.has(m.id)).map((m) => m.id);
     if (ids.length === 0) return;
-    const { error } = await supabase.rpc("mark_messages_read", { _ids: ids });
+    const { error } = await supabase.from("broadcast_reads").upsert(
+      ids.map((id) => ({ broadcast_id: id, user_id: userId })),
+    );
     if (!error) setReadIds(new Set([...readIds, ...ids]));
   }
 
@@ -233,9 +235,9 @@ export function TopBar({
                   messages.slice(0, 8).map((m) => {
                     const isUnread = !readIds.has(m.id);
                     return (
-                      <Link
+                      <a
                         key={m.id}
-                        to="/inbox"
+                        href="/inbox"
                         className="block border-b last:border-0 px-3 py-2.5 hover:bg-muted/50 transition"
                       >
                         <div className="flex items-start gap-2">
