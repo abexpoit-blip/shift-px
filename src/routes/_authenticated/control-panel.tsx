@@ -30,7 +30,7 @@ import {
   adminListCountryTiers, adminUpsertCountryTier, adminDeleteCountryTier,
   adminUserDetail, adminImpersonate, adminFixUnlimitedMonthly,
   adminListErrors, adminErrorStats, adminResolveError, adminDeleteError, adminClearResolvedErrors,
-  adminGetInactiveUsers, adminRunMaintenance, adminDeleteUsers, adminTrafficSnapshot,
+  adminGetInactiveUsers, adminGetDormantUsers, adminRunMaintenance, adminDeleteUsers, adminTrafficSnapshot,
   adminGetPurgeStatus, adminPurgeBatch, adminResetAllClicks,
   adminTestQuotaSync, adminQuotaSyncStatus
 } from "@/lib/admin.functions";
@@ -1621,7 +1621,15 @@ function MaintenanceTab() {
   const getStatusFn = useServerFn(adminGetPurgeStatus);
   const purgeBatchFn = useServerFn(adminPurgeBatch);
 
+  const dormantFn = useServerFn(adminGetDormantUsers);
+  const [dormantDays, setDormantDays] = useState(15);
+  const [dormantSelected, setDormantSelected] = useState<Set<string>>(new Set());
+
   const q = useQuery({ queryKey: ["admin-inactive-users"], queryFn: () => inactiveFn() });
+  const dormantQ = useQuery({
+    queryKey: ["admin-dormant-users", dormantDays],
+    queryFn: () => dormantFn({ data: { days: dormantDays } }),
+  });
   const statusQ = useQuery({ queryKey: ["admin-purge-status"], queryFn: () => getStatusFn() });
 
   const [purging, setPurging] = useState(false);
@@ -1672,8 +1680,9 @@ function MaintenanceTab() {
   const delUsers = useMutation({
     mutationFn: (ids: string[]) => delUsersFn({ data: { ids } }),
     onSuccess: () => {
-      toast.success("Inactive users deleted.");
+      toast.success("Selected accounts deleted.");
       qc.invalidateQueries({ queryKey: ["admin-inactive-users"] });
+      qc.invalidateQueries({ queryKey: ["admin-dormant-users"] });
     },
     onError: (e: Error) => toast.error(e.message)
   });
@@ -1690,7 +1699,7 @@ function MaintenanceTab() {
             <div className="flex-1">
               <h4 className="font-bold text-foreground">Purge Raw Click Logs</h4>
               <p className="text-sm text-foreground mt-1">
-                Deletes all raw per-click records older than 7 days. Aggregate stats and daily charts are preserved.
+                Archives lifetime totals first, then deletes raw per-click records older than 7 days. Totals, earnings and daily charts are kept forever.
               </p>
               <p className="text-xs text-foreground/80 mt-1">
                 Eligible for purge: <b>{(statusQ.data?.oldClicks ?? 0).toLocaleString()}</b> clicks
@@ -1736,51 +1745,103 @@ function MaintenanceTab() {
 
 
 
-      <Panel icon={Users} title="Inactive Users" subtitle="Users who joined >7 days ago and never used the service">
-        <div className="mb-4 flex items-center justify-between">
-          <p className="text-sm text-[var(--muted-foreground)]">Found {inactiveUsers.length} inactive users.</p>
-          {inactiveUsers.length > 0 && (
-            <Button 
-              variant="destructive" 
+      <Panel
+        icon={Users}
+        title="Dormant Users"
+        subtitle="Filter accounts with no login for N days — delete them with all links & click data"
+      >
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <label className="text-sm text-[var(--muted-foreground)]">No login for</label>
+          <select
+            value={dormantDays}
+            onChange={(e) => { setDormantDays(Number(e.target.value)); setDormantSelected(new Set()); }}
+            className="rounded-lg border border-[var(--border)] bg-card px-3 py-1.5 text-sm"
+          >
+            {[15, 30, 45, 60, 90, 180].map((d) => (
+              <option key={d} value={d}>{d} days</option>
+            ))}
+          </select>
+          <span className="text-sm text-[var(--muted-foreground)]">
+            {(dormantQ.data ?? []).length} account(s) matched
+          </span>
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => {
-                if (confirm(`Delete ${inactiveUsers.length} users? This cannot be undone.`)) {
-                  delUsers.mutate(inactiveUsers.map((u: any) => u.id));
+                const all = (dormantQ.data ?? []).map((u: any) => u.id);
+                setDormantSelected((prev) => (prev.size === all.length ? new Set() : new Set(all)));
+              }}
+            >
+              Select all
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={dormantSelected.size === 0 || delUsers.isPending}
+              onClick={() => {
+                if (confirm(`Delete ${dormantSelected.size} dormant account(s) with all links and click data? This cannot be undone.`)) {
+                  delUsers.mutate([...dormantSelected]);
+                  setDormantSelected(new Set());
                 }
               }}
-              disabled={delUsers.isPending}
             >
-              <Trash2 className="w-4 h-4 mr-1.5" /> Delete All Inactive
+              <Trash2 className="w-4 h-4 mr-1.5" /> Delete selected
             </Button>
-          )}
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-card/70">
           <table className="w-full text-sm">
             <thead className="bg-[var(--muted)] text-[var(--muted-foreground)]">
               <tr>
+                <th className="px-4 py-3 w-10"></th>
                 <th className="text-left px-4 py-3">Email</th>
                 <th className="text-left px-4 py-3">Joined</th>
-                <th className="text-left px-4 py-3">Last Login</th>
-                <th className="text-right px-4 py-3">Clicks</th>
+                <th className="text-left px-4 py-3">Last login</th>
+                <th className="text-right px-4 py-3">Idle days</th>
+                <th className="text-right px-4 py-3">Links</th>
+                <th className="text-right px-4 py-3">Lifetime clicks</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
-              {inactiveUsers.length === 0 ? (
-                <tr><td colSpan={4} className="p-8 text-center text-[var(--muted-foreground)]">No inactive users found.</td></tr>
+              {(dormantQ.data ?? []).length === 0 ? (
+                <tr><td colSpan={7} className="p-8 text-center text-[var(--muted-foreground)]">No dormant accounts for this filter.</td></tr>
               ) : (
-                inactiveUsers.map((u: any) => (
+                (dormantQ.data ?? []).map((u: any) => (
                   <tr key={u.id} className="hover:bg-[var(--muted)]">
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${u.email}`}
+                        checked={dormantSelected.has(u.id)}
+                        onChange={() => setDormantSelected((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(u.id)) next.delete(u.id); else next.add(u.id);
+                          return next;
+                        })}
+                        className="w-4 h-4 accent-primary cursor-pointer"
+                      />
+                    </td>
                     <td className="px-4 py-3 font-medium">{u.email}</td>
                     <td className="px-4 py-3 text-xs">{new Date(u.created_at).toLocaleDateString()}</td>
                     <td className="px-4 py-3 text-xs">{u.last_login_at ? new Date(u.last_login_at).toLocaleDateString() : "Never"}</td>
-                    <td className="px-4 py-3 text-right font-mono text-xs">{u.clicks_used}</td>
+                    <td className="px-4 py-3 text-right font-mono text-xs">{u.days_inactive}</td>
+                    <td className="px-4 py-3 text-right font-mono text-xs">{u.links_count}</td>
+                    <td className="px-4 py-3 text-right font-mono text-xs">{Number(u.total_clicks).toLocaleString()}</td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
+        <p className="mt-3 text-xs text-[var(--muted-foreground)]">
+          Nothing is deleted automatically. Data is only removed when you delete an account here.
+        </p>
+      </Panel>
+
+      <Panel icon={Users} title="Never-activated Users" subtitle="Signed up >7 days ago and never used the service">
+        <p className="text-sm text-[var(--muted-foreground)]">Found {inactiveUsers.length} such accounts.</p>
       </Panel>
     </div>
   );

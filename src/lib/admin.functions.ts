@@ -854,6 +854,26 @@ export const adminGetInactiveUsers = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+export const adminGetDormantUsers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ days: z.number().int().min(1).max(365).default(15) }).parse)
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+    const { data: rows, error } = await supabaseAdmin.rpc("admin_get_dormant_users" as never, {
+      _days: data.days,
+    } as never);
+    if (error) throw new Error(error.message);
+    return (rows ?? []) as Array<{
+      id: string;
+      email: string;
+      created_at: string;
+      last_login_at: string | null;
+      days_inactive: number;
+      links_count: number;
+      total_clicks: number;
+    }>;
+  });
+
 export const adminRunMaintenance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

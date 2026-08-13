@@ -1,15 +1,16 @@
-// 8 fork-mode instances behind nginx least_conn (ports 4000..4007)
+// 12 fork-mode instances behind nginx least_conn (ports 4000..4011)
+// Tuned for a 12 vCPU / 48 GB VPS: one worker per core, 3 GB ceiling each.
 // Env is loaded from /opt/adspx-app-new/.env via --env-file on the node interpreter.
 module.exports = {
-  apps: Array.from({ length: 8 }, (_, i) => ({
+  apps: Array.from({ length: 12 }, (_, i) => ({
     name: `adspx-${i}`,
     cwd: "/opt/adspx-app-new",
     script: ".output/server/index.mjs",
     interpreter: "node",
-    interpreter_args: "--env-file=/opt/adspx-app-new/.env --import=/opt/adspx-app-new/scripts/uri-guard.mjs",
+    interpreter_args: "--max-old-space-size=2560 --env-file=/opt/adspx-app-new/.env --import=/opt/adspx-app-new/scripts/uri-guard.mjs",
     instances: 1,
     exec_mode: "fork",
-    max_memory_restart: "1536M",
+    max_memory_restart: "3072M",
     watch: false,
     autorestart: true,
     restart_delay: 3000,
