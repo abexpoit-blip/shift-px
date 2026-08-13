@@ -8,6 +8,7 @@ import { getReviews } from "@/lib/breezy-reviews";
 import { useCart } from "@/lib/cart-context";
 import { buildOg, absoluteUrl } from "@/lib/og-meta";
 import { getRequestOrigin } from "@/lib/request-origin.functions";
+import { useRebrand } from "@/lib/brand-live";
 
 export const Route = createFileRoute("/shop/$slug")({
   loader: async ({ params }) => {
