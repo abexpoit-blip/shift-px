@@ -44,7 +44,7 @@ export function CountryShieldDialog({ open, onOpenChange, linkId, linkTitle, ini
   const [custom, setCustom] = useState("");
 
   const plan = String(planSlug ?? "free").toLowerCase();
-  const isPaid = plan === "monthly" || plan === "lifetime" || plan === "unlimited";
+  const isPaid = true;
 
   useEffect(() => {
     if (open) setSelected(initial.map((c) => c.toUpperCase()));

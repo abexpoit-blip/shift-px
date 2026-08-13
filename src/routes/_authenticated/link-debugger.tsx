@@ -80,41 +80,6 @@ function LinkDebuggerPage() {
   if (profileQ.isLoading) {
     return <div className="p-10 text-center text-[#7D6452] text-sm">Loading…</div>;
   }
-  if (!isPaid) {
-    return (
-      <div className="min-h-screen w-full" style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <Header />
-          <div className="mt-8 relative rounded-3xl border border-[#FFEDD5] bg-white/70 backdrop-blur-xl overflow-hidden shadow-xl shadow-orange-900/5">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#FF7E5F]/10 via-transparent to-[#FEB47B]/10 pointer-events-none" />
-            <div className="relative p-10 lg:p-14 text-center">
-              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-[#FF7E5F] to-[#FEB47B] flex items-center justify-center shadow-lg shadow-orange-500/30">
-                <Crown className="w-8 h-8 text-white" />
-              </div>
-              <h2 className="text-2xl lg:text-3xl font-extrabold text-[#2D1B0D]">Link Debugger is a Pro feature</h2>
-              <p className="mt-3 text-sm text-[#7D6452] max-w-xl mx-auto">
-                See exactly what Facebook, Twitter, LinkedIn, WhatsApp, and Google see when they scrape your link —
-                preview cards, meta tags, warnings, and cloaking diffs. Available on Monthly &amp; Lifetime plans.
-              </p>
-              <Link to="/upgrade"
-                className="mt-6 inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white font-bold shadow-lg shadow-orange-500/30 hover:shadow-xl transition-all">
-                <Crown className="w-4 h-4" /> Upgrade to unlock
-              </Link>
-              <div className="mt-10 grid sm:grid-cols-3 gap-3 max-w-2xl mx-auto opacity-70 pointer-events-none select-none">
-                {BOTS.slice(0, 3).map((b) => (
-                  <div key={b.key} className="p-4 rounded-2xl border border-[#FFEDD5] bg-white/60">
-                    <div className="text-2xl">{b.emoji}</div>
-                    <div className="font-bold text-sm mt-1 text-[#2D1B0D]">{b.label} preview</div>
-                    <div className="text-[11px] text-[#A38D7D]">Live render of how the card looks</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // ---------- Paid: full UI ----------
   return (
