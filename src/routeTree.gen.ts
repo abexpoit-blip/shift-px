@@ -38,6 +38,7 @@ import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AuthenticatedWithdrawRouteImport } from './routes/_authenticated/withdraw'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedStatisticsRouteImport } from './routes/_authenticated/statistics'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedNoticesRouteImport } from './routes/_authenticated/notices'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedDomainsRouteImport } from './routes/_authenticated/domains'
@@ -195,6 +196,11 @@ const AuthenticatedStatisticsRoute = AuthenticatedStatisticsRouteImport.update({
   path: '/statistics',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedNoticesRoute = AuthenticatedNoticesRouteImport.update({
   id: '/notices',
   path: '/notices',
@@ -290,6 +296,7 @@ export interface FileRoutesByFullPath {
   '/domains': typeof AuthenticatedDomainsRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/notices': typeof AuthenticatedNoticesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/statistics': typeof AuthenticatedStatisticsRoute
   '/support': typeof AuthenticatedSupportRoute
   '/withdraw': typeof AuthenticatedWithdrawRoute
@@ -331,6 +338,7 @@ export interface FileRoutesByTo {
   '/domains': typeof AuthenticatedDomainsRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/notices': typeof AuthenticatedNoticesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/statistics': typeof AuthenticatedStatisticsRoute
   '/support': typeof AuthenticatedSupportRoute
   '/withdraw': typeof AuthenticatedWithdrawRoute
@@ -375,6 +383,7 @@ export interface FileRoutesById {
   '/_authenticated/domains': typeof AuthenticatedDomainsRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/_authenticated/notices': typeof AuthenticatedNoticesRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/statistics': typeof AuthenticatedStatisticsRoute
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/withdraw': typeof AuthenticatedWithdrawRoute
@@ -419,6 +428,7 @@ export interface FileRouteTypes {
     | '/domains'
     | '/leaderboard'
     | '/notices'
+    | '/settings'
     | '/statistics'
     | '/support'
     | '/withdraw'
@@ -460,6 +470,7 @@ export interface FileRouteTypes {
     | '/domains'
     | '/leaderboard'
     | '/notices'
+    | '/settings'
     | '/statistics'
     | '/support'
     | '/withdraw'
@@ -503,6 +514,7 @@ export interface FileRouteTypes {
     | '/_authenticated/domains'
     | '/_authenticated/leaderboard'
     | '/_authenticated/notices'
+    | '/_authenticated/settings'
     | '/_authenticated/statistics'
     | '/_authenticated/support'
     | '/_authenticated/withdraw'
@@ -755,6 +767,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStatisticsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/notices': {
       id: '/_authenticated/notices'
       path: '/notices'
@@ -849,6 +868,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDomainsRoute: typeof AuthenticatedDomainsRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
   AuthenticatedNoticesRoute: typeof AuthenticatedNoticesRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStatisticsRoute: typeof AuthenticatedStatisticsRoute
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedWithdrawRoute: typeof AuthenticatedWithdrawRoute
@@ -861,6 +881,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDomainsRoute: AuthenticatedDomainsRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
   AuthenticatedNoticesRoute: AuthenticatedNoticesRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStatisticsRoute: AuthenticatedStatisticsRoute,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedWithdrawRoute: AuthenticatedWithdrawRoute,
