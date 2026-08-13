@@ -120,13 +120,6 @@ function AppSidebar({
       ],
     },
     {
-      label: "Links",
-      items: [
-        { title: "Domains", to: "/domains", icon: Link2 },
-        
-      ],
-    },
-    {
       label: "Communication",
       items: [
         { title: "Notices", to: "/notices", icon: Inbox },
