@@ -239,19 +239,6 @@ function DashboardPage() {
     <div className="min-h-screen w-full text-foreground" style={display}>
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-        {/* TOOLBAR */}
-        <div className="rounded-2xl rounded-2xl glass-card px-5 py-3 flex flex-wrap items-center gap-3">
-          <div className="flex-1 relative min-w-[200px] max-w-xl">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search links..."
-              className="w-full bg-muted/70 border border-border rounded-xl py-2.5 pl-11 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:bg-card transition-all"
-            />
-          </div>
-        </div>
-
         {/* EARNINGS SUMMARY */}
         <EarningsStrip />
 
@@ -294,212 +281,42 @@ function DashboardPage() {
               <BarSparkChart vals={chartData.vals} peakIdx={chartData.peakIdx} troughIdx={chartData.troughIdx} labels={chartData.labels} />
             </Panel>
 
-            {/* CTA BAR */}
-            <button onClick={() => setShowCreate((v) => !v)}
-              className="w-full group relative overflow-hidden rounded-2xl bg-primary-gradient p-5 flex items-center gap-4 shadow-xl shadow-glow hover:shadow-2xl hover:shadow-glow transition-all">
+            {/* MANAGE LINKS CTA */}
+            <Link
+              to="/links"
+              className="w-full group relative overflow-hidden rounded-2xl bg-primary-gradient p-5 flex items-center gap-4 shadow-xl shadow-glow hover:shadow-2xl transition-all"
+            >
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/15 blur-3xl rounded-full pointer-events-none" />
               <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shrink-0">
                 <Plus className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 text-left">
-                <h4 className="text-white font-bold text-[15px]" style={display}>Create new smart link</h4>
-                <p className="text-white/85 text-xs mt-0.5">Setup advanced redirection & cloaking</p>
+                <h4 className="text-white font-bold text-[15px]" style={display}>Create & manage smart links</h4>
+                <p className="text-white/85 text-xs mt-0.5">{links.length} link{links.length === 1 ? "" : "s"} · {activeLinks} active</p>
               </div>
               <span className="hidden sm:flex items-center gap-1.5 bg-white text-primary px-4 py-2 rounded-lg font-bold text-xs group-hover:scale-105 transition-transform">
-                Quick Start <ArrowRight className="w-3.5 h-3.5" />
+                Open Links <ArrowRight className="w-3.5 h-3.5" />
               </span>
-            </button>
+            </Link>
 
-            {/* CREATE FORM */}
-            {showCreate && (
-              <Panel className="p-6">
-                <h3 className="text-lg font-bold text-foreground mb-1" style={display}>Create Smart Link</h3>
-                <p className="text-xs text-muted-foreground mb-5">Wrap your Adsterra link with bot-shield & cloak page.</p>
-                <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Title (optional)" full>
-                    <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="My ad campaign" className={fieldCls} />
-                  </Field>
-                  <Field label="Adsterra Direct Link *">
-                    <input type="url" required value={adsterra} onChange={(e) => setAdsterra(e.target.value)} placeholder="https://..." className={fieldCls} />
-                  </Field>
-                  <Field label="Safe URL (optional)" full>
-                    <input
-                      type="url"
-                      value={safe}
-                      onChange={(e) => setSafe(e.target.value)}
-                      placeholder={`${DEFAULT_SHORT_ORIGIN}/`}
-                      className={fieldCls}
-                    />
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      FB crawler & ad reviewers automatically receive our built safe article (200 OK HTML). Real users go to your offer.
-                    </p>
-                  </Field>
-                  <div className="sm:col-span-2 flex gap-3 pt-1">
-                    <button type="submit" disabled={createMut.isPending}
-                      className="px-6 py-3 rounded-xl font-bold text-sm text-white bg-primary-gradient shadow-lg shadow-glow hover:scale-[1.02] transition-transform disabled:opacity-50">
-                      {createMut.isPending ? "Creating…" : "Create Link"}
-                    </button>
-                    <button type="button" onClick={() => setShowCreate(false)}
-                      className="px-6 py-3 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground border border-border hover:bg-muted">
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </Panel>
-            )}
-
-            {/* RECENT CAMPAIGNS / SMART LINKS */}
-            <Panel className="overflow-hidden">
-              <div className="p-5 flex justify-between items-center flex-wrap gap-3">
-                <div>
-                  <h4 className="text-lg font-bold text-foreground" style={display}>Recent Campaigns</h4>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Showing {filtered.length} of {links.length}
-                    {(dashQ.data as any)?._cachedAt && (
-                      <span className="ml-2 text-muted-foreground/70">
-                        · Updated {formatRelativeTime((dashQ.data as any)._cachedAt)}
-                      </span>
-                    )}
-                  </p>
+            {/* LIFETIME DATA NOTE */}
+            <Panel className="p-5">
+              <h4 className="text-base font-bold text-foreground" style={display}>Lifetime data is safe</h4>
+              <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                Raw per-click logs are trimmed weekly so the platform stays fast at any scale, but your
+                lifetime click totals, country stats and earnings are archived permanently — no weekly reset,
+                no lost balance.
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-muted/60 border border-border p-3">
+                  <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-bold">Lifetime visits</div>
+                  <div className="text-xl font-extrabold tabular-nums mt-1">{fmtCompact(totalClicks)}</div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button className="w-9 h-9 rounded-lg border border-border text-muted-foreground hover:text-primary hover:border-primary/40 flex items-center justify-center transition-all"><Filter className="w-4 h-4" /></button>
-                  <button
-                    onClick={() => refreshMut.mutate()}
-                    disabled={refreshMut.isPending}
-                    title="Refresh dashboard (fetch latest data)"
-                    className="w-9 h-9 rounded-lg border border-border text-muted-foreground hover:text-primary hover:border-primary/40 flex items-center justify-center transition-all disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-4 h-4 ${refreshMut.isPending ? "animate-spin" : ""}`} />
-                  </button>
+                <div className="rounded-xl bg-muted/60 border border-border p-3">
+                  <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-bold">Bots filtered</div>
+                  <div className="text-xl font-extrabold tabular-nums mt-1">{fmtCompact(botBlocked)}</div>
                 </div>
               </div>
-
-              {dashQ.isLoading && <div className="py-16 text-center text-sm text-muted-foreground">Loading links…</div>}
-              {!dashQ.isLoading && filtered.length === 0 && (
-                <div className="py-16 text-center text-sm text-muted-foreground">
-                  {search ? "No links match." : "No links yet — click Create new smart link above."}
-                </div>
-              )}
-
-              {filtered.length > 0 && (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left min-w-[480px] table-fixed">
-                    <colgroup>
-                      <col className="w-[44px]" />
-                      <col />
-                      <col className="hidden md:table-column w-[90px]" />
-                      <col className="w-[80px]" />
-                      <col className="hidden sm:table-column w-[90px]" />
-                      <col className="w-[160px]" />
-                    </colgroup>
-                    <thead className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground border-y border-border">
-                      <tr>
-                        <th className="px-3 py-3">
-                          <input
-                            type="checkbox"
-                            aria-label="Select all visible links"
-                            checked={filtered.length > 0 && filtered.every((l) => selectedIds.has(l.id))}
-                            onChange={(e) => {
-                              if (e.target.checked) setSelectedIds(new Set(filtered.map((l) => l.id)));
-                              else setSelectedIds(new Set());
-                            }}
-                            className="w-4 h-4 accent-primary cursor-pointer"
-                          />
-                        </th>
-                        <th className="px-3 sm:px-5 py-3 font-bold">Campaign</th>
-                        <th className="hidden md:table-cell px-3 py-3 font-bold">Trend</th>
-                        <th className="px-3 py-3 font-bold">Clicks</th>
-                        <th className="hidden sm:table-cell px-3 py-3 font-bold">Status</th>
-                        <th className="px-3 sm:px-5 py-3 font-bold text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {filtered.map((l) => {
-                        const shortUrl = `${origin}/${l.short_code}`;
-                        const spark = stats?.perLinkDaily?.[l.id] ?? [];
-                        const sparkUp = spark.length >= 2 ? spark[spark.length - 1] >= spark[0] : true;
-                        const isSelected = selectedIds.has(l.id);
-                        return (
-                          <tr key={l.id} className={`hover:bg-muted transition-colors ${isSelected ? "bg-muted" : ""}`}>
-                            <td className="px-3 py-4">
-                              <input
-                                type="checkbox"
-                                aria-label={`Select ${l.title || l.short_code}`}
-                                checked={isSelected}
-                                onChange={() => toggleSelect(l.id)}
-                                className="w-4 h-4 accent-primary cursor-pointer"
-                              />
-                            </td>
-                            <td className="px-3 sm:px-5 py-4 min-w-0">
-                              <p className="text-sm font-bold text-foreground truncate" style={display}>
-                                {l.title || l.short_code}
-                              </p>
-                              <button onClick={() => { navigator.clipboard.writeText(shortUrl); toast.success("Copied"); }}
-                                className="text-[11px] text-primary hover:text-primary flex items-center gap-1 mt-0.5 font-mono truncate max-w-full">
-                                <span className="truncate">{effectiveDomain}/{l.short_code}</span> <Copy className="w-3 h-3 shrink-0" />
-                              </button>
-                            </td>
-                            <td className="hidden md:table-cell px-3 py-4"><MiniSpark up={sparkUp} /></td>
-                            <td className="px-3 py-4">
-                              <div className="text-sm font-bold text-foreground tabular-nums" style={display}>
-                                {(l.clicks_count || 0).toLocaleString()}
-                              </div>
-                            </td>
-                            <td className="hidden sm:table-cell px-3 py-4">
-                              <button onClick={() => togMut.mutate({ id: l.id, is_active: !l.is_active })}
-                                className={l.is_active
-                                  ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700"
-                                  : "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700"}>
-                                {l.is_active ? "ACTIVE" : "PAUSED"}
-                              </button>
-                            </td>
-                            <td className="px-3 sm:px-5 py-4 text-right">
-                              <div className="inline-flex items-center gap-0.5 sm:gap-1">
-                                <button
-                                  title={`Country Shield${(l as any).blocked_countries?.length ? ` (${(l as any).blocked_countries.length} blocked)` : ""}`}
-                                  onClick={() => setShieldFor({ id: l.id, title: l.title || l.short_code, initial: (l as any).blocked_countries ?? [] })}
-                                  className={`relative p-1.5 rounded-lg hover:bg-border/60 shrink-0 ${
-                                    (l as any).blocked_countries?.length > 0
-                                      ? "text-primary"
-                                      : "text-muted-foreground hover:text-primary"
-                                  }`}
-                                >
-                                  <Shield className="w-4 h-4" />
-                                  {(l as any).blocked_countries?.length > 0 && (
-                                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-white text-[8px] font-bold flex items-center justify-center">
-                                      {(l as any).blocked_countries.length}
-                                    </span>
-                                  )}
-                                </button>
-                                <a
-                                  href={shortUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  title={`Verify: open ${effectiveDomain}/${l.short_code} and confirm it redirects to your offer`}
-                                  className="text-muted-foreground hover:text-emerald-600 p-1.5 rounded-lg hover:bg-emerald-50 shrink-0"
-                                >
-                                  <ShieldCheck className="w-4 h-4" />
-                                </a>
-                                <button onClick={() => togMut.mutate({ id: l.id, is_active: !l.is_active })}
-                                  className="text-muted-foreground hover:text-primary p-1.5 rounded-lg hover:bg-border/60 shrink-0">
-                                  {l.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                                </button>
-
-                                <button onClick={() => { if (confirm("Delete this link?")) delMut.mutate(l.id); }}
-                                  className="text-muted-foreground hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 shrink-0">
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
             </Panel>
           </div>
 
@@ -560,80 +377,7 @@ function DashboardPage() {
         />
       )}
 
-      <Dialog open={!!noticeQ.data?.showPopup} onOpenChange={(open) => { if (!open) dismissNotice(); }}>
 
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-foreground">
-              <Sparkles className="w-5 h-5 text-primary" />
-              All clicks have been cleaned
-            </DialogTitle>
-            <DialogDescription className="text-foreground pt-2 leading-relaxed">
-              Don't worry — <b>all your links and account data are safe</b>. We just
-              cleared the click history to keep your dashboard fast and optimized.
-              New clicks from now on will be counted as usual.
-              {noticeQ.data?.resetAt && (
-                <span className="block mt-2 text-xs text-muted-foreground font-mono">
-                  Reset: {new Date(noticeQ.data.resetAt).toLocaleString()}
-                </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <UIButton onClick={dismissNotice} className="bg-primary hover:bg-primary text-white">
-              Got it
-            </UIButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Floating bulk-copy action bar */}
-      {selectedIds.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 rounded-2xl bg-foreground text-white shadow-2xl shadow-orange-900/30 border border-primary/40 max-w-[95vw] flex-wrap justify-center">
-          <span className="text-xs font-bold whitespace-nowrap">
-            {selectedIds.size} selected
-          </span>
-
-
-
-
-          <button
-            onClick={() => {
-              const urls = links
-                .filter((l) => selectedIds.has(l.id))
-                .map((l) => `https://${effectiveDomain}/${l.short_code}`)
-                .join("\n");
-              navigator.clipboard.writeText(urls);
-              toast.success(`Copied ${selectedIds.size} short URL${selectedIds.size === 1 ? "" : "s"} on ${effectiveDomain}`);
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-gradient text-white font-bold text-xs shadow-lg hover:opacity-90"
-          >
-            <Copy className="w-3.5 h-3.5" /> Copy URLs
-          </button>
-
-          <button
-            onClick={() => {
-              const chosen = links.filter((l) => selectedIds.has(l.id));
-              if (chosen.length > 5 && !confirm(`Open ${chosen.length} tabs to verify each link redirects correctly?`)) return;
-              chosen.forEach((l) => {
-                window.open(`https://${effectiveDomain}/${l.short_code}`, "_blank", "noopener,noreferrer");
-              });
-              toast.success(`Verifying ${chosen.length} link${chosen.length === 1 ? "" : "s"} — check each tab lands on your offer`);
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs border border-white/20"
-            title="Open each selected short URL in a new tab to confirm it redirects to your offer"
-          >
-            <ShieldCheck className="w-3.5 h-3.5" /> Verify
-          </button>
-
-          <button
-            onClick={() => setSelectedIds(new Set())}
-            className="text-[11px] font-bold text-border/80 hover:text-white px-2 py-1"
-          >
-            Clear
-          </button>
-        </div>
-      )}
 
     </div>
   );
