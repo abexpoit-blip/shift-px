@@ -411,7 +411,7 @@ function UsersTab() {
                 <Td>
                   <div className="flex gap-1">
                     <Button size="sm" variant="outline" onClick={() => setDetailId(u.id)} className="border-[var(--border)]" title="View details"><Eye className="w-3 h-3" /></Button>
-                    <Button size="sm" variant="outline" disabled={imperBusyId === u.id} onClick={() => handleImpersonate(u)} className="border-amber-400 text-foreground hover:bg-muted" title="Sign in as this user">
+                    <Button size="sm" variant="outline" disabled={imperBusyId === u.id} onClick={() => handleImpersonate(u)} className="border-border text-foreground hover:bg-muted" title="Sign in as this user">
                       <KeyRound className="w-3 h-3" />
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => banMut.mutate({ id: u.id, is_banned: !u.is_banned })} className="border-[var(--border)]">{u.is_banned ? "Unban" : "Ban"}</Button>
@@ -1218,7 +1218,7 @@ const BROADCAST_TONES = [
   { id: "premium", label: "Premium", cls: "from-[var(--primary)] to-[var(--primary-glow)]" },
   { id: "info", label: "Info", cls: "from-blue-500 to-blue-600" },
   { id: "success", label: "Success", cls: "from-emerald-500 to-emerald-600" },
-  { id: "warning", label: "Warning", cls: "from-primary to-orange-600" },
+  { id: "warning", label: "Warning", cls: "from-primary to-primary-glow" },
 ] as const;
 
 function BroadcastsTab() {

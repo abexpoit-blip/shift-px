@@ -32,7 +32,7 @@ const TONE_STYLES: Record<string, string> = {
   premium: "from-[var(--primary)] to-[var(--primary-glow)]",
   info: "from-blue-500 to-blue-600",
   success: "from-emerald-500 to-emerald-600",
-  warning: "from-primary to-orange-600",
+  warning: "from-primary to-primary-glow",
 };
 
 function timeAgo(iso: string) {
