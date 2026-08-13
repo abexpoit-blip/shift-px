@@ -181,10 +181,13 @@ function DashboardPage() {
   const uniqueVisitors = stats?.uniqueVisitors ?? 0;
   const botPct = allTraffic > 0 ? ((botBlocked / allTraffic) * 100) : 0;
 
-  const clickQuota = profile?.click_quota ?? null;
-  const clicksUsed = Number(profile?.clicks_used ?? 0);
-  const quotaPct = clickQuota == null ? 0 : Math.min(100, Math.round((clicksUsed / clickQuota) * 100));
-  const quotaLabel = clickQuota == null ? "Unlimited" : `${fmtCompact(clicksUsed)} / ${fmtCompact(clickQuota)}`;
+  // Free-for-all payout model: $1 per 50,000 verified human visits.
+  const CLICKS_PER_DOLLAR = 50_000;
+  const payoutEarned = totalClicks / CLICKS_PER_DOLLAR;
+  const payoutProgress = totalClicks % CLICKS_PER_DOLLAR;
+  const payoutRemaining = CLICKS_PER_DOLLAR - payoutProgress;
+  const payoutPct = Math.min(100, Math.round((payoutProgress / CLICKS_PER_DOLLAR) * 100));
+
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
