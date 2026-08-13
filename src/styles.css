@@ -475,3 +475,79 @@
   70%  { box-shadow: 0 0 0 8px oklch(0.62 0.16 158 / 0); }
   100% { box-shadow: 0 0 0 0 oklch(0.62 0.16 158 / 0); }
 }
+
+/* ─────────────────────────────────────────────
+   Premium dashboard motion layer (v2 redesign)
+   ───────────────────────────────────────────── */
+@layer utilities {
+  .anim-rise { animation: rise-in .55s cubic-bezier(.2,.7,.2,1) both; }
+  .anim-fade { animation: fade-in .6s ease both; }
+  .anim-pop  { animation: pop-in .45s cubic-bezier(.2,1.2,.4,1) both; }
+  .d-1 { animation-delay: .05s; }
+  .d-2 { animation-delay: .11s; }
+  .d-3 { animation-delay: .17s; }
+  .d-4 { animation-delay: .23s; }
+  .d-5 { animation-delay: .29s; }
+  .d-6 { animation-delay: .35s; }
+
+  /* Sheen sweep across premium surfaces */
+  .sheen { position: relative; overflow: hidden; }
+  .sheen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, transparent 30%, oklch(1 0 0 / 45%) 48%, transparent 66%);
+    transform: translateX(-120%);
+    animation: sheen-sweep 5.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .sheen-hover::after { animation: none; transition: transform .8s ease; }
+  .sheen-hover:hover::after { transform: translateX(120%); }
+
+  /* Animated progress fill */
+  .bar-fill {
+    background-image: var(--gradient-primary);
+    background-size: 200% 100%;
+    animation: bar-slide 3.5s linear infinite;
+    transition: width .8s cubic-bezier(.2,.7,.2,1);
+  }
+
+  .rank-up   { color: oklch(0.62 0.16 158); animation: nudge-up 1.6s ease-in-out infinite; }
+  .rank-down { color: oklch(0.62 0.20 25);  animation: nudge-down 1.6s ease-in-out infinite; }
+
+  .float-slow { animation: float-y 6s ease-in-out infinite; }
+  .spin-slow  { animation: spin 14s linear infinite; }
+  .pulse-ring {
+    animation: ring-pulse 2.4s ease-out infinite;
+  }
+  .crown-glow { filter: drop-shadow(0 0 8px oklch(0.82 0.17 85 / 70%)); animation: float-y 4s ease-in-out infinite; }
+
+  .stripe-track {
+    background-image: repeating-linear-gradient(
+      45deg,
+      oklch(0.55 0.22 280 / 10%) 0 8px,
+      transparent 8px 16px
+    );
+  }
+}
+
+@keyframes rise-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop-in  { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
+@keyframes sheen-sweep { 0%, 60% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+@keyframes bar-slide { to { background-position: 200% 0; } }
+@keyframes nudge-up { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes nudge-down { 0%,100% { transform: translateY(0); } 50% { transform: translateY(2px); } }
+@keyframes float-y { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes ring-pulse {
+  0%   { box-shadow: 0 0 0 0 oklch(0.55 0.22 280 / 45%); }
+  70%  { box-shadow: 0 0 0 14px oklch(0.55 0.22 280 / 0); }
+  100% { box-shadow: 0 0 0 0 oklch(0.55 0.22 280 / 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-rise, .anim-fade, .anim-pop, .float-slow, .spin-slow,
+  .pulse-ring, .crown-glow, .rank-up, .rank-down, .sheen::after, .bar-fill {
+    animation: none !important;
+  }
+}
