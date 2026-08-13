@@ -89,20 +89,33 @@ export function TopBar({
       if (!uid) return;
       const [msgRes, readRes] = await Promise.all([
         supabase
-          .from("messages")
-          .select("id, subject, body, is_broadcast, recipient_id, created_at")
+          .from("broadcasts")
+          .select("id, title, body, created_at")
+          .eq("is_active", true)
           .order("created_at", { ascending: false })
           .limit(20),
-        supabase.from("message_reads").select("message_id").eq("user_id", uid),
+        supabase.from("broadcast_reads").select("broadcast_id").eq("user_id", uid),
       ]);
-      setMessages((msgRes.data as Msg[] | null) ?? []);
+      setMessages(
+        ((msgRes.data as { id: string; title: string; body: string | null; created_at: string }[] | null) ?? []).map(
+          (b) => ({
+            id: b.id,
+            subject: b.title,
+            body: b.body,
+            is_broadcast: true,
+            recipient_id: null,
+            created_at: b.created_at,
+          }),
+        ),
+      );
       setReadIds(
         new Set(
-          ((readRes.data as { message_id: string }[] | null) ?? []).map(
-            (r) => r.message_id,
+          ((readRes.data as { broadcast_id: string }[] | null) ?? []).map(
+            (r) => r.broadcast_id,
           ),
         ),
       );
+
     })();
   }, []);
 
