@@ -82,8 +82,9 @@ export const Route = createFileRoute("/shop/$slug")({
 });
 
 function ProductPage() {
+  const rb = useRebrand();
   const { product } = Route.useLoaderData();
-  const p = product as Product;
+  const p = { ...(product as Product), longDesc: rb((product as Product).longDesc), shortDesc: rb((product as Product).shortDesc) } as Product;
   const related: Product[] = PRODUCTS.filter((x) => x.slug !== p.slug && x.category === p.category).slice(0, 3);
   const fillerRelated: Product[] = related.length < 3 ? PRODUCTS.filter((x) => x.slug !== p.slug).slice(0, 3 - related.length) : [];
   const recommended: Product[] = [...related, ...fillerRelated].slice(0, 3);
