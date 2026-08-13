@@ -556,10 +556,6 @@ function DashboardPage() {
               <div className="mt-2 h-2 bg-[#FFEDD5] rounded-full overflow-hidden">
                 <div className="h-full bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] shadow-[0_0_8px_rgba(255,126,95,0.5)]" style={{ width: `${quotaPct}%` }} />
               </div>
-              <Link to="/upgrade"
-                className="mt-5 w-full block text-center py-3 rounded-xl border-2 border-[#FF7E5F] text-[#FF7E5F] font-bold text-sm hover:bg-gradient-to-r hover:from-[#FF7E5F] hover:to-[#FEB47B] hover:text-white hover:border-transparent transition-all">
-                Upgrade to Pro
-              </Link>
             </Panel>
 
             {/* Traffic by Region + Mobile Gauge */}
@@ -723,9 +719,6 @@ function QuotaCard({ pct, label }: { pct: number; label: string }) {
       <div className="mt-4 h-2 bg-[#FFEDD5] rounded-full overflow-hidden">
         <div className="h-full bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] shadow-[0_0_8px_rgba(255,126,95,0.5)] transition-all" style={{ width: `${pct}%` }} />
       </div>
-      <Link to="/upgrade" className="mt-4 text-[11px] font-bold text-[#FF7E5F] hover:text-[#E66D50] flex items-center gap-1">
-        Upgrade plan <ArrowRight className="w-3 h-3" />
-      </Link>
     </div>
   );
 }
