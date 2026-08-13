@@ -25,14 +25,13 @@ export async function getUserPlanSlug(supabase: any, userId: string): Promise<st
   return ((data as { plan_slug?: string | null } | null)?.plan_slug ?? "free").toLowerCase();
 }
 
-export function isPaidPlan(slug: string | null | undefined): boolean {
-  if (!slug) return false;
-  return PAID_PLAN_SLUGS.has(slug.toLowerCase());
+// Adspx is fully free: every feature is unlocked for every account.
+export function isPaidPlan(_slug: string | null | undefined): boolean {
+  return true;
 }
 
-export function isLifetimePlan(slug: string | null | undefined): boolean {
-  if (!slug) return false;
-  return LIFETIME_PLAN_SLUGS.has(slug.toLowerCase());
+export function isLifetimePlan(_slug: string | null | undefined): boolean {
+  return true;
 }
 
 export async function checkPaidAccess(supabase: any, userId: string) {

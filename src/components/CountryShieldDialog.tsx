@@ -44,7 +44,6 @@ export function CountryShieldDialog({ open, onOpenChange, linkId, linkTitle, ini
   const [custom, setCustom] = useState("");
 
   const plan = String(planSlug ?? "free").toLowerCase();
-  const isPaid = plan === "monthly" || plan === "lifetime" || plan === "unlimited";
 
   useEffect(() => {
     if (open) setSelected(initial.map((c) => c.toUpperCase()));
@@ -94,25 +93,6 @@ export function CountryShieldDialog({ open, onOpenChange, linkId, linkTitle, ini
           </DialogTitle>
         </DialogHeader>
 
-        {!isPaid ? (
-          <div className="py-8 text-center">
-            <div className="w-16 h-16 mx-auto rounded-full bg-amber-100 flex items-center justify-center mb-4">
-              <Lock className="w-8 h-8 text-amber-600" />
-            </div>
-            <h3 className="text-lg font-bold text-[#2D1B0D] mb-2">Pro Feature</h3>
-            <p className="text-sm text-[#7D6452] max-w-md mx-auto mb-5">
-              Country Shield lets you block high-risk FB ad-reviewer countries (US, DK, IE...)
-              from seeing your offer URL. Available on <b>Monthly</b> and <b>Lifetime</b> plans.
-            </p>
-            <Link
-              to="/upgrade"
-              onClick={() => onOpenChange(false)}
-              className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all"
-            >
-              Upgrade to Unlock
-            </Link>
-          </div>
-        ) : (
           <div className="space-y-5">
             <p className="text-xs text-[#7D6452]">
               Visitors from selected countries will see the safe article page instead of the offer.
@@ -209,7 +189,8 @@ export function CountryShieldDialog({ open, onOpenChange, linkId, linkTitle, ini
               </div>
             </div>
           </div>
-        )}
+
+
       </DialogContent>
     </Dialog>
   );

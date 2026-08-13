@@ -93,29 +93,6 @@ function DomainsPage() {
   const data = q.data;
   if (!data) return null;
 
-  if (!data.isPaid) {
-    return (
-      <div className="p-6 lg:p-10 max-w-3xl mx-auto">
-        <div className="p-10 rounded-3xl bg-white/85 border border-white/90 backdrop-blur-2xl shadow-[0_8px_30px_rgba(255,126,95,0.12)] text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF7E5F] to-[#FEB47B] text-white shadow-lg shadow-orange-500/30 mb-5">
-            <Crown className="w-7 h-7" />
-          </div>
-          <h1 className="text-3xl font-bold text-[#2D1B0D]" style={display}>
-            Custom Domains — Paid feature
-          </h1>
-          <p className="text-[#5D4538] mt-3 max-w-md mx-auto">
-            Use your own domain (e.g. <span className="font-mono text-[#2D1B0D]">go.yoursite.com</span>) for every smart link. Available on all paid plans.
-          </p>
-          <Link
-            to="/upgrade"
-            className="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-2xl bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white font-bold shadow-lg shadow-orange-500/30 hover:scale-[1.02] transition-transform"
-          >
-            <Crown className="w-4 h-4" /> Upgrade to unlock
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 lg:p-10 space-y-8 max-w-[1200px] mx-auto">

@@ -22,9 +22,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import {
   adminStats, adminListUsers, adminBanUser, adminBulkBan, adminResetUserQuota, adminBulkSetPlan,
-  adminListPackages, adminListAllPackages, adminUpsertPackage, adminDeletePackage,
-  adminSetUserPlan, adminListUpgradeRequests, adminDecideUpgradeRequest,
-  adminClicksTimeseries, adminTopCountries, adminTopUsers, adminRevenueTimeseries,
+  adminListPackages, adminSetUserPlan,
+  adminClicksTimeseries, adminTopCountries, adminTopUsers,
   adminListLinks, adminToggleLink, adminUpdateLink, adminDeleteLink,
   adminListBotRules, adminUpsertBotRule, adminDeleteBotRule,
   adminListCloakingRules, adminUpsertCloakingRule, adminDeleteCloakingRule,
@@ -35,7 +34,6 @@ import {
   adminGetPurgeStatus, adminPurgeBatch, adminResetAllClicks,
   adminTestQuotaSync, adminQuotaSyncStatus
 } from "@/lib/admin.functions";
-import { adminListPlisioLogs, adminReverifyOrder, adminBulkReverify, adminGetOutgoingIp } from "@/lib/plisio-admin.functions";
 import { startImpersonation } from "@/lib/impersonation";
 import { getAppSettings, updateAppSettings } from "@/lib/app-settings.functions";
 import {
@@ -109,8 +107,6 @@ function AdminPage() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="links">Links</TabsTrigger>
-            <TabsTrigger value="revenue">Revenue</TabsTrigger>
-            <TabsTrigger value="packages">Packages</TabsTrigger>
             <TabsTrigger value="traffic">Traffic</TabsTrigger>
             <TabsTrigger value="domains">Pool</TabsTrigger>
             <TabsTrigger value="user_domains">User Domains</TabsTrigger>
@@ -120,14 +116,11 @@ function AdminPage() {
             <TabsTrigger value="support">Support</TabsTrigger>
             <TabsTrigger value="broadcasts">Broadcasts</TabsTrigger>
             <TabsTrigger value="errors">Errors</TabsTrigger>
-            <TabsTrigger value="plisio">Plisio Logs</TabsTrigger>
             <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
           </TabsList>
           <TabsContent value="overview"><OverviewTab /></TabsContent>
           <TabsContent value="users"><UsersTab /></TabsContent>
           <TabsContent value="links"><LinksTab /></TabsContent>
-          <TabsContent value="revenue"><RevenueTab /></TabsContent>
-          <TabsContent value="packages"><PackagesTab /></TabsContent>
           <TabsContent value="traffic"><TrafficTab /></TabsContent>
           <TabsContent value="domains"><DomainsTab /></TabsContent>
           <TabsContent value="user_domains"><UserDomainsTab /></TabsContent>
@@ -137,7 +130,6 @@ function AdminPage() {
           <TabsContent value="support"><SupportTab /></TabsContent>
           <TabsContent value="broadcasts"><BroadcastsTab /></TabsContent>
           <TabsContent value="errors"><ErrorsTab /></TabsContent>
-          <TabsContent value="plisio"><PlisioLogsTab /></TabsContent>
           <TabsContent value="maintenance"><MaintenanceTab /></TabsContent>
         </Tabs>
       </div>
@@ -540,294 +532,6 @@ function LinksTab() {
           </tbody>
         </table>
       </div>
-    </Panel>
-  );
-}
-
-// ===================== REVENUE =====================
-function RevenueTab() {
-  const qc = useQueryClient();
-  const upgradesFn = useServerFn(adminListUpgradeRequests);
-  const decideFn = useServerFn(adminDecideUpgradeRequest);
-  const revTsFn = useServerFn(adminRevenueTimeseries);
-  
-  const [range, setRange] = useState<"7d" | "30d" | "90d">("30d");
-  const daysMap = { "7d": 7, "30d": 30, "90d": 90 };
-
-  const upgrades = useQuery({ queryKey: ["admin-upgrades"], queryFn: () => upgradesFn() });
-  const ipFn = useServerFn(adminGetOutgoingIp);
-  const outgoingIp = useQuery({ queryKey: ["plisio-outgoing-ip"], queryFn: () => ipFn(), staleTime: 5 * 60 * 1000 });
-  const [reverifyResults, setReverifyResults] = useState<Record<string, { ok: boolean; msg: string; ip?: string; http?: number }>>({});
-  const [bulkSummary, setBulkSummary] = useState<{ checked: number; recovered: number; ip: string; last_error: string | null } | null>(null);
-  const revTs = useQuery({ 
-    queryKey: ["admin-rev-ts", range], 
-    queryFn: () => revTsFn({ data: { days: daysMap[range] } }) 
-  });
-  
-  const statsFn = useServerFn(adminStats);
-  const stats = useQuery({ queryKey: ["admin-stats"], queryFn: () => statsFn() });
-  const s = stats.data;
-
-  const decideMut = useMutation({
-    mutationFn: (v: { id: string; decision: "approve" | "reject" }) => decideFn({ data: v }),
-    onSuccess: (_, v) => { toast.success(v.decision === "approve" ? "Approved" : "Rejected"); qc.invalidateQueries({ queryKey: ["admin-upgrades"] }); qc.invalidateQueries({ queryKey: ["admin-stats"] }); qc.invalidateQueries({ queryKey: ["admin-rev-ts"] }); },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const exportCsv = () => {
-    const rows = upgrades.data ?? [];
-    const csv = ["created_at,email,package,amount,status,invoice_id"].concat(rows.map((r) => `${r.created_at},${r.email},${r.package_slug},${r.amount},${r.status},${r.plisio_invoice_id ?? ""}`)).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `revenue-${Date.now()}.csv`; a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const periodRevenue = (revTs.data ?? []).reduce((acc, curr) => acc + curr.revenue, 0);
-
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Kpi icon={DollarSign} label="Today Revenue" value={`$${(revTs.data?.[revTs.data.length - 1]?.revenue ?? 0).toFixed(2)}`} sub="UTC midnight" accent />
-        <Kpi icon={TrendingUp} label="Yesterday" value={`$${(revTs.data?.[revTs.data.length - 2]?.revenue ?? 0).toFixed(2)}`} sub="Previous 24h" />
-        <Kpi icon={Calendar} label={`Selected Period (${range})`} value={`$${periodRevenue.toFixed(2)}`} sub="Filtered sum" accent />
-        <Kpi icon={Trophy} label="All-time Revenue" value={`$${(s?.total_revenue ?? 0).toFixed(2)}`} sub="Since start" />
-      </div>
-
-      <Panel icon={DollarSign} title="Revenue Analytics" subtitle="View performance trends across different timeframes">
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex bg-white/60 p-1 rounded-xl border border-[#FFD4BB] w-fit">
-            {(["7d", "30d", "90d"] as const).map((r) => (
-              <button
-                key={r}
-                onClick={() => setRange(r)}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  range === r ? "bg-[#FF7E5F] text-white shadow-md" : "text-[#7A5C45] hover:bg-white"
-                }`}
-              >
-                {r.toUpperCase()}
-              </button>
-            ))}
-          </div>
-          <div className="text-right">
-            <div className="text-[10px] uppercase font-bold text-[#A8907A] tracking-wider">Average Daily</div>
-            <div className="text-xl font-bold text-[#2D1B0D]">${(periodRevenue / (daysMap[range] || 1)).toFixed(2)}</div>
-          </div>
-        </div>
-        <div className="h-64">
-          <ResponsiveContainer>
-            <BarChart data={revTs.data ?? []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#FFD4BB" vertical={false} />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 10, fill: "#7A5C45" }} 
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(val) => val.split("-").slice(1).join("/")} 
-              />
-              <YAxis 
-                tick={{ fontSize: 10, fill: "#7A5C45" }} 
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(val) => `$${val}`}
-              />
-              <Tooltip 
-                contentStyle={{ borderRadius: '12px', border: '1px solid #FFD4BB', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-                formatter={(val: number) => [`$${val.toFixed(2)}`, "Revenue"]}
-              />
-              <Bar dataKey="revenue" fill="#FF7E5F" radius={[6, 6, 0, 0]} barSize={range === '7d' ? 40 : undefined} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </Panel>
-
-      <Panel icon={CreditCard} title="Upgrade requests" subtitle="Approve, reject, export to CSV">
-        {/* Plisio diagnostic banner: outgoing IP to whitelist + last bulk run summary */}
-        <div className="mb-4 rounded-xl border border-[#FFD4BB] bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-2 text-xs text-[#7A5C45] flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span className="font-bold uppercase tracking-wider text-[10px] text-[#A8907A]">Plisio source IP</span>
-          {outgoingIp.isLoading ? (
-            <span className="italic">detecting…</span>
-          ) : (
-            <>
-              <code className="font-mono font-bold text-[#2D1B0D] bg-white px-2 py-0.5 rounded border border-[#FFD4BB] select-all">
-                {outgoingIp.data?.ip || "unknown"}
-              </code>
-              <button
-                onClick={() => { navigator.clipboard.writeText(outgoingIp.data?.ip || ""); toast.success("IP copied"); }}
-                className="text-[#FF7E5F] hover:underline"
-              >Copy</button>
-              <span className="text-[#7A5C45]">→ Whitelist this in Plisio → API → Allowed IPs to fix “Invalid IP”.</span>
-            </>
-          )}
-          {bulkSummary && (
-            <div className="w-full mt-1 pt-1 border-t border-[#FFD4BB]/60">
-              <span className="font-bold">Last bulk run:</span> checked {bulkSummary.checked}, recovered {bulkSummary.recovered}
-              {bulkSummary.last_error && (
-                <span className="text-rose-600"> · last error: <code className="font-mono">{bulkSummary.last_error}</code></span>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="mb-4 flex gap-2 flex-wrap">
-          <Button size="sm" onClick={exportCsv} className="bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white border-0">Export CSV</Button>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={() => {
-              qc.invalidateQueries({ queryKey: ["admin-upgrades"] });
-              toast.success("Refreshing order history...");
-            }} 
-            className="border-[#FFD4BB] flex items-center gap-2"
-          >
-            <RefreshCw className={`w-3 h-3 ${upgrades.isFetching ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={async () => {
-              const tid = toast.loading("Asking Plisio about all recent orders…");
-              try {
-                const r = await adminBulkReverify();
-                setBulkSummary({ checked: r.checked, recovered: r.recovered, ip: r.source_ip, last_error: r.last_error });
-                if (r.last_error) {
-                  toast.error(`Checked ${r.checked}, recovered ${r.recovered}. Plisio: ${r.last_error} (src ${r.source_ip})`, { id: tid });
-                } else {
-                  toast.success(`Checked ${r.checked} — recovered ${r.recovered} (src ${r.source_ip})`, { id: tid });
-                }
-                qc.invalidateQueries({ queryKey: ["admin-upgrades"] });
-              } catch (e: any) {
-                toast.error(e.message || "Bulk re-verify failed", { id: tid });
-              }
-            }}
-            className="border-emerald-300 text-emerald-700"
-          >
-            🔄 Bulk re-verify with Plisio
-          </Button>
-        </div>
-        <div className="overflow-x-auto -mx-2">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[#7A5C45]"><Th>When</Th><Th>User</Th><Th>Package</Th><Th>Amount</Th><Th>Invoice</Th><Th>Status</Th><Th></Th></tr>
-            </thead>
-            <tbody>
-              {upgrades.data?.length ? upgrades.data.map((r) => {
-                const rv = reverifyResults[r.id];
-                return (
-                <tr key={r.id} className="border-t border-[#FFE4D0]/60">
-                  <Td className="whitespace-nowrap text-[#7A5C45] text-xs">{new Date(r.created_at).toLocaleString()}</Td>
-                  <Td>{r.email || r.user_id.slice(0, 8)}</Td>
-                  <Td><Pill>{r.package_slug}</Pill></Td>
-                  <Td className="font-semibold">${Number(r.amount).toFixed(2)}</Td>
-                  <Td>{r.plisio_invoice_url ? <a href={r.plisio_invoice_url} target="_blank" rel="noreferrer" className="text-[#FF7E5F] font-semibold hover:underline">View</a> : <span className="text-[#A8907A]">—</span>}</Td>
-                  <Td>
-                    <StatusPill status={r.status} />
-                    {rv && (
-                      <div className={`mt-1 text-[10px] font-mono leading-tight ${rv.ok ? "text-emerald-700" : "text-rose-600"}`}>
-                        {rv.ok ? "✓ " : "✗ "}{rv.msg}
-                        {rv.ip && <div className="text-[#A8907A]">src: {rv.ip}{rv.http ? ` · HTTP ${rv.http}` : ""}</div>}
-                      </div>
-                    )}
-                  </Td>
-                  <Td>
-                    <div className="flex gap-2 flex-wrap">
-                      {r.status === "pending" && (
-                        <>
-                          <Button size="sm" onClick={() => decideMut.mutate({ id: r.id, decision: "approve" })} className="bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white border-0">Approve</Button>
-                          <Button size="sm" variant="outline" onClick={() => decideMut.mutate({ id: r.id, decision: "reject" })} className="border-[#FFD4BB]">Reject</Button>
-                        </>
-                      )}
-                      {r.status !== "paid" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-emerald-300 text-emerald-700 text-xs"
-                          onClick={async () => {
-                            const tid = toast.loading("Checking with Plisio…");
-                            try {
-                              const res = await adminReverifyOrder({ data: { order_id: r.id } });
-                              setReverifyResults((p) => ({ ...p, [r.id]: { ok: true, msg: `${res.action} · Plisio: ${res.plisio_status}`, ip: res.source_ip, http: res.http_status } }));
-                              toast.success(`${res.action} (Plisio: ${res.plisio_status}) — src ${res.source_ip}`, { id: tid });
-                              qc.invalidateQueries({ queryKey: ["admin-upgrades"] });
-                            } catch (e: any) {
-                              const msg = e?.message || "Re-verify failed";
-                              setReverifyResults((p) => ({ ...p, [r.id]: { ok: false, msg, ip: e?.source_ip, http: e?.http_status } }));
-                              toast.error(msg, { id: tid, duration: 8000 });
-                            }
-                          }}
-                        >
-                          Re-verify
-                        </Button>
-                      )}
-                    </div>
-                  </Td>
-                </tr>
-                );
-              }) : <tr><td colSpan={7} className="p-8 text-center text-[#A8907A]">No upgrade requests yet.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
-    </div>
-  );
-}
-
-
-// ===================== PACKAGES =====================
-type PkgForm = { id?: string; slug: string; name: string; price_usd: number; click_quota: number | null; link_limit: number | null; sort_order: number; is_active: boolean };
-const emptyPkg: PkgForm = { slug: "", name: "", price_usd: 0, click_quota: null, link_limit: null, sort_order: 99, is_active: true };
-
-function PackagesTab() {
-  const qc = useQueryClient();
-  const listFn = useServerFn(adminListAllPackages);
-  const upFn = useServerFn(adminUpsertPackage);
-  const delFn = useServerFn(adminDeletePackage);
-  const list = useQuery({ queryKey: ["admin-pkgs-all"], queryFn: () => listFn() });
-  const [edit, setEdit] = useState<PkgForm | null>(null);
-  const inv = () => { qc.invalidateQueries({ queryKey: ["admin-pkgs-all"] }); qc.invalidateQueries({ queryKey: ["admin-packages"] }); };
-  const upMut = useMutation({ mutationFn: (v: PkgForm) => upFn({ data: v }), onSuccess: () => { toast.success("Saved"); inv(); setEdit(null); }, onError: (e: Error) => toast.error(e.message) });
-  const delMut = useMutation({ mutationFn: (v: { id: string }) => delFn({ data: v }), onSuccess: () => { toast.success("Deleted"); inv(); }, onError: (e: Error) => toast.error(e.message) });
-
-  return (
-    <Panel icon={Package} title="Packages" subtitle="Create, edit, delete pricing tiers">
-      <div className="mb-4"><Button onClick={() => setEdit(emptyPkg)} className="bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white border-0"><Plus className="w-4 h-4 mr-1" />New package</Button></div>
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {list.data?.map((p) => (
-          <div key={p.id} className={`p-4 rounded-2xl border ${p.is_active ? "bg-white/70 border-[#FFD4BB]" : "bg-white/30 border-[#A8907A]/40"}`}>
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="text-xs font-mono uppercase tracking-widest text-[#7A5C45]">{p.slug}</div>
-                <div className="text-lg font-bold text-[#2D1B0D]">{p.name}</div>
-              </div>
-              <span className="text-2xl font-extrabold text-[#FF7E5F]">${Number(p.price_usd).toFixed(2)}</span>
-            </div>
-            <div className="mt-2 text-xs text-[#7A5C45]">{p.click_quota == null ? "∞" : p.click_quota.toLocaleString()} clicks · {p.link_limit == null ? "∞" : p.link_limit} links</div>
-            <div className="mt-3 flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setEdit({ id: p.id, slug: p.slug, name: p.name, price_usd: Number(p.price_usd), click_quota: p.click_quota, link_limit: p.link_limit, sort_order: p.sort_order, is_active: p.is_active })} className="border-[#FFD4BB]">Edit</Button>
-              <Button size="sm" variant="outline" onClick={() => { if (confirm(`Delete ${p.name}?`)) delMut.mutate({ id: p.id }); }} className="border-rose-300 text-rose-600"><Trash2 className="w-3 h-3" /></Button>
-            </div>
-          </div>
-        ))}
-      </div>
-      <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{edit?.id ? "Edit package" : "New package"}</DialogTitle></DialogHeader>
-          {edit && (
-            <div className="space-y-3">
-              <Field label="Slug (lowercase, no spaces)"><input value={edit.slug} onChange={(e) => setEdit({ ...edit, slug: e.target.value })} className={inputCls} /></Field>
-              <Field label="Name"><input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} className={inputCls} /></Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Price USD"><input type="number" step="0.01" value={edit.price_usd} onChange={(e) => setEdit({ ...edit, price_usd: Number(e.target.value) })} className={inputCls} /></Field>
-                <Field label="Sort order"><input type="number" value={edit.sort_order} onChange={(e) => setEdit({ ...edit, sort_order: Number(e.target.value) })} className={inputCls} /></Field>
-                <Field label="Click quota (blank = ∞)"><input type="number" value={edit.click_quota ?? ""} onChange={(e) => setEdit({ ...edit, click_quota: e.target.value === "" ? null : Number(e.target.value) })} className={inputCls} /></Field>
-                <Field label="Link limit (blank = ∞)"><input type="number" value={edit.link_limit ?? ""} onChange={(e) => setEdit({ ...edit, link_limit: e.target.value === "" ? null : Number(e.target.value) })} className={inputCls} /></Field>
-              </div>
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={edit.is_active} onChange={(e) => setEdit({ ...edit, is_active: e.target.checked })} /> Active</label>
-              <Button onClick={() => upMut.mutate(edit)} disabled={upMut.isPending} className="w-full bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white border-0">{upMut.isPending ? "Saving…" : "Save"}</Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </Panel>
   );
 }
@@ -2269,62 +1973,6 @@ function QuotaSyncStatusPanel() {
                 </td>
               </tr>
             ))}
-          </tbody>
-        </table>
-      </div>
-    </Panel>
-  );
-}
-
-function PlisioLogsTab() {
-  const listFn = useServerFn(adminListPlisioLogs);
-  const { data: logs, isLoading, refetch } = useQuery({ queryKey: ["admin-plisio-logs"], queryFn: () => listFn() });
-
-  return (
-    <Panel icon={CreditCard} title="Plisio Webhook Logs" subtitle="Every incoming event from Plisio is logged here for debugging.">
-      <div className="mb-4">
-        <Button size="sm" variant="outline" onClick={() => refetch()} className="border-[#FFD4BB]">
-          <RefreshCw className={`w-3 h-3 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-          Refresh Logs
-        </Button>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[#7A5C45]">
-              <Th>Time</Th>
-              <Th>User / Order</Th>
-              <Th>Txn ID</Th>
-              <Th>Status</Th>
-              <Th>Processed</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs?.length ? logs.map((log: any) => (
-              <tr key={log.id} className="border-t border-[#FFE4D0]/60 hover:bg-[#FF7E5F]/5">
-                <Td className="whitespace-nowrap text-xs">{new Date(log.created_at).toLocaleString()}</Td>
-                <Td>
-                  <div className="font-bold text-[#2D1B0D]">{log.user_email || "Unknown User"}</div>
-                  <div className="text-[9px] font-mono text-[#A8907A]">{log.order_number || "No Order ID"}</div>
-                </Td>
-                <Td className="font-mono text-[10px]">{log.txn_id || "—"}</Td>
-                <Td><StatusPill status={log.status} /></Td>
-                <Td>
-                  {log.processed_at ? (
-                    <span className="text-emerald-600 flex items-center gap-1 font-bold text-[10px]">
-                      <CheckCircle2 className="w-3 h-3" /> {new Date(log.processed_at).toLocaleTimeString()}
-                    </span>
-                  ) : (
-                    <span className="text-amber-600 flex items-center gap-1 font-bold text-[10px]">
-                      <Clock className="w-3 h-3" /> Waiting/Failed
-                    </span>
-                  )}
-                </Td>
-              </tr>
-            )) : (
-              <tr><td colSpan={5} className="p-8 text-center text-[#A8907A]">No Plisio events logged yet.</td></tr>
-            )}
-
           </tbody>
         </table>
       </div>
