@@ -189,7 +189,8 @@ export function CountryShieldDialog({ open, onOpenChange, linkId, linkTitle, ini
               </div>
             </div>
           </div>
-        )}
+
+
       </DialogContent>
     </Dialog>
   );
