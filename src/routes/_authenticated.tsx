@@ -1,13 +1,12 @@
-import { createFileRoute, Outlet, Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import type { AuthChangeEvent, User } from "@supabase/supabase-js";
-import { LayoutDashboard, BarChart3, Crown, ShieldCheck, LogOut, Menu, X, Globe, Activity, Shield, Bell, Ban, Bug } from "lucide-react";
+import { LogOut, Ban } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { consumeDailyRedirect } from "@/lib/app-settings.functions";
-import { BrandLogo } from "@/components/brand-logo";
+import { AppShell } from "@/components/AppShell";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
-import { BroadcastBell } from "@/components/broadcast-bell";
 import { BroadcastLoginPopup } from "@/components/broadcast-login-popup";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -23,15 +22,6 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
 });
 
-const navMgmt = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/live", label: "Live Feed", icon: Activity },
-  { to: "/notices", label: "Notices", icon: Bell },
-  { to: "/domains", label: "Domains", icon: Globe },
-  { to: "/link-debugger", label: "Link Debugger", icon: Bug },
-] as const;
-
 function AuthenticatedLayout() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -40,7 +30,6 @@ function AuthenticatedLayout() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
   const [banChecked, setBanChecked] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const authCheckedRef = useRef(false);
   const dailyFn = useServerFn(consumeDailyRedirect);
 
@@ -134,7 +123,6 @@ function AuthenticatedLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   const logout = async () => {
     await supabase.auth.signOut();
