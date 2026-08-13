@@ -248,38 +248,20 @@ function DashboardPage() {
               className="w-full bg-muted/70 border border-border rounded-xl py-2.5 pl-11 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:bg-card transition-all"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Globe className="w-4 h-4 text-muted-foreground" />
-            <select
-              value={selectedDomain}
-              onChange={(e) => {
-                setSelectedDomain(e.target.value);
-                if (typeof window !== "undefined") {
-                  window.localStorage.setItem("adspx.shortDomain", e.target.value);
-                }
-              }}
-              className="bg-muted/70 border border-border rounded-xl py-2 px-3 text-xs text-foreground focus:outline-none focus:border-primary/50 transition-all"
-              title="Choose which domain to use for new short links"
-            >
-              {allDomains.map((d: string) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </div>
         </div>
 
         {/* EARNINGS SUMMARY */}
         <EarningsStrip />
 
 
-        {/* KPI ROW — 5 floating cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* KPI ROW */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard label="REAL VISITORS" value={fmtCompact(totalClicks)} sub={`Humans served — bots filtered out`} tone="muted" />
           <KpiCard label="ACTIVE LINKS" value={String(activeLinks)} sub={`${links.length} total`} tone="muted" />
           <KpiCard label="UNIQUE VISITORS" value={fmtCompact(uniqueVisitors)} sub="Last 30 days, humans only" tone="muted" />
           <KpiCard label="SHIELD BLOCKED ✓" value={`${botPct.toFixed(1)}%`} sub={`${fmtCompact(botBlocked)} scanners stopped`} tone="muted" />
-          <QuotaCard pct={quotaPct} label={quotaLabel} />
         </div>
+
 
         {/* MAIN GRID: chart + side panels */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
