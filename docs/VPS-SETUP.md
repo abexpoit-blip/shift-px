@@ -212,3 +212,49 @@ nginx -t                 # nginx config চেক
 docker ps                # supabase কন্টেইনার
 systemctl status redis-server
 ```
+
+---
+
+## 13. 12 vCPU / 48 GB tuning (Adspx high-scale)
+
+**App workers** — `ecosystem.config.cjs` now runs 12 fork-mode workers on ports
+4000–4011 (one per core, 3 GB ceiling each) and nginx `upstream adspx_backend`
+balances them with `least_conn`.
+
+```bash
+cd /opt/adspx-app-new && git pull && bun install && bun run build
+pm2 delete all; pm2 start ecosystem.config.cjs && pm2 save
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+**PostgreSQL** (self-hosted Supabase `postgres` container / `postgresql.conf`):
+
+```
+shared_buffers = 12GB
+effective_cache_size = 32GB
+work_mem = 32MB
+maintenance_work_mem = 2GB
+max_connections = 400
+max_parallel_workers = 12
+max_parallel_workers_per_gather = 4
+random_page_cost = 1.1
+```
+
+**Hybrid retention (no data loss)** — apply once:
+
+```bash
+psql "$DATABASE_URL" -f migration/32_hybrid_lifetime_archive.sql
+```
+
+Then schedule the weekly job (Sunday 03:00 UTC). It archives lifetime totals
+into `link_lifetime_stats` / `user_lifetime_stats` **before** trimming raw
+click rows older than 7 days:
+
+```bash
+crontab -e
+# 0 3 * * 0 cd /opt/adspx-app-new && bun scripts/run-maintenance.ts >> /var/log/adspx-maintenance.log 2>&1
+```
+
+Users, links, balances and withdrawals are never deleted automatically —
+only an admin can remove a dormant account from Control Panel → Maintenance →
+Dormant Users (default filter: no login for 15 days).
