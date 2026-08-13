@@ -264,7 +264,7 @@ export function TopBar({
                             </div>
                           </div>
                         </div>
-                      </Link>
+                      </a>
                     );
                   })
                 )}
