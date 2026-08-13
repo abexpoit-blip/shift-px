@@ -30,7 +30,6 @@ export const Route = createFileRoute("/llms.txt")({
 ## Pages
 
 - [Home](/): Link management and analytics platform.
-- [Pricing](/pricing): Plans for individuals and teams.
 - [Sign up](/signup): Create an account.
 `
           : `# ${brand.name}

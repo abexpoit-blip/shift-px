@@ -148,7 +148,6 @@ const SAAS_PROBE_PATHS = [
   "/signup",
   "/dashboard",
   "/control-panel",
-  "/pricing",
   "/analytics",
   "/smart-filter",
   "/link-debugger",

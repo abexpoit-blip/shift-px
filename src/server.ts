@@ -77,10 +77,8 @@ const SAAS_HTML_PREFIXES = [
   "/notices",
   "/smart-filter",
   "/support",
-  "/upgrade",
   "/admin",
   "/sx-vault",
-  "/pricing",
 ];
 
 // Security headers applied to every response (improves domain trust score).

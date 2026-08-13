@@ -15,7 +15,6 @@ import { isAdspxSaasHost } from "@/lib/site-hosts";
 // excluded via robots.txt.
 const ADSPX_PATHS: Array<{ path: string; changefreq: string; priority: string }> = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
-  { path: "/pricing", changefreq: "monthly", priority: "0.7" },
   { path: "/login", changefreq: "yearly", priority: "0.3" },
   { path: "/signup", changefreq: "yearly", priority: "0.3" },
 ];

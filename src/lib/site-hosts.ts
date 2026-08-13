@@ -46,7 +46,6 @@ export function isShortenerHost(host: string): boolean {
 const SAAS_PATH_PREFIXES = [
   "/login",
   "/signup",
-  "/pricing",
   "/dashboard",
   "/analytics",
   "/control-panel",
@@ -56,7 +55,6 @@ const SAAS_PATH_PREFIXES = [
   "/notices",
   "/smart-filter",
   "/support",
-  "/upgrade",
   "/admin",
   "/sx-vault",
 ];
