@@ -73,8 +73,43 @@ function hostOf(origin: string): string {
   }
 }
 
+/**
+ * Any NEW shortener domain added later gets its own coherent identity
+ * derived from its own hostname — never a leftover brand from another
+ * domain. Two domains must never look like the same site (Meta/Google
+ * both treat duplicated brand footprints as a cloaking signal).
+ */
+const AUTO_TAGLINES = [
+  "Everyday finds, simply delivered.",
+  "Practical gear for calmer days.",
+  "Small upgrades for better routines.",
+  "Thoughtful essentials, honestly priced.",
+] as const;
+const AUTO_CITIES = ["Austin, TX", "Columbus, OH", "Boise, ID", "Raleigh, NC"] as const;
+
+function hashStr(s: string): number {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+function autoBrand(host: string): Brand {
+  const label = host.split(".")[0] || host;
+  const name = label.charAt(0).toUpperCase() + label.slice(1);
+  const h = hashStr(host);
+  return {
+    name,
+    tagline: AUTO_TAGLINES[h % AUTO_TAGLINES.length],
+    email: `hello@${host}`,
+    city: AUTO_CITIES[(h >>> 3) % AUTO_CITIES.length],
+  };
+}
+
 export function brandForOrigin(origin: string): Brand {
-  return REGISTRY[hostOf(origin)] ?? DEFAULT_BRAND;
+  const host = hostOf(origin);
+  if (REGISTRY[host]) return REGISTRY[host];
+  if (host && host.includes(".")) return autoBrand(host);
+  return DEFAULT_BRAND;
 }
 
 /**
