@@ -49,6 +49,12 @@ const REGISTRY: Record<string, Brand> = {
     email: "hello@mefok.com",
     city: "Portland, OR",
   },
+  "adswapx.com": {
+    name: "Adswapx",
+    tagline: "Everyday finds, simply delivered.",
+    email: "hello@adswapx.com",
+    city: "Chicago, IL",
+  },
   "adspx.com": {
     name: "Adspx",
     tagline: "Sleep-first gear engineered for real rest.",

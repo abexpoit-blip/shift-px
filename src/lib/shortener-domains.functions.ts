@@ -35,7 +35,7 @@ export const getPrimaryShortenerDomain = createServerFn({ method: "GET" })
         .eq("is_active", true)
         .order("created_at", { ascending: false });
       const safe = (alt ?? []).map((r: any) => r.domain as string).find((d: string) => !isFlaggedShortDomain(d));
-      return { domain: safe ?? "breezysocial.com" };
+      return { domain: safe ?? "adswapx.com" };
     }
     return { domain: primary };
   });

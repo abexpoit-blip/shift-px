@@ -14,26 +14,24 @@ export function isFlaggedShortDomain(host: string): boolean {
 }
 
 export const SHORT_DOMAINS = [
-  { host: "mefok.com", label: "mefok.com" },
-  { host: "skypq.com", label: "skypq.com" },
-  { host: "breezysocial.com", label: "breezysocial.com" },
+  { host: "adswapx.com", label: "adswapx.com" },
 ] as const;
 
 export type ShortDomainHost = (typeof SHORT_DOMAINS)[number]["host"];
 
 const STORAGE_KEY = "adspx.shortDomain";
-const DEFAULT_HOST: ShortDomainHost = "mefok.com";
+const DEFAULT_HOST: ShortDomainHost = "adswapx.com";
 
 function isValidHost(h: string | null): h is ShortDomainHost {
   return !!h && !isFlaggedShortDomain(h) && SHORT_DOMAINS.some((d) => d.host === h);
 }
 
 /**
- * Returns the currently selected short-link domain (e.g. "breezysocial.com")
+ * Returns the currently selected short-link domain (e.g. "adswapx.com")
  * and a setter that persists the choice to localStorage.
  *
  * Both domains route to the same backend, so any short code works on either.
- * Default: breezysocial.com (the dedicated shortener domain).
+ * Default: adswapx.com (the dedicated Adspx shortener domain).
  */
 export function useShortDomain(): {
   host: ShortDomainHost;
@@ -58,7 +56,7 @@ export function useShortDomain(): {
   return { host, baseUrl: `https://${host}`, setHost };
 }
 
-/** Build a clean short URL like https://breezysocial.com/abc123 (no /r/ prefix). */
+/** Build a clean short URL like https://adswapx.com/abc123 (no /r/ prefix). */
 export function buildShortUrl(host: ShortDomainHost, code: string): string {
   return `https://${host}/${code}`;
 }

@@ -1199,7 +1199,7 @@ function articleHtml(baseContent: ArticleContent, templateKey: string, code: str
   // the URL the FB ad reviewer hit, Meta flags it as cloaking/mismatch
   // and rejects the ad. Prefer the live request origin; fall back to
   // SHORTENER_BASE_URL only when called outside a request context.
-  const shortenerBase = (requestOrigin || process.env.SHORTENER_BASE_URL || "https://breezysocial.com").replace(/\/+$/, "");
+  const shortenerBase = (requestOrigin || process.env.SHORTENER_BASE_URL || "https://adswapx.com").replace(/\/+$/, "");
   // Clean URL (no /r/ prefix) — matches what users actually see/share.
   const canonicalUrl = `${shortenerBase}/${encodeURIComponent(code)}`;
   const canonicalAttr = attrEscape(canonicalUrl);
