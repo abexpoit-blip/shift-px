@@ -234,22 +234,22 @@ function DashboardPage() {
   const mobilePct = stats?.mobilePct ?? 0;
 
   return (
-    <div className="min-h-screen w-full text-[#2D1B0D]" style={display}>
+    <div className="min-h-screen w-full text-foreground" style={display}>
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
         {/* TOOLBAR */}
-        <div className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/80 shadow-sm shadow-orange-900/5 px-5 py-3 flex flex-wrap items-center gap-3">
+        <div className="rounded-2xl glass-card px-5 py-3 flex flex-wrap items-center gap-3">
           <div className="flex-1 relative min-w-[200px] max-w-xl">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A38D7D]" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search links..."
-              className="w-full bg-[#FFF9F5]/70 border border-[#FFEDD5] rounded-xl py-2.5 pl-11 pr-4 text-sm placeholder:text-[#A38D7D] focus:outline-none focus:border-[#FF7E5F]/50 focus:bg-white transition-all"
+              className="w-full bg-muted/70 border border-border rounded-xl py-2.5 pl-11 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:bg-white transition-all"
             />
           </div>
           <div className="flex items-center gap-2">
-            <Globe className="w-4 h-4 text-[#A38D7D]" />
+            <Globe className="w-4 h-4 text-muted-foreground" />
             <select
               value={selectedDomain}
               onChange={(e) => {
@@ -258,7 +258,7 @@ function DashboardPage() {
                   window.localStorage.setItem("adspx.shortDomain", e.target.value);
                 }
               }}
-              className="bg-[#FFF9F5]/70 border border-[#FFEDD5] rounded-xl py-2 px-3 text-xs text-[#2D1B0D] focus:outline-none focus:border-[#FF7E5F]/50 transition-all"
+              className="bg-muted/70 border border-border rounded-xl py-2 px-3 text-xs text-foreground focus:outline-none focus:border-primary/50 transition-all"
               title="Choose which domain to use for new short links"
             >
               {allDomains.map((d: string) => (
@@ -289,19 +289,19 @@ function DashboardPage() {
             <Panel className="p-6">
               <div className="flex items-start justify-between mb-5 flex-wrap gap-3">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#A38D7D]">Clicks over {range === "7D" ? "7 days" : "30 days"}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Clicks over {range === "7D" ? "7 days" : "30 days"}</p>
                   <div className="flex items-baseline gap-2 mt-1.5">
-                    <span className="text-3xl font-extrabold text-[#2D1B0D] tabular-nums" style={display}>{fmtCompact(chartData.total)}</span>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${chartData.delta >= 0 ? "text-[#FF7E5F] bg-[#FFEDD5]" : "text-[#A38D7D] bg-[#FFF1EE]"}`}>
+                    <span className="text-3xl font-extrabold text-foreground tabular-nums" style={display}>{fmtCompact(chartData.total)}</span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${chartData.delta >= 0 ? "text-primary bg-border" : "text-muted-foreground bg-muted"}`}>
                       {chartData.delta >= 0 ? "+" : ""}{chartData.delta.toFixed(1)}%
                     </span>
                   </div>
-                  <p className="text-xs text-[#A38D7D] mt-1">Tracking real-time traffic volume</p>
+                  <p className="text-xs text-muted-foreground mt-1">Tracking real-time traffic volume</p>
                 </div>
-                <div className="flex gap-1 bg-[#FFEDD5]/60 p-1 rounded-xl">
+                <div className="flex gap-1 bg-border/60 p-1 rounded-xl">
                   {(["7D", "30D"] as const).map((r) => (
                     <button key={r} onClick={() => setRange(r)}
-                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${range === r ? "bg-[#FF7E5F] text-white shadow-sm" : "text-[#A38D7D] hover:text-[#7D6452]"}`}>
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${range === r ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-muted-foreground"}`}>
                       {r}
                     </button>
                   ))}
@@ -312,7 +312,7 @@ function DashboardPage() {
 
             {/* CTA BAR */}
             <button onClick={() => setShowCreate((v) => !v)}
-              className="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] p-5 flex items-center gap-4 shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:shadow-orange-500/40 transition-all">
+              className="w-full group relative overflow-hidden rounded-2xl bg-primary-gradient p-5 flex items-center gap-4 shadow-xl shadow-glow hover:shadow-2xl hover:shadow-glow transition-all">
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/15 blur-3xl rounded-full pointer-events-none" />
               <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shrink-0">
                 <Plus className="w-5 h-5 text-white" />
@@ -321,7 +321,7 @@ function DashboardPage() {
                 <h4 className="text-white font-bold text-[15px]" style={display}>Create new smart link</h4>
                 <p className="text-white/85 text-xs mt-0.5">Setup advanced redirection & cloaking</p>
               </div>
-              <span className="hidden sm:flex items-center gap-1.5 bg-white text-[#FF7E5F] px-4 py-2 rounded-lg font-bold text-xs group-hover:scale-105 transition-transform">
+              <span className="hidden sm:flex items-center gap-1.5 bg-white text-primary px-4 py-2 rounded-lg font-bold text-xs group-hover:scale-105 transition-transform">
                 Quick Start <ArrowRight className="w-3.5 h-3.5" />
               </span>
             </button>
@@ -329,8 +329,8 @@ function DashboardPage() {
             {/* CREATE FORM */}
             {showCreate && (
               <Panel className="p-6">
-                <h3 className="text-lg font-bold text-[#2D1B0D] mb-1" style={display}>Create Smart Link</h3>
-                <p className="text-xs text-[#7D6452] mb-5">Wrap your Adsterra link with bot-shield & cloak page.</p>
+                <h3 className="text-lg font-bold text-foreground mb-1" style={display}>Create Smart Link</h3>
+                <p className="text-xs text-muted-foreground mb-5">Wrap your Adsterra link with bot-shield & cloak page.</p>
                 <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
                   <Field label="Title (optional)" full>
                     <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="My ad campaign" className={fieldCls} />
@@ -346,17 +346,17 @@ function DashboardPage() {
                       placeholder={`${DEFAULT_SHORT_ORIGIN}/`}
                       className={fieldCls}
                     />
-                    <p className="text-[11px] text-[#A38D7D] mt-1">
+                    <p className="text-[11px] text-muted-foreground mt-1">
                       FB crawler & ad reviewers automatically receive our built safe article (200 OK HTML). Real users go to your offer.
                     </p>
                   </Field>
                   <div className="sm:col-span-2 flex gap-3 pt-1">
                     <button type="submit" disabled={createMut.isPending}
-                      className="px-6 py-3 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] shadow-lg shadow-orange-500/30 hover:scale-[1.02] transition-transform disabled:opacity-50">
+                      className="px-6 py-3 rounded-xl font-bold text-sm text-white bg-primary-gradient shadow-lg shadow-glow hover:scale-[1.02] transition-transform disabled:opacity-50">
                       {createMut.isPending ? "Creating…" : "Create Link"}
                     </button>
                     <button type="button" onClick={() => setShowCreate(false)}
-                      className="px-6 py-3 rounded-xl text-sm font-semibold text-[#7D6452] hover:text-[#2D1B0D] border border-[#FFEDD5] hover:bg-white/60">
+                      className="px-6 py-3 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground border border-border hover:bg-white/60">
                       Cancel
                     </button>
                   </div>
@@ -368,32 +368,32 @@ function DashboardPage() {
             <Panel className="overflow-hidden">
               <div className="p-5 flex justify-between items-center flex-wrap gap-3">
                 <div>
-                  <h4 className="text-lg font-bold text-[#2D1B0D]" style={display}>Recent Campaigns</h4>
-                  <p className="text-[11px] text-[#A38D7D] mt-0.5">
+                  <h4 className="text-lg font-bold text-foreground" style={display}>Recent Campaigns</h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     Showing {filtered.length} of {links.length}
                     {(dashQ.data as any)?._cachedAt && (
-                      <span className="ml-2 text-[#A38D7D]/70">
+                      <span className="ml-2 text-muted-foreground/70">
                         · Updated {formatRelativeTime((dashQ.data as any)._cachedAt)}
                       </span>
                     )}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="w-9 h-9 rounded-lg border border-[#FFEDD5] text-[#A38D7D] hover:text-[#FF7E5F] hover:border-[#FF7E5F]/40 flex items-center justify-center transition-all"><Filter className="w-4 h-4" /></button>
+                  <button className="w-9 h-9 rounded-lg border border-border text-muted-foreground hover:text-primary hover:border-primary/40 flex items-center justify-center transition-all"><Filter className="w-4 h-4" /></button>
                   <button
                     onClick={() => refreshMut.mutate()}
                     disabled={refreshMut.isPending}
                     title="Refresh dashboard (fetch latest data)"
-                    className="w-9 h-9 rounded-lg border border-[#FFEDD5] text-[#A38D7D] hover:text-[#FF7E5F] hover:border-[#FF7E5F]/40 flex items-center justify-center transition-all disabled:opacity-50"
+                    className="w-9 h-9 rounded-lg border border-border text-muted-foreground hover:text-primary hover:border-primary/40 flex items-center justify-center transition-all disabled:opacity-50"
                   >
                     <RefreshCw className={`w-4 h-4 ${refreshMut.isPending ? "animate-spin" : ""}`} />
                   </button>
                 </div>
               </div>
 
-              {dashQ.isLoading && <div className="py-16 text-center text-sm text-[#A38D7D]">Loading links…</div>}
+              {dashQ.isLoading && <div className="py-16 text-center text-sm text-muted-foreground">Loading links…</div>}
               {!dashQ.isLoading && filtered.length === 0 && (
-                <div className="py-16 text-center text-sm text-[#7D6452]">
+                <div className="py-16 text-center text-sm text-muted-foreground">
                   {search ? "No links match." : "No links yet — click Create new smart link above."}
                 </div>
               )}
@@ -409,7 +409,7 @@ function DashboardPage() {
                       <col className="hidden sm:table-column w-[90px]" />
                       <col className="w-[160px]" />
                     </colgroup>
-                    <thead className="text-[10px] uppercase tracking-[0.18em] text-[#A38D7D] border-y border-[#FFEDD5]">
+                    <thead className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground border-y border-border">
                       <tr>
                         <th className="px-3 py-3">
                           <input
@@ -420,7 +420,7 @@ function DashboardPage() {
                               if (e.target.checked) setSelectedIds(new Set(filtered.map((l) => l.id)));
                               else setSelectedIds(new Set());
                             }}
-                            className="w-4 h-4 accent-[#FF7E5F] cursor-pointer"
+                            className="w-4 h-4 accent-primary cursor-pointer"
                           />
                         </th>
                         <th className="px-3 sm:px-5 py-3 font-bold">Campaign</th>
@@ -430,35 +430,35 @@ function DashboardPage() {
                         <th className="px-3 sm:px-5 py-3 font-bold text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#FFEDD5]">
+                    <tbody className="divide-y divide-border">
                       {filtered.map((l) => {
                         const shortUrl = `${origin}/${l.short_code}`;
                         const spark = stats?.perLinkDaily?.[l.id] ?? [];
                         const sparkUp = spark.length >= 2 ? spark[spark.length - 1] >= spark[0] : true;
                         const isSelected = selectedIds.has(l.id);
                         return (
-                          <tr key={l.id} className={`hover:bg-[#FFF9F5] transition-colors ${isSelected ? "bg-[#FFF4ED]" : ""}`}>
+                          <tr key={l.id} className={`hover:bg-muted transition-colors ${isSelected ? "bg-muted" : ""}`}>
                             <td className="px-3 py-4">
                               <input
                                 type="checkbox"
                                 aria-label={`Select ${l.title || l.short_code}`}
                                 checked={isSelected}
                                 onChange={() => toggleSelect(l.id)}
-                                className="w-4 h-4 accent-[#FF7E5F] cursor-pointer"
+                                className="w-4 h-4 accent-primary cursor-pointer"
                               />
                             </td>
                             <td className="px-3 sm:px-5 py-4 min-w-0">
-                              <p className="text-sm font-bold text-[#2D1B0D] truncate" style={display}>
+                              <p className="text-sm font-bold text-foreground truncate" style={display}>
                                 {l.title || l.short_code}
                               </p>
                               <button onClick={() => { navigator.clipboard.writeText(shortUrl); toast.success("Copied"); }}
-                                className="text-[11px] text-[#FF7E5F] hover:text-[#E66D50] flex items-center gap-1 mt-0.5 font-mono truncate max-w-full">
+                                className="text-[11px] text-primary hover:text-primary flex items-center gap-1 mt-0.5 font-mono truncate max-w-full">
                                 <span className="truncate">{effectiveDomain}/{l.short_code}</span> <Copy className="w-3 h-3 shrink-0" />
                               </button>
                             </td>
                             <td className="hidden md:table-cell px-3 py-4"><MiniSpark up={sparkUp} /></td>
                             <td className="px-3 py-4">
-                              <div className="text-sm font-bold text-[#2D1B0D] tabular-nums" style={display}>
+                              <div className="text-sm font-bold text-foreground tabular-nums" style={display}>
                                 {(l.clicks_count || 0).toLocaleString()}
                               </div>
                             </td>
@@ -475,15 +475,15 @@ function DashboardPage() {
                                 <button
                                   title={`Country Shield${(l as any).blocked_countries?.length ? ` (${(l as any).blocked_countries.length} blocked)` : ""}`}
                                   onClick={() => setShieldFor({ id: l.id, title: l.title || l.short_code, initial: (l as any).blocked_countries ?? [] })}
-                                  className={`relative p-1.5 rounded-lg hover:bg-[#FFEDD5]/60 shrink-0 ${
+                                  className={`relative p-1.5 rounded-lg hover:bg-border/60 shrink-0 ${
                                     (l as any).blocked_countries?.length > 0
-                                      ? "text-[#FF7E5F]"
-                                      : "text-[#7D6452] hover:text-[#FF7E5F]"
+                                      ? "text-primary"
+                                      : "text-muted-foreground hover:text-primary"
                                   }`}
                                 >
                                   <Shield className="w-4 h-4" />
                                   {(l as any).blocked_countries?.length > 0 && (
-                                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#FF7E5F] text-white text-[8px] font-bold flex items-center justify-center">
+                                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-white text-[8px] font-bold flex items-center justify-center">
                                       {(l as any).blocked_countries.length}
                                     </span>
                                   )}
@@ -493,17 +493,17 @@ function DashboardPage() {
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   title={`Verify: open ${effectiveDomain}/${l.short_code} and confirm it redirects to your offer`}
-                                  className="text-[#7D6452] hover:text-emerald-600 p-1.5 rounded-lg hover:bg-emerald-50 shrink-0"
+                                  className="text-muted-foreground hover:text-emerald-600 p-1.5 rounded-lg hover:bg-emerald-50 shrink-0"
                                 >
                                   <ShieldCheck className="w-4 h-4" />
                                 </a>
                                 <button onClick={() => togMut.mutate({ id: l.id, is_active: !l.is_active })}
-                                  className="text-[#7D6452] hover:text-[#FF7E5F] p-1.5 rounded-lg hover:bg-[#FFEDD5]/60 shrink-0">
+                                  className="text-muted-foreground hover:text-primary p-1.5 rounded-lg hover:bg-border/60 shrink-0">
                                   {l.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                                 </button>
 
                                 <button onClick={() => { if (confirm("Delete this link?")) delMut.mutate(l.id); }}
-                                  className="text-[#7D6452] hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 shrink-0">
+                                  className="text-muted-foreground hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 shrink-0">
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
@@ -523,9 +523,9 @@ function DashboardPage() {
           <div className="space-y-5">
             {/* Account Quota */}
             <Panel className="p-6">
-              <h4 className="text-base font-bold text-[#2D1B0D]" style={display}>Account Quota</h4>
+              <h4 className="text-base font-bold text-foreground" style={display}>Account Quota</h4>
               <div className="mt-5 flex items-center justify-between text-xs">
-                <span className="text-[#7D6452]">Plan</span>
+                <span className="text-muted-foreground">Plan</span>
                 <PlanBadge slug={(profile as any)?.plan_slug} size="lg" />
               </div>
               {(() => {
@@ -533,7 +533,7 @@ function DashboardPage() {
                 if (!exp) {
                   const slug = (profile as any)?.plan_slug;
                   if (slug === "lifetime" || slug === "unlimited") {
-                    return <div className="mt-2 flex items-center justify-between text-xs"><span className="text-[#7D6452]">Expires</span><span className="font-bold text-emerald-700">Never</span></div>;
+                    return <div className="mt-2 flex items-center justify-between text-xs"><span className="text-muted-foreground">Expires</span><span className="font-bold text-emerald-700">Never</span></div>;
                   }
                   return null;
                 }
@@ -542,36 +542,36 @@ function DashboardPage() {
                 const expired = daysLeft <= 0;
                 return (
                   <div className="mt-2 flex items-center justify-between text-xs">
-                    <span className="text-[#7D6452]">{expired ? "Expired" : "Expires in"}</span>
-                    <span className={`font-bold tabular-nums ${expired ? "text-red-600" : daysLeft <= 3 ? "text-amber-600" : "text-[#2D1B0D]"}`}>
+                    <span className="text-muted-foreground">{expired ? "Expired" : "Expires in"}</span>
+                    <span className={`font-bold tabular-nums ${expired ? "text-red-600" : daysLeft <= 3 ? "text-amber-600" : "text-foreground"}`}>
                       {expired ? expDate.toLocaleDateString() : `${daysLeft} day${daysLeft === 1 ? "" : "s"}`}
                     </span>
                   </div>
                 );
               })()}
               <div className="mt-3 flex items-center justify-between text-xs">
-                <span className="text-[#7D6452]">Redirects used</span>
-                <span className="font-bold text-[#2D1B0D] tabular-nums">{quotaLabel}</span>
+                <span className="text-muted-foreground">Redirects used</span>
+                <span className="font-bold text-foreground tabular-nums">{quotaLabel}</span>
               </div>
-              <div className="mt-2 h-2 bg-[#FFEDD5] rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] shadow-[0_0_8px_rgba(255,126,95,0.5)]" style={{ width: `${quotaPct}%` }} />
+              <div className="mt-2 h-2 bg-border rounded-full overflow-hidden">
+                <div className="h-full bg-primary-gradient shadow-[0_0_8px_rgba(255,126,95,0.5)]" style={{ width: `${quotaPct}%` }} />
               </div>
             </Panel>
 
             {/* Traffic by Region + Mobile Gauge */}
             <Panel className="p-6">
-              <h4 className="text-base font-bold text-[#2D1B0D]" style={display}>Traffic by Region</h4>
+              <h4 className="text-base font-bold text-foreground" style={display}>Traffic by Region</h4>
               <div className="mt-4 space-y-3">
                 {regionRows.length === 0 ? (
-                  <p className="text-xs text-[#A38D7D]">No traffic yet.</p>
+                  <p className="text-xs text-muted-foreground">No traffic yet.</p>
                 ) : (
                   regionRows.map((r) => <RegionRow key={r.name} color={r.color} name={r.name} pct={r.pct} />)
                 )}
               </div>
 
-              <div className="mt-6 pt-6 border-t border-[#FFEDD5] flex flex-col items-center">
+              <div className="mt-6 pt-6 border-t border-border flex flex-col items-center">
                 <MobileGauge pct={mobilePct} />
-                <p className="mt-3 text-[10px] uppercase tracking-[0.18em] font-bold text-[#A38D7D] flex items-center gap-1.5">
+                <p className="mt-3 text-[10px] uppercase tracking-[0.18em] font-bold text-muted-foreground flex items-center gap-1.5">
                   <Smartphone className="w-3 h-3" /> Mobile Traffic
                 </p>
               </div>
@@ -595,23 +595,23 @@ function DashboardPage() {
 
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-[#2D1B0D]">
-              <Sparkles className="w-5 h-5 text-[#FF7E5F]" />
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <Sparkles className="w-5 h-5 text-primary" />
               All clicks have been cleaned
             </DialogTitle>
-            <DialogDescription className="text-[#5A4434] pt-2 leading-relaxed">
+            <DialogDescription className="text-foreground pt-2 leading-relaxed">
               Don't worry — <b>all your links and account data are safe</b>. We just
               cleared the click history to keep your dashboard fast and optimized.
               New clicks from now on will be counted as usual.
               {noticeQ.data?.resetAt && (
-                <span className="block mt-2 text-xs text-[#A38D7D] font-mono">
+                <span className="block mt-2 text-xs text-muted-foreground font-mono">
                   Reset: {new Date(noticeQ.data.resetAt).toLocaleString()}
                 </span>
               )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <UIButton onClick={dismissNotice} className="bg-[#FF7E5F] hover:bg-[#FF6B47] text-white">
+            <UIButton onClick={dismissNotice} className="bg-primary hover:bg-primary text-white">
               Got it
             </UIButton>
           </DialogFooter>
@@ -620,14 +620,14 @@ function DashboardPage() {
 
       {/* Floating bulk-copy action bar */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 rounded-2xl bg-[#2D1B0D] text-white shadow-2xl shadow-orange-900/30 border border-[#FF7E5F]/40 max-w-[95vw] flex-wrap justify-center">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 rounded-2xl bg-foreground text-white shadow-2xl shadow-orange-900/30 border border-primary/40 max-w-[95vw] flex-wrap justify-center">
           <span className="text-xs font-bold whitespace-nowrap">
             {selectedIds.size} selected
           </span>
 
           {/* Domain picker inside bulk bar — copied URLs ALWAYS match this */}
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/10 border border-white/15">
-            <Globe className="w-3 h-3 text-[#FEB47B]" />
+            <Globe className="w-3 h-3 text-primary-glow" />
             <select
               value={effectiveDomain}
               onChange={(e) => {
@@ -638,7 +638,7 @@ function DashboardPage() {
               className="bg-transparent text-[11px] font-mono font-bold text-white focus:outline-none cursor-pointer"
             >
               {allDomains.map((d) => (
-                <option key={d} value={d} className="text-[#2D1B0D]">{d}</option>
+                <option key={d} value={d} className="text-foreground">{d}</option>
               ))}
             </select>
           </div>
@@ -652,7 +652,7 @@ function DashboardPage() {
               navigator.clipboard.writeText(urls);
               toast.success(`Copied ${selectedIds.size} short URL${selectedIds.size === 1 ? "" : "s"} on ${effectiveDomain}`);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white font-bold text-xs shadow-lg hover:opacity-90"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-gradient text-white font-bold text-xs shadow-lg hover:opacity-90"
           >
             <Copy className="w-3.5 h-3.5" /> Copy URLs
           </button>
@@ -674,7 +674,7 @@ function DashboardPage() {
 
           <button
             onClick={() => setSelectedIds(new Set())}
-            className="text-[11px] font-bold text-[#FFEDD5]/80 hover:text-white px-2 py-1"
+            className="text-[11px] font-bold text-border/80 hover:text-white px-2 py-1"
           >
             Clear
           </button>
@@ -690,7 +690,7 @@ function DashboardPage() {
 
 function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={"rounded-2xl border border-white/80 bg-white/80 backdrop-blur-xl shadow-sm shadow-orange-900/5 " + className}>
+    <div className={"rounded-2xl border border-white/80 bg-white/80 backdrop-blur-xl shadow-sm shadow-sm " + className}>
       {children}
     </div>
   );
@@ -698,10 +698,10 @@ function Panel({ children, className = "" }: { children: ReactNode; className?: 
 
 function KpiCard({ label, value, sub, tone }: { label: string; value: string; sub: string; tone: "up" | "muted" }) {
   return (
-    <div className="rounded-2xl border border-white/80 bg-white/80 backdrop-blur-xl p-4 shadow-sm shadow-orange-900/5 hover:-translate-y-0.5 hover:shadow-md transition-all">
-      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#A38D7D]">{label}</div>
-      <div className="text-2xl lg:text-3xl font-extrabold text-[#2D1B0D] mt-2 tabular-nums" style={display}>{value}</div>
-      <div className={`text-[11px] font-bold mt-1 flex items-center gap-1 ${tone === "up" ? "text-emerald-600" : "text-[#FF7E5F]"}`}>
+    <div className="rounded-2xl border border-white/80 bg-white/80 backdrop-blur-xl p-4 shadow-sm shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all">
+      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
+      <div className="text-2xl lg:text-3xl font-extrabold text-foreground mt-2 tabular-nums" style={display}>{value}</div>
+      <div className={`text-[11px] font-bold mt-1 flex items-center gap-1 ${tone === "up" ? "text-emerald-600" : "text-primary"}`}>
         {tone === "up" && <TrendingUp className="w-3 h-3" />}
         {sub}
       </div>
@@ -711,13 +711,13 @@ function KpiCard({ label, value, sub, tone }: { label: string; value: string; su
 
 function QuotaCard({ pct, label }: { pct: number; label: string }) {
   return (
-    <div className="rounded-2xl border border-white/80 bg-white/80 backdrop-blur-xl p-4 shadow-sm shadow-orange-900/5">
+    <div className="rounded-2xl border border-white/80 bg-white/80 backdrop-blur-xl p-4 shadow-sm shadow-sm">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#A38D7D]">QUOTA</span>
-        <span className="text-[11px] font-bold text-[#FF7E5F] tabular-nums">{label}</span>
+        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">QUOTA</span>
+        <span className="text-[11px] font-bold text-primary tabular-nums">{label}</span>
       </div>
-      <div className="mt-4 h-2 bg-[#FFEDD5] rounded-full overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] shadow-[0_0_8px_rgba(255,126,95,0.5)] transition-all" style={{ width: `${pct}%` }} />
+      <div className="mt-4 h-2 bg-border rounded-full overflow-hidden">
+        <div className="h-full bg-primary-gradient shadow-[0_0_8px_rgba(255,126,95,0.5)] transition-all" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -749,26 +749,26 @@ function BarSparkChart({ vals, peakIdx, troughIdx, labels }: { vals: number[]; p
         <svg viewBox={`0 0 ${sw} ${sh}`} preserveAspectRatio="none" className="w-full h-full overflow-visible">
           <defs>
             <linearGradient id="dashSpark" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#FEB47B" />
-              <stop offset="100%" stopColor="#FF7E5F" />
+              <stop offset="0%" stopColor="primary-glow" />
+              <stop offset="100%" stopColor="primary" />
             </linearGradient>
           </defs>
           <path d={path} fill="none" stroke="url(#dashSpark)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                 style={{ filter: "drop-shadow(0 2px 6px rgba(255,126,95,0.35))" }} />
           {/* Peak indicator */}
           <g>
-            <circle cx={peak[0]} cy={peak[1]} r="5" fill="#FF7E5F" stroke="white" strokeWidth="2"
+            <circle cx={peak[0]} cy={peak[1]} r="5" fill="primary" stroke="white" strokeWidth="2"
                     style={{ filter: "drop-shadow(0 0 8px rgba(255,126,95,0.6))" }} />
           </g>
           {/* Trough indicator (subtle) */}
           {vals.length > 1 && peakIdx !== troughIdx && (
-            <circle cx={trough[0]} cy={trough[1]} r="3.5" fill="white" stroke="#FF7E5F" strokeWidth="2" />
+            <circle cx={trough[0]} cy={trough[1]} r="3.5" fill="white" stroke="primary" strokeWidth="2" />
           )}
         </svg>
         {/* Floating peak label */}
         <div className="absolute pointer-events-none -translate-x-1/2 -translate-y-full"
              style={{ left: `${(peak[0] / sw) * 100}%`, top: `${(peak[1] / sh) * 100}%`, marginTop: -6 }}>
-          <div className="bg-[#2D1B0D] text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg whitespace-nowrap" style={display}>
+          <div className="bg-foreground text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg whitespace-nowrap" style={display}>
             {fmtCompact(vals[peakIdx] ?? 0)}
             <span className="block text-[8px] font-normal text-white/60 leading-none mt-0.5">{fmtLabel(labels[peakIdx] ?? "")}</span>
           </div>
@@ -783,12 +783,12 @@ function BarSparkChart({ vals, peakIdx, troughIdx, labels }: { vals: number[]; p
           return (
             <div key={i} className="group relative flex-1 flex items-end h-full">
               <div
-                className={`w-full rounded-t-md transition-all duration-300 cursor-pointer ${isPeak ? "bg-[#FF7E5F] shadow-[0_4px_14px_rgba(255,126,95,0.5)]" : "bg-[#FFEDD5] hover:bg-[#FF7E5F] hover:shadow-[0_6px_18px_rgba(255,126,95,0.55)] hover:scale-y-105 origin-bottom"}`}
+                className={`w-full rounded-t-md transition-all duration-300 cursor-pointer ${isPeak ? "bg-primary shadow-[0_4px_14px_rgba(255,126,95,0.5)]" : "bg-border hover:bg-primary hover:shadow-[0_6px_18px_rgba(255,126,95,0.55)] hover:scale-y-105 origin-bottom"}`}
                 style={{ height: `${Math.max(4, pct)}%` }}
               />
               {/* Hover tooltip */}
               <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="bg-[#2D1B0D] text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg whitespace-nowrap" style={display}>
+                <div className="bg-foreground text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg whitespace-nowrap" style={display}>
                   {fmtCompact(v)}
                   <span className="block text-[8px] font-normal text-white/60 leading-none mt-0.5">{fmtLabel(labels[i] ?? "")}</span>
                 </div>
@@ -799,12 +799,12 @@ function BarSparkChart({ vals, peakIdx, troughIdx, labels }: { vals: number[]; p
       </div>
 
       {/* X-axis labels (sparse) */}
-      <div className="flex justify-between text-[10px] font-bold text-[#A38D7D] uppercase tracking-wider px-0.5">
+      <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-0.5">
         {labels.length > 0 && (
           <>
             <span>{fmtLabel(labels[0])}</span>
             {labels.length > 6 && <span>{fmtLabel(labels[Math.floor(labels.length / 2)])}</span>}
-            <span className="text-[#FF7E5F]">{fmtLabel(labels[labels.length - 1])}</span>
+            <span className="text-primary">{fmtLabel(labels[labels.length - 1])}</span>
           </>
         )}
       </div>
@@ -820,7 +820,7 @@ function MiniSpark({ up }: { up: boolean }) {
   const path = "M" + pts.map(([x, y]) => `${x},${y}`).join(" L");
   return (
     <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h}>
-      <path d={path} fill="none" stroke={up ? "#10B981" : "#FF7E5F"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={path} fill="none" stroke={up ? "#10B981" : "primary"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -829,8 +829,8 @@ function RegionRow({ color, name, pct }: { color: string; name: string; pct: num
   return (
     <div className="flex items-center gap-3">
       <span className="w-3 h-3 rounded-sm shrink-0" style={{ background: color }} />
-      <span className="text-sm text-[#2D1B0D] flex-1">{name}</span>
-      <span className="text-sm font-bold text-[#2D1B0D] tabular-nums">{pct}%</span>
+      <span className="text-sm text-foreground flex-1">{name}</span>
+      <span className="text-sm font-bold text-foreground tabular-nums">{pct}%</span>
     </div>
   );
 }
@@ -843,31 +843,31 @@ function MobileGauge({ pct }: { pct: number }) {
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#FFEDD5" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="border" strokeWidth={stroke} />
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="url(#mg)" strokeWidth={stroke}
                 strokeLinecap="round" strokeDasharray={c} strokeDashoffset={offset}
                 style={{ filter: "drop-shadow(0 0 6px rgba(255,126,95,0.5))" }} />
         <defs>
           <linearGradient id="mg" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#FF7E5F" />
-            <stop offset="100%" stopColor="#FEB47B" />
+            <stop offset="0%" stopColor="primary" />
+            <stop offset="100%" stopColor="primary-glow" />
           </linearGradient>
         </defs>
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-[10px] text-[#A38D7D] font-semibold">Mobile</span>
-        <span className="text-2xl font-extrabold text-[#2D1B0D] tabular-nums" style={display}>{pct}%</span>
+        <span className="text-[10px] text-muted-foreground font-semibold">Mobile</span>
+        <span className="text-2xl font-extrabold text-foreground tabular-nums" style={display}>{pct}%</span>
       </div>
     </div>
   );
 }
 
-const fieldCls = "w-full bg-[#FFF9F5] border border-[#FFEDD5] rounded-xl px-4 py-3 text-sm text-[#2D1B0D] placeholder:text-[#A38D7D] focus:outline-none focus:border-[#FF7E5F]/50 focus:bg-white transition-all";
+const fieldCls = "w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:bg-white transition-all";
 
 function Field({ label, full = false, children }: { label: string; full?: boolean; children: ReactNode }) {
   return (
     <label className={`block ${full ? "sm:col-span-2" : ""}`}>
-      <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#A38D7D] mb-1.5 block">{label}</span>
+      <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-1.5 block">{label}</span>
       {children}
     </label>
   );
@@ -881,9 +881,9 @@ function PlanBadge({ slug, size = "sm" }: { slug?: string | null; size?: "sm" | 
   const cfg = isLifetime
     ? { label: "Lifetime", Icon: Crown, grad: "from-amber-400 via-orange-500 to-fuchsia-500", ring: "ring-amber-200", glow: "shadow-[0_4px_18px_rgba(251,146,60,0.55)]" }
     : isPro
-    ? { label: s === "yearly" ? "Pro Yearly" : "Pro", Icon: Gem, grad: "from-[#FF7E5F] via-[#FF6B4A] to-[#FEB47B]", ring: "ring-orange-200", glow: "shadow-[0_4px_14px_rgba(255,126,95,0.5)]" }
+    ? { label: s === "yearly" ? "Pro Yearly" : "Pro", Icon: Gem, grad: "from-primary via-primary to-primary-glow", ring: "ring-orange-200", glow: "shadow-[0_4px_14px_rgba(255,126,95,0.5)]" }
     : isMonthly
-    ? { label: "Monthly", Icon: Star, grad: "from-[#FEB47B] to-[#FF7E5F]", ring: "ring-orange-100", glow: "shadow-[0_3px_10px_rgba(255,126,95,0.35)]" }
+    ? { label: "Monthly", Icon: Star, grad: "from-primary-glow to-primary", ring: "ring-orange-100", glow: "shadow-[0_3px_10px_rgba(255,126,95,0.35)]" }
     : { label: "Free", Icon: Star, grad: "from-stone-300 to-stone-400", ring: "ring-stone-200", glow: "" };
   const pad = size === "lg" ? "px-2.5 py-1 text-[11px]" : "px-2 py-0.5 text-[10px]";
   const iconSize = size === "lg" ? "w-3 h-3" : "w-2.5 h-2.5";
