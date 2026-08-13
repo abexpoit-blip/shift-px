@@ -52,24 +52,6 @@ function DashboardPage() {
   const qc = useQueryClient();
   const dash = useServerFn(getDashboardData);
   const refreshDash = useServerFn(refreshDashboardData);
-  const create = useServerFn(createLink);
-  const remove = useServerFn(deleteLink);
-  const toggle = useServerFn(toggleLink);
-
-  // One-time popup: notify user when admin/cron has reset all clicks since they last saw the notice.
-  const resetNoticeFn = useServerFn(getClickResetNotice);
-  const dismissNoticeFn = useServerFn(dismissClickResetNotice);
-  const noticeQ = useQuery({
-    queryKey: ["click-reset-notice"],
-    queryFn: () => resetNoticeFn(),
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
-  });
-  const dismissNotice = () => {
-    void dismissNoticeFn().then(() => qc.invalidateQueries({ queryKey: ["click-reset-notice"] }));
-  };
-
-  
 
   const dashQ = useQuery({
     queryKey: ["dashboard"],
@@ -91,86 +73,9 @@ function DashboardPage() {
     onError: (e: Error) => toast.error(e.message || "Refresh failed"),
   });
 
-  const [adsterra, setAdsterra] = useState("");
-  const [safe, setSafe] = useState("");
-  const [title, setTitle] = useState("");
-  const [showCreate, setShowCreate] = useState(false);
-
-  const [search, setSearch] = useState("");
   const [range, setRange] = useState<"7D" | "30D">("7D");
 
-  const createMut = useMutation({
-    mutationFn: (vars: { title?: string; adsterra_url: string; safe_url?: string }) => create({ data: vars }),
-    onSuccess: () => {
-      toast.success("Link created");
-      setAdsterra(""); setSafe(""); setTitle(""); setShowCreate(false);
-      refreshMut.mutate();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const delMut = useMutation({
-    mutationFn: (id: string) => remove({ data: { id } }),
-    onSuccess: () => { toast.success("Deleted"); refreshMut.mutate(); },
-  });
-  const togMut = useMutation({
-    mutationFn: (v: { id: string; is_active: boolean }) => toggle({ data: v }),
-    onSuccess: () => refreshMut.mutate(),
-  });
-
-  const onSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    createMut.mutate({
-      title: title || undefined,
-      adsterra_url: adsterra,
-      safe_url: safe || undefined,
-    });
-  };
-
-  const primaryFn = useServerFn(getPrimaryShortenerDomain);
-  const primaryQ = useQuery({
-    queryKey: ["primary-shortener-domain"],
-    queryFn: () => primaryFn(),
-    staleTime: 5 * 60_000,
-    gcTime: 30 * 60_000,
-    refetchOnWindowFocus: false,
-  });
-  const [selectedDomain, setSelectedDomain] = useState<string>("");
-  const rawPrimary = primaryQ.data?.domain ?? "mefok.com";
-  // Never hand out a Safe-Browsing-flagged domain, even if the DB still lists it.
-  const primaryDomain = isFlaggedShortDomain(rawPrimary) || rawPrimary === "adspx.com" ? DEFAULT_SHORT_HOST : rawPrimary;
-  const customDomains = (dashQ.data?.customDomains ?? []).filter((d: string) => !isFlaggedShortDomain(d));
-  // Built-in shortener domains always available + any user custom domains.
-  const BUILTIN_DOMAINS = ["mefok.com", "skypq.com", "breezysocial.com"].filter(
-    (d) => !isFlaggedShortDomain(d),
-  );
-  const allDomains = Array.from(new Set([primaryDomain, ...BUILTIN_DOMAINS, ...customDomains]));
-  // Load persisted choice from localStorage on mount; ignore flagged/stale values.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = window.localStorage.getItem("adspx.shortDomain");
-    if (saved && !isFlaggedShortDomain(saved) && allDomains.includes(saved)) setSelectedDomain(saved);
-    else {
-      setSelectedDomain(primaryDomain);
-      window.localStorage.setItem("adspx.shortDomain", primaryDomain);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customDomains.join(","), primaryDomain]);
-  const effectiveDomain = !selectedDomain || isFlaggedShortDomain(selectedDomain) ? primaryDomain : selectedDomain;
-
-  const origin = typeof window !== "undefined" ? `${window.location.protocol}//${effectiveDomain}` : `https://${effectiveDomain}`;
   const links = dashQ.data?.links ?? [];
-  const [shieldFor, setShieldFor] = useState<null | { id: string; title: string; initial: string[] }>(null);
-  // Bulk-copy selection (Set of link ids)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
-
-  const profile = dashQ.data?.profile;
   const stats = dashQ.data?.stats;
 
   const totalClicks = links.reduce((s, l) => s + (l.clicks_count || 0), 0);
@@ -187,17 +92,6 @@ function DashboardPage() {
   const payoutRemaining = CLICKS_PER_DOLLAR - payoutProgress;
   const payoutPct = Math.min(100, Math.round((payoutProgress / CLICKS_PER_DOLLAR) * 100));
 
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return links;
-    return links.filter(
-      (l) =>
-        (l.title ?? "").toLowerCase().includes(q) ||
-        l.short_code.toLowerCase().includes(q) ||
-        (l.adsterra_url ?? "").toLowerCase().includes(q),
-    );
-  }, [links, search]);
 
   // REAL chart data from clicks table
   const chartData = useMemo(() => {
