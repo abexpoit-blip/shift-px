@@ -22,6 +22,8 @@ import { Sparkles } from "lucide-react";
 import { CountryShieldDialog } from "@/components/CountryShieldDialog";
 
 
+import { EarningsStrip } from "@/components/EarningsStrip";
+
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Adspx" }] }),
   component: DashboardPage,
