@@ -1,24 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import {
-  Copy, Trash2, Play, Pause, Plus, Search, ArrowRight, LifeBuoy,
-  TrendingUp, Filter, RefreshCw, ChevronRight, Smartphone, Shield, ShieldCheck,
-} from "lucide-react";
+import { Plus, ArrowRight, TrendingUp, Smartphone } from "lucide-react";
 
+import { getDashboardData, refreshDashboardData } from "@/lib/links.functions";
 
-import { getDashboardData, refreshDashboardData, createLink, deleteLink, toggleLink } from "@/lib/links.functions";
-
-import { getPrimaryShortenerDomain } from "@/lib/shortener-domains.functions";
-import { DEFAULT_SHORT_HOST, DEFAULT_SHORT_ORIGIN, isFlaggedShortDomain } from "@/lib/short-domains";
-import { getClickResetNotice, dismissClickResetNotice } from "@/lib/click-reset.functions";
-import { BroadcastBell } from "@/components/broadcast-bell";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Button as UIButton } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
-import { CountryShieldDialog } from "@/components/CountryShieldDialog";
 
 
 import { EarningsStrip } from "@/components/EarningsStrip";
