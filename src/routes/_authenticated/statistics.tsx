@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/statistics")({
   component: StatisticsPage,
 });
 
-const PIE_COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#0ea5e9"];
+const PIE_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--primary-glow)"];
 
 function fmt(n: number) {
   return n.toLocaleString();
@@ -41,7 +41,7 @@ function fmt(n: number) {
 
 function StatCard({ icon: Icon, label, value, hint }: { icon: any; label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl glass-card p-5">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Icon className="h-3.5 w-3.5" /> {label}
       </div>
@@ -82,7 +82,7 @@ function StatisticsPage() {
         <StatCard icon={Globe2} label="Countries" value={fmt(data.countriesSeen)} hint="Unique visitor regions" />
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+      <section className="rounded-2xl glass-card p-4 sm:p-6">
         <h2 className="font-display text-lg font-semibold mb-4">Daily traffic</h2>
         <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -111,7 +111,7 @@ function StatisticsPage() {
       </section>
 
       <section className="grid lg:grid-cols-2 gap-5">
-        <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+        <div className="rounded-2xl glass-card p-4 sm:p-6">
           <h2 className="font-display text-lg font-semibold mb-4">Top countries</h2>
           {data.countries.length === 0 ? (
             <p className="text-sm text-muted-foreground">No country data yet.</p>
@@ -130,7 +130,7 @@ function StatisticsPage() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+        <div className="rounded-2xl glass-card p-4 sm:p-6">
           <h2 className="font-display text-lg font-semibold mb-4">Traffic sources</h2>
           {data.sources.length === 0 ? (
             <p className="text-sm text-muted-foreground">No source data yet.</p>
@@ -159,7 +159,7 @@ function StatisticsPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+      <section className="rounded-2xl glass-card p-4 sm:p-6">
         <h2 className="font-display text-lg font-semibold mb-4">Top links</h2>
         {data.topLinks.length === 0 ? (
           <p className="text-sm text-muted-foreground">No links yet.</p>
