@@ -149,29 +149,7 @@ function AppSidebar({
   }
 
 
-  if (isAdmin) {
-    groups.push({
-      label: "Control Center",
-      items: [
-        {
-          title: "Admin Panel",
-          to: "/admin",
-          icon: Shield,
-          children: [
-            { title: "Overview", to: "/admin", search: { tab: "overview" }, icon: LayoutDashboard },
-            { title: "Users", to: "/admin", search: { tab: "users" }, icon: Users },
-            { title: "User History", to: "/admin", search: { tab: "history" }, icon: History },
-            { title: "Payouts", to: "/admin", search: { tab: "withdrawals" }, icon: DollarSign },
-            { title: "Ads Setup", to: "/admin", search: { tab: "ads" }, icon: Megaphone },
-            { title: "Performance", to: "/admin", search: { tab: "performance" }, icon: Activity },
-            { title: "Messages", to: "/admin", search: { tab: "messages" }, icon: Inbox },
-            { title: "System", to: "/admin", search: { tab: "system" }, icon: Settings2 },
-            { title: "Simulator", to: "/admin", search: { tab: "simulator" }, icon: FlaskConical },
-          ],
-        },
-      ],
-    });
-  }
+
 
   const isActive = (item: NavChild) => {
     if (pathname !== item.to) return false;
