@@ -595,23 +595,8 @@ function DashboardPage() {
             {selectedIds.size} selected
           </span>
 
-          {/* Domain picker inside bulk bar — copied URLs ALWAYS match this */}
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/10 border border-white/15">
-            <Globe className="w-3 h-3 text-primary-glow" />
-            <select
-              value={effectiveDomain}
-              onChange={(e) => {
-                const v = e.target.value;
-                setSelectedDomain(v);
-                if (typeof window !== "undefined") window.localStorage.setItem("adspx.shortDomain", v);
-              }}
-              className="bg-transparent text-[11px] font-mono font-bold text-white focus:outline-none cursor-pointer"
-            >
-              {allDomains.map((d) => (
-                <option key={d} value={d} className="text-foreground">{d}</option>
-              ))}
-            </select>
-          </div>
+
+
 
           <button
             onClick={() => {
