@@ -120,7 +120,6 @@ function AnalyticsPage() {
         </div>
       </header>
 
-      <SundayResetBanner />
 
       {/* HERO — Live ticker + total card */}
 

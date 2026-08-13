@@ -37,6 +37,7 @@ import {
   Settings,
   ArrowRight,
   LifeBuoy,
+  Link2 as LinkIcon,
 } from "lucide-react";
 
 type NavChild = { title: string; to: string; search?: Record<string, string>; icon: any };
@@ -99,6 +100,7 @@ function AppSidebar({
       label: "Main",
       items: [
         { title: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+        { title: "Links", to: "/links", icon: LinkIcon },
         { title: "Statistics", to: "/statistics", icon: BarChart3 },
         { title: "Leaderboard", to: "/leaderboard", icon: Trophy },
         
