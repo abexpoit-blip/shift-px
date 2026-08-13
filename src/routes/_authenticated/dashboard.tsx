@@ -5,8 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "re
 import { toast } from "sonner";
 import {
   Copy, Trash2, Play, Pause, Plus, Search, ArrowRight, LifeBuoy,
-  TrendingUp, Filter, RefreshCw, ChevronRight, Smartphone, Globe, Shield, ShieldCheck,
-  Crown, Gem, Star
+  TrendingUp, Filter, RefreshCw, ChevronRight, Smartphone, Shield, ShieldCheck,
 } from "lucide-react";
 
 
@@ -181,10 +180,13 @@ function DashboardPage() {
   const uniqueVisitors = stats?.uniqueVisitors ?? 0;
   const botPct = allTraffic > 0 ? ((botBlocked / allTraffic) * 100) : 0;
 
-  const clickQuota = profile?.click_quota ?? null;
-  const clicksUsed = Number(profile?.clicks_used ?? 0);
-  const quotaPct = clickQuota == null ? 0 : Math.min(100, Math.round((clicksUsed / clickQuota) * 100));
-  const quotaLabel = clickQuota == null ? "Unlimited" : `${fmtCompact(clicksUsed)} / ${fmtCompact(clickQuota)}`;
+  // Free-for-all payout model: $1 per 50,000 verified human visits.
+  const CLICKS_PER_DOLLAR = 50_000;
+  const payoutEarned = totalClicks / CLICKS_PER_DOLLAR;
+  const payoutProgress = totalClicks % CLICKS_PER_DOLLAR;
+  const payoutRemaining = CLICKS_PER_DOLLAR - payoutProgress;
+  const payoutPct = Math.min(100, Math.round((payoutProgress / CLICKS_PER_DOLLAR) * 100));
+
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -248,38 +250,20 @@ function DashboardPage() {
               className="w-full bg-muted/70 border border-border rounded-xl py-2.5 pl-11 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:bg-card transition-all"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Globe className="w-4 h-4 text-muted-foreground" />
-            <select
-              value={selectedDomain}
-              onChange={(e) => {
-                setSelectedDomain(e.target.value);
-                if (typeof window !== "undefined") {
-                  window.localStorage.setItem("adspx.shortDomain", e.target.value);
-                }
-              }}
-              className="bg-muted/70 border border-border rounded-xl py-2 px-3 text-xs text-foreground focus:outline-none focus:border-primary/50 transition-all"
-              title="Choose which domain to use for new short links"
-            >
-              {allDomains.map((d: string) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </div>
         </div>
 
         {/* EARNINGS SUMMARY */}
         <EarningsStrip />
 
 
-        {/* KPI ROW — 5 floating cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* KPI ROW */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard label="REAL VISITORS" value={fmtCompact(totalClicks)} sub={`Humans served — bots filtered out`} tone="muted" />
           <KpiCard label="ACTIVE LINKS" value={String(activeLinks)} sub={`${links.length} total`} tone="muted" />
           <KpiCard label="UNIQUE VISITORS" value={fmtCompact(uniqueVisitors)} sub="Last 30 days, humans only" tone="muted" />
           <KpiCard label="SHIELD BLOCKED ✓" value={`${botPct.toFixed(1)}%`} sub={`${fmtCompact(botBlocked)} scanners stopped`} tone="muted" />
-          <QuotaCard pct={quotaPct} label={quotaLabel} />
         </div>
+
 
         {/* MAIN GRID: chart + side panels */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -519,44 +503,29 @@ function DashboardPage() {
             </Panel>
           </div>
 
-          {/* RIGHT COLUMN: account quota + region */}
+          {/* RIGHT COLUMN: payout progress + region */}
           <div className="space-y-5">
-            {/* Account Quota */}
+            {/* Payout progress — $1 per 50,000 verified human visits */}
             <Panel className="p-6">
-              <h4 className="text-base font-bold text-foreground" style={display}>Account Quota</h4>
+              <h4 className="text-base font-bold text-foreground" style={display}>Payout progress</h4>
+              <p className="text-xs text-muted-foreground mt-1">$1 for every 50,000 verified human visits.</p>
               <div className="mt-5 flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Plan</span>
-                <PlanBadge slug={(profile as any)?.plan_slug} size="lg" />
+                <span className="text-muted-foreground">Verified visits</span>
+                <span className="font-bold text-foreground tabular-nums">{fmtCompact(totalClicks)}</span>
               </div>
-              {(() => {
-                const exp = (profile as any)?.plan_expires_at as string | null | undefined;
-                if (!exp) {
-                  const slug = (profile as any)?.plan_slug;
-                  if (slug === "lifetime" || slug === "unlimited") {
-                    return <div className="mt-2 flex items-center justify-between text-xs"><span className="text-muted-foreground">Expires</span><span className="font-bold text-emerald-700">Never</span></div>;
-                  }
-                  return null;
-                }
-                const expDate = new Date(exp);
-                const daysLeft = Math.ceil((expDate.getTime() - Date.now()) / 86400000);
-                const expired = daysLeft <= 0;
-                return (
-                  <div className="mt-2 flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{expired ? "Expired" : "Expires in"}</span>
-                    <span className={`font-bold tabular-nums ${expired ? "text-red-600" : daysLeft <= 3 ? "text-amber-600" : "text-foreground"}`}>
-                      {expired ? expDate.toLocaleDateString() : `${daysLeft} day${daysLeft === 1 ? "" : "s"}`}
-                    </span>
-                  </div>
-                );
-              })()}
+              <div className="mt-2 flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Estimated earnings</span>
+                <span className="font-bold text-foreground tabular-nums">${payoutEarned.toFixed(2)}</span>
+              </div>
               <div className="mt-3 flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Redirects used</span>
-                <span className="font-bold text-foreground tabular-nums">{quotaLabel}</span>
+                <span className="text-muted-foreground">Next $1 milestone</span>
+                <span className="font-bold text-foreground tabular-nums">{fmtCompact(payoutRemaining)} visits left</span>
               </div>
               <div className="mt-2 h-2 bg-border rounded-full overflow-hidden">
-                <div className="h-full bg-primary-gradient shadow-glow" style={{ width: `${quotaPct}%` }} />
+                <div className="h-full bg-primary-gradient shadow-glow" style={{ width: `${payoutPct}%` }} />
               </div>
             </Panel>
+
 
             {/* Traffic by Region + Mobile Gauge */}
             <Panel className="p-6">
@@ -625,23 +594,8 @@ function DashboardPage() {
             {selectedIds.size} selected
           </span>
 
-          {/* Domain picker inside bulk bar — copied URLs ALWAYS match this */}
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/10 border border-white/15">
-            <Globe className="w-3 h-3 text-primary-glow" />
-            <select
-              value={effectiveDomain}
-              onChange={(e) => {
-                const v = e.target.value;
-                setSelectedDomain(v);
-                if (typeof window !== "undefined") window.localStorage.setItem("adspx.shortDomain", v);
-              }}
-              className="bg-transparent text-[11px] font-mono font-bold text-white focus:outline-none cursor-pointer"
-            >
-              {allDomains.map((d) => (
-                <option key={d} value={d} className="text-foreground">{d}</option>
-              ))}
-            </select>
-          </div>
+
+
 
           <button
             onClick={() => {
@@ -704,20 +658,6 @@ function KpiCard({ label, value, sub, tone }: { label: string; value: string; su
       <div className={`text-[11px] font-bold mt-1 flex items-center gap-1 ${tone === "up" ? "text-emerald-600" : "text-primary"}`}>
         {tone === "up" && <TrendingUp className="w-3 h-3" />}
         {sub}
-      </div>
-    </div>
-  );
-}
-
-function QuotaCard({ pct, label }: { pct: number; label: string }) {
-  return (
-    <div className="rounded-2xl glass-card p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">QUOTA</span>
-        <span className="text-[11px] font-bold text-primary tabular-nums">{label}</span>
-      </div>
-      <div className="mt-4 h-2 bg-border rounded-full overflow-hidden">
-        <div className="h-full bg-primary-gradient shadow-glow transition-all" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -873,24 +813,3 @@ function Field({ label, full = false, children }: { label: string; full?: boolea
   );
 }
 
-function PlanBadge({ slug, size = "sm" }: { slug?: string | null; size?: "sm" | "lg" }) {
-  const s = (slug ?? "free").toLowerCase();
-  const isLifetime = s === "lifetime" || s === "unlimited";
-  const isPro = s === "pro" || s === "pro_monthly" || s === "yearly";
-  const isMonthly = s === "monthly";
-  const cfg = isLifetime
-    ? { label: "Lifetime", Icon: Crown, grad: "from-amber-400 via-orange-500 to-fuchsia-500", ring: "ring-amber-200", glow: "shadow-[0_4px_18px_rgba(251,146,60,0.55)]" }
-    : isPro
-    ? { label: s === "yearly" ? "Pro Yearly" : "Pro", Icon: Gem, grad: "from-primary via-primary to-primary-glow", ring: "ring-orange-200", glow: "shadow-[0_4px_14px_rgba(255,126,95,0.5)]" }
-    : isMonthly
-    ? { label: "Monthly", Icon: Star, grad: "from-primary-glow to-primary", ring: "ring-orange-100", glow: "shadow-[0_3px_10px_rgba(255,126,95,0.35)]" }
-    : { label: "Free", Icon: Star, grad: "from-stone-300 to-stone-400", ring: "ring-stone-200", glow: "" };
-  const pad = size === "lg" ? "px-2.5 py-1 text-[11px]" : "px-2 py-0.5 text-[10px]";
-  const iconSize = size === "lg" ? "w-3 h-3" : "w-2.5 h-2.5";
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full font-bold uppercase tracking-wider text-white bg-gradient-to-r ${cfg.grad} ring-1 ${cfg.ring} ${cfg.glow} ${pad}`}>
-      <cfg.Icon className={iconSize} strokeWidth={2.5} fill="currentColor" />
-      {cfg.label}
-    </span>
-  );
-}
