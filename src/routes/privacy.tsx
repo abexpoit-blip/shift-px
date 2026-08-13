@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useBrand } from "@/lib/brand-live";
 import { BreezyLayout } from "@/components/breezy/BreezyLayout";
 import { SITE } from "@/lib/breezy-data";
 import { buildOg } from "@/lib/og-meta";
@@ -7,12 +8,12 @@ import { getRequestOrigin } from "@/lib/request-origin.functions";
 export const Route = createFileRoute("/privacy")({
   loader: async () => await getRequestOrigin(),
   head: ({ loaderData }) => {
-    const origin = loaderData?.origin ?? "https://breezysocial.com";
+    const origin = loaderData?.origin ?? "https://{brand.host}";
     const { meta, links } = buildOg({
       origin,
       path: "/privacy",
-      title: `Privacy Policy — ${SITE.name}`,
-      description: `How ${SITE.name} collects, uses, and protects your personal information.`,
+      title: `Privacy Policy — ${brand.name}`,
+      description: `How ${brand.name} collects, uses, and protects your personal information.`,
       type: "website",
     });
     return { meta, links };
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/privacy")({
 
 
 function PrivacyPage() {
+  const brand = useBrand();
   return (
     <BreezyLayout>
       <article className="max-w-3xl mx-auto px-6 py-16 prose prose-lg text-[#3A3A38]">
@@ -33,7 +35,7 @@ function PrivacyPage() {
           Privacy Policy
         </h1>
 
-        <p>{SITE.name} ("we," "our," or "us") respects your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website breezysocial.com.</p>
+        <p>{brand.name} ("we," "our," or "us") respects your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website {brand.host}.</p>
 
         <h2 className="text-2xl mt-10 text-[#2A2A28]">Information we collect</h2>
         <p>We collect personal information you voluntarily provide when placing an order, creating an account, subscribing to our newsletter, or contacting us. This includes your name, email address, postal address, phone number, and payment information (processed via our PCI-compliant payment partner; we never store full card numbers).</p>
@@ -53,7 +55,7 @@ function PrivacyPage() {
         <p>We never sell your personal information. We share data only with trusted service providers (payment processors, shipping carriers, email platforms, analytics) under strict confidentiality agreements, and only when necessary to operate the business.</p>
 
         <h2 className="text-2xl mt-10 text-[#2A2A28]">Your rights</h2>
-        <p>Depending on where you live, you may have the right to: access the personal information we hold about you, request correction or deletion, opt out of marketing, and request a copy of your data. To exercise any of these rights, email <a href={`mailto:${SITE.email}`} className="text-[#5A7A55]">{SITE.email}</a>.</p>
+        <p>Depending on where you live, you may have the right to: access the personal information we hold about you, request correction or deletion, opt out of marketing, and request a copy of your data. To exercise any of these rights, email <a href={`mailto:${brand.email}`} className="text-[#5A7A55]">{brand.email}</a>.</p>
 
         <h2 className="text-2xl mt-10 text-[#2A2A28]">Security</h2>
         <p>We use industry-standard encryption (SSL/TLS) for all data transmission and follow best practices to safeguard the information we store. No system is 100% secure, but we work hard to protect your data.</p>
@@ -65,7 +67,7 @@ function PrivacyPage() {
         <p>We may update this Privacy Policy from time to time. When we do, we'll revise the "Last updated" date at the top of this page.</p>
 
         <h2 className="text-2xl mt-10 text-[#2A2A28]">Contact</h2>
-        <p>Questions? Email <a href={`mailto:${SITE.email}`} className="text-[#5A7A55]">{SITE.email}</a> or write to us at {SITE.address}.</p>
+        <p>Questions? Email <a href={`mailto:${brand.email}`} className="text-[#5A7A55]">{brand.email}</a> or write to us at {brand.city}.</p>
       </article>
     </BreezyLayout>
   );
