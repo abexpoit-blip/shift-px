@@ -884,7 +884,11 @@ function DomainsTab() {
   });
   const verify = useMutation({
     mutationFn: (id: string) => verifyFn({ data: { id } }),
-    onSuccess: (r: any) => { r.ok ? toast.success(r.message) : toast.error(r.message); invalidate(); },
+    onSuccess: (r: any) => {
+      if (r?.ok) toast.success(r.message);
+      else toast.error(r?.message ?? "Verification failed");
+      invalidate();
+    },
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
   const setPrimary = useMutation({
