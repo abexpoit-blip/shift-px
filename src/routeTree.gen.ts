@@ -38,10 +38,7 @@ import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AuthenticatedWithdrawRouteImport } from './routes/_authenticated/withdraw'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedStatisticsRouteImport } from './routes/_authenticated/statistics'
-import { Route as AuthenticatedSmartFilterRouteImport } from './routes/_authenticated/smart-filter'
 import { Route as AuthenticatedNoticesRouteImport } from './routes/_authenticated/notices'
-import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
-import { Route as AuthenticatedLinkDebuggerRouteImport } from './routes/_authenticated/link-debugger'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedDomainsRouteImport } from './routes/_authenticated/domains'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -198,28 +195,11 @@ const AuthenticatedStatisticsRoute = AuthenticatedStatisticsRouteImport.update({
   path: '/statistics',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedSmartFilterRoute =
-  AuthenticatedSmartFilterRouteImport.update({
-    id: '/smart-filter',
-    path: '/smart-filter',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedNoticesRoute = AuthenticatedNoticesRouteImport.update({
   id: '/notices',
   path: '/notices',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedLiveRoute = AuthenticatedLiveRouteImport.update({
-  id: '/live',
-  path: '/live',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedLinkDebuggerRoute =
-  AuthenticatedLinkDebuggerRouteImport.update({
-    id: '/link-debugger',
-    path: '/link-debugger',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedLeaderboardRoute =
   AuthenticatedLeaderboardRouteImport.update({
     id: '/leaderboard',
@@ -309,10 +289,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/domains': typeof AuthenticatedDomainsRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
-  '/link-debugger': typeof AuthenticatedLinkDebuggerRoute
-  '/live': typeof AuthenticatedLiveRoute
   '/notices': typeof AuthenticatedNoticesRoute
-  '/smart-filter': typeof AuthenticatedSmartFilterRoute
   '/statistics': typeof AuthenticatedStatisticsRoute
   '/support': typeof AuthenticatedSupportRoute
   '/withdraw': typeof AuthenticatedWithdrawRoute
@@ -353,10 +330,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/domains': typeof AuthenticatedDomainsRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
-  '/link-debugger': typeof AuthenticatedLinkDebuggerRoute
-  '/live': typeof AuthenticatedLiveRoute
   '/notices': typeof AuthenticatedNoticesRoute
-  '/smart-filter': typeof AuthenticatedSmartFilterRoute
   '/statistics': typeof AuthenticatedStatisticsRoute
   '/support': typeof AuthenticatedSupportRoute
   '/withdraw': typeof AuthenticatedWithdrawRoute
@@ -400,10 +374,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/domains': typeof AuthenticatedDomainsRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
-  '/_authenticated/link-debugger': typeof AuthenticatedLinkDebuggerRoute
-  '/_authenticated/live': typeof AuthenticatedLiveRoute
   '/_authenticated/notices': typeof AuthenticatedNoticesRoute
-  '/_authenticated/smart-filter': typeof AuthenticatedSmartFilterRoute
   '/_authenticated/statistics': typeof AuthenticatedStatisticsRoute
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/withdraw': typeof AuthenticatedWithdrawRoute
@@ -447,10 +418,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/domains'
     | '/leaderboard'
-    | '/link-debugger'
-    | '/live'
     | '/notices'
-    | '/smart-filter'
     | '/statistics'
     | '/support'
     | '/withdraw'
@@ -491,10 +459,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/domains'
     | '/leaderboard'
-    | '/link-debugger'
-    | '/live'
     | '/notices'
-    | '/smart-filter'
     | '/statistics'
     | '/support'
     | '/withdraw'
@@ -537,10 +502,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/domains'
     | '/_authenticated/leaderboard'
-    | '/_authenticated/link-debugger'
-    | '/_authenticated/live'
     | '/_authenticated/notices'
-    | '/_authenticated/smart-filter'
     | '/_authenticated/statistics'
     | '/_authenticated/support'
     | '/_authenticated/withdraw'
@@ -793,32 +755,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStatisticsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/smart-filter': {
-      id: '/_authenticated/smart-filter'
-      path: '/smart-filter'
-      fullPath: '/smart-filter'
-      preLoaderRoute: typeof AuthenticatedSmartFilterRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/notices': {
       id: '/_authenticated/notices'
       path: '/notices'
       fullPath: '/notices'
       preLoaderRoute: typeof AuthenticatedNoticesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/live': {
-      id: '/_authenticated/live'
-      path: '/live'
-      fullPath: '/live'
-      preLoaderRoute: typeof AuthenticatedLiveRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/link-debugger': {
-      id: '/_authenticated/link-debugger'
-      path: '/link-debugger'
-      fullPath: '/link-debugger'
-      preLoaderRoute: typeof AuthenticatedLinkDebuggerRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/leaderboard': {
@@ -907,10 +848,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDomainsRoute: typeof AuthenticatedDomainsRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
-  AuthenticatedLinkDebuggerRoute: typeof AuthenticatedLinkDebuggerRoute
-  AuthenticatedLiveRoute: typeof AuthenticatedLiveRoute
   AuthenticatedNoticesRoute: typeof AuthenticatedNoticesRoute
-  AuthenticatedSmartFilterRoute: typeof AuthenticatedSmartFilterRoute
   AuthenticatedStatisticsRoute: typeof AuthenticatedStatisticsRoute
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedWithdrawRoute: typeof AuthenticatedWithdrawRoute
@@ -922,10 +860,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDomainsRoute: AuthenticatedDomainsRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
-  AuthenticatedLinkDebuggerRoute: AuthenticatedLinkDebuggerRoute,
-  AuthenticatedLiveRoute: AuthenticatedLiveRoute,
   AuthenticatedNoticesRoute: AuthenticatedNoticesRoute,
-  AuthenticatedSmartFilterRoute: AuthenticatedSmartFilterRoute,
   AuthenticatedStatisticsRoute: AuthenticatedStatisticsRoute,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedWithdrawRoute: AuthenticatedWithdrawRoute,
