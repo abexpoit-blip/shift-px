@@ -140,7 +140,7 @@ function AdminPage() {
 function Header() {
   return (
     <div>
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 backdrop-blur-xl border border-white/80 text-[var(--primary)] text-[10px] font-bold uppercase tracking-widest shadow-sm">
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/70 backdrop-blur-xl border border-border/80 text-[var(--primary)] text-[10px] font-bold uppercase tracking-widest shadow-sm">
         <ShieldCheck className="w-3 h-3" /> Admin · Live
       </div>
       <h1 className="mt-3 text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--foreground)]">
@@ -222,9 +222,9 @@ function OverviewTab() {
         <Panel icon={Users} title="Top users · by clicks">
           <div className="space-y-2">
             {(top.data ?? []).map((u, i) => (
-              <div key={u.id} className="flex items-center justify-between p-2 rounded-lg bg-white/60 border border-[var(--border)]">
+              <div key={u.id} className="flex items-center justify-between p-2 rounded-lg bg-card/60 border border-[var(--border)]">
                 <div className="flex items-center gap-3">
-                  <span className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] text-white text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                  <span className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground text-xs font-bold flex items-center justify-center">{i + 1}</span>
                   <div>
                     <div className="text-sm font-semibold text-[var(--foreground)]">{u.email}</div>
                     <div className="text-[10px] uppercase font-bold text-[var(--muted-foreground)]">{u.plan_slug}</div>
@@ -366,11 +366,11 @@ function UsersTab() {
           <Button size="sm" variant="outline" onClick={() => bulkBanMut.mutate({ ids: [...selected], is_banned: true })} className="border-[var(--border)]"><Ban className="w-3 h-3 mr-1" />Ban</Button>
           <Button size="sm" variant="outline" onClick={() => bulkBanMut.mutate({ ids: [...selected], is_banned: false })} className="border-[var(--border)]">Unban</Button>
           <Button size="sm" variant="outline" onClick={() => { if (confirm(`Reset quota for ${selected.size} users?`)) resetMut.mutate({ ids: [...selected] }); }} className="border-[var(--border)]"><RotateCcw className="w-3 h-3 mr-1" />Reset quota</Button>
-          <select value={bulkPlan} onChange={(e) => setBulkPlan(e.target.value)} className="bg-white/80 border border-[var(--border)] rounded-lg px-2 py-1 text-xs">
+          <select value={bulkPlan} onChange={(e) => setBulkPlan(e.target.value)} className="bg-card/80 border border-[var(--border)] rounded-lg px-2 py-1 text-xs">
             <option value="">Move to plan…</option>
             {packages.data?.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}
           </select>
-          <Button size="sm" disabled={!bulkPlan} onClick={() => { bulkPlanMut.mutate({ ids: [...selected], package_slug: bulkPlan }); setBulkPlan(""); }} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white border-0">Apply</Button>
+          <Button size="sm" disabled={!bulkPlan} onClick={() => { bulkPlanMut.mutate({ ids: [...selected], package_slug: bulkPlan }); setBulkPlan(""); }} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground border-0">Apply</Button>
         </div>
       )}
 
@@ -384,13 +384,13 @@ function UsersTab() {
           </thead>
           <tbody>
             {filtered.map((u) => (
-              <tr key={u.id} className="border-t border-[var(--border)]/60 hover:bg-white/40">
+              <tr key={u.id} className="border-t border-[var(--border)]/60 hover:bg-card/40">
                 <Td><input type="checkbox" checked={selected.has(u.id)} onChange={() => toggleOne(u.id)} /></Td>
                 <Td className="font-medium text-[var(--foreground)]">{u.email}</Td>
                 <Td><Pill>{u.plan_slug}</Pill></Td>
                 <Td>
                   <select value={u.plan_slug} onChange={(e) => { if (e.target.value !== u.plan_slug && confirm(`Change ${u.email} to ${e.target.value}?`)) planMut.mutate({ user_id: u.id, package_slug: e.target.value }); }}
-                    className="bg-white/80 border border-[var(--border)] rounded-lg px-2 py-1 text-xs">
+                    className="bg-card/80 border border-[var(--border)] rounded-lg px-2 py-1 text-xs">
                     {packages.data?.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}
                     {!packages.data?.some((p) => p.slug === u.plan_slug) && <option value={u.plan_slug}>{u.plan_slug}</option>}
                   </select>
@@ -404,14 +404,14 @@ function UsersTab() {
                   if (!u.plan_expires_at) return <span className="text-[var(--muted-foreground)]">—</span>;
                   const exp = new Date(u.plan_expires_at);
                   const daysLeft = Math.ceil((exp.getTime() - Date.now()) / 86400000);
-                  const cls = daysLeft < 0 ? "text-rose-600 font-semibold" : daysLeft <= 3 ? "text-amber-600 font-semibold" : "text-[var(--muted-foreground)]";
+                  const cls = daysLeft < 0 ? "text-rose-600 font-semibold" : daysLeft <= 3 ? "text-foreground font-semibold" : "text-[var(--muted-foreground)]";
                   return <span className={cls} title={exp.toLocaleString()}>{exp.toLocaleDateString()} ({daysLeft < 0 ? `expired ${-daysLeft}d ago` : `${daysLeft}d left`})</span>;
                 })()}</Td>
                 <Td>{u.is_banned ? <span className="text-rose-600 font-semibold">Banned</span> : <span className="text-emerald-600 font-semibold">Active</span>}</Td>
                 <Td>
                   <div className="flex gap-1">
                     <Button size="sm" variant="outline" onClick={() => setDetailId(u.id)} className="border-[var(--border)]" title="View details"><Eye className="w-3 h-3" /></Button>
-                    <Button size="sm" variant="outline" disabled={imperBusyId === u.id} onClick={() => handleImpersonate(u)} className="border-amber-400 text-amber-700 hover:bg-amber-50" title="Sign in as this user">
+                    <Button size="sm" variant="outline" disabled={imperBusyId === u.id} onClick={() => handleImpersonate(u)} className="border-amber-400 text-foreground hover:bg-muted" title="Sign in as this user">
                       <KeyRound className="w-3 h-3" />
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => banMut.mutate({ id: u.id, is_banned: !u.is_banned })} className="border-[var(--border)]">{u.is_banned ? "Unban" : "Ban"}</Button>
@@ -450,7 +450,7 @@ function UsersTab() {
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)] mb-2">Links ({detail.data.links.length})</h3>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {detail.data.links.map((l) => (
-                    <div key={l.id} className="text-xs flex justify-between p-2 rounded bg-white/60 border border-[var(--border)]">
+                    <div key={l.id} className="text-xs flex justify-between p-2 rounded bg-card/60 border border-[var(--border)]">
                       <span className="font-mono">{l.short_code}</span>
                       <span className="text-[var(--muted-foreground)]">{l.clicks_count} clicks · {l.bot_clicks_count} bots</span>
                     </div>
@@ -461,7 +461,7 @@ function UsersTab() {
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)] mb-2">Payments ({detail.data.payments.length})</h3>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {detail.data.payments.map((p) => (
-                    <div key={p.id} className="text-xs flex justify-between p-2 rounded bg-white/60 border border-[var(--border)]">
+                    <div key={p.id} className="text-xs flex justify-between p-2 rounded bg-card/60 border border-[var(--border)]">
                       <span>{new Date(p.created_at ?? "").toLocaleDateString()} · {p.package_slug}</span>
                       <span className="font-semibold">${Number(p.amount).toFixed(2)} · {p.status}</span>
                     </div>
@@ -566,7 +566,7 @@ function RuleSection({ title, icon, listFnRef, upFnRef, delFnRef, keyName, showP
 
   return (
     <Panel icon={icon} title={title}>
-      <div className="mb-4"><Button onClick={() => setEdit({ rule_type: "ua", pattern: "", action: "safe", label: "", is_active: true, priority: showPriority ? 100 : undefined })} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white border-0"><Plus className="w-4 h-4 mr-1" />New rule</Button></div>
+      <div className="mb-4"><Button onClick={() => setEdit({ rule_type: "ua", pattern: "", action: "safe", label: "", is_active: true, priority: showPriority ? 100 : undefined })} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground border-0"><Plus className="w-4 h-4 mr-1" />New rule</Button></div>
       <div className="overflow-x-auto -mx-2">
         <table className="w-full text-sm">
           <thead><tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]"><Th>Type</Th><Th>Pattern</Th><Th>Action</Th><Th>Label</Th>{showPriority && <Th>Pri</Th>}<Th>Active</Th><Th></Th></tr></thead>
@@ -601,7 +601,7 @@ function RuleSection({ title, icon, listFnRef, upFnRef, delFnRef, keyName, showP
               <Field label="Label (optional)"><input value={edit.label} onChange={(e) => setEdit({ ...edit, label: e.target.value })} className={inputCls} /></Field>
               {showPriority && <Field label="Priority (lower = earlier)"><input type="number" value={edit.priority ?? 100} onChange={(e) => setEdit({ ...edit, priority: Number(e.target.value) })} className={inputCls} /></Field>}
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={edit.is_active} onChange={(e) => setEdit({ ...edit, is_active: e.target.checked })} /> Active</label>
-              <Button onClick={() => upMut.mutate(edit)} disabled={upMut.isPending} className="w-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white border-0">{upMut.isPending ? "Saving…" : "Save"}</Button>
+              <Button onClick={() => upMut.mutate(edit)} disabled={upMut.isPending} className="w-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground border-0">{upMut.isPending ? "Saving…" : "Save"}</Button>
             </div>
           )}
         </DialogContent>
@@ -628,7 +628,7 @@ function GeoTab() {
         <input placeholder="CC (2 letters)" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={2} className={inputCls} />
         <input placeholder="Country name" value={name} onChange={(e) => setName(e.target.value)} className={`${inputCls} md:col-span-2`} />
         <select value={tier} onChange={(e) => setTier(Number(e.target.value))} className={inputCls}>{[1, 2, 3, 4, 5].map((t) => <option key={t} value={t}>Tier {t}</option>)}</select>
-        <Button onClick={() => upMut.mutate({ country_code: code, country_name: name || null, tier })} disabled={code.length !== 2} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white border-0">Add / Update</Button>
+        <Button onClick={() => upMut.mutate({ country_code: code, country_name: name || null, tier })} disabled={code.length !== 2} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground border-0">Add / Update</Button>
       </div>
       <div className="overflow-x-auto -mx-2">
         <table className="w-full text-sm">
@@ -725,7 +725,7 @@ function TrafficTab() {
       <div className="mt-8 pt-6 border-t border-[var(--border)]">
         <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--primary)] mb-1">FB Ad-Review Protection</h3>
         <p className="text-xs text-[var(--muted-foreground)] mb-4">নতুন লিংকের প্রথম ৬ ঘন্টা বা ২৫ ক্লিক পর্যন্ত FB/IG in-app browser-কে safe page দেখায় (ad reviewer যেন offer না দেখে)। <b>Ad approved হয়ে campaign run হলে এটা OFF করে দিন</b> — সব FB user offer পাবে, traffic 100% count হবে।</p>
-        <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/60 border border-[var(--border)]">
+        <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card/60 border border-[var(--border)]">
           <input type="checkbox" checked={fbReviewOn} onChange={(e) => setFbReviewOn(e.target.checked)} className="w-5 h-5 accent-[var(--primary)]" />
           <span className="text-sm font-semibold">🛡️ Enable FB Ad-Review Protection (turn OFF after ad approved)</span>
         </label>
@@ -736,15 +736,15 @@ function TrafficTab() {
         <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--primary)] mb-1">Signup Protection</h3>
         <p className="text-xs text-[var(--muted-foreground)] mb-4">Master switch must be ON for any rule below to apply. Default OFF — turn ON when you're ready.</p>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="sm:col-span-2 flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/60 border border-[var(--border)]">
+          <label className="sm:col-span-2 flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card/60 border border-[var(--border)]">
             <input type="checkbox" checked={spOn} onChange={(e) => setSpOn(e.target.checked)} className="w-5 h-5 accent-[var(--primary)]" />
             <span className="text-sm font-semibold">🛡️ Enable Signup Protection (master switch)</span>
           </label>
-          <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/60 border border-[var(--border)]">
+          <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card/60 border border-[var(--border)]">
             <input type="checkbox" checked={spGmail} onChange={(e) => setSpGmail(e.target.checked)} disabled={!spOn} className="w-4 h-4 accent-[var(--primary)]" />
             <span className="text-sm">Allow only Gmail (@gmail.com)</span>
           </label>
-          <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/60 border border-[var(--border)]">
+          <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card/60 border border-[var(--border)]">
             <input type="checkbox" checked={spBlock} onChange={(e) => setSpBlock(e.target.checked)} disabled={!spOn} className="w-4 h-4 accent-[var(--primary)]" />
             <span className="text-sm">Block disposable / temp email domains</span>
           </label>
@@ -754,7 +754,7 @@ function TrafficTab() {
         </div>
       </div>
 
-      <div className="mt-6"><Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white border-0"><Sparkles className="w-4 h-4 mr-1.5" />{saveMut.isPending ? "Saving…" : "Save settings"}</Button></div>
+      <div className="mt-6"><Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground border-0"><Sparkles className="w-4 h-4 mr-1.5" />{saveMut.isPending ? "Saving…" : "Save settings"}</Button></div>
     </Panel>
     </>
   );
@@ -790,7 +790,7 @@ function TrafficSnapshotPanel() {
             <Stat label="FB crawler blocked" value={d.fbCrawlerBlocked.toLocaleString()} />
           </div>
           {d.botPct > 40 && (
-            <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex gap-2 items-start">
+            <div className="mt-4 p-3 rounded-xl bg-muted border border-border text-foreground text-xs flex gap-2 items-start">
               <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
               <div>
                 Bot rate <b>{d.botPct}%</b> — যদি FB campaign চলছে তাহলে নিচে <b>FB Ad-Review Protection</b> OFF করুন। Top bot reasons:&nbsp;
@@ -811,25 +811,25 @@ function TrafficSnapshotPanel() {
 
 
 // ===================== shared UI =====================
-const inputCls = "w-full bg-white/70 border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)] focus:bg-white/90 transition-all";
+const inputCls = "w-full bg-card/70 border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)] focus:bg-card/90 transition-all";
 
 function Kpi({ icon: Icon, label, value, sub, accent }: { icon: React.ComponentType<{ className?: string }>; label: string; value: React.ReactNode; sub?: string; accent?: boolean }) {
   return (
-    <div className={`relative rounded-2xl p-5 border backdrop-blur-xl shadow-[0_8px_30px_-12px_rgba(255,126,95,0.25)] ${accent ? "bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] border-white/40 text-white" : "bg-white/70 border-white/80 text-[var(--foreground)]"}`}>
+    <div className={`relative rounded-2xl p-5 border backdrop-blur-xl shadow-[0_8px_30px_-12px_rgba(255,126,95,0.25)] ${accent ? "bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] border-border/40 text-primary-foreground" : "bg-card/70 border-border/80 text-[var(--foreground)]"}`}>
       <div className="flex items-center justify-between">
-        <div className={`text-[10px] font-bold uppercase tracking-widest ${accent ? "text-white/80" : "text-[var(--muted-foreground)]"}`}>{label}</div>
-        <Icon className={`w-4 h-4 ${accent ? "text-white/90" : "text-[var(--primary)]"}`} />
+        <div className={`text-[10px] font-bold uppercase tracking-widest ${accent ? "text-primary-foreground/80" : "text-[var(--muted-foreground)]"}`}>{label}</div>
+        <Icon className={`w-4 h-4 ${accent ? "text-primary-foreground/90" : "text-[var(--primary)]"}`} />
       </div>
       <div className="mt-2 text-3xl font-extrabold tracking-tight">{value}</div>
-      {sub && <div className={`mt-1 text-[10px] ${accent ? "text-white/80" : "text-[var(--muted-foreground)]"}`}>{sub}</div>}
+      {sub && <div className={`mt-1 text-[10px] ${accent ? "text-primary-foreground/80" : "text-[var(--muted-foreground)]"}`}>{sub}</div>}
     </div>
   );
 }
 function Panel({ icon: Icon, title, subtitle, children }: { icon: React.ComponentType<{ className?: string }>; title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-3xl border border-white/80 bg-white/60 backdrop-blur-xl p-6 sm:p-8 shadow-[0_20px_60px_-30px_rgba(255,126,95,0.35)]">
+    <section className="rounded-3xl border border-border/80 bg-card/60 backdrop-blur-xl p-6 sm:p-8 shadow-[0_20px_60px_-30px_rgba(255,126,95,0.35)]">
       <div className="flex items-center gap-3 mb-1">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] flex items-center justify-center shadow-[0_6px_20px_-6px_rgba(255,126,95,0.6)]"><Icon className="w-4 h-4 text-white" /></div>
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] flex items-center justify-center shadow-[0_6px_20px_-6px_rgba(255,126,95,0.6)]"><Icon className="w-4 h-4 text-primary-foreground" /></div>
         <h2 className="text-xl sm:text-2xl font-bold text-[var(--foreground)] tracking-tight">{title}</h2>
       </div>
       {subtitle && <p className="text-sm text-[var(--muted-foreground)] mb-6 ml-12">{subtitle}</p>}
@@ -841,7 +841,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <div><label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--muted-foreground)] mb-2 block">{label}</label>{children}</div>;
 }
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return <div className="p-3 rounded-xl bg-white/60 border border-[var(--border)]"><div className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">{label}</div><div className="mt-1 font-bold text-[var(--foreground)]">{value}</div></div>;
+  return <div className="p-3 rounded-xl bg-card/60 border border-[var(--border)]"><div className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">{label}</div><div className="mt-1 font-bold text-[var(--foreground)]">{value}</div></div>;
 }
 function Th({ children }: { children?: React.ReactNode }) { return <th className="px-3 py-3">{children}</th>; }
 function Td({ children, className = "" }: { children: React.ReactNode; className?: string }) { return <td className={`px-3 py-3 ${className}`}>{children}</td>; }
@@ -851,7 +851,7 @@ function StatusPill({ status }: { status: string }) {
     paid: "bg-emerald-100 text-emerald-700", 
     completed: "bg-emerald-100 text-emerald-700", 
     successful: "bg-emerald-100 text-emerald-700",
-    pending: "bg-amber-100 text-amber-700", 
+    pending: "bg-muted text-foreground", 
     expired: "bg-rose-100 text-rose-700",
     cancelled: "bg-rose-100 text-rose-700",
     rejected: "bg-rose-100 text-rose-700" 
@@ -910,7 +910,7 @@ function DomainsTab() {
   const domains: any[] = q.data?.domains ?? [];
 
   return (
-    <section className="rounded-3xl border border-white/80 bg-white/60 backdrop-blur-xl p-6 sm:p-8 shadow-[0_20px_60px_-30px_rgba(255,126,95,0.35)]">
+    <section className="rounded-3xl border border-border/80 bg-card/60 backdrop-blur-xl p-6 sm:p-8 shadow-[0_20px_60px_-30px_rgba(255,126,95,0.35)]">
       <div className="flex items-center gap-2 mb-4">
         <Globe className="w-5 h-5 text-[var(--primary)]" />
         <h3 className="text-lg font-bold text-[var(--foreground)]">Shortener Domain Pool</h3>
@@ -921,18 +921,18 @@ function DomainsTab() {
         instantly uses the new domain. Old short URLs on still-resolving domains keep working too.
       </p>
 
-      <div className="grid md:grid-cols-[1fr_1fr_auto] gap-3 mb-6 p-4 rounded-2xl bg-white/60 border border-white/80">
+      <div className="grid md:grid-cols-[1fr_1fr_auto] gap-3 mb-6 p-4 rounded-2xl bg-card/60 border border-border/80">
         <input
           value={domain} onChange={(e) => setDomain(e.target.value)}
           placeholder="e.g. trk.example.com"
-          className="px-4 py-2.5 rounded-xl bg-white border border-[var(--border)] text-sm font-mono outline-none focus:border-[var(--primary)]"
+          className="px-4 py-2.5 rounded-xl bg-card border border-[var(--border)] text-sm font-mono outline-none focus:border-[var(--primary)]"
         />
         <input
           value={note} onChange={(e) => setNote(e.target.value)}
           placeholder="Note (optional)"
-          className="px-4 py-2.5 rounded-xl bg-white border border-[var(--border)] text-sm outline-none focus:border-[var(--primary)]"
+          className="px-4 py-2.5 rounded-xl bg-card border border-[var(--border)] text-sm outline-none focus:border-[var(--primary)]"
         />
-        <Button onClick={() => domain.trim() && add.mutate()} disabled={add.isPending} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white">
+        <Button onClick={() => domain.trim() && add.mutate()} disabled={add.isPending} className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground">
           <Plus className="w-4 h-4 mr-1" /> Add Domain
         </Button>
       </div>
@@ -942,7 +942,7 @@ function DomainsTab() {
       ) : domains.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">No domains in pool yet.</p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white/70">
+        <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-card/70">
           <table className="w-full text-sm">
             <thead className="bg-[var(--muted)] text-[var(--muted-foreground)]">
               <tr>
@@ -962,7 +962,7 @@ function DomainsTab() {
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-[var(--muted-foreground)]">{d.dns_target}</td>
                   <td className="px-4 py-3">
-                    {d.verified ? <Pill>Verified</Pill> : <span className="text-xs text-amber-600 font-semibold">Pending DNS</span>}
+                    {d.verified ? <Pill>Verified</Pill> : <span className="text-xs text-foreground font-semibold">Pending DNS</span>}
                     {!d.is_active && <span className="ml-2 text-xs text-rose-600 font-semibold">Inactive</span>}
                   </td>
                   <td className="px-4 py-3 text-xs text-[var(--muted-foreground)]">{d.note ?? "—"}</td>
@@ -973,7 +973,7 @@ function DomainsTab() {
                       </Button>
                       {!d.is_primary && d.verified && d.is_active && (
                         <Button size="sm" onClick={() => { if (confirm(`Switch primary to ${d.domain}? All new short URLs will use it.`)) setPrimary.mutate(d.id); }}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                          className="bg-emerald-600 hover:bg-emerald-700 text-primary-foreground">
                           <Check className="w-3 h-3 mr-1" /> Set Primary
                         </Button>
                       )}
@@ -996,7 +996,7 @@ function DomainsTab() {
         </div>
       )}
 
-      <div className="mt-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
+      <div className="mt-6 p-4 rounded-2xl bg-muted border border-border text-xs text-foreground space-y-1">
         <p className="font-bold">Setup steps for a new domain:</p>
         <ol className="list-decimal pl-5 space-y-0.5">
           <li>At your registrar, add an <strong>A record</strong>: <span className="font-mono">@ → 185.158.133.1</span> (and optionally <span className="font-mono">www → 185.158.133.1</span>).</li>
@@ -1044,7 +1044,7 @@ function UserDomainsTab() {
 
   return (
     <Panel icon={Globe} title="User Custom Domains" subtitle="Manage and monitor domains added by users">
-      <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white/70">
+      <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-card/70">
         <table className="w-full text-sm">
           <thead className="bg-[var(--muted)] text-[var(--muted-foreground)]">
             <tr>
@@ -1064,7 +1064,7 @@ function UserDomainsTab() {
                   <td className="px-4 py-3 font-mono font-semibold text-[var(--foreground)]">{d.domain}</td>
                   <td className="px-4 py-3 text-xs text-[var(--muted-foreground)]">{(d.profiles as any)?.email ?? d.user_id}</td>
                   <td className="px-4 py-3">
-                    {d.verified ? <Pill>Verified</Pill> : <span className="text-xs text-amber-600 font-semibold">Pending</span>}
+                    {d.verified ? <Pill>Verified</Pill> : <span className="text-xs text-foreground font-semibold">Pending</span>}
                   </td>
                   <td className="px-4 py-3 text-xs text-[var(--muted-foreground)]">{new Date(d.created_at).toLocaleDateString()}</td>
                   <td className="px-4 py-3 text-right">
@@ -1122,10 +1122,10 @@ function SupportTab() {
 
   return (
     <section className="mt-6 space-y-5">
-      <div className="rounded-2xl bg-white/80 border border-[var(--border)] p-5 flex items-center justify-between gap-4">
+      <div className="rounded-2xl bg-card/80 border border-[var(--border)] p-5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${enabled ? "bg-gradient-to-br from-emerald-400 to-emerald-600" : "bg-gradient-to-br from-gray-400 to-gray-600"} shadow-md`}>
-            <LifeBuoy className="w-5 h-5 text-white" />
+            <LifeBuoy className="w-5 h-5 text-primary-foreground" />
           </div>
           <div>
             <div className="text-sm font-extrabold text-[var(--foreground)]">Support System</div>
@@ -1144,7 +1144,7 @@ function SupportTab() {
       <div className="flex gap-1 bg-[var(--border)]/60 p-1 rounded-xl w-fit">
         {(["all", "open", "replied", "closed"] as const).map((s) => (
           <button key={s} onClick={() => setFilter(s)}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold capitalize transition-all ${filter === s ? "bg-[var(--primary)] text-white shadow-sm" : "text-[var(--muted-foreground)] hover:text-[var(--muted-foreground)]"}`}>
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold capitalize transition-all ${filter === s ? "bg-[var(--primary)] text-primary-foreground shadow-sm" : "text-[var(--muted-foreground)] hover:text-[var(--muted-foreground)]"}`}>
             {s}
           </button>
         ))}
@@ -1152,13 +1152,13 @@ function SupportTab() {
 
       <div className="space-y-3">
         {ticketsQ.isLoading && <div className="text-xs text-[var(--muted-foreground)] p-6 text-center">Loading…</div>}
-        {!ticketsQ.isLoading && tickets.length === 0 && <div className="text-xs text-[var(--muted-foreground)] p-10 text-center bg-white/60 border border-[var(--border)] rounded-2xl">No tickets</div>}
+        {!ticketsQ.isLoading && tickets.length === 0 && <div className="text-xs text-[var(--muted-foreground)] p-10 text-center bg-card/60 border border-[var(--border)] rounded-2xl">No tickets</div>}
         {tickets.map((t: any) => (
-          <div key={t.id} className="rounded-2xl bg-white border border-[var(--border)] shadow-sm p-5">
+          <div key={t.id} className="rounded-2xl bg-card border border-[var(--border)] shadow-sm p-5">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded-full ${t.status === "open" ? "bg-amber-100 text-amber-700" : t.status === "replied" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>{t.status}</span>
+                  <span className={`text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded-full ${t.status === "open" ? "bg-muted text-foreground" : t.status === "replied" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>{t.status}</span>
                   <span className="text-[10px] text-[var(--muted-foreground)]">{new Date(t.created_at).toLocaleString()}</span>
                 </div>
                 <div className="font-bold text-sm text-[var(--foreground)]">{t.subject}</div>
@@ -1191,7 +1191,7 @@ function SupportTab() {
                 <button
                   onClick={() => { const r = (replyMap[t.id] ?? "").trim(); if (!r) return toast.error("Reply empty"); replyMut.mutate({ ticket_id: t.id, reply: r }); }}
                   disabled={replyMut.isPending}
-                  className="px-4 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white font-bold text-xs shadow-md hover:shadow-lg inline-flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground font-bold text-xs shadow-md hover:shadow-lg inline-flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <Send className="w-3.5 h-3.5" /> Send
                 </button>
@@ -1218,7 +1218,7 @@ const BROADCAST_TONES = [
   { id: "premium", label: "Premium", cls: "from-[var(--primary)] to-[var(--primary-glow)]" },
   { id: "info", label: "Info", cls: "from-blue-500 to-blue-600" },
   { id: "success", label: "Success", cls: "from-emerald-500 to-emerald-600" },
-  { id: "warning", label: "Warning", cls: "from-amber-500 to-orange-600" },
+  { id: "warning", label: "Warning", cls: "from-primary to-orange-600" },
 ] as const;
 
 function BroadcastsTab() {
@@ -1257,7 +1257,7 @@ function BroadcastsTab() {
     <section className="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-5">
       {/* Composer */}
       <div className="lg:col-span-2 space-y-4">
-        <div className="rounded-2xl bg-white border border-[var(--border)] shadow-sm overflow-hidden">
+        <div className="rounded-2xl bg-card border border-[var(--border)] shadow-sm overflow-hidden">
           <div className="px-5 py-4 bg-gradient-to-r from-[var(--muted)] to-[var(--border)]/40 border-b border-[var(--border)] flex items-center gap-2">
             <Megaphone className="w-4 h-4 text-[var(--primary)]" />
             <h3 className="text-sm font-extrabold">Send Broadcast</h3>
@@ -1309,7 +1309,7 @@ function BroadcastsTab() {
               <label className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Icon</label>
               <div className="mt-1 grid grid-cols-5 gap-1.5">
                 {BROADCAST_ICONS.map(({ id, Icon }) => (
-                  <button key={id} onClick={() => setIcon(id)} className={`aspect-square rounded-lg flex items-center justify-center transition-all ${icon === id ? "bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] text-white shadow-md" : "bg-[var(--muted)] border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)]/40"}`}>
+                  <button key={id} onClick={() => setIcon(id)} className={`aspect-square rounded-lg flex items-center justify-center transition-all ${icon === id ? "bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground shadow-md" : "bg-[var(--muted)] border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)]/40"}`}>
                     <Icon className="w-4 h-4" />
                   </button>
                 ))}
@@ -1319,7 +1319,7 @@ function BroadcastsTab() {
               <label className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Tone</label>
               <div className="mt-1 grid grid-cols-2 gap-1.5">
                 {BROADCAST_TONES.map((t) => (
-                  <button key={t.id} onClick={() => setTone(t.id)} className={`py-2 rounded-lg text-[11px] font-bold transition-all ${tone === t.id ? `bg-gradient-to-r ${t.cls} text-white shadow-md` : "bg-[var(--muted)] border border-[var(--border)] text-[var(--muted-foreground)]"}`}>
+                  <button key={t.id} onClick={() => setTone(t.id)} className={`py-2 rounded-lg text-[11px] font-bold transition-all ${tone === t.id ? `bg-gradient-to-r ${t.cls} text-primary-foreground shadow-md` : "bg-[var(--muted)] border border-[var(--border)] text-[var(--muted-foreground)]"}`}>
                     {t.label}
                   </button>
                 ))}
@@ -1328,7 +1328,7 @@ function BroadcastsTab() {
             <button
               onClick={() => { if (!title.trim() || !body.trim()) return toast.error("Title + message required"); createMut.mutate({ title: title.trim(), body: body.trim(), icon, tone }); }}
               disabled={createMut.isPending}
-              className="w-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground font-bold text-sm py-3 rounded-xl shadow-lg shadow-primary/10 hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Send className="w-4 h-4" /> {createMut.isPending ? "Sending…" : "Broadcast to all users"}
             </button>
@@ -1337,16 +1337,16 @@ function BroadcastsTab() {
 
         {/* Preview */}
         {(title || body) && (
-          <div className="rounded-2xl bg-white border border-[var(--border)] p-4">
+          <div className="rounded-2xl bg-card border border-[var(--border)] p-4">
             <div className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase mb-3">Live preview</div>
             <div className="flex gap-3">
               <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${previewTone.cls} flex items-center justify-center shadow-md`}>
-                <PreviewIcon className="w-5 h-5 text-white" />
+                <PreviewIcon className="w-5 h-5 text-primary-foreground" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-extrabold text-[var(--foreground)]">{title || "Title…"}</div>
                 <div className="mt-1">{body ? <BroadcastMarkdown>{body}</BroadcastMarkdown> : <div className="text-[11.5px] text-[var(--muted-foreground)]">Your message…</div>}</div>
-                {tone === "premium" && <span className={`inline-block mt-2 text-[9.5px] font-extrabold px-2 py-0.5 rounded-full bg-gradient-to-r ${previewTone.cls} text-white uppercase`}>✨ Premium</span>}
+                {tone === "premium" && <span className={`inline-block mt-2 text-[9.5px] font-extrabold px-2 py-0.5 rounded-full bg-gradient-to-r ${previewTone.cls} text-primary-foreground uppercase`}>✨ Premium</span>}
               </div>
             </div>
           </div>
@@ -1356,15 +1356,15 @@ function BroadcastsTab() {
       {/* List */}
       <div className="lg:col-span-3 space-y-3">
         {listQ.isLoading && <div className="text-xs text-[var(--muted-foreground)] p-6 text-center">Loading…</div>}
-        {!listQ.isLoading && items.length === 0 && <div className="text-xs text-[var(--muted-foreground)] p-10 text-center bg-white/60 border border-[var(--border)] rounded-2xl">No broadcasts yet</div>}
+        {!listQ.isLoading && items.length === 0 && <div className="text-xs text-[var(--muted-foreground)] p-10 text-center bg-card/60 border border-[var(--border)] rounded-2xl">No broadcasts yet</div>}
         {items.map((b: any) => {
           const Icon = BROADCAST_ICONS.find((i) => i.id === b.icon)?.Icon ?? Sparkles;
           const t = BROADCAST_TONES.find((x) => x.id === b.tone) ?? BROADCAST_TONES[0];
           return (
-            <div key={b.id} className={`rounded-2xl bg-white border ${b.is_active ? "border-[var(--border)]" : "border-gray-200 opacity-60"} shadow-sm p-4`}>
+            <div key={b.id} className={`rounded-2xl bg-card border ${b.is_active ? "border-[var(--border)]" : "border-gray-200 opacity-60"} shadow-sm p-4`}>
               <div className="flex gap-3">
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${t.cls} flex items-center justify-center shadow-md shrink-0`}>
-                  <Icon className="w-5 h-5 text-white" />
+                  <Icon className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
@@ -1450,11 +1450,11 @@ function ErrorsTab() {
         <StatBox label="Sources" value={sources.length} icon={<Info className="h-4 w-4" />} />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 bg-white/60 backdrop-blur border border-[var(--primary)]/20 rounded-2xl p-3">
+      <div className="flex flex-wrap items-center gap-2 bg-card/60 backdrop-blur border border-[var(--primary)]/20 rounded-2xl p-3">
         <select
           value={source}
           onChange={(e) => setSource(e.target.value)}
-          className="text-sm bg-white border border-[var(--primary)]/30 rounded-lg px-3 py-1.5"
+          className="text-sm bg-card border border-[var(--primary)]/30 rounded-lg px-3 py-1.5"
         >
           <option value="">All sources</option>
           {sources.map((s) => (
@@ -1478,7 +1478,7 @@ function ErrorsTab() {
         <span className="ml-auto text-xs text-[var(--muted-foreground)]/60">Auto-refresh 15s • cap 10k rows</span>
       </div>
 
-      <div className="bg-white/60 backdrop-blur border border-[var(--primary)]/20 rounded-2xl overflow-hidden">
+      <div className="bg-card/60 backdrop-blur border border-[var(--primary)]/20 rounded-2xl overflow-hidden">
         {rows.isLoading ? (
           <div className="p-8 text-center text-[var(--muted-foreground)]/60">Loading…</div>
         ) : (rows.data?.rows.length ?? 0) === 0 ? (
@@ -1555,7 +1555,7 @@ function ErrorsTab() {
 
 function StatBox({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
   return (
-    <div className="bg-white/60 backdrop-blur border border-[var(--primary)]/20 rounded-2xl p-4">
+    <div className="bg-card/60 backdrop-blur border border-[var(--primary)]/20 rounded-2xl p-4">
       <div className="flex items-center gap-2 text-[var(--muted-foreground)]/70 text-xs">
         {icon} {label}
       </div>
@@ -1605,7 +1605,7 @@ function ResetAllClicksPanel() {
               </p>
             )}
           </div>
-          <Button onClick={onReset} disabled={running} className="bg-rose-600 hover:bg-rose-700 text-white">
+          <Button onClick={onReset} disabled={running} className="bg-rose-600 hover:bg-rose-700 text-primary-foreground">
             {running ? "Resetting…" : "Reset Now"}
           </Button>
         </div>
@@ -1685,14 +1685,14 @@ function MaintenanceTab() {
   return (
     <div className="space-y-6">
       <Panel icon={RefreshCw} title="System Maintenance" subtitle="Run manual maintenance tasks">
-        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200">
+        <div className="p-4 rounded-2xl bg-muted border border-border">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1">
-              <h4 className="font-bold text-amber-800">Purge Raw Click Logs</h4>
-              <p className="text-sm text-amber-700 mt-1">
+              <h4 className="font-bold text-foreground">Purge Raw Click Logs</h4>
+              <p className="text-sm text-foreground mt-1">
                 Deletes all raw per-click records older than 7 days. Aggregate stats and daily charts are preserved.
               </p>
-              <p className="text-xs text-amber-700/80 mt-1">
+              <p className="text-xs text-foreground/80 mt-1">
                 Eligible for purge: <b>{(statusQ.data?.oldClicks ?? 0).toLocaleString()}</b> clicks
                 {" + "}
                 <b>{(statusQ.data?.oldErrors ?? 0).toLocaleString()}</b> error logs
@@ -1702,7 +1702,7 @@ function MaintenanceTab() {
             <Button
               onClick={runBatchedPurge}
               disabled={purging}
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-foreground hover:bg-foreground text-primary-foreground"
             >
               {purging ? "Purging…" : "Run Now"}
             </Button>
@@ -1710,7 +1710,7 @@ function MaintenanceTab() {
 
           {(purging || progress.phase === "done") && (
             <div className="mt-4 space-y-2">
-              <div className="flex items-center justify-between text-xs text-amber-800">
+              <div className="flex items-center justify-between text-xs text-foreground">
                 <span>
                   {progress.phase === "clicks" && "Phase 1/2: Purging old clicks…"}
                   {progress.phase === "errors" && "Phase 2/2: Purging old error logs…"}
@@ -1755,7 +1755,7 @@ function MaintenanceTab() {
           )}
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white/70">
+        <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-card/70">
           <table className="w-full text-sm">
             <thead className="bg-[var(--muted)] text-[var(--muted-foreground)]">
               <tr>
@@ -1839,7 +1839,7 @@ function QuotaSyncTestPanel() {
             </select>
           </div>
         </div>
-        <Button onClick={run} disabled={running} className="bg-sky-600 hover:bg-sky-700 text-white">
+        <Button onClick={run} disabled={running} className="bg-sky-600 hover:bg-sky-700 text-primary-foreground">
           {running ? "Checking…" : "Check Quota Sync"}
         </Button>
 
@@ -1853,7 +1853,7 @@ function QuotaSyncTestPanel() {
             </div>
 
             {result.before && result.expected && result.after && (
-              <div className="overflow-x-auto rounded-xl border border-sky-200 bg-white">
+              <div className="overflow-x-auto rounded-xl border border-sky-200 bg-card">
                 <table className="w-full text-xs">
                   <thead className="bg-sky-100 text-sky-900">
                     <tr>
@@ -1925,7 +1925,7 @@ function QuotaSyncStatusPanel() {
           Refresh
         </Button>
         {mismatches.length > 0 && (
-          <Button size="sm" onClick={() => fix.mutate()} disabled={fix.isPending} className="bg-amber-600 hover:bg-amber-700 text-white">
+          <Button size="sm" onClick={() => fix.mutate()} disabled={fix.isPending} className="bg-foreground hover:bg-foreground text-primary-foreground">
             {fix.isPending ? "Repairing…" : `Repair ${mismatches.length} mismatched`}
           </Button>
         )}
@@ -1940,7 +1940,7 @@ function QuotaSyncStatusPanel() {
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white/70">
+      <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-card/70">
         <table className="w-full text-sm">
           <thead className="bg-[var(--muted)] text-[var(--muted-foreground)]">
             <tr>
@@ -2049,7 +2049,7 @@ function DomainHealthTab() {
   const statusBadge = (s: string | null) => {
     const map: Record<string, string> = {
       healthy: "bg-emerald-100 text-emerald-700 border-emerald-200",
-      warning: "bg-amber-100 text-amber-700 border-amber-200",
+      warning: "bg-muted text-foreground border-border",
       critical: "bg-rose-100 text-rose-700 border-rose-200",
     };
     const cls = s ? (map[s] ?? "bg-gray-100 text-gray-600 border-gray-200") : "bg-gray-100 text-gray-500 border-gray-200";
@@ -2057,7 +2057,7 @@ function DomainHealthTab() {
   };
 
   return (
-    <section className="rounded-3xl border border-white/80 bg-white/60 backdrop-blur-xl p-6 sm:p-8 shadow-[0_20px_60px_-30px_rgba(255,126,95,0.35)]">
+    <section className="rounded-3xl border border-border/80 bg-card/60 backdrop-blur-xl p-6 sm:p-8 shadow-[0_20px_60px_-30px_rgba(255,126,95,0.35)]">
       <div className="flex items-center gap-2 mb-4">
         <ShieldCheck className="w-5 h-5 text-[var(--primary)]" />
         <h2 className="text-xl font-bold text-[var(--foreground)]">Offer Domain Health Monitor</h2>
@@ -2080,10 +2080,10 @@ function DomainHealthTab() {
           value={domain}
           onChange={(e) => setDomain(e.target.value)}
           placeholder="example.com"
-          className="flex-1 px-3 py-2 rounded-xl border border-[var(--border)] bg-white text-sm"
+          className="flex-1 px-3 py-2 rounded-xl border border-[var(--border)] bg-card text-sm"
         />
         <Button onClick={() => add.mutate()} disabled={!domain || add.isPending}
-          className="bg-[var(--primary)] hover:bg-[var(--primary)] text-white">
+          className="bg-[var(--primary)] hover:bg-[var(--primary)] text-primary-foreground">
           <Plus className="w-4 h-4 mr-1" /> Add
         </Button>
         <Button onClick={() => sync.mutate()} disabled={sync.isPending} variant="outline">
@@ -2095,7 +2095,7 @@ function DomainHealthTab() {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-card">
         <table className="w-full text-sm">
           <thead className="bg-[var(--muted)] text-[var(--muted-foreground)] text-xs uppercase">
             <tr>
@@ -2125,7 +2125,7 @@ function DomainHealthTab() {
                 : `${sslDays}d left`;
               const sslCls = sslDays == null ? "text-gray-500"
                 : sslDays < 0 ? "text-rose-700 font-semibold"
-                : sslDays <= 14 ? "text-amber-700 font-semibold"
+                : sslDays <= 14 ? "text-foreground font-semibold"
                 : "text-emerald-700";
               return (
                 <tr key={d.id} className="border-t border-[var(--border)] hover:bg-[var(--muted)]">
@@ -2190,7 +2190,7 @@ function DomainHealthTab() {
 function KpiCard({ label, value, tone }: { label: string; value: number; tone: "emerald" | "amber" | "rose" | "gray" }) {
   const map = {
     emerald: "bg-emerald-50 border-emerald-200 text-emerald-700",
-    amber: "bg-amber-50 border-amber-200 text-amber-700",
+    amber: "bg-muted border-border text-foreground",
     rose: "bg-rose-50 border-rose-200 text-rose-700",
     gray: "bg-gray-50 border-gray-200 text-gray-600",
   } as const;

@@ -32,7 +32,7 @@ const TONE_STYLES: Record<string, string> = {
   premium: "from-[var(--primary)] to-[var(--primary-glow)]",
   info: "from-blue-500 to-blue-600",
   success: "from-emerald-500 to-emerald-600",
-  warning: "from-amber-500 to-orange-600",
+  warning: "from-primary to-orange-600",
 };
 
 function timeAgo(iso: string) {
@@ -83,7 +83,7 @@ function NoticesPage() {
           <Button 
             onClick={() => markAllMut.mutate()}
             disabled={markAllMut.isPending}
-            className="bg-white hover:bg-white/80 border-[var(--border)] text-[var(--muted-foreground)] shadow-sm font-bold text-xs h-10 px-4 rounded-xl gap-2"
+            className="bg-card hover:bg-card/80 border-[var(--border)] text-[var(--muted-foreground)] shadow-sm font-bold text-xs h-10 px-4 rounded-xl gap-2"
           >
             <CheckCheck className="w-4 h-4" />
             Mark all read
@@ -96,7 +96,7 @@ function NoticesPage() {
           <div className="p-12 text-center text-[var(--muted-foreground)] animate-pulse font-medium">Loading inbox…</div>
         )}
         {!q.isLoading && items.length === 0 && (
-          <div className="p-20 text-center bg-white/40 backdrop-blur-xl border border-white/60 rounded-[32px] shadow-sm shadow-orange-900/5">
+          <div className="p-20 text-center bg-card/40 backdrop-blur-xl border border-border/60 rounded-[32px] shadow-sm shadow-primary/10">
             <div className="w-16 h-16 mx-auto rounded-3xl bg-[var(--muted)] border border-[var(--border)] flex items-center justify-center mb-4">
               <Bell className="w-8 h-8 text-[var(--muted-foreground)]" />
             </div>
@@ -114,13 +114,13 @@ function NoticesPage() {
               onClick={() => !b.is_read && markMut.mutate(b.id)}
               className={`group relative overflow-hidden rounded-[28px] border transition-all duration-300 cursor-pointer ${
                 !b.is_read 
-                  ? "bg-white border-[var(--primary)]/20 shadow-lg shadow-orange-500/5 ring-1 ring-[var(--primary)]/5" 
-                  : "bg-white/40 border-white/60 hover:bg-white/60"
+                  ? "bg-card border-[var(--primary)]/20 shadow-lg shadow-primary/10 ring-1 ring-[var(--primary)]/5" 
+                  : "bg-card/40 border-border/60 hover:bg-card/60"
               }`}
             >
               <div className="p-5 sm:p-6 flex gap-4 sm:gap-6">
                 <div className="relative shrink-0">
-                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${toneCls} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-500`}>
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${toneCls} flex items-center justify-center text-primary-foreground shadow-lg group-hover:scale-110 transition-transform duration-500`}>
                     <Icon className="w-6 h-6 sm:w-7 sm:h-7" />
                   </div>
                   {!b.is_read && (
@@ -145,7 +145,7 @@ function NoticesPage() {
                   
                   <div className="flex items-center gap-3">
                     {b.tone === "premium" && (
-                      <span className={`text-[10px] font-black px-2.5 py-1 rounded-full bg-gradient-to-r ${toneCls} text-white shadow-sm uppercase tracking-wider`}>
+                      <span className={`text-[10px] font-black px-2.5 py-1 rounded-full bg-gradient-to-r ${toneCls} text-primary-foreground shadow-sm uppercase tracking-wider`}>
                         ✨ Premium
                       </span>
                     )}

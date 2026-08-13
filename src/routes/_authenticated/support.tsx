@@ -66,13 +66,13 @@ function SupportPage() {
 
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Top bar */}
-        <div className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/80 shadow-sm shadow-orange-900/5 px-5 py-3 flex items-center gap-3">
+        <div className="rounded-2xl bg-card/70 backdrop-blur-xl border border-border/80 shadow-sm shadow-primary/10 px-5 py-3 flex items-center gap-3">
           <Link to="/dashboard" className="w-9 h-9 rounded-xl bg-[var(--muted)] border border-[var(--border)] flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--primary)]">
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] flex items-center justify-center shadow-md shadow-orange-500/30">
-              <LifeBuoy className="w-4.5 h-4.5 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] flex items-center justify-center shadow-md shadow-primary/10">
+              <LifeBuoy className="w-4.5 h-4.5 text-primary-foreground" />
             </div>
             <div>
               <h1 className="text-lg font-extrabold text-[var(--foreground)] leading-tight">Support</h1>
@@ -82,11 +82,11 @@ function SupportPage() {
         </div>
 
         {!enabled && (
-          <div className="rounded-2xl bg-amber-50 border border-amber-200 p-5 flex items-start gap-3">
-            <XCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+          <div className="rounded-2xl bg-muted border border-border p-5 flex items-start gap-3">
+            <XCircle className="w-5 h-5 text-foreground mt-0.5 shrink-0" />
             <div>
-              <div className="font-bold text-amber-900 text-sm">Support is temporarily disabled</div>
-              <div className="text-xs text-amber-700 mt-1">Our team has paused new tickets. Please check back later.</div>
+              <div className="font-bold text-foreground text-sm">Support is temporarily disabled</div>
+              <div className="text-xs text-foreground mt-1">Our team has paused new tickets. Please check back later.</div>
             </div>
           </div>
         )}
@@ -94,7 +94,7 @@ function SupportPage() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
           {/* Send form */}
           <div className="lg:col-span-2">
-            <div className="rounded-2xl bg-white border border-[var(--border)] shadow-sm shadow-orange-900/5 overflow-hidden">
+            <div className="rounded-2xl bg-card border border-[var(--border)] shadow-sm shadow-primary/10 overflow-hidden">
               <div className="px-5 py-4 bg-gradient-to-r from-[var(--muted)] to-[var(--border)]/40 border-b border-[var(--border)]">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-[var(--primary)]" />
@@ -111,7 +111,7 @@ function SupportPage() {
                     maxLength={200}
                     placeholder="e.g. Cannot create new link"
                     disabled={!enabled}
-                    className="mt-1.5 w-full bg-[var(--muted)]/70 border border-[var(--border)] rounded-xl py-2.5 px-3 text-sm placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)]/50 focus:bg-white transition-all disabled:opacity-50"
+                    className="mt-1.5 w-full bg-[var(--muted)]/70 border border-[var(--border)] rounded-xl py-2.5 px-3 text-sm placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)]/50 focus:bg-card transition-all disabled:opacity-50"
                   />
                 </div>
                 <div>
@@ -125,13 +125,13 @@ function SupportPage() {
                     rows={8}
                     placeholder="Describe your issue in detail…"
                     disabled={!enabled}
-                    className="mt-1.5 w-full bg-[var(--muted)]/70 border border-[var(--border)] rounded-xl py-2.5 px-3 text-sm placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)]/50 focus:bg-white transition-all resize-none disabled:opacity-50"
+                    className="mt-1.5 w-full bg-[var(--muted)]/70 border border-[var(--border)] rounded-xl py-2.5 px-3 text-sm placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)]/50 focus:bg-card transition-all resize-none disabled:opacity-50"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={!enabled || createMut.isPending}
-                  className="w-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground font-bold text-sm py-3 rounded-xl shadow-lg shadow-primary/10 hover:shadow-xl hover:shadow-primary/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="w-4 h-4" />
                   {createMut.isPending ? "Sending…" : "Send message"}
@@ -142,7 +142,7 @@ function SupportPage() {
 
           {/* My tickets */}
           <div className="lg:col-span-3">
-            <div className="rounded-2xl bg-white border border-[var(--border)] shadow-sm shadow-orange-900/5 overflow-hidden">
+            <div className="rounded-2xl bg-card border border-[var(--border)] shadow-sm shadow-primary/10 overflow-hidden">
               <div className="px-5 py-4 bg-gradient-to-r from-[var(--muted)] to-[var(--border)]/40 border-b border-[var(--border)] flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <MessageCircle className="w-4 h-4 text-[var(--primary)]" />
@@ -189,9 +189,9 @@ function SupportPage() {
                           <div className="text-[12.5px] text-[var(--foreground)] whitespace-pre-wrap leading-relaxed">{t.admin_reply}</div>
                         </div>
                       ) : (
-                        <div className="rounded-xl bg-amber-50/60 border border-amber-200/70 p-3 flex items-center gap-2">
-                          <Clock className="w-3.5 h-3.5 text-amber-600" />
-                          <span className="text-[11px] text-amber-700 font-medium">Awaiting reply from our team…</span>
+                        <div className="rounded-xl bg-muted/60 border border-border/70 p-3 flex items-center gap-2">
+                          <Clock className="w-3.5 h-3.5 text-foreground" />
+                          <span className="text-[11px] text-foreground font-medium">Awaiting reply from our team…</span>
                         </div>
                       )}
                     </div>
@@ -222,7 +222,7 @@ function StatusBadge({ status }: { status: string }) {
     );
   }
   return (
-    <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[9.5px] font-extrabold uppercase tracking-wide">
+    <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-foreground text-[9.5px] font-extrabold uppercase tracking-wide">
       <Clock className="w-3 h-3" /> Open
     </span>
   );
