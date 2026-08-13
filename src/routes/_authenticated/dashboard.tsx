@@ -223,7 +223,7 @@ function DashboardPage() {
     const entries = Object.entries(cs).sort((a, b) => b[1] - a[1]);
     const total = entries.reduce((s, [, n]) => s + n, 0);
     if (total === 0) return [] as { name: string; pct: number; color: string }[];
-    const palette = ["#BFDBFE", "#FECACA", "#BBF7D0", "#FED7AA"];
+    const palette = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)"];
     const top = entries.slice(0, 3);
     const otherCount = entries.slice(3).reduce((s, [, n]) => s + n, 0);
     const rows = top.map(([name, n], i) => ({ name, pct: Math.round((n / total) * 100), color: palette[i] }));
@@ -820,7 +820,7 @@ function MiniSpark({ up }: { up: boolean }) {
   const path = "M" + pts.map(([x, y]) => `${x},${y}`).join(" L");
   return (
     <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h}>
-      <path d={path} fill="none" stroke={up ? "#10B981" : "primary"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={path} fill="none" stroke={up ? "oklch(0.62 0.16 158)" : "var(--primary)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
