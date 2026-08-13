@@ -36,6 +36,7 @@ import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as AuthenticatedWithdrawRouteImport } from './routes/_authenticated/withdraw'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedSmartFilterRouteImport } from './routes/_authenticated/smart-filter'
@@ -188,6 +189,11 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => BlogRoute,
 } as any)
+const AuthenticatedWithdrawRoute = AuthenticatedWithdrawRouteImport.update({
+  id: '/withdraw',
+  path: '/withdraw',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
   id: '/upgrade',
   path: '/upgrade',
@@ -314,6 +320,7 @@ export interface FileRoutesByFullPath {
   '/smart-filter': typeof AuthenticatedSmartFilterRoute
   '/support': typeof AuthenticatedSupportRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
+  '/withdraw': typeof AuthenticatedWithdrawRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/r/$code': typeof RCodeRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -358,6 +365,7 @@ export interface FileRoutesByTo {
   '/smart-filter': typeof AuthenticatedSmartFilterRoute
   '/support': typeof AuthenticatedSupportRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
+  '/withdraw': typeof AuthenticatedWithdrawRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/r/$code': typeof RCodeRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -405,6 +413,7 @@ export interface FileRoutesById {
   '/_authenticated/smart-filter': typeof AuthenticatedSmartFilterRoute
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
+  '/_authenticated/withdraw': typeof AuthenticatedWithdrawRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/r/$code': typeof RCodeRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -452,6 +461,7 @@ export interface FileRouteTypes {
     | '/smart-filter'
     | '/support'
     | '/upgrade'
+    | '/withdraw'
     | '/blog/$slug'
     | '/r/$code'
     | '/shop/$slug'
@@ -496,6 +506,7 @@ export interface FileRouteTypes {
     | '/smart-filter'
     | '/support'
     | '/upgrade'
+    | '/withdraw'
     | '/blog/$slug'
     | '/r/$code'
     | '/shop/$slug'
@@ -542,6 +553,7 @@ export interface FileRouteTypes {
     | '/_authenticated/smart-filter'
     | '/_authenticated/support'
     | '/_authenticated/upgrade'
+    | '/_authenticated/withdraw'
     | '/blog/$slug'
     | '/r/$code'
     | '/shop/$slug'
@@ -780,6 +792,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof BlogRoute
     }
+    '/_authenticated/withdraw': {
+      id: '/_authenticated/withdraw'
+      path: '/withdraw'
+      fullPath: '/withdraw'
+      preLoaderRoute: typeof AuthenticatedWithdrawRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/upgrade': {
       id: '/_authenticated/upgrade'
       path: '/upgrade'
@@ -913,6 +932,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSmartFilterRoute: typeof AuthenticatedSmartFilterRoute
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
+  AuthenticatedWithdrawRoute: typeof AuthenticatedWithdrawRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -926,6 +946,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSmartFilterRoute: AuthenticatedSmartFilterRoute,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
+  AuthenticatedWithdrawRoute: AuthenticatedWithdrawRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

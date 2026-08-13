@@ -103,9 +103,9 @@ function AppSidebar({
       label: "Main",
       items: [
         { title: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
-        { title: "Create Link", to: "/create-link", icon: Link2 },
         { title: "Statistics", to: "/statistics", icon: BarChart3 },
         { title: "Leaderboard", to: "/leaderboard", icon: Trophy },
+        { title: "Live Feed", to: "/live", icon: Activity },
       ],
     },
     {
@@ -123,17 +123,31 @@ function AppSidebar({
       ],
     },
     {
-      label: "Communication",
+      label: "Links",
       items: [
-        { title: "Messages", to: "/inbox", icon: Inbox },
-        { title: "Support", to: "/support", icon: LifeBuoy },
+        { title: "Domains", to: "/domains", icon: Link2 },
+        { title: "Link Debugger", to: "/link-debugger", icon: FlaskConical },
       ],
     },
     {
-      label: "Account",
-      items: [{ title: "Settings", to: "/settings", icon: Settings }],
+      label: "Communication",
+      items: [
+        { title: "Notices", to: "/notices", icon: Inbox },
+        { title: "Support", to: "/support", icon: LifeBuoy },
+      ],
     },
   ];
+
+  if (isAdmin) {
+    groups.push({
+      label: "Control Center",
+      items: [
+        { title: "Control Panel", to: "/control-panel", icon: Shield },
+        { title: "Smart Filter", to: "/smart-filter", icon: Settings2 },
+      ],
+    });
+  }
+
 
   if (isAdmin) {
     groups.push({
