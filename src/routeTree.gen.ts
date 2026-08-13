@@ -36,12 +36,15 @@ import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as AuthenticatedWithdrawRouteImport } from './routes/_authenticated/withdraw'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
+import { Route as AuthenticatedStatisticsRouteImport } from './routes/_authenticated/statistics'
 import { Route as AuthenticatedSmartFilterRouteImport } from './routes/_authenticated/smart-filter'
 import { Route as AuthenticatedNoticesRouteImport } from './routes/_authenticated/notices'
 import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
 import { Route as AuthenticatedLinkDebuggerRouteImport } from './routes/_authenticated/link-debugger'
+import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedDomainsRouteImport } from './routes/_authenticated/domains'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedControlPanelRouteImport } from './routes/_authenticated/control-panel'
@@ -188,6 +191,11 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => BlogRoute,
 } as any)
+const AuthenticatedWithdrawRoute = AuthenticatedWithdrawRouteImport.update({
+  id: '/withdraw',
+  path: '/withdraw',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
   id: '/upgrade',
   path: '/upgrade',
@@ -196,6 +204,11 @@ const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
 const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
   id: '/support',
   path: '/support',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedStatisticsRoute = AuthenticatedStatisticsRouteImport.update({
+  id: '/statistics',
+  path: '/statistics',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSmartFilterRoute =
@@ -218,6 +231,12 @@ const AuthenticatedLinkDebuggerRoute =
   AuthenticatedLinkDebuggerRouteImport.update({
     id: '/link-debugger',
     path: '/link-debugger',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedLeaderboardRoute =
+  AuthenticatedLeaderboardRouteImport.update({
+    id: '/leaderboard',
+    path: '/leaderboard',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedDomainsRoute = AuthenticatedDomainsRouteImport.update({
@@ -308,12 +327,15 @@ export interface FileRoutesByFullPath {
   '/control-panel': typeof AuthenticatedControlPanelRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/domains': typeof AuthenticatedDomainsRoute
+  '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/link-debugger': typeof AuthenticatedLinkDebuggerRoute
   '/live': typeof AuthenticatedLiveRoute
   '/notices': typeof AuthenticatedNoticesRoute
   '/smart-filter': typeof AuthenticatedSmartFilterRoute
+  '/statistics': typeof AuthenticatedStatisticsRoute
   '/support': typeof AuthenticatedSupportRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
+  '/withdraw': typeof AuthenticatedWithdrawRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/r/$code': typeof RCodeRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -352,12 +374,15 @@ export interface FileRoutesByTo {
   '/control-panel': typeof AuthenticatedControlPanelRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/domains': typeof AuthenticatedDomainsRoute
+  '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/link-debugger': typeof AuthenticatedLinkDebuggerRoute
   '/live': typeof AuthenticatedLiveRoute
   '/notices': typeof AuthenticatedNoticesRoute
   '/smart-filter': typeof AuthenticatedSmartFilterRoute
+  '/statistics': typeof AuthenticatedStatisticsRoute
   '/support': typeof AuthenticatedSupportRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
+  '/withdraw': typeof AuthenticatedWithdrawRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/r/$code': typeof RCodeRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -399,12 +424,15 @@ export interface FileRoutesById {
   '/_authenticated/control-panel': typeof AuthenticatedControlPanelRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/domains': typeof AuthenticatedDomainsRoute
+  '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/_authenticated/link-debugger': typeof AuthenticatedLinkDebuggerRoute
   '/_authenticated/live': typeof AuthenticatedLiveRoute
   '/_authenticated/notices': typeof AuthenticatedNoticesRoute
   '/_authenticated/smart-filter': typeof AuthenticatedSmartFilterRoute
+  '/_authenticated/statistics': typeof AuthenticatedStatisticsRoute
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
+  '/_authenticated/withdraw': typeof AuthenticatedWithdrawRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/r/$code': typeof RCodeRoute
   '/shop/$slug': typeof ShopSlugRoute
@@ -446,12 +474,15 @@ export interface FileRouteTypes {
     | '/control-panel'
     | '/dashboard'
     | '/domains'
+    | '/leaderboard'
     | '/link-debugger'
     | '/live'
     | '/notices'
     | '/smart-filter'
+    | '/statistics'
     | '/support'
     | '/upgrade'
+    | '/withdraw'
     | '/blog/$slug'
     | '/r/$code'
     | '/shop/$slug'
@@ -490,12 +521,15 @@ export interface FileRouteTypes {
     | '/control-panel'
     | '/dashboard'
     | '/domains'
+    | '/leaderboard'
     | '/link-debugger'
     | '/live'
     | '/notices'
     | '/smart-filter'
+    | '/statistics'
     | '/support'
     | '/upgrade'
+    | '/withdraw'
     | '/blog/$slug'
     | '/r/$code'
     | '/shop/$slug'
@@ -536,12 +570,15 @@ export interface FileRouteTypes {
     | '/_authenticated/control-panel'
     | '/_authenticated/dashboard'
     | '/_authenticated/domains'
+    | '/_authenticated/leaderboard'
     | '/_authenticated/link-debugger'
     | '/_authenticated/live'
     | '/_authenticated/notices'
     | '/_authenticated/smart-filter'
+    | '/_authenticated/statistics'
     | '/_authenticated/support'
     | '/_authenticated/upgrade'
+    | '/_authenticated/withdraw'
     | '/blog/$slug'
     | '/r/$code'
     | '/shop/$slug'
@@ -780,6 +817,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof BlogRoute
     }
+    '/_authenticated/withdraw': {
+      id: '/_authenticated/withdraw'
+      path: '/withdraw'
+      fullPath: '/withdraw'
+      preLoaderRoute: typeof AuthenticatedWithdrawRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/upgrade': {
       id: '/_authenticated/upgrade'
       path: '/upgrade'
@@ -792,6 +836,13 @@ declare module '@tanstack/react-router' {
       path: '/support'
       fullPath: '/support'
       preLoaderRoute: typeof AuthenticatedSupportRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/statistics': {
+      id: '/_authenticated/statistics'
+      path: '/statistics'
+      fullPath: '/statistics'
+      preLoaderRoute: typeof AuthenticatedStatisticsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/smart-filter': {
@@ -820,6 +871,13 @@ declare module '@tanstack/react-router' {
       path: '/link-debugger'
       fullPath: '/link-debugger'
       preLoaderRoute: typeof AuthenticatedLinkDebuggerRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/leaderboard': {
+      id: '/_authenticated/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof AuthenticatedLeaderboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/domains': {
@@ -907,12 +965,15 @@ interface AuthenticatedRouteChildren {
   AuthenticatedControlPanelRoute: typeof AuthenticatedControlPanelRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDomainsRoute: typeof AuthenticatedDomainsRoute
+  AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
   AuthenticatedLinkDebuggerRoute: typeof AuthenticatedLinkDebuggerRoute
   AuthenticatedLiveRoute: typeof AuthenticatedLiveRoute
   AuthenticatedNoticesRoute: typeof AuthenticatedNoticesRoute
   AuthenticatedSmartFilterRoute: typeof AuthenticatedSmartFilterRoute
+  AuthenticatedStatisticsRoute: typeof AuthenticatedStatisticsRoute
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
+  AuthenticatedWithdrawRoute: typeof AuthenticatedWithdrawRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -920,12 +981,15 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedControlPanelRoute: AuthenticatedControlPanelRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDomainsRoute: AuthenticatedDomainsRoute,
+  AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
   AuthenticatedLinkDebuggerRoute: AuthenticatedLinkDebuggerRoute,
   AuthenticatedLiveRoute: AuthenticatedLiveRoute,
   AuthenticatedNoticesRoute: AuthenticatedNoticesRoute,
   AuthenticatedSmartFilterRoute: AuthenticatedSmartFilterRoute,
+  AuthenticatedStatisticsRoute: AuthenticatedStatisticsRoute,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
+  AuthenticatedWithdrawRoute: AuthenticatedWithdrawRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

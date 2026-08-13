@@ -103,9 +103,9 @@ function AppSidebar({
       label: "Main",
       items: [
         { title: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
-        { title: "Create Link", to: "/create-link", icon: Link2 },
         { title: "Statistics", to: "/statistics", icon: BarChart3 },
         { title: "Leaderboard", to: "/leaderboard", icon: Trophy },
+        { title: "Live Feed", to: "/live", icon: Activity },
       ],
     },
     {
@@ -123,15 +123,18 @@ function AppSidebar({
       ],
     },
     {
-      label: "Communication",
+      label: "Links",
       items: [
-        { title: "Messages", to: "/inbox", icon: Inbox },
-        { title: "Support", to: "/support", icon: LifeBuoy },
+        { title: "Domains", to: "/domains", icon: Link2 },
+        { title: "Link Debugger", to: "/link-debugger", icon: FlaskConical },
       ],
     },
     {
-      label: "Account",
-      items: [{ title: "Settings", to: "/settings", icon: Settings }],
+      label: "Communication",
+      items: [
+        { title: "Notices", to: "/notices", icon: Inbox },
+        { title: "Support", to: "/support", icon: LifeBuoy },
+      ],
     },
   ];
 
@@ -139,25 +142,14 @@ function AppSidebar({
     groups.push({
       label: "Control Center",
       items: [
-        {
-          title: "Admin Panel",
-          to: "/admin",
-          icon: Shield,
-          children: [
-            { title: "Overview", to: "/admin", search: { tab: "overview" }, icon: LayoutDashboard },
-            { title: "Users", to: "/admin", search: { tab: "users" }, icon: Users },
-            { title: "User History", to: "/admin", search: { tab: "history" }, icon: History },
-            { title: "Payouts", to: "/admin", search: { tab: "withdrawals" }, icon: DollarSign },
-            { title: "Ads Setup", to: "/admin", search: { tab: "ads" }, icon: Megaphone },
-            { title: "Performance", to: "/admin", search: { tab: "performance" }, icon: Activity },
-            { title: "Messages", to: "/admin", search: { tab: "messages" }, icon: Inbox },
-            { title: "System", to: "/admin", search: { tab: "system" }, icon: Settings2 },
-            { title: "Simulator", to: "/admin", search: { tab: "simulator" }, icon: FlaskConical },
-          ],
-        },
+        { title: "Control Panel", to: "/control-panel", icon: Shield },
+        { title: "Smart Filter", to: "/smart-filter", icon: Settings2 },
       ],
     });
   }
+
+
+
 
   const isActive = (item: NavChild) => {
     if (pathname !== item.to) return false;
