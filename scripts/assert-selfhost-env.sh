@@ -11,12 +11,13 @@ fail=0
 red()  { echo -e "\033[1;31m✖ $*\033[0m"; }
 grn()  { echo -e "\033[1;32m✔ $*\033[0m"; }
 
-# 1. no hosted Supabase anywhere
+# 1. no hosted Supabase anywhere (ignore comment lines — docs URLs are harmless)
 for f in "$APP_ENV" "$SB_ENV"; do
   [ -f "$f" ] || { red "missing env file: $f"; fail=1; continue; }
-  if grep -Eiq '(supabase\.co|supabase\.in|supabase\.net)' "$f"; then
+  hits="$(grep -Ein '(supabase\.co|supabase\.in|supabase\.net)' "$f" | grep -Ev '^[0-9]+:[[:space:]]*#' || true)"
+  if [ -n "$hits" ]; then
     red "$f contains a HOSTED supabase domain — self-host only!"
-    grep -Ein '(supabase\.co|supabase\.in|supabase\.net)' "$f" | sed 's/=.*/=<hidden>/'
+    echo "$hits" | sed 's/=.*/=<hidden>/'
     fail=1
   fi
 done
