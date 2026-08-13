@@ -26,7 +26,7 @@ export const Route = createFileRoute("/")({
       // Self-referencing origin + per-host brand. NEVER hard-code
       // breezysocial.com here — every ad domain must look like its own
       // independent store to Meta / Google, not a mirror of one brand.
-      const host = (loaderData?.host || "breezysocial.com").replace(/^www\./, "");
+      const host = (loaderData?.host || "adswapx.com").replace(/^www\./, "");
       const origin = `https://${host}`;
       const brand = brandForOrigin(origin);
       const { meta, links } = buildOg({
