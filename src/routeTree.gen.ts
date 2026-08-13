@@ -19,7 +19,6 @@ import { Route as ShippingRouteImport } from './routes/shipping'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as ReturnsRouteImport } from './routes/returns'
 import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OrderConfirmedRouteImport } from './routes/order-confirmed'
 import { Route as ManifestDotjsonRouteImport } from './routes/manifest[.]json'
 import { Route as LoginRouteImport } from './routes/login'
@@ -37,7 +36,6 @@ import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AuthenticatedWithdrawRouteImport } from './routes/_authenticated/withdraw'
-import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedStatisticsRouteImport } from './routes/_authenticated/statistics'
 import { Route as AuthenticatedSmartFilterRouteImport } from './routes/_authenticated/smart-filter'
@@ -50,7 +48,6 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedControlPanelRouteImport } from './routes/_authenticated/control-panel'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as ApiPublicSafePoolRefreshRouteImport } from './routes/api/public/safe-pool-refresh'
-import { Route as ApiPublicPlisioWebhookRouteImport } from './routes/api/public/plisio-webhook'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicPreviewPrelandingCodeRouteImport } from './routes/api/public/preview-prelanding.$code'
 import { Route as ApiPublicHooksMetaCrawlerProbeRouteImport } from './routes/api/public/hooks/meta-crawler-probe'
@@ -105,11 +102,6 @@ const ReturnsRoute = ReturnsRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PricingRoute = PricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrderConfirmedRoute = OrderConfirmedRouteImport.update({
@@ -196,11 +188,6 @@ const AuthenticatedWithdrawRoute = AuthenticatedWithdrawRouteImport.update({
   path: '/withdraw',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
-  id: '/upgrade',
-  path: '/upgrade',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
   id: '/support',
   path: '/support',
@@ -266,11 +253,6 @@ const ApiPublicSafePoolRefreshRoute =
     path: '/api/public/safe-pool-refresh',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicPlisioWebhookRoute = ApiPublicPlisioWebhookRouteImport.update({
-  id: '/api/public/plisio-webhook',
-  path: '/api/public/plisio-webhook',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   id: '/api/public/health',
   path: '/api/public/health',
@@ -312,7 +294,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/manifest.json': typeof ManifestDotjsonRoute
   '/order-confirmed': typeof OrderConfirmedRoute
-  '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/returns': typeof ReturnsRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -334,14 +315,12 @@ export interface FileRoutesByFullPath {
   '/smart-filter': typeof AuthenticatedSmartFilterRoute
   '/statistics': typeof AuthenticatedStatisticsRoute
   '/support': typeof AuthenticatedSupportRoute
-  '/upgrade': typeof AuthenticatedUpgradeRoute
   '/withdraw': typeof AuthenticatedWithdrawRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/r/$code': typeof RCodeRoute
   '/shop/$slug': typeof ShopSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
-  '/api/public/plisio-webhook': typeof ApiPublicPlisioWebhookRoute
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
   '/api/public/hooks/domain-health-scan': typeof ApiPublicHooksDomainHealthScanRoute
   '/api/public/hooks/leak-scan': typeof ApiPublicHooksLeakScanRoute
@@ -359,7 +338,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/manifest.json': typeof ManifestDotjsonRoute
   '/order-confirmed': typeof OrderConfirmedRoute
-  '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/returns': typeof ReturnsRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -381,14 +359,12 @@ export interface FileRoutesByTo {
   '/smart-filter': typeof AuthenticatedSmartFilterRoute
   '/statistics': typeof AuthenticatedStatisticsRoute
   '/support': typeof AuthenticatedSupportRoute
-  '/upgrade': typeof AuthenticatedUpgradeRoute
   '/withdraw': typeof AuthenticatedWithdrawRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/r/$code': typeof RCodeRoute
   '/shop/$slug': typeof ShopSlugRoute
   '/blog': typeof BlogIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
-  '/api/public/plisio-webhook': typeof ApiPublicPlisioWebhookRoute
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
   '/api/public/hooks/domain-health-scan': typeof ApiPublicHooksDomainHealthScanRoute
   '/api/public/hooks/leak-scan': typeof ApiPublicHooksLeakScanRoute
@@ -409,7 +385,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/manifest.json': typeof ManifestDotjsonRoute
   '/order-confirmed': typeof OrderConfirmedRoute
-  '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/returns': typeof ReturnsRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -431,14 +406,12 @@ export interface FileRoutesById {
   '/_authenticated/smart-filter': typeof AuthenticatedSmartFilterRoute
   '/_authenticated/statistics': typeof AuthenticatedStatisticsRoute
   '/_authenticated/support': typeof AuthenticatedSupportRoute
-  '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/_authenticated/withdraw': typeof AuthenticatedWithdrawRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/r/$code': typeof RCodeRoute
   '/shop/$slug': typeof ShopSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
-  '/api/public/plisio-webhook': typeof ApiPublicPlisioWebhookRoute
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
   '/api/public/hooks/domain-health-scan': typeof ApiPublicHooksDomainHealthScanRoute
   '/api/public/hooks/leak-scan': typeof ApiPublicHooksLeakScanRoute
@@ -459,7 +432,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/manifest.json'
     | '/order-confirmed'
-    | '/pricing'
     | '/privacy'
     | '/returns'
     | '/robots.txt'
@@ -481,14 +453,12 @@ export interface FileRouteTypes {
     | '/smart-filter'
     | '/statistics'
     | '/support'
-    | '/upgrade'
     | '/withdraw'
     | '/blog/$slug'
     | '/r/$code'
     | '/shop/$slug'
     | '/blog/'
     | '/api/public/health'
-    | '/api/public/plisio-webhook'
     | '/api/public/safe-pool-refresh'
     | '/api/public/hooks/domain-health-scan'
     | '/api/public/hooks/leak-scan'
@@ -506,7 +476,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/manifest.json'
     | '/order-confirmed'
-    | '/pricing'
     | '/privacy'
     | '/returns'
     | '/robots.txt'
@@ -528,14 +497,12 @@ export interface FileRouteTypes {
     | '/smart-filter'
     | '/statistics'
     | '/support'
-    | '/upgrade'
     | '/withdraw'
     | '/blog/$slug'
     | '/r/$code'
     | '/shop/$slug'
     | '/blog'
     | '/api/public/health'
-    | '/api/public/plisio-webhook'
     | '/api/public/safe-pool-refresh'
     | '/api/public/hooks/domain-health-scan'
     | '/api/public/hooks/leak-scan'
@@ -555,7 +522,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/manifest.json'
     | '/order-confirmed'
-    | '/pricing'
     | '/privacy'
     | '/returns'
     | '/robots.txt'
@@ -577,14 +543,12 @@ export interface FileRouteTypes {
     | '/_authenticated/smart-filter'
     | '/_authenticated/statistics'
     | '/_authenticated/support'
-    | '/_authenticated/upgrade'
     | '/_authenticated/withdraw'
     | '/blog/$slug'
     | '/r/$code'
     | '/shop/$slug'
     | '/blog/'
     | '/api/public/health'
-    | '/api/public/plisio-webhook'
     | '/api/public/safe-pool-refresh'
     | '/api/public/hooks/domain-health-scan'
     | '/api/public/hooks/leak-scan'
@@ -605,7 +569,6 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ManifestDotjsonRoute: typeof ManifestDotjsonRoute
   OrderConfirmedRoute: typeof OrderConfirmedRoute
-  PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   ReturnsRoute: typeof ReturnsRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
@@ -618,7 +581,6 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   RCodeRoute: typeof RCodeRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
-  ApiPublicPlisioWebhookRoute: typeof ApiPublicPlisioWebhookRoute
   ApiPublicSafePoolRefreshRoute: typeof ApiPublicSafePoolRefreshRoute
   ApiPublicHooksDomainHealthScanRoute: typeof ApiPublicHooksDomainHealthScanRoute
   ApiPublicHooksLeakScanRoute: typeof ApiPublicHooksLeakScanRoute
@@ -696,13 +658,6 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pricing': {
-      id: '/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/order-confirmed': {
@@ -824,13 +779,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWithdrawRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/upgrade': {
-      id: '/_authenticated/upgrade'
-      path: '/upgrade'
-      fullPath: '/upgrade'
-      preLoaderRoute: typeof AuthenticatedUpgradeRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/support': {
       id: '/_authenticated/support'
       path: '/support'
@@ -915,13 +863,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSafePoolRefreshRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/plisio-webhook': {
-      id: '/api/public/plisio-webhook'
-      path: '/api/public/plisio-webhook'
-      fullPath: '/api/public/plisio-webhook'
-      preLoaderRoute: typeof ApiPublicPlisioWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/health': {
       id: '/api/public/health'
       path: '/api/public/health'
@@ -972,7 +913,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSmartFilterRoute: typeof AuthenticatedSmartFilterRoute
   AuthenticatedStatisticsRoute: typeof AuthenticatedStatisticsRoute
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
-  AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
   AuthenticatedWithdrawRoute: typeof AuthenticatedWithdrawRoute
 }
 
@@ -988,7 +928,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSmartFilterRoute: AuthenticatedSmartFilterRoute,
   AuthenticatedStatisticsRoute: AuthenticatedStatisticsRoute,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
-  AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
   AuthenticatedWithdrawRoute: AuthenticatedWithdrawRoute,
 }
 
@@ -1031,7 +970,6 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ManifestDotjsonRoute: ManifestDotjsonRoute,
   OrderConfirmedRoute: OrderConfirmedRoute,
-  PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   ReturnsRoute: ReturnsRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
@@ -1044,7 +982,6 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   RCodeRoute: RCodeRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
-  ApiPublicPlisioWebhookRoute: ApiPublicPlisioWebhookRoute,
   ApiPublicSafePoolRefreshRoute: ApiPublicSafePoolRefreshRoute,
   ApiPublicHooksDomainHealthScanRoute: ApiPublicHooksDomainHealthScanRoute,
   ApiPublicHooksLeakScanRoute: ApiPublicHooksLeakScanRoute,
