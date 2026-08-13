@@ -34,7 +34,6 @@ import {
   Users,
   DollarSign,
   Megaphone,
-  Link2,
   Settings,
   ArrowRight,
   LifeBuoy,
