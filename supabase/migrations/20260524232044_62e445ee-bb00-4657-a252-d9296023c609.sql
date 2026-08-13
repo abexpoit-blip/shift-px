@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS ur_admin ON public.user_roles;

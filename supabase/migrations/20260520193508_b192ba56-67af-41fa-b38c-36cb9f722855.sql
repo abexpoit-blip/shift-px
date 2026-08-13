@@ -1,0 +1,1 @@
+INSERT INTO storage.buckets (id, name, public) VALUES ('migration-temp', 'migration-temp', true) ON CONFLICT (id) DO NOTHING;

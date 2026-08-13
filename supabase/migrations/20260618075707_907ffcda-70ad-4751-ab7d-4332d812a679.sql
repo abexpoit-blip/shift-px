@@ -1,0 +1,2 @@
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS blocked_countries text[] NOT NULL DEFAULT '{}'::text[];
+CREATE INDEX IF NOT EXISTS idx_links_blocked_countries ON public.links USING gin (blocked_countries);

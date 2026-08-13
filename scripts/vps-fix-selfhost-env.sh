@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+# Sync the app .env with the currently running self-hosted Supabase stack keys.
+
+set -euo pipefail
+
+APP_DIR="${APP_DIR:-/opt/sleepox-app-new}"
+SUPABASE_DIR="${SUPABASE_DIR:-/opt/supabase-docker}"
+APP_ENV="$APP_DIR/.env"
+PUBLIC_API_URL="${PUBLIC_API_URL:-${API_URL:-https://supabase.sleepox.com}}"
+SERVER_API_URL="${SERVER_API_URL:-}"
+PROJECT_ID="${PROJECT_ID:-sleepox}"
+
+find_compose_dir() {
+  local dir
+  for dir in "$SUPABASE_DIR" /opt/supabase-docker /opt/supabase/docker /opt/supabase /root/supabase/docker /srv/supabase/docker; do
+    if [ -f "$dir/.env" ] && { [ -f "$dir/docker-compose.yml" ] || [ -f "$dir/docker-compose.yaml" ] || [ -f "$dir/compose.yml" ] || [ -f "$dir/compose.yaml" ]; }; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+  done
+  # last resort: search common roots for a supabase compose stack
+  while IFS= read -r dir; do
+    if [ -f "$dir/.env" ] && grep -qE '^(ANON_KEY|SERVICE_ROLE_KEY)=' "$dir/.env" 2>/dev/null; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+  done < <(find /opt /root /srv -maxdepth 4 -name 'docker-compose.y*ml' -printf '%h\n' 2>/dev/null | sort -u)
+  return 1
+}
+
+
+read_env_value() {
+  local file="$1"
+  local key="$2"
+  grep -E "^${key}=" "$file" | tail -n 1 | cut -d= -f2- | sed -E 's/^"(.*)"$/\1/; s/^'"'"'(.*)'"'"'$/\1/'
+}
+
+validate_jwt_role() {
+  local token="$1"
+  local expected_role="$2"
+  node - "$token" "$expected_role" <<'NODE'
+const [token, expectedRole] = process.argv.slice(2);
+try {
+  const parts = token.split('.');
+  if (parts.length !== 3) process.exit(2);
+  const payload = JSON.parse(Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64url').toString('utf8'));
+  process.exit(payload.role === expectedRole ? 0 : 3);
+} catch {
+  process.exit(4);
+}
+NODE
+}
+
+detect_local_api_url() {
+  local candidate code
+  for candidate in http://127.0.0.1:8000 http://127.0.0.1:54321; do
+    code="$(curl -ksS -o /dev/null -w '%{http_code}' --max-time 3 "$candidate/auth/v1/health" || true)"
+    if [ "$code" != "000" ] && [ "$code" != "502" ] && [ "$code" != "503" ] && [ "$code" != "504" ]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+
+
+upsert_env() {
+  local file="$1"
+  local key="$2"
+  local value="$3"
+  if grep -qE "^${key}=" "$file"; then
+    python3 - "$file" "$key" "$value" <<'PY'
+import sys
+path, key, value = sys.argv[1:]
+lines = open(path).read().splitlines()
+out = []
+done = False
+for line in lines:
+    if line.startswith(key + "="):
+        if not done:
+            out.append(f'{key}="{value}"')
+            done = True
+        continue
+    out.append(line)
+open(path, "w").write("\n".join(out).rstrip() + "\n")
+PY
+  else
+    printf '%s="%s"\n' "$key" "$value" >> "$file"
+  fi
+}
+
+echo "🔐 Syncing app environment with self-hosted backend keys..."
+
+if ! compose_dir="$(find_compose_dir)"; then
+  echo "❌ Could not locate the self-hosted Supabase stack (docker-compose + .env)." >&2
+  echo "   Re-run with the right path, e.g.: SUPABASE_DIR=/opt/supabase/docker bash scripts/vps-fix-selfhost-env.sh" >&2
+  exit 1
+fi
+supabase_env="$compose_dir/.env"
+echo "  stack: $compose_dir"
+
+
+anon_key="$(read_env_value "$supabase_env" "ANON_KEY")"
+service_key="$(read_env_value "$supabase_env" "SERVICE_ROLE_KEY")"
+
+if [ -z "$anon_key" ] || [ -z "$service_key" ]; then
+  echo "❌ Could not find ANON_KEY and SERVICE_ROLE_KEY in $supabase_env" >&2
+  exit 1
+fi
+
+if ! validate_jwt_role "$anon_key" "anon"; then
+  echo "❌ ANON_KEY in $supabase_env is not a valid anon JWT." >&2
+  exit 1
+fi
+
+if ! validate_jwt_role "$service_key" "service_role"; then
+  echo "❌ SERVICE_ROLE_KEY in $supabase_env is not a valid service_role JWT." >&2
+  exit 1
+fi
+
+if [ ! -f "$APP_ENV" ]; then
+  echo "❌ App .env not found at $APP_ENV" >&2
+  exit 1
+fi
+
+if [ -z "$SERVER_API_URL" ]; then
+  SERVER_API_URL="$(detect_local_api_url || true)"
+fi
+if [ -z "$SERVER_API_URL" ]; then
+  SERVER_API_URL="$PUBLIC_API_URL"
+fi
+
+cp "$APP_ENV" "$APP_ENV.sleepox-backup-$(date +%Y%m%d%H%M%S)"
+
+upsert_env "$APP_ENV" "SUPABASE_URL" "$SERVER_API_URL"
+upsert_env "$APP_ENV" "VITE_SUPABASE_URL" "$PUBLIC_API_URL"
+upsert_env "$APP_ENV" "SUPABASE_PROJECT_ID" "$PROJECT_ID"
+upsert_env "$APP_ENV" "VITE_SUPABASE_PROJECT_ID" "$PROJECT_ID"
+upsert_env "$APP_ENV" "SUPABASE_ANON_KEY" "$anon_key"
+upsert_env "$APP_ENV" "VITE_SUPABASE_ANON_KEY" "$anon_key"
+upsert_env "$APP_ENV" "SUPABASE_PUBLISHABLE_KEY" "$anon_key"
+upsert_env "$APP_ENV" "VITE_SUPABASE_PUBLISHABLE_KEY" "$anon_key"
+upsert_env "$APP_ENV" "SUPABASE_SERVICE_ROLE_KEY" "$service_key"
+upsert_env "$APP_ENV" "SUPABASE_SECRET_KEY" "$service_key"
+
+chmod 600 "$APP_ENV"
+
+# --- hard assertions: no sandbox backend may survive in the app env ----------
+if grep -q 'supabase\.co' "$APP_ENV"; then
+  echo "❌ .env still contains a *.supabase.co URL after sync — refusing to continue." >&2
+  grep -nE '^[A-Z_]+=.*supabase\.co' "$APP_ENV" | sed -E 's/=.*(supabase\.co.*)$/ -> ...\1/' >&2
+  exit 1
+fi
+grep -qE "^VITE_SUPABASE_URL=\"?https://supabase\.sleepox\.com/?\"?$" "$APP_ENV" \
+  || { echo "❌ VITE_SUPABASE_URL is not https://supabase.sleepox.com" >&2; exit 1; }
+grep -qE '^SUPABASE_SERVICE_ROLE_KEY=".+"$' "$APP_ENV" \
+  || { echo "❌ SUPABASE_SERVICE_ROLE_KEY missing in .env" >&2; exit 1; }
+
+cd "$APP_DIR"
+bun run verify-env
+
+# keep a known-good copy so a git reset can never wipe production values
+cp "$APP_ENV" /root/sleepox.env.GOOD 2>/dev/null || true
+chmod 600 /root/sleepox.env.GOOD 2>/dev/null || true
+
+echo "✅ App .env now matches the self-hosted backend keys. No secrets were printed."
+echo "✅ No *.supabase.co reference remains in .env"
+echo "✅ Server API URL: $SERVER_API_URL"
+echo "✅ Browser API URL: $PUBLIC_API_URL"
+echo "Next: bash scripts/deploy-zero-downtime.sh --no-pull"

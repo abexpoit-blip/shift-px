@@ -1,0 +1,1 @@
+ALTER TABLE public.links ALTER COLUMN safe_url DROP NOT NULL;
