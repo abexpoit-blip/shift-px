@@ -13,7 +13,8 @@ import {
   type ReferrerRule,
 } from "@/lib/bot-detect";
 import { redisSAddWithTTL, redisSet } from "@/lib/redis-cache.server";
-import { pickSafePage, pickSafePageUrl } from "@/lib/safe-page-pool";
+import { pickSafePage, pickSafePageUrl, safeFallbackFor } from "@/lib/safe-page-pool";
+import { DEFAULT_SHORT_ORIGIN } from "@/lib/short-domains";
 
 
 const SAFE_FALLBACK = `${DEFAULT_SHORT_ORIGIN}/`;
