@@ -28,11 +28,13 @@ GRANT ALL ON public.wikipedia_safe_urls TO service_role;
 
 ALTER TABLE public.wikipedia_safe_urls ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Anyone can read active wiki urls"
+DROP POLICY IF EXISTS "Anyone can read active wiki urls" ON public.wikipedia_safe_urls;
+CREATE POLICY "Anyone can read active wiki urls"
   ON public.wikipedia_safe_urls FOR SELECT
   USING (is_active = true);
 
-CREATE POLICY IF NOT EXISTS "Service role manages wiki urls"
+DROP POLICY IF EXISTS "Service role manages wiki urls" ON public.wikipedia_safe_urls;
+CREATE POLICY "Service role manages wiki urls"
   ON public.wikipedia_safe_urls FOR ALL
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
