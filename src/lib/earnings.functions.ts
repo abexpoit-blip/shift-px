@@ -229,3 +229,62 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
     if (!out?.ok) throw new Error(ERRORS[out?.error] ?? "Withdrawal request failed");
     return { ok: true as const, id: out.id as string };
   });
+
+export type LeaderboardEntry = {
+  rank: number;
+  name: string;
+  humanClicks: number;
+  earnings: number;
+  isYou: boolean;
+};
+
+/** Top earners of the last 30 days, anonymised. */
+export const getLeaderboard = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ entries: LeaderboardEntry[]; yourRank: number | null }> => {
+    const db = await getAdmin();
+    const userId = (context as any).userId as string;
+    const since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
+
+    const { data } = await db
+      .from("earnings_ledger")
+      .select("user_id, human_clicks, earnings_usd")
+      .gte("day", since)
+      .limit(50000);
+
+    const totals = new Map<string, { humans: number; earnings: number }>();
+    for (const row of (data ?? []) as any[]) {
+      const t = totals.get(row.user_id) ?? { humans: 0, earnings: 0 };
+      t.humans += num(row.human_clicks);
+      t.earnings += num(row.earnings_usd);
+      totals.set(row.user_id, t);
+    }
+
+    const ranked = [...totals.entries()].sort((a, b) => b[1].earnings - a[1].earnings);
+    const yourIndex = ranked.findIndex(([id]) => id === userId);
+
+    const top = ranked.slice(0, 20);
+    const ids = top.map(([id]) => id);
+    let names = new Map<string, string>();
+    if (ids.length) {
+      const { data: profs } = await db.from("profiles").select("id, full_name").in("id", ids);
+      names = new Map(((profs ?? []) as any[]).map((p) => [p.id, p.full_name ?? ""]));
+    }
+
+    const mask = (id: string, name: string) => {
+      const base = (name || "").trim();
+      if (base) return base.length <= 2 ? base : `${base.slice(0, 2)}${"*".repeat(Math.min(5, base.length - 2))}`;
+      return `user_${id.slice(0, 6)}`;
+    };
+
+    return {
+      entries: top.map(([id, t], i) => ({
+        rank: i + 1,
+        name: id === userId ? "You" : mask(id, names.get(id) ?? ""),
+        humanClicks: t.humans,
+        earnings: t.earnings,
+        isYou: id === userId,
+      })),
+      yourRank: yourIndex >= 0 ? yourIndex + 1 : null,
+    };
+  });

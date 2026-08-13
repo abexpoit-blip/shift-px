@@ -39,6 +39,7 @@ import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AuthenticatedWithdrawRouteImport } from './routes/_authenticated/withdraw'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
+import { Route as AuthenticatedStatisticsRouteImport } from './routes/_authenticated/statistics'
 import { Route as AuthenticatedSmartFilterRouteImport } from './routes/_authenticated/smart-filter'
 import { Route as AuthenticatedNoticesRouteImport } from './routes/_authenticated/notices'
 import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
@@ -204,6 +205,11 @@ const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
   path: '/support',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedStatisticsRoute = AuthenticatedStatisticsRouteImport.update({
+  id: '/statistics',
+  path: '/statistics',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSmartFilterRoute =
   AuthenticatedSmartFilterRouteImport.update({
     id: '/smart-filter',
@@ -318,6 +324,7 @@ export interface FileRoutesByFullPath {
   '/live': typeof AuthenticatedLiveRoute
   '/notices': typeof AuthenticatedNoticesRoute
   '/smart-filter': typeof AuthenticatedSmartFilterRoute
+  '/statistics': typeof AuthenticatedStatisticsRoute
   '/support': typeof AuthenticatedSupportRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/withdraw': typeof AuthenticatedWithdrawRoute
@@ -363,6 +370,7 @@ export interface FileRoutesByTo {
   '/live': typeof AuthenticatedLiveRoute
   '/notices': typeof AuthenticatedNoticesRoute
   '/smart-filter': typeof AuthenticatedSmartFilterRoute
+  '/statistics': typeof AuthenticatedStatisticsRoute
   '/support': typeof AuthenticatedSupportRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/withdraw': typeof AuthenticatedWithdrawRoute
@@ -411,6 +419,7 @@ export interface FileRoutesById {
   '/_authenticated/live': typeof AuthenticatedLiveRoute
   '/_authenticated/notices': typeof AuthenticatedNoticesRoute
   '/_authenticated/smart-filter': typeof AuthenticatedSmartFilterRoute
+  '/_authenticated/statistics': typeof AuthenticatedStatisticsRoute
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/_authenticated/withdraw': typeof AuthenticatedWithdrawRoute
@@ -459,6 +468,7 @@ export interface FileRouteTypes {
     | '/live'
     | '/notices'
     | '/smart-filter'
+    | '/statistics'
     | '/support'
     | '/upgrade'
     | '/withdraw'
@@ -504,6 +514,7 @@ export interface FileRouteTypes {
     | '/live'
     | '/notices'
     | '/smart-filter'
+    | '/statistics'
     | '/support'
     | '/upgrade'
     | '/withdraw'
@@ -551,6 +562,7 @@ export interface FileRouteTypes {
     | '/_authenticated/live'
     | '/_authenticated/notices'
     | '/_authenticated/smart-filter'
+    | '/_authenticated/statistics'
     | '/_authenticated/support'
     | '/_authenticated/upgrade'
     | '/_authenticated/withdraw'
@@ -813,6 +825,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSupportRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/statistics': {
+      id: '/_authenticated/statistics'
+      path: '/statistics'
+      fullPath: '/statistics'
+      preLoaderRoute: typeof AuthenticatedStatisticsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/smart-filter': {
       id: '/_authenticated/smart-filter'
       path: '/smart-filter'
@@ -930,6 +949,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedLiveRoute: typeof AuthenticatedLiveRoute
   AuthenticatedNoticesRoute: typeof AuthenticatedNoticesRoute
   AuthenticatedSmartFilterRoute: typeof AuthenticatedSmartFilterRoute
+  AuthenticatedStatisticsRoute: typeof AuthenticatedStatisticsRoute
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
   AuthenticatedWithdrawRoute: typeof AuthenticatedWithdrawRoute
@@ -944,6 +964,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedLiveRoute: AuthenticatedLiveRoute,
   AuthenticatedNoticesRoute: AuthenticatedNoticesRoute,
   AuthenticatedSmartFilterRoute: AuthenticatedSmartFilterRoute,
+  AuthenticatedStatisticsRoute: AuthenticatedStatisticsRoute,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
   AuthenticatedWithdrawRoute: AuthenticatedWithdrawRoute,
