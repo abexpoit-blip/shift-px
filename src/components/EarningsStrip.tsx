@@ -31,26 +31,26 @@ export function EarningsStrip() {
           key={c.label}
           className={`rounded-2xl border p-4 backdrop-blur-xl ${
             c.accent
-              ? "border-[#FF7E5F]/30 bg-gradient-to-br from-[#FF7E5F]/12 to-white/70"
-              : "border-white/80 bg-white/70"
+              ? "border-primary/30 bg-gradient-to-br from-primary/12 to-white/70"
+              : "glass-card"
           }`}
         >
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider font-bold text-[#A38D7D]">
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider font-bold text-muted-foreground">
             <c.icon className="w-3.5 h-3.5" />
             {c.label}
           </div>
-          <div className="mt-1 text-2xl font-extrabold tabular-nums text-[#2D1B0D]">{c.value}</div>
+          <div className="mt-1 text-2xl font-extrabold tabular-nums text-foreground">{c.value}</div>
           {c.accent && (
             <Link
               to="/withdraw"
-              className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[#FF7E5F] hover:underline"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
             >
               Withdraw <ArrowRight className="w-3 h-3" />
             </Link>
           )}
         </div>
       ))}
-      <p className="sm:col-span-2 lg:col-span-4 text-[11px] text-[#A38D7D]">
+      <p className="sm:col-span-2 lg:col-span-4 text-[11px] text-muted-foreground">
         All features are free · you earn {money(data?.ratePer1k ?? 0)} per 1,000 verified human visits · minimum payout{" "}
         {money(data?.minWithdrawal ?? 10)}.
       </p>

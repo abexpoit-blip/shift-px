@@ -153,14 +153,14 @@ function WithdrawPage() {
           <div className="mt-1 text-3xl font-bold tabular-nums">{money(balance)}</div>
           <p className="text-xs text-muted-foreground mt-1">Ready to withdraw</p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl glass-card p-5">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Clock className="h-3.5 w-3.5" /> Pending
           </div>
           <div className="mt-1 text-3xl font-bold tabular-nums">{money(pending)}</div>
           <p className="text-xs text-muted-foreground mt-1">Awaiting payout</p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl glass-card p-5">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <ArrowUpRight className="h-3.5 w-3.5" /> Withdrawn
           </div>
@@ -169,7 +169,7 @@ function WithdrawPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+      <section className="rounded-2xl glass-card p-5 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-lg font-semibold flex items-center gap-2">
             <Bitcoin className="h-4 w-4 text-primary" /> Your wallets
@@ -300,7 +300,7 @@ function WithdrawPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+      <section className="rounded-2xl glass-card p-5 sm:p-6">
         <h2 className="font-display text-lg font-semibold mb-4">Withdrawal history</h2>
         {(history.data ?? []).length === 0 ? (
           <p className="text-sm text-muted-foreground">No withdrawals yet.</p>

@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/statistics")({
   component: StatisticsPage,
 });
 
-const PIE_COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#0ea5e9"];
+const PIE_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--primary-glow)"];
 
 function fmt(n: number) {
   return n.toLocaleString();
@@ -41,7 +41,7 @@ function fmt(n: number) {
 
 function StatCard({ icon: Icon, label, value, hint }: { icon: any; label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl glass-card p-5">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Icon className="h-3.5 w-3.5" /> {label}
       </div>
@@ -82,19 +82,19 @@ function StatisticsPage() {
         <StatCard icon={Globe2} label="Countries" value={fmt(data.countriesSeen)} hint="Unique visitor regions" />
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+      <section className="rounded-2xl glass-card p-4 sm:p-6">
         <h2 className="font-display text-lg font-semibold mb-4">Daily traffic</h2>
         <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="gHumans" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.5} />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="gBots" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#94a3b8" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#94a3b8" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--muted-foreground)" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="var(--muted-foreground)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
@@ -103,15 +103,15 @@ function StatisticsPage() {
               <Tooltip
                 contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))", fontSize: 12 }}
               />
-              <Area type="monotone" dataKey="humans" name="Humans" stroke="#6366f1" fill="url(#gHumans)" strokeWidth={2} />
-              <Area type="monotone" dataKey="bots" name="Crawlers" stroke="#94a3b8" fill="url(#gBots)" strokeWidth={1.5} />
+              <Area type="monotone" dataKey="humans" name="Humans" stroke="var(--primary)" fill="url(#gHumans)" strokeWidth={2} />
+              <Area type="monotone" dataKey="bots" name="Crawlers" stroke="var(--muted-foreground)" fill="url(#gBots)" strokeWidth={1.5} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       </section>
 
       <section className="grid lg:grid-cols-2 gap-5">
-        <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+        <div className="rounded-2xl glass-card p-4 sm:p-6">
           <h2 className="font-display text-lg font-semibold mb-4">Top countries</h2>
           {data.countries.length === 0 ? (
             <p className="text-sm text-muted-foreground">No country data yet.</p>
@@ -123,14 +123,14 @@ function StatisticsPage() {
                   <XAxis dataKey="code" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={40} />
                   <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))", fontSize: 12 }} />
-                  <Bar dataKey="humans" name="Humans" fill="#6366f1" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="humans" name="Humans" fill="var(--primary)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           )}
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+        <div className="rounded-2xl glass-card p-4 sm:p-6">
           <h2 className="font-display text-lg font-semibold mb-4">Traffic sources</h2>
           {data.sources.length === 0 ? (
             <p className="text-sm text-muted-foreground">No source data yet.</p>
@@ -159,7 +159,7 @@ function StatisticsPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+      <section className="rounded-2xl glass-card p-4 sm:p-6">
         <h2 className="font-display text-lg font-semibold mb-4">Top links</h2>
         {data.topLinks.length === 0 ? (
           <p className="text-sm text-muted-foreground">No links yet.</p>

@@ -36,7 +36,7 @@ function LeaderboardPage() {
         </p>
       </header>
 
-      <section className="rounded-2xl border border-border bg-card overflow-hidden">
+      <section className="rounded-2xl glass-card overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-16 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
