@@ -89,12 +89,12 @@ function StatisticsPage() {
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="gHumans" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.5} />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="gBots" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#94a3b8" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#94a3b8" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--muted-foreground)" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="var(--muted-foreground)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
@@ -103,8 +103,8 @@ function StatisticsPage() {
               <Tooltip
                 contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))", fontSize: 12 }}
               />
-              <Area type="monotone" dataKey="humans" name="Humans" stroke="#6366f1" fill="url(#gHumans)" strokeWidth={2} />
-              <Area type="monotone" dataKey="bots" name="Crawlers" stroke="#94a3b8" fill="url(#gBots)" strokeWidth={1.5} />
+              <Area type="monotone" dataKey="humans" name="Humans" stroke="var(--primary)" fill="url(#gHumans)" strokeWidth={2} />
+              <Area type="monotone" dataKey="bots" name="Crawlers" stroke="var(--muted-foreground)" fill="url(#gBots)" strokeWidth={1.5} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -123,7 +123,7 @@ function StatisticsPage() {
                   <XAxis dataKey="code" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={40} />
                   <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))", fontSize: 12 }} />
-                  <Bar dataKey="humans" name="Humans" fill="#6366f1" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="humans" name="Humans" fill="var(--primary)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
