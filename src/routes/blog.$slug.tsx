@@ -5,6 +5,7 @@ import { getArticle, getProduct, SITE, type Article, type Product } from "@/lib/
 import { ARTICLE_BODIES, BLOG_IMAGES } from "@/lib/breezy-content";
 import { buildOg, absoluteUrl } from "@/lib/og-meta";
 import { getRequestOrigin } from "@/lib/request-origin.functions";
+import { useRebrand } from "@/lib/brand-live";
 
 export const Route = createFileRoute("/blog/$slug")({
   loader: async ({ params }) => {
@@ -113,10 +114,11 @@ function renderMarkdown(body: string) {
 }
 
 function ArticlePage() {
+  const rb = useRebrand();
   const { article } = Route.useLoaderData();
   const a = article as Article;
   const related: Product[] = a.relatedProducts.map(getProduct).filter((x): x is Product => Boolean(x));
-  const body = ARTICLE_BODIES[a.slug] || a.body;
+  const body = rb(ARTICLE_BODIES[a.slug] || a.body);
   const img = BLOG_IMAGES[a.slug];
 
   return (
