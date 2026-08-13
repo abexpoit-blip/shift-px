@@ -4,10 +4,20 @@ import { supabase } from './client'
 
 // Must be registered as a global `functionMiddleware` in `src/start.ts`; otherwise
 // the browser never attaches the bearer token to serverFn RPCs.
+//
+// Hardened: a session lookup failure (missing env during SSR/prerender, network
+// blip, corrupted local storage) must NEVER take down the page that called the
+// server function. Public/safe pages call server fns for trivial data such as
+// the request origin — those must keep rendering even without a session.
 export const attachSupabaseAuth = createMiddleware({ type: 'function' }).client(
   async ({ next }) => {
-    const { data } = await supabase.auth.getSession()
-    const token = data.session?.access_token
+    let token: string | undefined
+    try {
+      const { data } = await supabase.auth.getSession()
+      token = data.session?.access_token
+    } catch {
+      token = undefined
+    }
     return next({
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
