@@ -34,9 +34,6 @@ import {
   Users,
   DollarSign,
   Megaphone,
-  Activity,
-  FlaskConical,
-  Settings2,
   Link2,
   Settings,
   ArrowRight,
@@ -105,7 +102,7 @@ function AppSidebar({
         { title: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
         { title: "Statistics", to: "/statistics", icon: BarChart3 },
         { title: "Leaderboard", to: "/leaderboard", icon: Trophy },
-        { title: "Live Feed", to: "/live", icon: Activity },
+        
       ],
     },
     {
@@ -126,7 +123,7 @@ function AppSidebar({
       label: "Links",
       items: [
         { title: "Domains", to: "/domains", icon: Link2 },
-        { title: "Link Debugger", to: "/link-debugger", icon: FlaskConical },
+        
       ],
     },
     {
@@ -143,7 +140,7 @@ function AppSidebar({
       label: "Control Center",
       items: [
         { title: "Control Panel", to: "/control-panel", icon: Shield },
-        { title: "Smart Filter", to: "/smart-filter", icon: Settings2 },
+        
       ],
     });
   }
