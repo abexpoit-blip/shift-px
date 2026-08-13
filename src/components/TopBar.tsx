@@ -255,8 +255,7 @@ export function TopBar({
                 )}
               </div>
               <div className="border-t p-2">
-                <Link
-                  to="/inbox"
+                <a href="/inbox"
                   className="block text-center text-xs text-primary hover:underline py-1"
                 >
                   View all messages
@@ -299,18 +298,18 @@ export function TopBar({
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/withdraw">
+                <a href="/withdraw">
                   <Wallet className="h-4 w-4 mr-2" /> Withdraw
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/settings">
+                <a href="/settings">
                   <Settings className="h-4 w-4 mr-2" /> Settings
                 </Link>
               </DropdownMenuItem>
               {isAdmin && (
                 <DropdownMenuItem asChild>
-                  <Link to="/admin">
+                  <a href="/admin">
                     <Shield className="h-4 w-4 mr-2" /> Admin Panel
                   </Link>
                 </DropdownMenuItem>

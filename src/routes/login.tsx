@@ -2,16 +2,17 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 
 import { toast } from "sonner";
-import { Mail, Lock, ArrowRight, ShieldCheck, Zap, BarChart3 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { BrandLogo } from "@/components/brand-logo";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AdspxMark } from "@/components/AdspxLogo";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign in — Adspx" }] }),
   component: LoginPage,
 });
-
-const font = { fontFamily: "'Outfit', system-ui, sans-serif" } as const;
 
 function LoginPage() {
   const navigate = useNavigate();

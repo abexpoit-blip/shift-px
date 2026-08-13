@@ -53,8 +53,7 @@ function BalanceWidget({ balance }: { balance: number }) {
 
   if (collapsed) {
     return (
-      <Link
-        to="/withdraw"
+      <a href="/withdraw"
         title={`Available: ${formatted}`}
         className="mx-auto my-2 flex h-9 w-9 items-center justify-center rounded-xl text-primary
           bg-gradient-to-b from-white to-slate-100
@@ -78,8 +77,7 @@ function BalanceWidget({ balance }: { balance: number }) {
       <div className="mt-1 text-lg font-bold tracking-tight tabular-nums">
         {formatted}
       </div>
-      <Link
-        to="/withdraw"
+      <a href="/withdraw"
         search={{ view: "request" } as any}
         className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-md bg-primary text-primary-foreground text-xs font-medium py-1.5 hover:opacity-90 transition"
       >
