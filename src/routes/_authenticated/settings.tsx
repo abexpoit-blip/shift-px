@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function Card({ title, icon: Icon, children }: { title: string; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur p-5 space-y-4">
+    <section className="rounded-2xl glass-card p-5 space-y-4">
       <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <Icon className="h-4 w-4 text-primary" /> {title}
       </h2>

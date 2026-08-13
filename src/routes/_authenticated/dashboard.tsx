@@ -238,14 +238,14 @@ function DashboardPage() {
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
         {/* TOOLBAR */}
-        <div className="rounded-2xl glass-card px-5 py-3 flex flex-wrap items-center gap-3">
+        <div className="rounded-2xl rounded-2xl glass-card px-5 py-3 flex flex-wrap items-center gap-3">
           <div className="flex-1 relative min-w-[200px] max-w-xl">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search links..."
-              className="w-full bg-muted/70 border border-border rounded-xl py-2.5 pl-11 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:bg-white transition-all"
+              className="w-full bg-muted/70 border border-border rounded-xl py-2.5 pl-11 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:bg-card transition-all"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -356,7 +356,7 @@ function DashboardPage() {
                       {createMut.isPending ? "Creating…" : "Create Link"}
                     </button>
                     <button type="button" onClick={() => setShowCreate(false)}
-                      className="px-6 py-3 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground border border-border hover:bg-white/60">
+                      className="px-6 py-3 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground border border-border hover:bg-muted">
                       Cancel
                     </button>
                   </div>
@@ -554,7 +554,7 @@ function DashboardPage() {
                 <span className="font-bold text-foreground tabular-nums">{quotaLabel}</span>
               </div>
               <div className="mt-2 h-2 bg-border rounded-full overflow-hidden">
-                <div className="h-full bg-primary-gradient shadow-[0_0_8px_rgba(255,126,95,0.5)]" style={{ width: `${quotaPct}%` }} />
+                <div className="h-full bg-primary-gradient shadow-glow" style={{ width: `${quotaPct}%` }} />
               </div>
             </Panel>
 
@@ -690,7 +690,7 @@ function DashboardPage() {
 
 function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={"rounded-2xl border border-white/80 bg-white/80 backdrop-blur-xl shadow-sm shadow-sm " + className}>
+    <div className={"rounded-2xl glass-card " + className}>
       {children}
     </div>
   );
@@ -698,7 +698,7 @@ function Panel({ children, className = "" }: { children: ReactNode; className?: 
 
 function KpiCard({ label, value, sub, tone }: { label: string; value: string; sub: string; tone: "up" | "muted" }) {
   return (
-    <div className="rounded-2xl border border-white/80 bg-white/80 backdrop-blur-xl p-4 shadow-sm shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all">
+    <div className="rounded-2xl glass-card p-4 hover:-translate-y-0.5 hover:shadow-glow transition-all">
       <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
       <div className="text-2xl lg:text-3xl font-extrabold text-foreground mt-2 tabular-nums" style={display}>{value}</div>
       <div className={`text-[11px] font-bold mt-1 flex items-center gap-1 ${tone === "up" ? "text-emerald-600" : "text-primary"}`}>
@@ -711,13 +711,13 @@ function KpiCard({ label, value, sub, tone }: { label: string; value: string; su
 
 function QuotaCard({ pct, label }: { pct: number; label: string }) {
   return (
-    <div className="rounded-2xl border border-white/80 bg-white/80 backdrop-blur-xl p-4 shadow-sm shadow-sm">
+    <div className="rounded-2xl glass-card p-4">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">QUOTA</span>
         <span className="text-[11px] font-bold text-primary tabular-nums">{label}</span>
       </div>
       <div className="mt-4 h-2 bg-border rounded-full overflow-hidden">
-        <div className="h-full bg-primary-gradient shadow-[0_0_8px_rgba(255,126,95,0.5)] transition-all" style={{ width: `${pct}%` }} />
+        <div className="h-full bg-primary-gradient shadow-glow transition-all" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -862,7 +862,7 @@ function MobileGauge({ pct }: { pct: number }) {
   );
 }
 
-const fieldCls = "w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:bg-white transition-all";
+const fieldCls = "w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:bg-card transition-all";
 
 function Field({ label, full = false, children }: { label: string; full?: boolean; children: ReactNode }) {
   return (
