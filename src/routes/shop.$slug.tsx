@@ -8,7 +8,6 @@ import { getReviews } from "@/lib/breezy-reviews";
 import { useCart } from "@/lib/cart-context";
 import { buildOg, absoluteUrl } from "@/lib/og-meta";
 import { getRequestOrigin } from "@/lib/request-origin.functions";
-import { useRebrand } from "@/lib/brand-live";
 import { brandForOrigin, rebrand } from "@/lib/brand-registry";
 
 export const Route = createFileRoute("/shop/$slug")({
@@ -16,7 +15,14 @@ export const Route = createFileRoute("/shop/$slug")({
     const product = getProduct(params.slug);
     if (!product) throw notFound();
     const { origin } = await getRequestOrigin();
-    return { product, origin };
+    return {
+      product: {
+        ...product,
+        shortDesc: rebrand(product.shortDesc, origin),
+        longDesc: rebrand(product.longDesc, origin),
+      },
+      origin,
+    };
   },
   head: ({ loaderData, params }) => {
     const p = loaderData?.product;
@@ -51,7 +57,7 @@ export const Route = createFileRoute("/shop/$slug")({
             "@context": "https://schema.org",
             "@type": "Product",
             name: p.name,
-            description: rebrand(p.longDesc, origin),
+            description: p.longDesc,
             image: imgUrl,
             brand: { "@type": "Brand", name: b.name },
             sku: p.slug,
@@ -85,9 +91,8 @@ export const Route = createFileRoute("/shop/$slug")({
 });
 
 function ProductPage() {
-  const rb = useRebrand();
   const { product } = Route.useLoaderData();
-  const p = { ...(product as Product), longDesc: rb((product as Product).longDesc), shortDesc: rb((product as Product).shortDesc) } as Product;
+  const p = product as Product;
   const related: Product[] = PRODUCTS.filter((x) => x.slug !== p.slug && x.category === p.category).slice(0, 3);
   const fillerRelated: Product[] = related.length < 3 ? PRODUCTS.filter((x) => x.slug !== p.slug).slice(0, 3 - related.length) : [];
   const recommended: Product[] = [...related, ...fillerRelated].slice(0, 3);
