@@ -260,16 +260,6 @@ function DashboardPage() {
         </div>
       </div>
 
-      {shieldFor && (
-        <CountryShieldDialog
-          open={!!shieldFor}
-          onOpenChange={(o) => { if (!o) setShieldFor(null); }}
-          linkId={shieldFor.id}
-          linkTitle={shieldFor.title}
-          initial={shieldFor.initial}
-          planSlug={(profile as any)?.plan_slug}
-        />
-      )}
 
 
 
