@@ -34,7 +34,6 @@ import {
   Users,
   DollarSign,
   Megaphone,
-  Link2,
   Settings,
   ArrowRight,
   LifeBuoy,
@@ -117,13 +116,6 @@ function AppSidebar({
             { title: "History", to: "/withdraw", search: { view: "history" }, icon: History },
           ],
         },
-      ],
-    },
-    {
-      label: "Links",
-      items: [
-        { title: "Domains", to: "/domains", icon: Link2 },
-        
       ],
     },
     {
