@@ -3,18 +3,20 @@ import { BreezyLayout } from "@/components/breezy/BreezyLayout";
 import { SITE } from "@/lib/breezy-data";
 import { useBrand } from "@/lib/brand-live";
 import { buildOg, absoluteUrl } from "@/lib/og-meta";
+import { brandForOrigin } from "@/lib/brand-registry";
 import { getRequestOrigin } from "@/lib/request-origin.functions";
 
 export const Route = createFileRoute("/about")({
   loader: async () => await getRequestOrigin(),
   head: ({ loaderData }) => {
-    const origin = loaderData?.origin ?? "https://breezysocial.com";
+    const origin = loaderData?.origin ?? "https://adswapx.com";
+    const b = brandForOrigin(origin);
     const { meta, links } = buildOg({
       origin,
       path: "/about",
-      title: `About — ${SITE.name}`,
-      description: `Founded in San Francisco in ${SITE.founded}, ${SITE.name} designs smart gadgets for calm, modern living. Meet our team and our mission.`,
-      imageAlt: `${SITE.name} — About our team and mission`,
+      title: `About — ${b.name}`,
+      description: `Founded in ${SITE.founded}, ${b.name} designs smart gadgets for calm, modern living. Meet our team and our mission.`,
+      imageAlt: `${b.name} — About our team and mission`,
       type: "website",
     });
     return {
@@ -26,14 +28,14 @@ export const Route = createFileRoute("/about")({
           children: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "AboutPage",
-            name: `About — ${SITE.name}`,
+            name: `About — ${b.name}`,
             url: absoluteUrl(origin, "/about"),
             mainEntity: {
               "@type": "Organization",
-              name: SITE.name,
+              name: b.name,
               foundingDate: String(SITE.founded),
-              email: SITE.email,
-              address: SITE.address,
+              email: b.email,
+              address: b.city,
               url: absoluteUrl(origin, "/"),
               logo: absoluteUrl(origin, "/og-default.png"),
             },
