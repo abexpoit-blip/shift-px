@@ -1,4 +1,4 @@
--- Owner-safe Sleepox self-host auth repair.
+-- Owner-safe Adspx self-host auth repair.
 -- IMPORTANT: Run this as the actual table owner if plain `postgres` says "must be owner".
 -- First check owners:
 --   SELECT n.nspname, c.relname, pg_get_userbyid(c.relowner) owner FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('public','auth') AND c.relname IN ('profiles','packages','user_roles','users');
@@ -46,7 +46,7 @@ SET search_path TO 'public'
 AS $$
 DECLARE
   v_email text := lower(COALESCE(NEW.email, ''));
-  v_role public.app_role := CASE WHEN lower(COALESCE(NEW.email, ''))='admin@sleepox.com' THEN 'admin'::public.app_role ELSE 'user'::public.app_role END;
+  v_role public.app_role := CASE WHEN lower(COALESCE(NEW.email, ''))='admin@adspx.com' THEN 'admin'::public.app_role ELSE 'user'::public.app_role END;
 BEGIN
   INSERT INTO public.profiles (id, email, full_name, telegram, plan_slug, click_quota, link_limit)
   VALUES (
@@ -70,7 +70,7 @@ BEGIN
   ON CONFLICT (user_id, role) DO NOTHING;
   RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
-  RAISE LOG 'Sleepox signup trigger failed id=% email=% error=% state=%', NEW.id, v_email, SQLERRM, SQLSTATE;
+  RAISE LOG 'Adspx signup trigger failed id=% email=% error=% state=%', NEW.id, v_email, SQLERRM, SQLSTATE;
   RAISE;
 END;
 $$;
@@ -80,14 +80,14 @@ CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXEC
 
 INSERT INTO public.profiles (id, email, full_name, plan_slug, click_quota, link_limit)
 SELECT u.id, lower(u.email), COALESCE(u.raw_user_meta_data->>'full_name', split_part(lower(u.email),'@',1)),
-       CASE WHEN lower(u.email)='admin@sleepox.com' THEN 'lifetime' ELSE 'free' END,
-       CASE WHEN lower(u.email)='admin@sleepox.com' THEN NULL ELSE 10000 END,
-       CASE WHEN lower(u.email)='admin@sleepox.com' THEN NULL ELSE 1 END
+       CASE WHEN lower(u.email)='admin@adspx.com' THEN 'lifetime' ELSE 'free' END,
+       CASE WHEN lower(u.email)='admin@adspx.com' THEN NULL ELSE 10000 END,
+       CASE WHEN lower(u.email)='admin@adspx.com' THEN NULL ELSE 1 END
 FROM auth.users u
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.user_roles (user_id, role)
-SELECT u.id, CASE WHEN lower(u.email)='admin@sleepox.com' THEN 'admin'::public.app_role ELSE 'user'::public.app_role END
+SELECT u.id, CASE WHEN lower(u.email)='admin@adspx.com' THEN 'admin'::public.app_role ELSE 'user'::public.app_role END
 FROM auth.users u
 ON CONFLICT (user_id, role) DO NOTHING;
 

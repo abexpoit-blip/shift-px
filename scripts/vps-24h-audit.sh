@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 24-hour full audit: traffic, routing, bot detection, domains, errors, PM2
 set +e
-cd /opt/sleepox-app-new 2>/dev/null || true
+cd /opt/adspx-app-new 2>/dev/null || true
 
 DB_CONTAINER="${DB_CONTAINER:-$(docker ps --filter name=supabase-db --format '{{.Names}}' | head -n 1)}"
 

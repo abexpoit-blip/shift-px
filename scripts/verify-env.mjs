@@ -25,9 +25,9 @@ const env = { ...dotEnv, ...process.env };
 const errors = [];
 const warnings = [];
 
-const expectedProjectRef = env.VITE_SUPABASE_PROJECT_ID || "sleepox";
+const expectedProjectRef = env.VITE_SUPABASE_PROJECT_ID || "adspx";
 const fingerprint = (value) => createHash("sha256").update(value).digest("hex").slice(0, 16);
-const isSelfHosted = /supabase\.sleepox\.com/i.test(env.SUPABASE_URL || env.VITE_SUPABASE_URL || "");
+const isSelfHosted = /supabase\.adspx\.com/i.test(env.SUPABASE_URL || env.VITE_SUPABASE_URL || "");
 
 function decodeJwtPayload(value) {
   const parts = value.split(".");

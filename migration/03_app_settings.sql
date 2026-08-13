@@ -1,6 +1,6 @@
 -- =====================================================================
 -- 03_app_settings.sql — Aurora v1 features
--- Apply this on the SELF-HOSTED Supabase (supabase.sleepox.com) Postgres
+-- Apply this on the SELF-HOSTED Supabase (supabase.adspx.com) Postgres
 -- Run with:   psql "$DATABASE_URL" -f migration/03_app_settings.sql
 -- =====================================================================
 

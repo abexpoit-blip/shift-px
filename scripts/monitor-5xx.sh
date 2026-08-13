@@ -8,22 +8,22 @@
 #   2) Send a message to your bot, then visit:
 #      https://api.telegram.org/bot<BOT_TOKEN>/getUpdates
 #      → copy your CHAT_ID
-#   3) Add to /opt/sleepox-app-new/.env:
+#   3) Add to /opt/adspx-app-new/.env:
 #      TELEGRAM_BOT_TOKEN=123456:ABC...
 #      TELEGRAM_CHAT_ID=987654321
 #   4) Install: crontab -e
-#      * * * * * /opt/sleepox-app-new/scripts/monitor-5xx.sh >> /var/log/sleepox-monitor.log 2>&1
+#      * * * * * /opt/adspx-app-new/scripts/monitor-5xx.sh >> /var/log/adspx-monitor.log 2>&1
 
 set -u
 
-cd /opt/sleepox-app-new
+cd /opt/adspx-app-new
 set -a
 source .env 2>/dev/null || true
 set +a
 
 NGINX_LOG="${NGINX_LOG:-/var/log/nginx/access.log}"
 ALERT_THRESHOLD="${ALERT_THRESHOLD:-3}"  # alert if 3+ 5xx errors in last minute
-STATE_FILE="/tmp/sleepox-monitor-last-alert"
+STATE_FILE="/tmp/adspx-monitor-last-alert"
 COOLDOWN_SEC=300  # don't re-alert for same issue within 5 minutes
 
 send_alert() {
@@ -47,7 +47,7 @@ send_alert() {
       "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
       -d "chat_id=${TELEGRAM_CHAT_ID}" \
       -d "parse_mode=Markdown" \
-      -d "text=🚨 *Sleepox Alert*%0A%0A${MESSAGE}%0A%0A_$(date)_" \
+      -d "text=🚨 *Adspx Alert*%0A%0A${MESSAGE}%0A%0A_$(date)_" \
       > /dev/null
   else
     echo "(no TELEGRAM_BOT_TOKEN/CHAT_ID set — alert not sent)"

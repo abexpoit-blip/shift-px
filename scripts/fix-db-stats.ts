@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Configuration for your self-hosted database from ecosystem.config.cjs
-const SUPABASE_URL = "https://supabase.sleepox.com";
+const SUPABASE_URL = "https://supabase.adspx.com";
 const SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTUyNzMzOCwiZXhwIjoyMDk0ODg3MzM4fQ.HitgT1rO3FH8h4jNpbvhaBfrLFkGz_JN91c1caB2O_8";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -9,7 +9,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 });
 
 async function runMigration() {
-  console.log("🚀 Running Database Stats Fix on https://supabase.sleepox.com...");
+  console.log("🚀 Running Database Stats Fix on https://supabase.adspx.com...");
 
   const sql = `
     -- 1. Grant permissions
@@ -57,7 +57,7 @@ async function runMigration() {
     console.log("\n⚠️ MANUAL ACTION REQUIRED ⚠️");
     console.log("Since you are self-hosting, I cannot run 'GRANT' or 'CREATE FUNCTION' via the API.");
     console.log("Please follow these EXACT steps:");
-    console.log("1. Open your browser to: https://supabase.sleepox.com");
+    console.log("1. Open your browser to: https://supabase.adspx.com");
     console.log("2. Log in to your Supabase Dashboard.");
     console.log("3. Click on 'SQL Editor' in the left sidebar.");
     console.log("4. Click '+ New query'.");

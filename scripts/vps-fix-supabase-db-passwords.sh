@@ -50,6 +50,6 @@ done
 
 say "Auth connectivity check"
 docker logs --since 2m supabase-auth 2>&1 | grep -c 'failed to connect to `host=db' | xargs -I{} echo "  db-connect failures (2m): {}"
-curl -sS --max-time 15 https://sleepox.com/api/public/health || err "health unreachable"
+curl -sS --max-time 15 https://adspx.com/api/public/health || err "health unreachable"
 echo
 ok "done"

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# One-click performance check for sleepox.com
+# One-click performance check for adspx.com
 # Runs Lighthouse + captures slowest network requests via Chrome DevTools Protocol
 # Usage: ./scripts/perf-check.sh [URL]
-#   default URL: https://sleepox.com
+#   default URL: https://adspx.com
 
 set -e
 
-URL="${1:-https://sleepox.com}"
+URL="${1:-https://adspx.com}"
 OUT_DIR="/tmp/perf-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$OUT_DIR"
 

@@ -3,7 +3,7 @@
 # Works with either a local psql client or the self-hosted Supabase DB container.
 set -uo pipefail
 
-APP_DIR="${APP_DIR:-/opt/sleepox-app-new}"
+APP_DIR="${APP_DIR:-/opt/adspx-app-new}"
 cd "$APP_DIR" 2>/dev/null || { echo "❌ APP_DIR not found: $APP_DIR"; exit 1; }
 
 echo "📊 Stats consistency check"

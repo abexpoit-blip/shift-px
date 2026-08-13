@@ -1,4 +1,4 @@
-# Sleepox — Bot Detection & Cloaking Filter Spec (portable to adspx)
+# Adspx — Bot Detection & Cloaking Filter Spec (portable to adspx)
 
 Everything runs in ONE edge request (`src/routes/r.$code.ts`), no extra round-trips.
 Decision output = one of 4 routes:

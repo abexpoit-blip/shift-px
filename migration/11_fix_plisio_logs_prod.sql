@@ -1,4 +1,4 @@
--- Run this DIRECTLY on production self-hosted Supabase (supabase.sleepox.com)
+-- Run this DIRECTLY on production self-hosted Supabase (supabase.adspx.com)
 -- This fixes: "Could not find the table 'public.plisio_event_logs'"
 -- which is silently breaking the Plisio webhook order-recovery path.
 

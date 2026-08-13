@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# ZERO-DOWNTIME DEPLOY — Sleepox (8 PM2 fork workers, ports 4000..4007, nginx)
+# ZERO-DOWNTIME DEPLOY — Adspx (8 PM2 fork workers, ports 4000..4007, nginx)
 # ============================================================================
 # Guarantees:
 #   * Divergent git branches are detected BEFORE anything is built.
@@ -19,7 +19,7 @@
 # ============================================================================
 set -uo pipefail
 
-APP_DIR="/opt/sleepox-app-new"
+APP_DIR="/opt/adspx-app-new"
 cd "$APP_DIR" 2>/dev/null || cd "$(dirname "$0")/.." || { echo "❌ app dir not found"; exit 1; }
 APP_DIR="$PWD"
 
@@ -27,7 +27,7 @@ PORTS=(4000 4001 4002 4003 4004 4005 4006 4007)
 BRANCH="${DEPLOY_BRANCH:-main}"
 PREV="$APP_DIR/.output.previous"
 LIVE="$APP_DIR/.output"
-ENV_BACKUP="/root/sleepox-production.env"
+ENV_BACKUP="/root/adspx-production.env"
 DO_PULL=1
 DIVERGE_MODE="ask"   # ask | reset | merge
 DO_ROLLBACK=0
@@ -55,7 +55,7 @@ validate_production_env() {
   local env_file="$1"
   [ -f "$env_file" ] || return 1
   ! grep -q 'supabase\.co' "$env_file" || return 1
-  grep -qE "^VITE_SUPABASE_URL=['\"]?https://supabase\.sleepox\.com/?['\"]?$" "$env_file" || return 1
+  grep -qE "^VITE_SUPABASE_URL=['\"]?https://supabase\.adspx\.com/?['\"]?$" "$env_file" || return 1
   grep -qE '^SUPABASE_(SERVICE_ROLE_KEY|SECRET_KEY)=' "$env_file" || return 1
 }
 
@@ -77,7 +77,7 @@ wait_for_worker() {
 rolling_restart() {
   local failed=""
   for i in 0 1 2 3 4 5 6 7; do
-    local name="sleepox-$i" port="${PORTS[$i]}"
+    local name="adspx-$i" port="${PORTS[$i]}"
     echo "--- restarting $name (port $port) ---"
     if pm2 describe "$name" >/dev/null 2>&1; then
       pm2 restart "$name" --update-env >/dev/null 2>&1
@@ -124,8 +124,8 @@ backup_count=$(env_count "$ENV_BACKUP")
 env_vars=$(env_count .env)
 
 # Recover from the legacy backup name when necessary.
-if ! validate_production_env "$ENV_BACKUP" && validate_production_env "/root/sleepox.env.GOOD"; then
-  cp /root/sleepox.env.GOOD "$ENV_BACKUP"
+if ! validate_production_env "$ENV_BACKUP" && validate_production_env "/root/adspx.env.GOOD"; then
+  cp /root/adspx.env.GOOD "$ENV_BACKUP"
   chmod 600 "$ENV_BACKUP"
   backup_count=$(env_count "$ENV_BACKUP")
 fi
@@ -268,7 +268,7 @@ if [ -n "$leaked_host" ]; then
   restore_prev && echo "  ✅ previous build restored (site untouched)"
   fail "wrong .env at build time — run: bash scripts/vps-fix-selfhost-env.sh && bash scripts/deploy-zero-downtime.sh --auto-reset"
 fi
-self_hosted_refs="$(grep -rla 'https://supabase\.sleepox\.com' "$LIVE" 2>/dev/null | wc -l)"
+self_hosted_refs="$(grep -rla 'https://supabase\.adspx\.com' "$LIVE" 2>/dev/null | wc -l)"
 [ "$self_hosted_refs" -gt 0 ] || {
   restore_prev && echo "  ✅ previous build restored (workers untouched)"
   fail "fresh build does not contain the required self-hosted backend URL"
@@ -297,8 +297,8 @@ log "[8/8] verify"
 # whole assets directory would report stale backend URLs as false positives.
 current_assets=$(curl -s --max-time 5 \
   -H 'Accept-Encoding: identity' \
-  -H 'Host: sleepox.com' \
-  -H 'X-Forwarded-Host: sleepox.com' \
+  -H 'Host: adspx.com' \
+  -H 'X-Forwarded-Host: adspx.com' \
   "http://127.0.0.1:${PORTS[0]}/login" \
   | grep -aoE '/assets/[^"'"'"' ]+\.js' \
   | sort -u)
@@ -317,13 +317,13 @@ if [ -n "$bad" ]; then
 fi
 for i in 0 1 2 3 4 5 6 7; do
   p="${PORTS[$i]}"
-  printf "  sleepox-%s (%s): %s\n" "$i" "$p" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "http://127.0.0.1:$p/" || echo DOWN)"
+  printf "  adspx-%s (%s): %s\n" "$i" "$p" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "http://127.0.0.1:$p/" || echo DOWN)"
 done
 
 # Regression guard: the proxy may rewrite /dashboard to /r/dashboard. Every
 # worker must still return the app shell on the SaaS host, never a safe article.
 for p in "${PORTS[@]}"; do
-  if curl -s --max-time 5 -H 'Accept-Encoding: identity' -H 'Host: sleepox.com' -H 'X-Forwarded-Host: sleepox.com' "http://127.0.0.1:$p/r/dashboard" | grep -aEq 'The Weekly Note|Short Weekend Getaways'; then
+  if curl -s --max-time 5 -H 'Accept-Encoding: identity' -H 'Host: adspx.com' -H 'X-Forwarded-Host: adspx.com' "http://127.0.0.1:$p/r/dashboard" | grep -aEq 'The Weekly Note|Short Weekend Getaways'; then
     echo "  ❌ port $p still serves a safe article for the dashboard rewrite"
     rollback
   fi
@@ -342,5 +342,5 @@ printf '%s\t%s\t499=%s\t502=%s\t503=%s\t504=%s\n' \
   "$DEPLOY_STARTED_AT" "$deploy_ended_at" "$deploy_499" "$deploy_502" "$deploy_503" "$deploy_504" \
   > "$APP_DIR/.last-deploy-traffic-loss"
 echo "  deploy-window loss: 499=$deploy_499 502=$deploy_502 503=$deploy_503 504=$deploy_504"
-pm2 list | grep sleepox || true
+pm2 list | grep adspx || true
 echo -e "\n✅ zero-downtime deploy complete. Rollback anytime: bash scripts/deploy-zero-downtime.sh --rollback"

@@ -22,11 +22,11 @@ export default defineConfig({
     preview: {
       host: "0.0.0.0",
       port: 4000,
-      allowedHosts: ["sleepox.com", "www.sleepox.com", "75.119.144.171", "localhost"],
+      allowedHosts: ["adspx.com", "www.adspx.com", "75.119.144.171", "localhost"],
     },
     server: {
       host: "0.0.0.0",
-      allowedHosts: ["sleepox.com", "www.sleepox.com", "75.119.144.171", "localhost"],
+      allowedHosts: ["adspx.com", "www.adspx.com", "75.119.144.171", "localhost"],
     },
   },
 });
@@ -37,8 +37,8 @@ rm -rf .output dist
 bun run build
 
 # 3. Recreate PM2 app from the ecosystem config so stale saved paths are removed
-pm2 delete sleepox || true
-PORT=4000 HOST=0.0.0.0 pm2 start ecosystem.config.cjs --only sleepox --update-env
+pm2 delete adspx || true
+PORT=4000 HOST=0.0.0.0 pm2 start ecosystem.config.cjs --only adspx --update-env
 pm2 save
 
 echo "Waiting for app to start..."

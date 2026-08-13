@@ -65,4 +65,4 @@ else
 fi
 
 say "Health"
-curl -sS https://sleepox.com/api/public/health; echo
+curl -sS https://adspx.com/api/public/health; echo

@@ -6,7 +6,7 @@ HOST="${HOST:-127.0.0.1}"
 WRANGLER_CLI="node_modules/wrangler/wrangler-dist/cli.js"
 ENV_FILE=".env"
 
-echo "🔍 Starting Sleepox diagnostic..."
+echo "🔍 Starting Adspx diagnostic..."
 pwd
 ls -ld dist/server 2>/dev/null || echo "ℹ️ dist/server folder missing"
 ls -l dist/server/index.mjs 2>/dev/null || echo "ℹ️ dist/server/index.mjs missing"
