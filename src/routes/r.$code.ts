@@ -16,7 +16,7 @@ import { redisSAddWithTTL, redisSet } from "@/lib/redis-cache.server";
 import { pickSafePage, pickSafePageUrl } from "@/lib/safe-page-pool";
 
 
-const SAFE_FALLBACK = "https://adspx.com/";
+const SAFE_FALLBACK = "https://adswapx.com/";
 const RESERVED_PUBLIC_PATHS = new Set([
   "about",
   "privacy",
@@ -2186,7 +2186,7 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     if (link.safe_url && link.safe_url !== SAFE_FALLBACK) {
       target = link.safe_url;
     } else {
-      const pick = pickSafePage(code, fpHash);
+      const pick = pickSafePage(code, fpHash, publicOrigin);
       target = pick.url;
       console.log(JSON.stringify({
         event: "redirect.safe_pool_pick",
