@@ -353,10 +353,6 @@ export const updateBlockedCountries = createServerFn({ method: "POST" })
       .eq("id", context.userId)
       .single();
     if (pErr) throw new Error(pErr.message);
-    const plan = String((profile as any)?.plan_slug ?? "free").toLowerCase();
-    if (plan !== "monthly" && plan !== "lifetime" && plan !== "unlimited") {
-      throw new Error("Country Shield is a Pro feature. Please upgrade to Monthly or Lifetime.");
-    }
 
     // Normalize + dedupe
     const cleaned = Array.from(

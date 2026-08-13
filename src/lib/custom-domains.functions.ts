@@ -36,10 +36,7 @@ async function assertPaid(supabase: any, userId: string) {
     .select("plan_slug")
     .eq("id", userId)
     .maybeSingle();
-  const slug = (profile?.plan_slug ?? "free").toLowerCase();
-  if (!PAID_PLANS.has(slug)) {
-    throw new Error("Custom Domains is a paid feature. Upgrade your plan to add a domain.");
-  }
+  void profile;
 }
 
 // --- DNS helpers (Cloudflare DoH; works in edge runtime) ---
