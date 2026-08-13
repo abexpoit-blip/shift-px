@@ -1,12 +1,12 @@
 // 8 fork-mode instances behind nginx least_conn (ports 4000..4007)
-// Env is loaded from /opt/sleepox-app-new/.env via --env-file on the node interpreter.
+// Env is loaded from /opt/adspx-app-new/.env via --env-file on the node interpreter.
 module.exports = {
   apps: Array.from({ length: 8 }, (_, i) => ({
-    name: `sleepox-${i}`,
-    cwd: "/opt/sleepox-app-new",
+    name: `adspx-${i}`,
+    cwd: "/opt/adspx-app-new",
     script: ".output/server/index.mjs",
     interpreter: "node",
-    interpreter_args: "--env-file=/opt/sleepox-app-new/.env --import=/opt/sleepox-app-new/scripts/uri-guard.mjs",
+    interpreter_args: "--env-file=/opt/adspx-app-new/.env --import=/opt/adspx-app-new/scripts/uri-guard.mjs",
     instances: 1,
     exec_mode: "fork",
     max_memory_restart: "1536M",

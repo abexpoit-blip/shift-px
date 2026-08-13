@@ -8,7 +8,7 @@ import { preSignupCheck } from "@/lib/signup-protection.functions";
 import { BrandLogo } from "@/components/brand-logo";
 
 export const Route = createFileRoute("/signup")({
-  head: () => ({ meta: [{ title: "Create account — Sleepox" }] }),
+  head: () => ({ meta: [{ title: "Create account — Adspx" }] }),
   component: SignupPage,
 });
 
@@ -121,7 +121,7 @@ function SignupPage() {
 
       {/* BRAND */}
       <div className="relative hidden lg:flex flex-col justify-between p-12 z-10 order-1 lg:order-2">
-        <Link to="/" aria-label="Sleepox home"><BrandLogo /></Link>
+        <Link to="/" aria-label="Adspx home"><BrandLogo /></Link>
 
         <div className="space-y-8">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 backdrop-blur-xl border border-white/80 text-[#FF7E5F] text-[10px] font-bold uppercase tracking-widest shadow-sm">
@@ -157,7 +157,7 @@ function SignupPage() {
           </div>
         </div>
 
-        <p className="text-xs text-[#A38D7D] tracking-widest uppercase">© {new Date().getFullYear()} Sleepox · Smart links</p>
+        <p className="text-xs text-[#A38D7D] tracking-widest uppercase">© {new Date().getFullYear()} Adspx · Smart links</p>
       </div>
     </div>
   );

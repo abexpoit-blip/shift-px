@@ -7,7 +7,7 @@
 // ad rejections. Content domains now publish a plain storefront summary;
 // only the SaaS host describes the SaaS.
 import { createFileRoute } from "@tanstack/react-router";
-import { isSleepoxSaasHost } from "@/lib/site-hosts";
+import { isAdspxSaasHost } from "@/lib/site-hosts";
 import { brandForOrigin } from "@/lib/brand-registry";
 
 export const Route = createFileRoute("/llms.txt")({
@@ -22,8 +22,8 @@ export const Route = createFileRoute("/llms.txt")({
         const origin = `${proto}://${host || "breezysocial.com"}`;
         const brand = brandForOrigin(origin);
 
-        const body = isSleepoxSaasHost(host)
-          ? `# Sleepox
+        const body = isAdspxSaasHost(host)
+          ? `# Adspx
 
 > Smart link manager with real-time click analytics, geo and device routing.
 

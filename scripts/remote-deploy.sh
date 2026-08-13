@@ -6,7 +6,7 @@ set -e
 
 VPS_HOST="${VPS_HOST:-75.119.144.171}"
 VPS_USER="${VPS_USER:-root}"
-APP_DIR="/opt/sleepox-app-new"
+APP_DIR="/opt/adspx-app-new"
 
 echo "📤 Pushing changes to GitHub..."
 git push origin main

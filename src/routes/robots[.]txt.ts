@@ -7,7 +7,7 @@
 // host advertises those paths now; content domains get a plain storefront
 // robots file.
 import { createFileRoute } from "@tanstack/react-router";
-import { isSleepoxSaasHost } from "@/lib/site-hosts";
+import { isAdspxSaasHost } from "@/lib/site-hosts";
 
 const SOCIAL_ALLOW = `
 # Social / link preview crawlers must always be allowed, otherwise
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/robots.txt")({
         const proto = (request.headers.get("x-forwarded-proto") || "https").split(",")[0].trim();
         const origin = `${proto}://${host || "breezysocial.com"}`;
 
-        const saas = isSleepoxSaasHost(host);
+        const saas = isAdspxSaasHost(host);
 
         const body = saas
           ? `User-agent: *

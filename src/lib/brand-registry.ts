@@ -1,7 +1,7 @@
 /**
  * Per-host brand identity for safe pages / articles.
  *
- * Goal — every safe-content domain (tekuc.com, breezysocial.com, sleepox.com,
+ * Goal — every safe-content domain (tekuc.com, breezysocial.com, adspx.com,
  * and any future host) presents a DIFFERENT brand name / tagline / email to
  * Meta / Facebook / Google crawlers. This breaks the cross-domain footprint:
  * the crawler sees three unrelated ecommerce brands, not three mirrors of
@@ -49,10 +49,16 @@ const REGISTRY: Record<string, Brand> = {
     email: "hello@mefok.com",
     city: "Portland, OR",
   },
-  "sleepox.com": {
-    name: "Sleepox",
+  "adswapx.com": {
+    name: "Adswapx",
+    tagline: "Everyday finds, simply delivered.",
+    email: "hello@adswapx.com",
+    city: "Chicago, IL",
+  },
+  "adspx.com": {
+    name: "Adspx",
     tagline: "Sleep-first gear engineered for real rest.",
-    email: "hello@sleepox.com",
+    email: "hello@adspx.com",
     city: "Seattle, WA",
   },
 };

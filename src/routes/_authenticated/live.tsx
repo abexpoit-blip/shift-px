@@ -7,7 +7,7 @@ import { getLiveFeed } from "@/lib/live-feed.functions";
 import { Flag, DeviceIcon, BrowserIcon } from "@/components/StatIcons";
 
 export const Route = createFileRoute("/_authenticated/live")({
-  head: () => ({ meta: [{ title: "Live Feed — Sleepox" }] }),
+  head: () => ({ meta: [{ title: "Live Feed — Adspx" }] }),
   component: LiveFeedPage,
 });
 

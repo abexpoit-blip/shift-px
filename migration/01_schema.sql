@@ -434,7 +434,7 @@ CREATE TABLE public.custom_domains (
     user_id uuid NOT NULL,
     domain text NOT NULL,
     status text DEFAULT 'action_required'::text NOT NULL,
-    verification_token text DEFAULT ('sleepox_verify='::text || replace((gen_random_uuid())::text, '-'::text, ''::text)) NOT NULL,
+    verification_token text DEFAULT ('adspx_verify='::text || replace((gen_random_uuid())::text, '-'::text, ''::text)) NOT NULL,
     dns_target text DEFAULT '185.158.133.1'::text NOT NULL,
     is_primary boolean DEFAULT false NOT NULL,
     last_checked_at timestamp with time zone,

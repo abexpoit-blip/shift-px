@@ -36,7 +36,7 @@ CREATE TRIGGER shortener_domains_touch
   BEFORE UPDATE ON public.shortener_domains
   FOR EACH ROW EXECUTE FUNCTION public.shortener_domains_touch();
 
--- Seed with sleepox.com as primary (idempotent)
+-- Seed with adspx.com as primary (idempotent)
 INSERT INTO public.shortener_domains (domain, is_primary, is_active, verified, verified_at, note)
-VALUES ('sleepox.com', true, true, true, now(), 'Default primary shortener domain')
+VALUES ('adspx.com', true, true, true, now(), 'Default primary shortener domain')
 ON CONFLICT (domain) DO NOTHING;

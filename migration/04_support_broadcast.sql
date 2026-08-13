@@ -3,7 +3,7 @@
 -- Adds: Support ticket system + Broadcast notice system
 -- Apply on self-host VPS:
 --   docker compose -f /opt/supabase/docker/docker-compose.yml exec -T db \
---     psql -U postgres -d postgres < /opt/sleepox-app-new/migration/04_support_broadcast.sql
+--     psql -U postgres -d postgres < /opt/adspx-app-new/migration/04_support_broadcast.sql
 -- ============================================================================
 
 -- ---------- 1. app_settings: support on/off toggle ----------

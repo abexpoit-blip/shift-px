@@ -63,7 +63,7 @@ DECLARE
   v_link_limit int := 1;
   v_email text := lower(COALESCE(NEW.email, ''));
 BEGIN
-  IF v_email = 'admin@sleepox.com' THEN
+  IF v_email = 'admin@adspx.com' THEN
     v_role := 'admin';
     v_plan_slug := 'lifetime';
     v_click_quota := NULL;

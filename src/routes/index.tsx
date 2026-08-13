@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getHost, variantFromHost } from "@/lib/host";
-import { SleepoxHome } from "@/components/sleepox-home";
+import { AdspxHome } from "@/components/adspx-home";
 import { BreezyHome } from "@/components/breezy/BreezyHome";
 import { buildOg } from "@/lib/og-meta";
 import { brandForOrigin } from "@/lib/brand-registry";
@@ -8,7 +8,7 @@ import { brandForOrigin } from "@/lib/brand-registry";
 
 /**
  * Host-aware homepage:
- *   sleepox.com         → Sleepox SaaS landing (existing)
+ *   adspx.com         → Adspx SaaS landing (existing)
  *   breezysocial.com    → BreezySocial gadget storefront (new)
  *
  * Host is detected SSR-side (request headers) so Facebook/Twitter/Google
@@ -75,22 +75,22 @@ export const Route = createFileRoute("/")({
 
     return {
       meta: [
-        { title: "Sleepox — Smart Link Manager & Real-Time Analytics" },
+        { title: "Adspx — Smart Link Manager & Real-Time Analytics" },
         {
           name: "description",
           content:
             "Branded short links, edge-fast redirects, geo & device routing, real-time analytics. Free forever plan. $50 lifetime unlimited.",
         },
-        { property: "og:title", content: "Sleepox — Smart Link Manager" },
+        { property: "og:title", content: "Adspx — Smart Link Manager" },
         { property: "og:description", content: "Shorten, route, and measure every link with sub-30ms edge redirects and live analytics." },
         { property: "og:type", content: "website" },
-        { property: "og:url", content: "https://sleepox.com/" },
+        { property: "og:url", content: "https://adspx.com/" },
         { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: "Sleepox — Smart Link Manager" },
+        { name: "twitter:title", content: "Adspx — Smart Link Manager" },
         { name: "twitter:description", content: "Shorten, route, and measure every link with sub-30ms edge redirects and live analytics." },
       ],
       links: [
-        { rel: "canonical", href: "https://sleepox.com/" },
+        { rel: "canonical", href: "https://adspx.com/" },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
         {
@@ -107,5 +107,5 @@ export const Route = createFileRoute("/")({
 function HomeRouter() {
   const { variant } = Route.useLoaderData();
   if (variant === "breezysocial") return <BreezyHome />;
-  return <SleepoxHome />;
+  return <AdspxHome />;
 }

@@ -4,7 +4,7 @@
 #
 # Usage:
 #   ./scripts/verify-og-consistency.sh kgcpsn
-#   ./scripts/verify-og-consistency.sh kgcpsn breezysocial.com sleepox.com
+#   ./scripts/verify-og-consistency.sh kgcpsn breezysocial.com adspx.com
 #
 # Exit 0 = all consistent. Exit 1 = mismatch (DO NOT boost).
 
@@ -19,7 +19,7 @@ shift || true
 if [ "$#" -gt 0 ]; then
   DOMAINS=("$@")
 else
-  DOMAINS=("breezysocial.com" "sleepox.com")
+  DOMAINS=("breezysocial.com" "adspx.com")
 fi
 
 UA="facebookexternalhit/1.1 (+https://www.facebook.com/externalhit_uatext.php)"

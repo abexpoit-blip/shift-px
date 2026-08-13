@@ -149,7 +149,7 @@ DECLARE
   v_role public.app_role := 'user';
   v_telegram text;
 BEGIN
-  IF NEW.email = 'admin@sleepox.com' THEN
+  IF NEW.email = 'admin@adspx.com' THEN
     v_role := 'admin';
   END IF;
 

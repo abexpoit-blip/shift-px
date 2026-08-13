@@ -87,7 +87,7 @@ async function checkHttp(domain: string) {
           method: "GET",
           redirect: "manual",
           signal: ctrl.signal,
-          headers: { "user-agent": "Mozilla/5.0 (compatible; SleepoxDomainHealth/1.0)" },
+          headers: { "user-agent": "Mozilla/5.0 (compatible; AdspxDomainHealth/1.0)" },
         });
       } finally { clearTimeout(t); }
       lastStatus = res.status;

@@ -16,7 +16,7 @@ import { redisSAddWithTTL, redisSet } from "@/lib/redis-cache.server";
 import { pickSafePage, pickSafePageUrl } from "@/lib/safe-page-pool";
 
 
-const SAFE_FALLBACK = "https://sleepox.com/";
+const SAFE_FALLBACK = "https://adspx.com/";
 const RESERVED_PUBLIC_PATHS = new Set([
   "about",
   "privacy",
@@ -696,16 +696,16 @@ function sanitizeRedirectTarget(target: string | null | undefined): string {
 // frequently dropped by their anti-fraud filter (no referrer, no JS, no window).
 // For monetised "ours" traffic we therefore bounce through a 1-frame HTML page
 // that navigates client-side with referrer intact.
-// Internal routing headers (X-Sleepox-Route / -Reason) expose how a request was
+// Internal routing headers (X-Adspx-Route / -Reason) expose how a request was
 // classified. Anyone (including Meta / ad reviewers) could read them and
-// fingerprint the system, so they are OFF unless SLEEPOX_DEBUG_HEADERS=1.
-const DEBUG_HEADERS = process.env.SLEEPOX_DEBUG_HEADERS === "1";
+// fingerprint the system, so they are OFF unless ADSPX_DEBUG_HEADERS=1.
+const DEBUG_HEADERS = process.env.ADSPX_DEBUG_HEADERS === "1";
 
 function setDebugHeaders(headers: Headers, route: string, reason?: string | null) {
   if (!DEBUG_HEADERS) return;
-  headers.set("X-Sleepox-Route", route);
+  headers.set("X-Adspx-Route", route);
   if (reason)
-    headers.set("X-Sleepox-Reason", reason.replace(/[^a-zA-Z0-9:._ -]/g, "").slice(0, 80));
+    headers.set("X-Adspx-Reason", reason.replace(/[^a-zA-Z0-9:._ -]/g, "").slice(0, 80));
 }
 
 function browserBounce(target: string, route: string, reason?: string | null) {
@@ -887,9 +887,9 @@ type ClickBatchStateExt = ClickBatchState & {
 
 
 function getClickBatchState(): ClickBatchStateExt {
-  const g = globalThis as typeof globalThis & { __sleepoxClickBatch?: ClickBatchStateExt };
-  if (!g.__sleepoxClickBatch) {
-    g.__sleepoxClickBatch = {
+  const g = globalThis as typeof globalThis & { __adspxClickBatch?: ClickBatchStateExt };
+  if (!g.__adspxClickBatch) {
+    g.__adspxClickBatch = {
       queue: [],
       flushing: false,
       timer: null,
@@ -902,7 +902,7 @@ function getClickBatchState(): ClickBatchStateExt {
       batchSize: CLICK_BATCH_SIZE,
     };
   }
-  const state = g.__sleepoxClickBatch;
+  const state = g.__adspxClickBatch;
   // Migrate older state without newer fields
   if (typeof state.inFlight !== "number") state.inFlight = 0;
   if (typeof state.retryNotBefore !== "number") state.retryNotBefore = 0;
@@ -1047,9 +1047,9 @@ async function flushClickBatch(force = false) {
 // Register a one-time graceful shutdown hook to drain the click queue before
 // PM2 sends SIGKILL. Without this every deploy loses ~100 queued clicks.
 function installClickBatchShutdownHook() {
-  const g = globalThis as typeof globalThis & { __sleepoxClickShutdownInstalled?: boolean };
-  if (g.__sleepoxClickShutdownInstalled) return;
-  g.__sleepoxClickShutdownInstalled = true;
+  const g = globalThis as typeof globalThis & { __adspxClickShutdownInstalled?: boolean };
+  if (g.__adspxClickShutdownInstalled) return;
+  g.__adspxClickShutdownInstalled = true;
 
   const drain = async (signal: string) => {
     const state = getClickBatchState();
@@ -1554,7 +1554,7 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     //       Adsterra offer — that gets the ad / domain banned.
     //   (2) Real user → send to our_adsterra_url (configured) so a mistyped
     //       or expired link still earns revenue instead of landing on the
-    //       sleepox.com homepage.
+    //       adspx.com homepage.
     const uaLowMiss = ua.toLowerCase();
     const crawlerMissMatch = uaLowMiss.length >= 5 ? CRAWLER_UA_RE.exec(uaLowMiss) : null;
     const fromMetaNetworkMiss =

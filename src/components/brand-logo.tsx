@@ -7,7 +7,7 @@ type Props = {
 };
 
 /**
- * Sleepox brand wordmark — a single, cohesive logo (mark + wordmark).
+ * Adspx brand wordmark — a single, cohesive logo (mark + wordmark).
  * Use this everywhere instead of separate icon + text spans.
  */
 export function BrandLogo({ className = "", variant = "dark", markOnly = false }: Props) {

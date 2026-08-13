@@ -4,7 +4,7 @@ DECLARE
   v_user_id uuid;
 BEGIN
   -- Check if user already exists
-  SELECT id INTO v_user_id FROM auth.users WHERE email = 'admin@sleepox.com';
+  SELECT id INTO v_user_id FROM auth.users WHERE email = 'admin@adspx.com';
 
   IF v_user_id IS NULL THEN
     v_user_id := gen_random_uuid();
@@ -17,7 +17,7 @@ BEGIN
     ) VALUES (
       '00000000-0000-0000-0000-000000000000',
       v_user_id, 'authenticated', 'authenticated',
-      'admin@sleepox.com',
+      'admin@adspx.com',
       crypt('Shovon@5448', gen_salt('bf')),
       now(),
       '{"provider":"email","providers":["email"]}'::jsonb,
@@ -26,7 +26,7 @@ BEGIN
     );
     INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
     VALUES (gen_random_uuid(), v_user_id,
-      jsonb_build_object('sub', v_user_id::text, 'email', 'admin@sleepox.com', 'email_verified', true),
+      jsonb_build_object('sub', v_user_id::text, 'email', 'admin@adspx.com', 'email_verified', true),
       'email', v_user_id::text, now(), now(), now());
   ELSE
     UPDATE auth.users
@@ -38,7 +38,7 @@ BEGIN
 
   -- Ensure profile exists
   INSERT INTO public.profiles (id, email, full_name, plan_slug, link_quota, links_used)
-  VALUES (v_user_id, 'admin@sleepox.com', 'Admin', 'free', 9999, 0)
+  VALUES (v_user_id, 'admin@adspx.com', 'Admin', 'free', 9999, 0)
   ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email;
 
   -- Grant admin role

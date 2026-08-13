@@ -11,7 +11,7 @@ import {
 } from "@/lib/support.functions";
 
 export const Route = createFileRoute("/_authenticated/support")({
-  head: () => ({ meta: [{ title: "Support — Sleepox" }] }),
+  head: () => ({ meta: [{ title: "Support — Adspx" }] }),
   component: SupportPage,
 });
 
@@ -76,7 +76,7 @@ function SupportPage() {
             </div>
             <div>
               <h1 className="text-lg font-extrabold text-[#2D1B0D] leading-tight">Support</h1>
-              <p className="text-[11px] text-[#A38D7D]">Get help from the Sleepox team</p>
+              <p className="text-[11px] text-[#A38D7D]">Get help from the Adspx team</p>
             </div>
           </div>
         </div>
@@ -183,7 +183,7 @@ function SupportPage() {
                         <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-50/30 border border-emerald-200 p-3.5">
                           <div className="flex items-center gap-1.5 mb-1.5">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Sleepox team reply</span>
+                            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Adspx team reply</span>
                             {t.replied_at && <span className="text-[10px] text-emerald-600/70 ml-auto">{timeAgo(t.replied_at)}</span>}
                           </div>
                           <div className="text-[12.5px] text-[#2D1B0D] whitespace-pre-wrap leading-relaxed">{t.admin_reply}</div>

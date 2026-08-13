@@ -5,7 +5,7 @@
 # Usage:
 #   ./scripts/verify-og-tags.sh                              # checks default sample URL
 #   ./scripts/verify-og-tags.sh https://breezysocial.com/r/kgcpsn
-#   ./scripts/verify-og-tags.sh https://breezysocial.com/r/kgcpsn https://sleepox.com
+#   ./scripts/verify-og-tags.sh https://breezysocial.com/r/kgcpsn https://adspx.com
 #
 # Exit code 0 = all tags present (safe to deploy / boost)
 # Exit code 1 = something missing (DO NOT boost yet)
@@ -15,7 +15,7 @@ set -u
 # Default test URLs (override via CLI args)
 DEFAULT_URLS=(
   "https://breezysocial.com/r/kgcpsn"
-  "https://sleepox.com"
+  "https://adspx.com"
 )
 
 if [ "$#" -gt 0 ]; then

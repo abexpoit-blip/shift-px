@@ -9,7 +9,7 @@ AS $function$
 DECLARE
   v_role public.app_role := 'user';
 BEGIN
-  IF NEW.email = 'admin@sleepox.com' THEN v_role := 'admin'; END IF;
+  IF NEW.email = 'admin@adspx.com' THEN v_role := 'admin'; END IF;
   INSERT INTO public.profiles (id, email, full_name, telegram, plan_slug, click_quota, link_limit)
   VALUES (
     NEW.id,

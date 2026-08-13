@@ -3,15 +3,15 @@
 
 set -euo pipefail
 
-DOMAIN="supabase.sleepox.com"
-EMAIL="support@sleepox.com"
+DOMAIN="supabase.adspx.com"
+EMAIL="support@adspx.com"
 KONG_PORT="${KONG_PORT:-8000}"
 SUPABASE_DIR="${SUPABASE_DIR:-/opt/supabase-docker}"
 NGINX_CONF="/etc/nginx/sites-available/$DOMAIN"
 NGINX_ENABLED="/etc/nginx/sites-enabled/$DOMAIN"
 DEFAULT_CONF="/etc/nginx/sites-available/default"
 CERT_DIR="/etc/letsencrypt/live/$DOMAIN"
-BACKUP_DIR="/root/sleepox-nginx-backups"
+BACKUP_DIR="/root/adspx-nginx-backups"
 
 backup_nginx_conf() {
   local conf="$1"
@@ -113,14 +113,14 @@ else
 fi
 
 echo "🧹 Disabling accidental Nginx backup files from sites-enabled..."
-find /etc/nginx/sites-enabled -maxdepth 1 -type l -name '*.sleepox-backup-*' -delete 2>/dev/null || true
-find /etc/nginx/sites-enabled -maxdepth 1 -type f -name '*.sleepox-backup-*' -exec mv {} "$BACKUP_DIR/" \; 2>/dev/null || true
+find /etc/nginx/sites-enabled -maxdepth 1 -type l -name '*.adspx-backup-*' -delete 2>/dev/null || true
+find /etc/nginx/sites-enabled -maxdepth 1 -type f -name '*.adspx-backup-*' -exec mv {} "$BACKUP_DIR/" \; 2>/dev/null || true
 
 echo "🧹 Cleaning $DOMAIN references from the generic Nginx default site (and any broken certbot blocks)..."
 clean_nginx_conf "$DEFAULT_CONF"
 for conf in /etc/nginx/sites-available/* /etc/nginx/sites-enabled/*; do
   [ -f "$conf" ] || continue
-  case "$conf" in *.sleepox-backup-*) continue ;; esac
+  case "$conf" in *.adspx-backup-*) continue ;; esac
   [ "$conf" = "$NGINX_CONF" ] || [ "$conf" = "$NGINX_ENABLED" ] || clean_nginx_conf "$conf"
 done
 for conf in /etc/nginx/conf.d/*.conf; do
@@ -136,7 +136,7 @@ fi
 
 if [ -n "$kong_conf" ]; then
   echo "🧭 Ensuring Kong strips Supabase API prefixes before proxying to services..."
-  cp "$kong_conf" "$kong_conf.sleepox-backup-$(date +%Y%m%d%H%M%S)"
+  cp "$kong_conf" "$kong_conf.adspx-backup-$(date +%Y%m%d%H%M%S)"
   python3 - "$kong_conf" <<'PYEOF'
 import re, sys
 p = sys.argv[1]

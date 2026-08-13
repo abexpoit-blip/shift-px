@@ -88,7 +88,7 @@ function tally(rows, keyFn) {
 
 const since = new Date(Date.now() - HOURS * 3600e3).toISOString();
 
-console.log(`\n=== SLEEPOX OURS/ADSTERRA AUDIT — last ${HOURS}h (since ${since}) ===\n`);
+console.log(`\n=== ADSPX OURS/ADSTERRA AUDIT — last ${HOURS}h (since ${since}) ===\n`);
 
 // 1. settings
 const [settings] = await rest("app_settings?select=*&limit=1");
@@ -242,7 +242,7 @@ if (ourUrl) {
   let bad = 0;
   let proxyBlocked = 0;
   for (const [label, ua] of UAS) {
-    const r = await probe(ourUrl, ua, "https://sleepox.com/");
+    const r = await probe(ourUrl, ua, "https://adspx.com/");
     if (r.error) { console.log(`  ${label}: ERROR ${r.error}`); bad++; continue; }
     const isProxyBlock = /anonymous proxy|proxy detected|vpn detected/i.test(r.snippet || "");
     const verdict = r.loc ? `→ redirect ${r.loc.slice(0, 80)}` : r.len === 0 ? "❌ EMPTY BODY (no ad served / rejected)" : `body ${r.len}b`;

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { BroadcastMarkdown } from "@/components/broadcast-markdown";
 
 export const Route = createFileRoute("/_authenticated/notices")({
-  head: () => ({ meta: [{ title: "Notices — Sleepox" }] }),
+  head: () => ({ meta: [{ title: "Notices — Adspx" }] }),
   component: NoticesPage,
 });
 
@@ -77,7 +77,7 @@ function NoticesPage() {
           <h1 className="text-3xl font-extrabold text-[#2D1B0D] tracking-tight">
             Broadcast <span className="text-[#FF7E5F]">Inbox</span>
           </h1>
-          <p className="text-sm text-[#7A5C45] mt-1">Updates, announcements, and news from Sleepox.</p>
+          <p className="text-sm text-[#7A5C45] mt-1">Updates, announcements, and news from Adspx.</p>
         </div>
         {unreadCount > 0 && (
           <Button 

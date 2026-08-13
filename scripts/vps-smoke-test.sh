@@ -2,8 +2,8 @@
 # Post-deploy smoke test: app routes, auth host, CORS, recent auth errors.
 set -uo pipefail
 
-SITE="${SITE:-https://sleepox.com}"
-AUTH_HOST="${AUTH_HOST:-https://supabase.sleepox.com}"
+SITE="${SITE:-https://adspx.com}"
+AUTH_HOST="${AUTH_HOST:-https://supabase.adspx.com}"
 FAIL=0
 
 say() { printf '\n\033[1;36m==> %s\033[0m\n' "$*"; }
@@ -15,7 +15,7 @@ code() { curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$@"; }
 # Resolve the anon/publishable key so auth probes are authenticated.
 ANON_KEY="${ANON_KEY:-}"
 if [ -z "$ANON_KEY" ]; then
-  for f in ./.env /opt/sleepox-app-new/.env /opt/supabase/docker/.env; do
+  for f in ./.env /opt/adspx-app-new/.env /opt/supabase/docker/.env; do
     [ -f "$f" ] || continue
     ANON_KEY="$(grep -E '^(VITE_SUPABASE_PUBLISHABLE_KEY|VITE_SUPABASE_ANON_KEY|ANON_KEY)=' "$f" | head -1 | cut -d= -f2- | tr -d '"'"'"'')"
     [ -n "$ANON_KEY" ] && break
@@ -61,7 +61,7 @@ resp=$(curl -s -o /tmp/_sx_probe.json -w '%{http_code}' --max-time 20 -X POST \
   -H 'Content-Type: application/json' \
   -H "Origin: $SITE" \
   ${AUTH_ARGS+"${AUTH_ARGS[@]}"} \
-  --data '{"email":"smoke-probe@sleepox.invalid","password":"wrong-password-probe"}' \
+  --data '{"email":"smoke-probe@adspx.invalid","password":"wrong-password-probe"}' \
   "$AUTH_HOST/auth/v1/token?grant_type=password")
 case "$resp" in
   400) ok "auth returns 400 invalid_credentials (healthy)";;

@@ -91,7 +91,7 @@ CREATE TABLE public.links (
   short_code text UNIQUE NOT NULL,
   title text,
   adsterra_url text NOT NULL,
-  safe_url text NOT NULL DEFAULT 'https://sleepox.com/',
+  safe_url text NOT NULL DEFAULT 'https://adspx.com/',
   is_active boolean NOT NULL DEFAULT true,
   clicks_count int NOT NULL DEFAULT 0,
   bot_clicks_count int NOT NULL DEFAULT 0,
@@ -178,7 +178,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_role public.app_role := 'user';
 BEGIN
-  IF NEW.email = 'admin@sleepox.com' THEN v_role := 'admin'; END IF;
+  IF NEW.email = 'admin@adspx.com' THEN v_role := 'admin'; END IF;
   INSERT INTO public.profiles (id, email, full_name, plan_slug, click_quota, link_limit)
   VALUES (NEW.id, NEW.email, COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email,'@',1)),
           CASE WHEN v_role='admin' THEN 'unlimited' ELSE 'free' END,

@@ -93,6 +93,6 @@ done
 [ "$MISMATCH" -eq 0 ] && ok "all container secrets match .env"
 
 say "Health"
-curl -sS --max-time 15 https://sleepox.com/api/public/health || err "health endpoint unreachable"
+curl -sS --max-time 15 https://adspx.com/api/public/health || err "health endpoint unreachable"
 echo
 ok "done"

@@ -23,7 +23,7 @@ import { CountryShieldDialog } from "@/components/CountryShieldDialog";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — Sleepox" }] }),
+  head: () => ({ meta: [{ title: "Dashboard — Adspx" }] }),
   component: DashboardPage,
 });
 
@@ -136,7 +136,7 @@ function DashboardPage() {
   const [selectedDomain, setSelectedDomain] = useState<string>("");
   const rawPrimary = primaryQ.data?.domain ?? "mefok.com";
   // Never hand out a Safe-Browsing-flagged domain, even if the DB still lists it.
-  const primaryDomain = isFlaggedShortDomain(rawPrimary) || rawPrimary === "sleepox.com" ? "mefok.com" : rawPrimary;
+  const primaryDomain = isFlaggedShortDomain(rawPrimary) || rawPrimary === "adspx.com" ? "mefok.com" : rawPrimary;
   const customDomains = (dashQ.data?.customDomains ?? []).filter((d: string) => !isFlaggedShortDomain(d));
   // Built-in shortener domains always available + any user custom domains.
   const BUILTIN_DOMAINS = ["mefok.com", "skypq.com", "breezysocial.com"].filter(
@@ -146,11 +146,11 @@ function DashboardPage() {
   // Load persisted choice from localStorage on mount; ignore flagged/stale values.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const saved = window.localStorage.getItem("sleepox.shortDomain");
+    const saved = window.localStorage.getItem("adspx.shortDomain");
     if (saved && !isFlaggedShortDomain(saved) && allDomains.includes(saved)) setSelectedDomain(saved);
     else {
       setSelectedDomain(primaryDomain);
-      window.localStorage.setItem("sleepox.shortDomain", primaryDomain);
+      window.localStorage.setItem("adspx.shortDomain", primaryDomain);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customDomains.join(","), primaryDomain]);
@@ -239,7 +239,7 @@ function DashboardPage() {
         <div className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/80 shadow-sm shadow-orange-900/5 px-5 py-3 flex items-center gap-4">
           <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF7E5F] to-[#FEB47B] text-white font-extrabold text-lg flex items-center justify-center shadow-md shadow-orange-500/30">S</div>
-            <span className="font-extrabold text-[17px] text-[#2D1B0D] tracking-tight">sleepox</span>
+            <span className="font-extrabold text-[17px] text-[#2D1B0D] tracking-tight">adspx</span>
           </Link>
           <div className="flex-1 relative max-w-xl">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A38D7D]" />
@@ -257,7 +257,7 @@ function DashboardPage() {
               onChange={(e) => {
                 setSelectedDomain(e.target.value);
                 if (typeof window !== "undefined") {
-                  window.localStorage.setItem("sleepox.shortDomain", e.target.value);
+                  window.localStorage.setItem("adspx.shortDomain", e.target.value);
                 }
               }}
               className="bg-[#FFF9F5]/70 border border-[#FFEDD5] rounded-xl py-2 px-3 text-xs text-[#2D1B0D] focus:outline-none focus:border-[#FF7E5F]/50 transition-all"
@@ -370,7 +370,7 @@ function DashboardPage() {
                       type="url"
                       value={safe}
                       onChange={(e) => setSafe(e.target.value)}
-                      placeholder="https://sleepox.com/"
+                      placeholder="https://adspx.com/"
                       className={fieldCls}
                     />
                     <p className="text-[11px] text-[#A38D7D] mt-1">
@@ -664,7 +664,7 @@ function DashboardPage() {
               onChange={(e) => {
                 const v = e.target.value;
                 setSelectedDomain(v);
-                if (typeof window !== "undefined") window.localStorage.setItem("sleepox.shortDomain", v);
+                if (typeof window !== "undefined") window.localStorage.setItem("adspx.shortDomain", v);
               }}
               className="bg-transparent text-[11px] font-mono font-bold text-white focus:outline-none cursor-pointer"
             >

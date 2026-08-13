@@ -7,7 +7,7 @@ import { BLOG_IMAGES } from "@/lib/breezy-content";
 /**
  * BreezySocial gadget storefront homepage — served when host is breezysocial.com.
  * Hero → featured products (4) → trust bar → latest journal (3) → newsletter CTA → footer.
- * Editorial / wellness vibe (warm sand + sage), distinct from Sleepox orange SaaS look.
+ * Editorial / wellness vibe (warm sand + sage), distinct from Adspx orange SaaS look.
  */
 export function BreezyHome() {
   const featured = PRODUCTS.slice(0, 4);

@@ -26,7 +26,7 @@ function normalizeLink(row: LinkRow) {
   return {
     ...row,
     adsterra_url: row.adsterra_url ?? row.adsterra_direct_link ?? row.destination_url ?? "",
-    safe_url: row.safe_url ?? (row.adsterra_direct_link ? row.destination_url : "https://sleepox.com/") ?? "https://sleepox.com/",
+    safe_url: row.safe_url ?? (row.adsterra_direct_link ? row.destination_url : "https://adspx.com/") ?? "https://adspx.com/",
     is_active: row.is_active ?? row.status === "active",
     blocked_countries: Array.isArray(row.blocked_countries) ? row.blocked_countries : [],
   };
@@ -267,7 +267,7 @@ export const createLink = createServerFn({ method: "POST" })
     }
     if (isReservedShortCode(code)) throw new Error("Reserved short code generated. Please try again.");
 
-    const safeUrlToStore = data.safe_url ?? "https://sleepox.com/";
+    const safeUrlToStore = data.safe_url ?? "https://adspx.com/";
 
     const { data: linkData, error } = await context.supabase
       .from("links")

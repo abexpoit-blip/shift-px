@@ -18,7 +18,7 @@ import {
 } from "@/lib/campaign";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
-  head: () => ({ meta: [{ title: "Upgrade — Sleepox" }] }),
+  head: () => ({ meta: [{ title: "Upgrade — Adspx" }] }),
   component: UpgradePage,
 });
 
@@ -406,7 +406,7 @@ function UpgradePage() {
           })}
         </section>
 
-        {/* Why Sleepox / system features */}
+        {/* Why Adspx / system features */}
         <section className="space-y-8">
           <div className="text-center max-w-2xl mx-auto space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 backdrop-blur-xl border border-white/80 text-[#FF7E5F] text-[10px] font-bold uppercase tracking-widest shadow-sm">

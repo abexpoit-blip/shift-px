@@ -5,7 +5,7 @@
  * and exits non-zero on any missing field so it can be wired to cron.
  *
  * Usage (on VPS):
- *   cd /opt/sleepox-app-new && bun run scripts/og-audit.ts
+ *   cd /opt/adspx-app-new && bun run scripts/og-audit.ts
  *   cat /tmp/og-audit.md
  *
  * Env overrides:
@@ -21,7 +21,7 @@ const LIMIT = Number(process.env.LIMIT || 500);
 const CONCURRENCY = Number(process.env.CONCURRENCY || 8);
 const UA = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
 
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://supabase.sleepox.com";
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://supabase.adspx.com";
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!KEY) {
   console.error("Missing SUPABASE_SERVICE_ROLE_KEY env var.");

@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# Deploy Sleepox app on VPS (self-hosted, PM2 + Supabase docker stack)
+# Deploy Adspx app on VPS (self-hosted, PM2 + Supabase docker stack)
 # Usage on VPS:
-#   cd /opt/sleepox-app-new && ./deploy.sh
+#   cd /opt/adspx-app-new && ./deploy.sh
 #   ./deploy.sh logs      # live PM2 logs
 #   ./deploy.sh status    # PM2 + supabase status
 #   ./deploy.sh restart   # restart only (no pull/build)
 
 set -e
 
-APP_DIR="/opt/sleepox-app-new"
-# Legacy single-app name (kept for cleanup); real workers are sleepox-0..7
-PM2_NAME="sleepox"
-PM2_WORKER_PREFIX="sleepox-"
+APP_DIR="/opt/adspx-app-new"
+# Legacy single-app name (kept for cleanup); real workers are adspx-0..7
+PM2_NAME="adspx"
+PM2_WORKER_PREFIX="adspx-"
 SUPABASE_DIR="/opt/supabase-docker"
 SCRIPT_PATH="$APP_DIR/deploy.sh"
-BUILD_STAMP_FILE="$APP_DIR/.sleepox-build"
+BUILD_STAMP_FILE="$APP_DIR/.adspx-build"
 STAGING_DIR="$APP_DIR/.deploy-build"
 BACKUP_DIST="$APP_DIR/dist.previous"
 BACKUP_OUTPUT="$APP_DIR/.output.previous"
@@ -42,12 +42,12 @@ case "$action" in
     pm2 save
     ;;
   deploy|"")
-    echo "🚀 Deploying sleepox app..."
+    echo "🚀 Deploying adspx app..."
 
     echo "📥 [1/4] git pull..."
     if ! git diff --quiet || ! git diff --cached --quiet; then
       echo "⚠️  Local file changes detected. Saving them before pulling latest GitHub code..."
-      git stash push -u -m "auto-stash before sleepox deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)" >/dev/null
+      git stash push -u -m "auto-stash before adspx deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)" >/dev/null
     fi
     old_head="$(git rev-parse HEAD 2>/dev/null || true)"
     git pull --ff-only

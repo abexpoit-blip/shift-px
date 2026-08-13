@@ -16,7 +16,7 @@ const PLANS = [
   { name: "Lifetime Unlimited", price: "$50", period: "one-time", features: ["Unlimited clicks", "Unlimited links", "Lifetime access", "Priority support"], cta: "Get lifetime" },
 ];
 
-export function SleepoxHome() {
+export function AdspxHome() {
   return (
     <div
       className="min-h-screen bg-[#FFF9F5] text-[#4A3728] relative overflow-hidden"
@@ -28,7 +28,7 @@ export function SleepoxHome() {
 
       <nav className="sticky top-6 z-50 max-w-5xl mx-auto px-6 py-4">
         <div className="bg-white/40 backdrop-blur-2xl border border-white/40 rounded-full px-6 sm:px-8 py-3 flex items-center justify-between shadow-xl shadow-orange-900/5">
-          <Link to="/" aria-label="Sleepox home">
+          <Link to="/" aria-label="Adspx home">
             <BrandLogo />
           </Link>
           <div className="hidden md:flex items-center gap-8 font-medium text-[#7D6452] text-sm">
@@ -159,7 +159,7 @@ export function SleepoxHome() {
       </section>
 
       <footer className="relative max-w-7xl mx-auto px-6 py-12 text-center text-[#A38D7D] text-xs font-medium tracking-widest uppercase">
-        © {new Date().getFullYear()} Sleepox · Smart links &amp; analytics
+        © {new Date().getFullYear()} Adspx · Smart links &amp; analytics
       </footer>
     </div>
   );

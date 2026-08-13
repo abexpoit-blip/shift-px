@@ -81,11 +81,11 @@ export const createInvoice = createServerFn({ method: "POST" })
     if (reqErr || !req) throw new Error("Failed to create order");
 
     // Build Plisio invoice
-    const origin = "https://sleepox.com";
+    const origin = "https://adspx.com";
     const params = new URLSearchParams({
       api_key: apiKey,
       order_number: req.id,
-      order_name: `${pkg.name} — Sleepox`,
+      order_name: `${pkg.name} — Adspx`,
       source_amount: chargeAmount,
       source_currency: "USD",
       callback_url: `${origin}/api/public/plisio-webhook?json=true`,

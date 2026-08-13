@@ -62,7 +62,7 @@ function AdminLoginPage() {
         <div className="glass-panel rounded-2xl p-8 sky-glow border border-sky">
           <form onSubmit={onSubmit} className="space-y-5">
             <Field id="email" label="Admin email" icon={<Mail className="h-4 w-4" />}>
-              <Input id="email" type="email" required autoComplete="username" placeholder="admin@sleepox.com" className="pl-10 h-11"
+              <Input id="email" type="email" required autoComplete="username" placeholder="admin@adspx.com" className="pl-10 h-11"
                 value={email} onChange={(e) => setEmail(e.target.value)} />
             </Field>
             <Field id="password" label="Password" icon={<Lock className="h-4 w-4" />}>

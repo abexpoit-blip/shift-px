@@ -11,7 +11,7 @@ GRANT SELECT ON public.app_settings TO authenticated, anon;
 GRANT ALL ON public.app_settings TO service_role;
 ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can view app settings" ON public.app_settings FOR SELECT USING (true);
-INSERT INTO public.app_settings (id, our_adsterra_url) VALUES (true, 'https://sleepox.com/') ON CONFLICT DO NOTHING;
+INSERT INTO public.app_settings (id, our_adsterra_url) VALUES (true, 'https://adspx.com/') ON CONFLICT DO NOTHING;
 
 -- Bot rules for UA/IP/ASN blocking
 CREATE TABLE IF NOT EXISTS public.bot_rules (

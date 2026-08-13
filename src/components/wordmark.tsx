@@ -13,7 +13,7 @@ const SIZE: Record<NonNullable<WordmarkProps["size"]>, { text: string; dot: stri
 };
 
 /**
- * Premium glass wordmark — frosted gem + gradient SLEEPOX.
+ * Premium glass wordmark — frosted gem + gradient ADSPX.
  *
  * The gem is a stacked glass disc: outer gradient ring, inner navy core,
  * and a tiny sky-blue dot that gives it a refracted-jewel feel. Pair with

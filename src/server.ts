@@ -4,9 +4,9 @@
 // BEFORE our fetch handler runs — so a try/catch in `fetch()` cannot catch
 // it. Without this listener, Node's default behavior kills the PM2 worker.
 if (typeof process !== "undefined" && typeof process.on === "function") {
-  const g = globalThis as { __sleepox_proc_guards?: boolean };
-  if (!g.__sleepox_proc_guards) {
-    g.__sleepox_proc_guards = true;
+  const g = globalThis as { __adspx_proc_guards?: boolean };
+  if (!g.__adspx_proc_guards) {
+    g.__adspx_proc_guards = true;
     process.on("uncaughtException", (err: Error) => {
       if (
         err instanceof URIError ||
@@ -23,7 +23,7 @@ if (typeof process !== "undefined" && typeof process.on === "function") {
   }
 }
 
-import { isSaasOnlyPath, isSleepoxSaasHost } from "./lib/site-hosts";
+import { isSaasOnlyPath, isAdspxSaasHost } from "./lib/site-hosts";
 
 type ServerEntry = {
 
@@ -58,7 +58,7 @@ function restoreSaasRoute(request: Request): Request {
   ).split(",")[0].trim();
   const restoredPath = url.pathname.slice(2) || "/";
 
-  if (!isSleepoxSaasHost(host) || !isSaasOnlyPath(restoredPath)) return request;
+  if (!isAdspxSaasHost(host) || !isSaasOnlyPath(restoredPath)) return request;
 
   url.pathname = restoredPath;
   return new Request(url, request);
@@ -114,12 +114,12 @@ function applySecurityHeaders(request: Request, response: Response): Response {
 
   // ── HOST-DEPENDENT HTML MUST NEVER BE SHARED BETWEEN DOMAINS ──────────────
   // The same worker renders three different sites off the same paths:
-  //   sleepox.com/…      → the SaaS app
+  //   adspx.com/…      → the SaaS app
   //   tekuc.com/…        → neutral storefront / article content
   // The page body is chosen from the Host header, but the response carried no
   // `Vary`, so ANY shared cache (nginx proxy_cache, Cloudflare, a corporate
   // proxy) could hand the storefront/article HTML to someone who asked
-  // sleepox.com/dashboard — which is exactly the "reload or duplicate tab and
+  // adspx.com/dashboard — which is exactly the "reload or duplicate tab and
   // I get the blog page" bug — and hand SaaS HTML to an ad domain (the
   // /dashboard 200 the leak monitor reported on tekuc.com).
   const contentType = headers.get("content-type") || "";

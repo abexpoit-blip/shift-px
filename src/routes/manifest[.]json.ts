@@ -5,7 +5,7 @@
 // campaigns" on every host, including the ad domains. Manifests are fetched
 // by crawlers and reviewers. Content domains now describe the storefront.
 import { createFileRoute } from "@tanstack/react-router";
-import { isSleepoxSaasHost } from "@/lib/site-hosts";
+import { isAdspxSaasHost } from "@/lib/site-hosts";
 import { brandForOrigin } from "@/lib/brand-registry";
 
 const ICONS = [
@@ -25,12 +25,12 @@ export const Route = createFileRoute("/manifest.json")({
           .toLowerCase();
         const proto = (request.headers.get("x-forwarded-proto") || "https").split(",")[0].trim();
         const brand = brandForOrigin(`${proto}://${host || "breezysocial.com"}`);
-        const saas = isSleepoxSaasHost(host);
+        const saas = isAdspxSaasHost(host);
 
         const body = saas
           ? {
-              name: "Sleepox",
-              short_name: "Sleepox",
+              name: "Adspx",
+              short_name: "Adspx",
               description: "Smart link manager with real-time analytics.",
               start_url: "/",
               display: "standalone",

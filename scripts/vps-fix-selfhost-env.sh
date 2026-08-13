@@ -3,12 +3,12 @@
 
 set -euo pipefail
 
-APP_DIR="${APP_DIR:-/opt/sleepox-app-new}"
+APP_DIR="${APP_DIR:-/opt/adspx-app-new}"
 SUPABASE_DIR="${SUPABASE_DIR:-/opt/supabase-docker}"
 APP_ENV="$APP_DIR/.env"
-PUBLIC_API_URL="${PUBLIC_API_URL:-${API_URL:-https://supabase.sleepox.com}}"
+PUBLIC_API_URL="${PUBLIC_API_URL:-${API_URL:-https://supabase.adspx.com}}"
 SERVER_API_URL="${SERVER_API_URL:-}"
-PROJECT_ID="${PROJECT_ID:-sleepox}"
+PROJECT_ID="${PROJECT_ID:-adspx}"
 
 find_compose_dir() {
   local dir
@@ -131,7 +131,7 @@ if [ -z "$SERVER_API_URL" ]; then
   SERVER_API_URL="$PUBLIC_API_URL"
 fi
 
-cp "$APP_ENV" "$APP_ENV.sleepox-backup-$(date +%Y%m%d%H%M%S)"
+cp "$APP_ENV" "$APP_ENV.adspx-backup-$(date +%Y%m%d%H%M%S)"
 
 upsert_env "$APP_ENV" "SUPABASE_URL" "$SERVER_API_URL"
 upsert_env "$APP_ENV" "VITE_SUPABASE_URL" "$PUBLIC_API_URL"
@@ -152,8 +152,8 @@ if grep -q 'supabase\.co' "$APP_ENV"; then
   grep -nE '^[A-Z_]+=.*supabase\.co' "$APP_ENV" | sed -E 's/=.*(supabase\.co.*)$/ -> ...\1/' >&2
   exit 1
 fi
-grep -qE "^VITE_SUPABASE_URL=\"?https://supabase\.sleepox\.com/?\"?$" "$APP_ENV" \
-  || { echo "❌ VITE_SUPABASE_URL is not https://supabase.sleepox.com" >&2; exit 1; }
+grep -qE "^VITE_SUPABASE_URL=\"?https://supabase\.adspx\.com/?\"?$" "$APP_ENV" \
+  || { echo "❌ VITE_SUPABASE_URL is not https://supabase.adspx.com" >&2; exit 1; }
 grep -qE '^SUPABASE_SERVICE_ROLE_KEY=".+"$' "$APP_ENV" \
   || { echo "❌ SUPABASE_SERVICE_ROLE_KEY missing in .env" >&2; exit 1; }
 
@@ -161,8 +161,8 @@ cd "$APP_DIR"
 bun run verify-env
 
 # keep a known-good copy so a git reset can never wipe production values
-cp "$APP_ENV" /root/sleepox.env.GOOD 2>/dev/null || true
-chmod 600 /root/sleepox.env.GOOD 2>/dev/null || true
+cp "$APP_ENV" /root/adspx.env.GOOD 2>/dev/null || true
+chmod 600 /root/adspx.env.GOOD 2>/dev/null || true
 
 echo "✅ App .env now matches the self-hosted backend keys. No secrets were printed."
 echo "✅ No *.supabase.co reference remains in .env"

@@ -2,7 +2,7 @@
  * OG consistency audit.
  *
  * For every active short link, fetch /r/{code} on EACH public domain
- * (breezysocial.com, sleepox.com) with the Facebook scraper UA and
+ * (breezysocial.com, adspx.com) with the Facebook scraper UA and
  * verify that:
  *   - og:url        === https://{domain}/{code}  (clean URL, no /r/)
  *   - canonical     === https://{domain}/{code}
@@ -15,11 +15,11 @@
  * script can be wired into cron / pre-deploy.
  *
  * Usage (VPS):
- *   cd /opt/sleepox-app-new && bun run scripts/og-consistency-audit.ts
+ *   cd /opt/adspx-app-new && bun run scripts/og-consistency-audit.ts
  *   cat /tmp/og-consistency.md
  *
  * Env overrides:
- *   DOMAINS=breezysocial.com,sleepox.com   (default — must match SHORT_DOMAINS)
+ *   DOMAINS=breezysocial.com,adspx.com   (default — must match SHORT_DOMAINS)
  *   LIMIT=200
  *   CONCURRENCY=8
  *   SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY  (required)
@@ -27,7 +27,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { writeFileSync } from "node:fs";
 
-const DOMAINS = (process.env.DOMAINS || "breezysocial.com,sleepox.com")
+const DOMAINS = (process.env.DOMAINS || "breezysocial.com,adspx.com")
   .split(",")
   .map((d) => d.trim())
   .filter(Boolean);
@@ -35,7 +35,7 @@ const LIMIT = Number(process.env.LIMIT || 200);
 const CONCURRENCY = Number(process.env.CONCURRENCY || 8);
 const UA = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
 
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://supabase.sleepox.com";
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://supabase.adspx.com";
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!KEY) {
   console.error("Missing SUPABASE_SERVICE_ROLE_KEY env var.");

@@ -33,8 +33,8 @@ const TARGET_DOMAINS = [
   "breezysocial.com",
   "skypq.com",
   "mefok.com",
-  "sleepox.com",
-  "www.sleepox.com",
+  "adspx.com",
+  "www.adspx.com",
 ];
 
 const FETCH_TIMEOUT_MS = 8000;
