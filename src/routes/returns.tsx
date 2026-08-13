@@ -1,21 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useBrand } from "@/lib/brand-live";
 import { BreezyLayout } from "@/components/breezy/BreezyLayout";
+import { brandForOrigin } from "@/lib/brand-registry";
+import { getRequestOrigin } from "@/lib/request-origin.functions";
 import { SITE } from "@/lib/breezy-data";
 
 export const Route = createFileRoute("/returns")({
-  head: () => ({
+  loader: async () => await getRequestOrigin(),
+  head: ({ loaderData }) => {
+    const origin = loaderData?.origin ?? "https://adswapx.com";
+    const brand = brandForOrigin(origin);
+    return {
     meta: [
-      { title: `Returns & Refunds — ${SITE.name}` },
-      { name: "description", content: `30-day no-questions returns on every ${SITE.name} product. Here's how it works.` },
-      { property: "og:title", content: `Returns & Refunds — ${SITE.name}` },
-      { property: "og:url", content: "/returns" },
+      { title: `Returns & Refunds — ${brand.name}` },
+      { name: "description", content: `30-day no-questions returns on every ${brand.name} product. Here's how it works.` },
+      { property: "og:title", content: `Returns & Refunds — ${brand.name}` },
+      { property: "og:url", content: `${origin}/returns` },
     ],
-    links: [{ rel: "canonical", href: "/returns" }],
-  }),
+    links: [{ rel: "canonical", href: `${origin}/returns` }],
+    };
+  },
   component: ReturnsPage,
 });
 
 function ReturnsPage() {
+  const brand = useBrand();
   return (
     <BreezyLayout>
       <article className="max-w-3xl mx-auto px-6 py-16 prose prose-lg text-[#3A3A38]">
@@ -30,7 +39,7 @@ function ReturnsPage() {
 
         <h2 className="text-2xl mt-10 text-[#2A2A28]">How to start a return</h2>
         <ol>
-          <li>Email <a href={`mailto:${SITE.supportEmail}`} className="text-[#5A7A55]">{SITE.supportEmail}</a> with your order number and the item(s) you'd like to return.</li>
+          <li>Email <a href={`mailto:${brand.email}`} className="text-[#5A7A55]">{brand.email}</a> with your order number and the item(s) you'd like to return.</li>
           <li>We'll reply within 24 hours (business days) with a prepaid return shipping label.</li>
           <li>Pack the item in its original packaging if possible — but lightly used is fine, we just need it intact.</li>
           <li>Drop it at any USPS location.</li>
@@ -53,7 +62,7 @@ function ReturnsPage() {
         <p>International customers are responsible for return shipping. Once we receive your return, the standard 3-business-day refund window applies. Original international shipping costs are non-refundable.</p>
 
         <h2 className="text-2xl mt-10 text-[#2A2A28]">Questions?</h2>
-        <p>Real humans, real answers — email <a href={`mailto:${SITE.supportEmail}`} className="text-[#5A7A55]">{SITE.supportEmail}</a> any time.</p>
+        <p>Real humans, real answers — email <a href={`mailto:${brand.email}`} className="text-[#5A7A55]">{brand.email}</a> any time.</p>
       </article>
     </BreezyLayout>
   );

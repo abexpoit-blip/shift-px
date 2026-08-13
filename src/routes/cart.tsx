@@ -6,7 +6,7 @@ import { PRODUCT_IMAGES } from "@/lib/breezy-content";
 export const Route = createFileRoute("/cart")({
   head: () => ({
     meta: [
-      { title: "Your Cart — BreezySocial" },
+      { title: "Your Cart" },
       { name: "description", content: "Review your selected items and proceed to secure checkout." },
       { name: "robots", content: "noindex,follow" },
     ],

@@ -7,7 +7,7 @@ export const Route = createFileRoute("/order-confirmed")({
   validateSearch: z.object({ o: z.string().optional() }),
   head: () => ({
     meta: [
-      { title: "Order Confirmed — BreezySocial" },
+      { title: "Order Confirmed" },
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),

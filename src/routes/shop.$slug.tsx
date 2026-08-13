@@ -8,17 +8,26 @@ import { getReviews } from "@/lib/breezy-reviews";
 import { useCart } from "@/lib/cart-context";
 import { buildOg, absoluteUrl } from "@/lib/og-meta";
 import { getRequestOrigin } from "@/lib/request-origin.functions";
+import { brandForOrigin, rebrand } from "@/lib/brand-registry";
 
 export const Route = createFileRoute("/shop/$slug")({
   loader: async ({ params }) => {
     const product = getProduct(params.slug);
     if (!product) throw notFound();
     const { origin } = await getRequestOrigin();
-    return { product, origin };
+    return {
+      product: {
+        ...product,
+        shortDesc: rebrand(product.shortDesc, origin),
+        longDesc: rebrand(product.longDesc, origin),
+      },
+      origin,
+    };
   },
   head: ({ loaderData, params }) => {
     const p = loaderData?.product;
-    const origin = loaderData?.origin ?? "https://breezysocial.com";
+    const origin = loaderData?.origin ?? "https://adswapx.com";
+    const b = brandForOrigin(origin);
     if (!p) return { meta: [{ title: "Product not found" }] };
     const imgPath = PRODUCT_IMAGES[p.slug];
     const imgUrl = imgPath ? absoluteUrl(origin, imgPath) : undefined;
@@ -34,7 +43,7 @@ export const Route = createFileRoute("/shop/$slug")({
         price: p.price,
         currency: "USD",
         availability: p.inStock ? "in stock" : "out of stock",
-        brand: SITE.name,
+        brand: b.name,
         condition: "new",
       },
     });
@@ -50,7 +59,7 @@ export const Route = createFileRoute("/shop/$slug")({
             name: p.name,
             description: p.longDesc,
             image: imgUrl,
-            brand: { "@type": "Brand", name: SITE.name },
+            brand: { "@type": "Brand", name: b.name },
             sku: p.slug,
             offers: {
               "@type": "Offer",

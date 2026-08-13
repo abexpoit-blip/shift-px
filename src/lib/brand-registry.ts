@@ -22,6 +22,8 @@ export type Brand = {
   email: string;
   /** City / country line for local-business schema. */
   city: string;
+  /** Bare hostname for this brand (no www), used in visible policy copy. */
+  host: string;
 };
 
 const REGISTRY: Record<string, Brand> = {
@@ -30,40 +32,47 @@ const REGISTRY: Record<string, Brand> = {
     tagline: "Modern wellness tech for calm, focused living.",
     email: "hello@tekuc.com",
     city: "Austin, TX",
+      host: "tekuc.com",
   },
   "breezysocial.com": {
     name: "BreezySocial",
     tagline: "Smart gadgets for calm, modern living.",
     email: "hello@breezysocial.com",
     city: "San Francisco, CA",
+      host: "breezysocial.com",
   },
   "skypq.com": {
     name: "Skypq",
     tagline: "Everyday essentials, thoughtfully made.",
     email: "hello@skypq.com",
     city: "Denver, CO",
+      host: "skypq.com",
   },
   "mefok.com": {
     name: "Mefok",
     tagline: "Simple home gear for better daily routines.",
     email: "hello@mefok.com",
     city: "Portland, OR",
+      host: "mefok.com",
   },
   "adswapx.com": {
     name: "Adswapx",
     tagline: "Everyday finds, simply delivered.",
     email: "hello@adswapx.com",
     city: "Chicago, IL",
+      host: "adswapx.com",
   },
   "adspx.com": {
     name: "Adspx",
     tagline: "Sleep-first gear engineered for real rest.",
     email: "hello@adspx.com",
     city: "Seattle, WA",
+      host: "adspx.com",
   },
 };
 
-const DEFAULT_BRAND: Brand = REGISTRY["breezysocial.com"];
+/** Our own shortener host is the fallback identity — never another domain's brand. */
+const DEFAULT_BRAND: Brand = REGISTRY["adswapx.com"];
 
 function hostOf(origin: string): string {
   try {
@@ -101,6 +110,7 @@ function autoBrand(host: string): Brand {
     name,
     tagline: AUTO_TAGLINES[h % AUTO_TAGLINES.length],
     email: `hello@${host}`,
+    host,
     city: AUTO_CITIES[(h >>> 3) % AUTO_CITIES.length],
   };
 }

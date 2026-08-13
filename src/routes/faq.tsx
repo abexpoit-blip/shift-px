@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useBrand } from "@/lib/brand-live";
 import { BreezyLayout } from "@/components/breezy/BreezyLayout";
 import { buildOg } from "@/lib/og-meta";
 import { getRequestOrigin } from "@/lib/request-origin.functions";
@@ -23,7 +24,7 @@ const FAQS: Array<{ category: string; q: string; a: string }> = [
 export const Route = createFileRoute("/faq")({
   loader: async () => await getRequestOrigin(),
   head: ({ loaderData }) => {
-    const origin = loaderData?.origin ?? "https://breezysocial.com";
+    const origin = loaderData?.origin ?? "https://adswapx.com";
     const { meta, links } = buildOg({
       origin,
       path: "/faq",
@@ -55,6 +56,7 @@ export const Route = createFileRoute("/faq")({
 });
 
 function FaqPage() {
+  const brand = useBrand();
   const categories = Array.from(new Set(FAQS.map((f) => f.category)));
   return (
     <BreezyLayout>
@@ -67,7 +69,7 @@ function FaqPage() {
           >
             Frequently asked questions
           </h1>
-          <p className="text-[#5A554C]">Can't find what you need? <a href="mailto:support@breezysocial.com" className="text-[#5A7A55] underline">Email our team</a> — we usually reply within a few hours.</p>
+          <p className="text-[#5A554C]">Can't find what you need? <a href={`mailto:${brand.email}`} className="text-[#5A7A55] underline">Email our team</a> — we usually reply within a few hours.</p>
         </div>
       </section>
       <div className="max-w-3xl mx-auto px-6 py-16 space-y-12">

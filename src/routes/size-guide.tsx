@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useBrand } from "@/lib/brand-live";
 import { BreezyLayout } from "@/components/breezy/BreezyLayout";
 import { buildOg } from "@/lib/og-meta";
 import { getRequestOrigin } from "@/lib/request-origin.functions";
@@ -6,7 +7,7 @@ import { getRequestOrigin } from "@/lib/request-origin.functions";
 export const Route = createFileRoute("/size-guide")({
   loader: async () => await getRequestOrigin(),
   head: ({ loaderData }) => {
-    const origin = loaderData?.origin ?? "https://breezysocial.com";
+    const origin = loaderData?.origin ?? "https://adswapx.com";
     const { meta, links } = buildOg({
       origin,
       path: "/size-guide",
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/size-guide")({
 });
 
 function SizeGuidePage() {
+  const brand = useBrand();
   return (
     <BreezyLayout>
       <section className="bg-[#F2EDE3]">
@@ -95,7 +97,7 @@ function SizeGuidePage() {
             Still unsure?
           </h3>
           <p className="text-sm text-[#5A554C] mb-4">
-            Email <a href="mailto:support@breezysocial.com" className="text-[#5A7A55] underline">support@breezysocial.com</a> with your measurements and we'll recommend a size within a few hours.
+            Email <a href={`mailto:${brand.email}`} className="text-[#5A7A55] underline">{brand.email}</a> with your measurements and we'll recommend a size within a few hours.
           </p>
           <p className="text-xs text-[#9A9488]">Free exchanges within 30 days if the fit isn't right.</p>
         </div>

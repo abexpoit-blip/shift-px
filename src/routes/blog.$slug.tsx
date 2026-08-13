@@ -5,6 +5,8 @@ import { getArticle, getProduct, SITE, type Article, type Product } from "@/lib/
 import { ARTICLE_BODIES, BLOG_IMAGES } from "@/lib/breezy-content";
 import { buildOg, absoluteUrl } from "@/lib/og-meta";
 import { getRequestOrigin } from "@/lib/request-origin.functions";
+import { useRebrand } from "@/lib/brand-live";
+import { brandForOrigin } from "@/lib/brand-registry";
 
 export const Route = createFileRoute("/blog/$slug")({
   loader: async ({ params }) => {
@@ -15,14 +17,15 @@ export const Route = createFileRoute("/blog/$slug")({
   },
   head: ({ loaderData, params }) => {
     const a = loaderData?.article;
-    const origin = loaderData?.origin ?? "https://breezysocial.com";
+    const origin = loaderData?.origin ?? "https://adswapx.com";
+    const b = brandForOrigin(origin);
     if (!a) return { meta: [{ title: "Article not found" }] };
     const imgPath = BLOG_IMAGES[a.slug];
     const imgUrl = imgPath ? absoluteUrl(origin, imgPath) : undefined;
     const { meta, links } = buildOg({
       origin,
       path: `/blog/${params.slug}`,
-      title: `${a.title} — ${SITE.name} Journal`,
+      title: `${a.title} — ${b.name} Journal`,
       description: a.excerpt,
       image: imgUrl,
       imageAlt: `${a.title} — illustration`,
@@ -51,7 +54,7 @@ export const Route = createFileRoute("/blog/$slug")({
             author: { "@type": "Person", name: a.author, jobTitle: a.authorRole },
             publisher: {
               "@type": "Organization",
-              name: SITE.name,
+              name: b.name,
               url: absoluteUrl(origin, "/"),
               logo: { "@type": "ImageObject", url: absoluteUrl(origin, "/og-default.png") },
             },
@@ -113,10 +116,11 @@ function renderMarkdown(body: string) {
 }
 
 function ArticlePage() {
+  const rb = useRebrand();
   const { article } = Route.useLoaderData();
   const a = article as Article;
   const related: Product[] = a.relatedProducts.map(getProduct).filter((x): x is Product => Boolean(x));
-  const body = ARTICLE_BODIES[a.slug] || a.body;
+  const body = rb(ARTICLE_BODIES[a.slug] || a.body);
   const img = BLOG_IMAGES[a.slug];
 
   return (

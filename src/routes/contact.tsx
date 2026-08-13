@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useBrand } from "@/lib/brand-live";
 import { BreezyLayout } from "@/components/breezy/BreezyLayout";
 import { SITE } from "@/lib/breezy-data";
 import { buildOg } from "@/lib/og-meta";
@@ -8,12 +9,12 @@ import { getRequestOrigin } from "@/lib/request-origin.functions";
 export const Route = createFileRoute("/contact")({
   loader: async () => await getRequestOrigin(),
   head: ({ loaderData }) => {
-    const origin = loaderData?.origin ?? "https://breezysocial.com";
+    const origin = loaderData?.origin ?? "https://adswapx.com";
     const brand = brandForOrigin(origin);
     const { meta, links } = buildOg({
       origin,
       path: "/contact",
-      title: `Contact — ${SITE.name}`,
+      title: `Contact — ${brand.name}`,
       description: `Reach the ${brand.name} team. Email ${brand.email} or use our contact form. We respond within 24 hours, Mon–Fri.`,
       type: "website",
     });
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/contact")({
 
 
 function ContactPage() {
+  const brand = useBrand();
   return (
     <BreezyLayout>
       <section className="max-w-5xl mx-auto px-6 py-20 grid md:grid-cols-2 gap-12">
@@ -40,11 +42,11 @@ function ContactPage() {
           <div className="space-y-5 text-sm">
             <div>
               <div className="text-xs uppercase tracking-wider text-[#7D9B76] font-semibold mb-1">Email</div>
-              <a href={`mailto:${SITE.email}`} className="text-[#2A2A28] hover:text-[#5A7A55]">{SITE.email}</a>
+              <a href={`mailto:${brand.email}`} className="text-[#2A2A28] hover:text-[#5A7A55]">{brand.email}</a>
             </div>
             <div>
               <div className="text-xs uppercase tracking-wider text-[#7D9B76] font-semibold mb-1">Support</div>
-              <a href={`mailto:${SITE.supportEmail}`} className="text-[#2A2A28] hover:text-[#5A7A55]">{SITE.supportEmail}</a>
+              <a href={`mailto:${brand.email}`} className="text-[#2A2A28] hover:text-[#5A7A55]">{brand.email}</a>
             </div>
             <div>
               <div className="text-xs uppercase tracking-wider text-[#7D9B76] font-semibold mb-1">Phone</div>
@@ -53,7 +55,7 @@ function ContactPage() {
             </div>
             <div>
               <div className="text-xs uppercase tracking-wider text-[#7D9B76] font-semibold mb-1">Studio</div>
-              <span className="text-[#2A2A28]">{SITE.address}</span>
+              <span className="text-[#2A2A28]">{brand.city}</span>
             </div>
           </div>
         </div>
@@ -64,7 +66,7 @@ function ContactPage() {
             e.preventDefault();
             const data = new FormData(e.currentTarget as HTMLFormElement);
             const body = `Name: ${data.get("name")}\n\n${data.get("message")}`;
-            window.location.href = `mailto:${SITE.email}?subject=${encodeURIComponent("Contact form: " + data.get("name"))}&body=${encodeURIComponent(body)}`;
+            window.location.href = `mailto:${brand.email}?subject=${encodeURIComponent("Contact form: " + data.get("name"))}&body=${encodeURIComponent(body)}`;
           }}
         >
           <div>

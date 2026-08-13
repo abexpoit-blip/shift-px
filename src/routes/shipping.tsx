@@ -1,21 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useBrand } from "@/lib/brand-live";
 import { BreezyLayout } from "@/components/breezy/BreezyLayout";
+import { brandForOrigin } from "@/lib/brand-registry";
+import { getRequestOrigin } from "@/lib/request-origin.functions";
 import { SITE } from "@/lib/breezy-data";
 
 export const Route = createFileRoute("/shipping")({
-  head: () => ({
+  loader: async () => await getRequestOrigin(),
+  head: ({ loaderData }) => {
+    const origin = loaderData?.origin ?? "https://adswapx.com";
+    const brand = brandForOrigin(origin);
+    return {
     meta: [
-      { title: `Shipping Policy — ${SITE.name}` },
-      { name: "description", content: `Shipping rates, delivery times, and international info for ${SITE.name} orders. Free shipping over $50.` },
-      { property: "og:title", content: `Shipping Policy — ${SITE.name}` },
-      { property: "og:url", content: "/shipping" },
+      { title: `Shipping Policy — ${brand.name}` },
+      { name: "description", content: `Shipping rates, delivery times, and international info for ${brand.name} orders. Free shipping over $50.` },
+      { property: "og:title", content: `Shipping Policy — ${brand.name}` },
+      { property: "og:url", content: `${origin}/shipping` },
     ],
-    links: [{ rel: "canonical", href: "/shipping" }],
-  }),
+    links: [{ rel: "canonical", href: `${origin}/shipping` }],
+    };
+  },
   component: ShippingPage,
 });
 
 function ShippingPage() {
+  const brand = useBrand();
   return (
     <BreezyLayout>
       <article className="max-w-3xl mx-auto px-6 py-16 prose prose-lg text-[#3A3A38]">
@@ -51,7 +60,7 @@ function ShippingPage() {
         <p>Once a package is handed to the carrier, delivery timing is outside our control. We're not responsible for delays caused by weather, customs holds, or carrier issues, but we'll always help you track down a missing parcel.</p>
 
         <h2 className="text-2xl mt-10 text-[#2A2A28]">Questions?</h2>
-        <p>Email <a href={`mailto:${SITE.supportEmail}`} className="text-[#5A7A55]">{SITE.supportEmail}</a> with your order number and we'll get back to you within 24 hours on business days.</p>
+        <p>Email <a href={`mailto:${brand.email}`} className="text-[#5A7A55]">{brand.email}</a> with your order number and we'll get back to you within 24 hours on business days.</p>
       </article>
     </BreezyLayout>
   );

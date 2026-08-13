@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { SITE } from "@/lib/breezy-data";
+import { useBrand, useRebrand } from "@/lib/brand-live";
 import { useCart } from "@/lib/cart-context";
 import logoUrl from "@/assets/breezy/logo.png";
 
@@ -32,6 +33,7 @@ function AnnouncementBar() {
 }
 
 export function BreezyHeader() {
+  const brand = useBrand();
   const { count } = useCart();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -42,7 +44,7 @@ export function BreezyHeader() {
         <Link to="/" className="flex items-center gap-2 group">
           <img
             src={logoUrl}
-            alt={`${SITE.name} logo`}
+            alt={`${brand.name} logo`}
             width={36}
             height={36}
             className="w-9 h-9 object-contain"
@@ -51,7 +53,7 @@ export function BreezyHeader() {
             className="text-xl tracking-tight text-[#2A2A28] hidden sm:inline"
             style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
           >
-            {SITE.name}
+            {brand.name}
           </span>
         </Link>
         <nav className="hidden md:flex items-center gap-8 text-sm text-[#5A554C]">
@@ -85,6 +87,8 @@ export function BreezyHeader() {
 }
 
 export function BreezyFooter() {
+  const brand = useBrand();
+  const rb = useRebrand();
   const [email, setEmail] = useState("");
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +106,7 @@ export function BreezyFooter() {
       <div className="border-b border-[#E8E2D5]">
         <div className="max-w-4xl mx-auto px-6 py-14 text-center">
           <div className="text-xs uppercase tracking-[0.2em] text-[#7D9B76] font-semibold mb-3">
-            The Breeze Letter
+            {rb("The BreezySocial Letter")}
           </div>
           <h3
             className="text-3xl md:text-4xl text-[#2A2A28] mb-3"
@@ -137,11 +141,11 @@ export function BreezyFooter() {
           <div className="flex items-center gap-2 mb-4">
             <img src={logoUrl} alt="" width={32} height={32} className="w-8 h-8 object-contain" />
             <span style={{ fontFamily: "'Instrument Serif', serif" }} className="text-lg">
-              {SITE.name}
+              {brand.name}
             </span>
           </div>
-          <p className="text-sm text-[#7A7468] leading-relaxed max-w-xs">{SITE.tagline}</p>
-          <p className="text-xs text-[#9A9488] mt-4">Est. {SITE.founded} · San Francisco, CA</p>
+          <p className="text-sm text-[#7A7468] leading-relaxed max-w-xs">{brand.tagline}</p>
+          <p className="text-xs text-[#9A9488] mt-4">Est. {SITE.founded} · {brand.city}</p>
           <div className="flex items-center gap-3 mt-6">
             <span className="text-xs text-[#9A9488]">We accept</span>
             <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#5A554C]">
@@ -188,7 +192,7 @@ export function BreezyFooter() {
 
       <div className="border-t border-[#E8E2D5]">
         <div className="max-w-6xl mx-auto px-6 py-6 flex flex-col md:flex-row gap-2 items-center justify-between text-xs text-[#9A9488]">
-          <p>© {new Date().getFullYear()} {SITE.name}. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {brand.name}. All rights reserved.</p>
           <p>{SITE.address}</p>
         </div>
       </div>
