@@ -5,8 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "re
 import { toast } from "sonner";
 import {
   Copy, Trash2, Play, Pause, Plus, Search, ArrowRight, LifeBuoy,
-  TrendingUp, Filter, RefreshCw, ChevronRight, Smartphone, Globe, Shield, ShieldCheck,
-  Crown, Gem, Star
+  TrendingUp, Filter, RefreshCw, ChevronRight, Smartphone, Shield, ShieldCheck,
 } from "lucide-react";
 
 
@@ -664,20 +663,6 @@ function KpiCard({ label, value, sub, tone }: { label: string; value: string; su
   );
 }
 
-function QuotaCard({ pct, label }: { pct: number; label: string }) {
-  return (
-    <div className="rounded-2xl glass-card p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">QUOTA</span>
-        <span className="text-[11px] font-bold text-primary tabular-nums">{label}</span>
-      </div>
-      <div className="mt-4 h-2 bg-border rounded-full overflow-hidden">
-        <div className="h-full bg-primary-gradient shadow-glow transition-all" style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-}
-
 function BarSparkChart({ vals, peakIdx, troughIdx, labels }: { vals: number[]; peakIdx: number; troughIdx: number; labels: string[] }) {
   const max = Math.max(1, ...vals);
   const sw = 800, sh = 70;
@@ -828,24 +813,3 @@ function Field({ label, full = false, children }: { label: string; full?: boolea
   );
 }
 
-function PlanBadge({ slug, size = "sm" }: { slug?: string | null; size?: "sm" | "lg" }) {
-  const s = (slug ?? "free").toLowerCase();
-  const isLifetime = s === "lifetime" || s === "unlimited";
-  const isPro = s === "pro" || s === "pro_monthly" || s === "yearly";
-  const isMonthly = s === "monthly";
-  const cfg = isLifetime
-    ? { label: "Lifetime", Icon: Crown, grad: "from-amber-400 via-orange-500 to-fuchsia-500", ring: "ring-amber-200", glow: "shadow-[0_4px_18px_rgba(251,146,60,0.55)]" }
-    : isPro
-    ? { label: s === "yearly" ? "Pro Yearly" : "Pro", Icon: Gem, grad: "from-primary via-primary to-primary-glow", ring: "ring-orange-200", glow: "shadow-[0_4px_14px_rgba(255,126,95,0.5)]" }
-    : isMonthly
-    ? { label: "Monthly", Icon: Star, grad: "from-primary-glow to-primary", ring: "ring-orange-100", glow: "shadow-[0_3px_10px_rgba(255,126,95,0.35)]" }
-    : { label: "Free", Icon: Star, grad: "from-stone-300 to-stone-400", ring: "ring-stone-200", glow: "" };
-  const pad = size === "lg" ? "px-2.5 py-1 text-[11px]" : "px-2 py-0.5 text-[10px]";
-  const iconSize = size === "lg" ? "w-3 h-3" : "w-2.5 h-2.5";
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full font-bold uppercase tracking-wider text-white bg-gradient-to-r ${cfg.grad} ring-1 ${cfg.ring} ${cfg.glow} ${pad}`}>
-      <cfg.Icon className={iconSize} strokeWidth={2.5} fill="currentColor" />
-      {cfg.label}
-    </span>
-  );
-}
