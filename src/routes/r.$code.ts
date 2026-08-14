@@ -21,14 +21,18 @@ const SAFE_FALLBACK = `${DEFAULT_SHORT_ORIGIN}/`;
 
 /**
  * A link's OWN safe / landing page, if the user set one.
- * Only accepts a valid http(s) URL and ignores the legacy
- * `sleepox.com` / SaaS-homepage default that used to be stored.
+ * Only accepts a valid http(s) URL and ignores any bare SaaS-homepage
+ * default that older deploys (adspx / adswapx / the legacy sleepox host)
+ * used to store — our own homepage must never be served as a safe page.
  */
+const LEGACY_SAFE_HOST_RE = /^https?:\/\/(www\.)?(sleepox|adspx|adswapx)\.com\/?$/i;
+
 function customSafePage(link: { safe_url?: string | null }): string | null {
   const raw = (link.safe_url ?? "").trim();
   if (!raw) return null;
   if (raw === SAFE_FALLBACK || raw === SAFE_FALLBACK.replace(/\/$/, "")) return null;
-  if (/^https?:\/\/(www\.)?sleepox\.com\/?$/i.test(raw)) return null;
+  if (LEGACY_SAFE_HOST_RE.test(raw)) return null;
+
   try {
     const parsed = new URL(raw);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
