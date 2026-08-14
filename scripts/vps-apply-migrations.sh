@@ -73,6 +73,8 @@ if [[ ${#FILES[@]} -eq 0 ]]; then
       migration/37_missing_rpcs.sql
       migration/38_missing_tables.sql
       migration/39_links_blocked_countries.sql
+      migration/40_profiles_missing_columns.sql
+
 
     )
     echo "ℹ️  Existing Adspx database detected; skipping the non-idempotent 01_schema.sql bootstrap."
