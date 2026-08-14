@@ -109,15 +109,7 @@ function AppSidebar({
     {
       label: "Earnings",
       items: [
-        {
-          title: "Withdraw",
-          to: "/withdraw",
-          icon: Wallet,
-          children: [
-            { title: "New Request", to: "/withdraw", search: { view: "request" }, icon: Send },
-            { title: "History", to: "/withdraw", search: { view: "history" }, icon: History },
-          ],
-        },
+        { title: "Withdraw", to: "/withdraw", icon: Wallet },
       ],
     },
     {
