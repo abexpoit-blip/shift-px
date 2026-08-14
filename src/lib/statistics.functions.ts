@@ -216,7 +216,8 @@ export const getLinkStats = createServerFn({ method: "GET" })
     const userId = (context as any).userId as string;
     const days = lastNDays(30);
     const since = days[0];
-    const sinceTs = new Date(`${since}T00:00:00Z`).toISOString();
+    const hotDay = hotCutoff();
+    const hotTs = new Date(`${hotDay}T00:00:00Z`).toISOString();
 
     const { data: link } = await db
       .from("links")
@@ -225,17 +226,24 @@ export const getLinkStats = createServerFn({ method: "GET" })
       .maybeSingle();
     if (!link || link.user_id !== userId) throw new Error("Link not found");
 
-    const [statsRes, clicksRes] = await Promise.all([
+    const [statsRes, archiveRes, clicksRes] = await Promise.all([
       db
         .from("daily_stats")
         .select("day, human_clicks, bot_clicks")
         .eq("link_id", link.id)
         .gte("day", since),
       db
-        .from("clicks")
-        .select("country, device, is_bot")
+        .from("click_dim_daily")
+        .select("country, device, is_bot, clicks")
         .eq("link_id", link.id)
-        .gte("created_at", sinceTs)
+        .gte("day", since)
+        .lt("day", hotDay)
+        .limit(20000),
+      db
+        .from("clicks")
+        .select("country, ua, is_bot")
+        .eq("link_id", link.id)
+        .gte("created_at", hotTs)
         .order("created_at", { ascending: false })
         .limit(20000),
     ]);
@@ -250,14 +258,18 @@ export const getLinkStats = createServerFn({ method: "GET" })
 
     const countryMap = new Map<string, number>();
     const deviceMap = new Map<string, number>();
-    for (const row of (clicksRes.data ?? []) as any[]) {
-      const code = String(row.country ?? "").toLowerCase();
-      if (code) countryMap.set(code, (countryMap.get(code) ?? 0) + 1);
-      if (!row.is_bot) {
-        const dev = titleCase(String(row.device ?? "") || "Unknown");
-        deviceMap.set(dev, (deviceMap.get(dev) ?? 0) + 1);
-      }
+    const addRow = (country: string, isBot: boolean, n: number, device: string) => {
+      const code = country.toLowerCase();
+      if (code && code !== "--") bump(countryMap, code, n);
+      if (!isBot) bump(deviceMap, bucketLabel(device), n);
+    };
+    for (const row of (archiveRes.data ?? []) as any[]) {
+      addRow(String(row.country ?? ""), !!row.is_bot, Number(row.clicks ?? 0), String(row.device ?? "other"));
     }
+    for (const row of (clicksRes.data ?? []) as any[]) {
+      addRow(String(row.country ?? ""), !!row.is_bot, 1, deviceBucket(row.ua));
+    }
+
 
     const series = days.map((d) => byDay.get(d)!);
     return {
