@@ -15,9 +15,21 @@ BEGIN
   END IF;
 END $$;
 
-UPDATE public.links
-SET safe_url = COALESCE(safe_url, destination_url)
-WHERE safe_url IS NULL;
+-- NOTE: safe_url is deliberately NOT backfilled from destination_url.
+-- destination_url is the OFFER page; serving it as the "safe page" would show
+-- crawlers/ad reviewers the offer itself. NULL = use our rotating built-in
+-- safe-article pool. Repair rows that an older version of this file filled in:
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'links' AND column_name = 'destination_url'
+  ) THEN
+    EXECUTE 'UPDATE public.links SET safe_url = NULL
+             WHERE safe_url IS NOT NULL AND destination_url IS NOT NULL
+               AND btrim(safe_url) = btrim(destination_url)';
+  END IF;
+END $$;
 
 -- reload PostgREST schema cache
 NOTIFY pgrst, 'reload schema';
