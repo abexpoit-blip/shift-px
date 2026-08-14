@@ -8,6 +8,7 @@ import {
   Target, Zap, Calendar, DollarSign, TrendingUp, Globe, Package, Ban, RotateCcw, Trash2,
   Plus, Search, X, Eye, Check, Star, RefreshCw, LifeBuoy, Megaphone, MessageCircle,
   Send, Power, PowerOff, Clock, CheckCircle2, Crown, Gift, AlertTriangle, Info, Rocket, Trophy, KeyRound,
+  LayoutDashboard, Radar, Server, Wrench, Inbox, Activity, ShieldAlert,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -97,27 +98,16 @@ function AdminPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[var(--muted)] text-[var(--muted-foreground)] overflow-hidden" style={font}>
-      <div className="fixed top-[-20%] left-[-10%] w-[55%] h-[55%] bg-[var(--primary)]/15 blur-[160px] rounded-full pointer-events-none" />
-      <div className="fixed bottom-[-15%] right-[-15%] w-[55%] h-[55%] bg-[var(--primary-glow)]/20 blur-[160px] rounded-full pointer-events-none" />
-      <div className="relative z-10 p-5 sm:p-8 lg:p-12 space-y-8 max-w-[1600px] mx-auto">
+    <div className="relative min-h-screen bg-[var(--muted)] text-[var(--muted-foreground)]" style={font}>
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <span className="orb orb-indigo w-[520px] h-[520px] -top-40 -left-32" />
+        <span className="orb orb-pink w-[420px] h-[420px] bottom-0 -right-24" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-10 py-6 sm:py-10 space-y-6">
         <Header />
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full justify-start">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="links">Links</TabsTrigger>
-            <TabsTrigger value="traffic">Traffic</TabsTrigger>
-            <TabsTrigger value="domains">Pool</TabsTrigger>
-            <TabsTrigger value="user_domains">User Domains</TabsTrigger>
-            <TabsTrigger value="leaks">Leak Monitor</TabsTrigger>
-
-
-            <TabsTrigger value="support">Support</TabsTrigger>
-            <TabsTrigger value="broadcasts">Broadcasts</TabsTrigger>
-            <TabsTrigger value="errors">Errors</TabsTrigger>
-            <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="overview" className="w-full space-y-6">
+          <AdminNav />
           <TabsContent value="overview"><OverviewTab /></TabsContent>
           <TabsContent value="users"><UsersTab /></TabsContent>
           <TabsContent value="links"><LinksTab /></TabsContent>
@@ -125,8 +115,6 @@ function AdminPage() {
           <TabsContent value="domains"><DomainsTab /></TabsContent>
           <TabsContent value="user_domains"><UserDomainsTab /></TabsContent>
           <TabsContent value="leaks"><LeakMonitorTab /></TabsContent>
-
-
           <TabsContent value="support"><SupportTab /></TabsContent>
           <TabsContent value="broadcasts"><BroadcastsTab /></TabsContent>
           <TabsContent value="errors"><ErrorsTab /></TabsContent>
@@ -137,18 +125,107 @@ function AdminPage() {
   );
 }
 
-function Header() {
+const NAV_GROUPS: Array<{ label: string; items: Array<{ value: string; label: string; icon: any }> }> = [
+  {
+    label: "Insights",
+    items: [
+      { value: "overview", label: "Overview", icon: LayoutDashboard },
+      { value: "traffic", label: "Traffic", icon: Activity },
+    ],
+  },
+  {
+    label: "Manage",
+    items: [
+      { value: "users", label: "Users", icon: Users },
+      { value: "links", label: "Links", icon: Link2 },
+      { value: "domains", label: "Domain pool", icon: Globe },
+      { value: "user_domains", label: "User domains", icon: Server },
+    ],
+  },
+  {
+    label: "Protect",
+    items: [
+      { value: "leaks", label: "Leak monitor", icon: Radar },
+      { value: "errors", label: "Errors", icon: ShieldAlert },
+      { value: "maintenance", label: "Maintenance", icon: Wrench },
+    ],
+  },
+  {
+    label: "Engage",
+    items: [
+      { value: "support", label: "Support", icon: Inbox },
+      { value: "broadcasts", label: "Broadcasts", icon: Megaphone },
+    ],
+  },
+];
+
+function AdminNav() {
   return (
-    <div>
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/70 backdrop-blur-xl border border-border/80 text-[var(--primary)] text-[10px] font-bold uppercase tracking-widest shadow-sm">
-        <ShieldCheck className="w-3 h-3" /> Admin · Live
-      </div>
-      <h1 className="mt-3 text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--foreground)]">
-        Control{" "}
-        <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--primary)] via-[var(--primary-glow)] to-[var(--primary)]">Panel</span>
-      </h1>
-      <p className="mt-2 text-sm text-[var(--muted-foreground)]">Full system control · users, links, revenue, rules & analytics.</p>
+    <div className="sticky top-2 z-30 rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl px-2.5 py-2.5 shadow-lg">
+      <TabsList className="flex h-auto w-full flex-wrap items-center justify-start gap-1.5 bg-transparent p-0">
+        {NAV_GROUPS.map((g, gi) => (
+          <div key={g.label} className="flex items-center gap-1.5">
+            {gi > 0 && <span className="mx-1 hidden h-6 w-px bg-border sm:block" />}
+            <span className="hidden text-[9px] font-extrabold uppercase tracking-[0.18em] text-muted-foreground/70 lg:block">
+              {g.label}
+            </span>
+            {g.items.map((it) => (
+              <TabsTrigger
+                key={it.value}
+                value={it.value}
+                className="group gap-1.5 rounded-xl border border-transparent px-3 py-2 text-xs font-bold text-muted-foreground transition-all
+                  data-[state=active]:border-primary/30 data-[state=active]:bg-primary-gradient data-[state=active]:text-white data-[state=active]:shadow-glow
+                  hover:border-border hover:text-foreground"
+              >
+                <it.icon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{it.label}</span>
+              </TabsTrigger>
+            ))}
+          </div>
+        ))}
+      </TabsList>
     </div>
+  );
+}
+
+function Header() {
+  const statsFn = useServerFn(adminStats);
+  const { data: s } = useQuery({ queryKey: ["admin-stats"], queryFn: () => statsFn() });
+
+  const chips = [
+    { icon: Users, label: "Users", value: (s?.users ?? 0).toLocaleString() },
+    { icon: Link2, label: "Links", value: (s?.links ?? 0).toLocaleString() },
+    { icon: MousePointerClick, label: "Clicks", value: (s?.clicks ?? 0).toLocaleString() },
+    { icon: Bot, label: "Bots blocked", value: (s?.bots ?? 0).toLocaleString() },
+  ];
+
+  return (
+    <header className="anim-rise relative overflow-hidden rounded-3xl border border-border/80 bg-card/70 backdrop-blur-xl p-6 sm:p-8 shadow-xl">
+      <div className="pointer-events-none absolute -top-16 -right-10 h-56 w-56 rounded-full bg-primary/15 blur-3xl" />
+      <div className="relative flex flex-wrap items-end justify-between gap-6">
+        <div>
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-primary">
+            <span className="live-dot" /> Admin · live
+          </span>
+          <h1 className="mt-3 text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--foreground)]">
+            Control <span className="text-gradient">Panel</span>
+          </h1>
+          <p className="mt-1.5 text-sm text-[var(--muted-foreground)]">
+            Users, links, traffic routing, payouts and platform health — one console.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          {chips.map((c) => (
+            <div key={c.label} className="rounded-xl border border-border bg-card/70 px-3 py-2">
+              <div className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground">
+                <c.icon className="h-3 w-3 text-primary" /> {c.label}
+              </div>
+              <div className="mt-0.5 text-lg font-extrabold tabular-nums text-[var(--foreground)]">{c.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </header>
   );
 }
 
@@ -811,28 +888,47 @@ function TrafficSnapshotPanel() {
 
 
 // ===================== shared UI =====================
-const inputCls = "w-full bg-card/70 border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)] focus:bg-card/90 transition-all";
+const inputCls = "w-full bg-card/70 border border-border rounded-xl px-4 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-card transition-all";
 
 function Kpi({ icon: Icon, label, value, sub, accent }: { icon: React.ComponentType<{ className?: string }>; label: string; value: React.ReactNode; sub?: string; accent?: boolean }) {
   return (
-    <div className={`relative rounded-2xl p-5 border backdrop-blur-xl shadow-[0_8px_30px_-12px_rgba(255,126,95,0.25)] ${accent ? "bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] border-border/40 text-primary-foreground" : "bg-card/70 border-border/80 text-[var(--foreground)]"}`}>
-      <div className="flex items-center justify-between">
-        <div className={`text-[10px] font-bold uppercase tracking-widest ${accent ? "text-primary-foreground/80" : "text-[var(--muted-foreground)]"}`}>{label}</div>
-        <Icon className={`w-4 h-4 ${accent ? "text-primary-foreground/90" : "text-[var(--primary)]"}`} />
+    <div
+      className={`group relative overflow-hidden rounded-2xl border p-4 sm:p-5 backdrop-blur-xl transition-all hover:-translate-y-0.5 ${
+        accent
+          ? "border-primary/30 bg-primary-gradient text-white shadow-glow"
+          : "border-border/80 bg-card/70 text-[var(--foreground)] shadow-sm hover:border-primary/30"
+      }`}
+    >
+      <div className="pointer-events-none absolute -top-10 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+      <div className="relative flex items-start justify-between">
+        <div className={`text-[10px] font-extrabold uppercase tracking-[0.16em] ${accent ? "text-white/80" : "text-[var(--muted-foreground)]"}`}>
+          {label}
+        </div>
+        <span
+          className={`grid h-8 w-8 place-items-center rounded-xl border transition-transform group-hover:scale-110 ${
+            accent ? "border-white/25 bg-white/15 text-white" : "border-border bg-card/80 text-primary"
+          }`}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
       </div>
-      <div className="mt-2 text-3xl font-extrabold tracking-tight">{value}</div>
-      {sub && <div className={`mt-1 text-[10px] ${accent ? "text-primary-foreground/80" : "text-[var(--muted-foreground)]"}`}>{sub}</div>}
+      <div className="relative mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums">{value}</div>
+      {sub && <div className={`relative mt-1 text-[11px] font-semibold ${accent ? "text-white/80" : "text-[var(--muted-foreground)]"}`}>{sub}</div>}
     </div>
   );
 }
 function Panel({ icon: Icon, title, subtitle, children }: { icon: React.ComponentType<{ className?: string }>; title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-3xl border border-border/80 bg-card/60 backdrop-blur-xl p-6 sm:p-8 shadow-[0_20px_60px_-30px_rgba(255,126,95,0.35)]">
-      <div className="flex items-center gap-3 mb-1">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] flex items-center justify-center shadow-[0_6px_20px_-6px_rgba(255,126,95,0.6)]"><Icon className="w-4 h-4 text-primary-foreground" /></div>
-        <h2 className="text-xl sm:text-2xl font-bold text-[var(--foreground)] tracking-tight">{title}</h2>
+    <section className="anim-rise rounded-3xl border border-border/80 bg-card/70 backdrop-blur-xl p-5 sm:p-7 shadow-lg">
+      <div className="mb-5 flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary-gradient text-white shadow-glow">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-[var(--foreground)]">{title}</h2>
+          {subtitle && <p className="mt-0.5 text-xs sm:text-sm text-[var(--muted-foreground)]">{subtitle}</p>}
+        </div>
       </div>
-      {subtitle && <p className="text-sm text-[var(--muted-foreground)] mb-6 ml-12">{subtitle}</p>}
       {children}
     </section>
   );
@@ -841,23 +937,34 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <div><label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--muted-foreground)] mb-2 block">{label}</label>{children}</div>;
 }
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return <div className="p-3 rounded-xl bg-card/60 border border-[var(--border)]"><div className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">{label}</div><div className="mt-1 font-bold text-[var(--foreground)]">{value}</div></div>;
+  return (
+    <div className="rounded-xl border border-border bg-card/70 p-3 transition-colors hover:border-primary/30">
+      <div className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--muted-foreground)]">{label}</div>
+      <div className="mt-1 text-base font-extrabold tabular-nums text-[var(--foreground)]">{value}</div>
+    </div>
+  );
 }
-function Th({ children }: { children?: React.ReactNode }) { return <th className="px-3 py-3">{children}</th>; }
+function Th({ children }: { children?: React.ReactNode }) {
+  return <th className="px-3 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[var(--muted-foreground)]">{children}</th>;
+}
 function Td({ children, className = "" }: { children: React.ReactNode; className?: string }) { return <td className={`px-3 py-3 ${className}`}>{children}</td>; }
-function Pill({ children }: { children: React.ReactNode }) { return <span className="inline-flex px-2 py-0.5 rounded-md bg-[var(--border)] text-[var(--primary)] text-xs font-semibold">{children}</span>; }
+function Pill({ children }: { children: React.ReactNode }) { return <span className="inline-flex px-2 py-0.5 rounded-md border border-primary/20 bg-primary/10 text-primary text-xs font-bold">{children}</span>; }
 function StatusPill({ status }: { status: string }) {
-  const map: Record<string, string> = { 
-    paid: "bg-emerald-100 text-emerald-700", 
-    completed: "bg-emerald-100 text-emerald-700", 
-    successful: "bg-emerald-100 text-emerald-700",
-    pending: "bg-muted text-foreground", 
-    expired: "bg-rose-100 text-rose-700",
-    cancelled: "bg-rose-100 text-rose-700",
-    rejected: "bg-rose-100 text-rose-700" 
+  const map: Record<string, string> = {
+    paid: "bg-emerald-500/12 text-emerald-600 border-emerald-500/25",
+    completed: "bg-emerald-500/12 text-emerald-600 border-emerald-500/25",
+    successful: "bg-emerald-500/12 text-emerald-600 border-emerald-500/25",
+    pending: "bg-amber-500/12 text-amber-600 border-amber-500/25",
+    expired: "bg-rose-500/12 text-rose-600 border-rose-500/25",
+    cancelled: "bg-rose-500/12 text-rose-600 border-rose-500/25",
+    rejected: "bg-rose-500/12 text-rose-600 border-rose-500/25",
   };
   const label = status === "paid" ? "successful" : status;
-  return <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-semibold capitalize ${map[status] ?? "bg-[var(--border)] text-[var(--muted-foreground)]"}`}>{label}</span>;
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold capitalize ${map[status] ?? "border-border bg-muted text-[var(--muted-foreground)]"}`}>
+      {label}
+    </span>
+  );
 
 }
 
