@@ -69,6 +69,9 @@ if [[ ${#FILES[@]} -eq 0 ]]; then
       migration/33_links_url_columns.sql
       migration/34_clear_legacy_safe_urls.sql
       migration/35_hybrid_click_storage.sql
+      migration/36_links_is_active.sql
+      migration/37_missing_rpcs.sql
+      migration/38_missing_tables.sql
     )
     echo "ℹ️  Existing Adspx database detected; skipping the non-idempotent 01_schema.sql bootstrap."
   else
