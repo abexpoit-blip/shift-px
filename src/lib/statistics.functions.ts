@@ -88,17 +88,29 @@ export const getStatistics = createServerFn({ method: "GET" })
       };
     }
 
-    const [statsRes, clicksRes] = await Promise.all([
+    const hotDay = hotCutoff();
+    const hotTs = new Date(`${hotDay}T00:00:00Z`).toISOString();
+
+    const [statsRes, archiveRes, clicksRes] = await Promise.all([
       db
         .from("daily_stats")
         .select("day, human_clicks, bot_clicks")
         .in("link_id", linkIds)
         .gte("day", since),
+      // COLD: pre-aggregated dimensions, survives the weekly raw purge
+      db
+        .from("click_dim_daily")
+        .select("country, device, browser, source, is_bot, clicks")
+        .eq("user_id", userId)
+        .gte("day", since)
+        .lt("day", hotDay)
+        .limit(50000),
+      // HOT: last 2 days straight from the raw table
       db
         .from("clicks")
-        .select("country, referer_host, is_bot, device, browser")
+        .select("country, referer_host, is_bot, ua")
         .in("link_id", linkIds)
-        .gte("created_at", sinceTs)
+        .gte("created_at", hotTs)
         .order("created_at", { ascending: false })
         .limit(20000),
     ]);
@@ -119,24 +131,43 @@ export const getStatistics = createServerFn({ method: "GET" })
     const sourceMap = new Map<string, number>();
     const deviceMap = new Map<string, number>();
     const browserMap = new Map<string, number>();
-    for (const row of (clicksRes.data ?? []) as any[]) {
-      const code = String(row.country ?? "").toLowerCase();
-      if (code) {
+
+    const addRow = (
+      country: string,
+      isBot: boolean,
+      n: number,
+      dims: { device: string; browser: string; source: string },
+    ) => {
+      const code = country.toLowerCase();
+      if (code && code !== "--") {
         const c = countryMap.get(code) ?? { code, humans: 0, bots: 0, total: 0 };
-        if (row.is_bot) c.bots += 1;
-        else c.humans += 1;
-        c.total += 1;
+        if (isBot) c.bots += n;
+        else c.humans += n;
+        c.total += n;
         countryMap.set(code, c);
       }
-      if (!row.is_bot) {
-        const src = bucketSource(row.referer_host ?? null);
-        sourceMap.set(src, (sourceMap.get(src) ?? 0) + 1);
-        const dev = titleCase(String(row.device ?? "") || "Unknown");
-        deviceMap.set(dev, (deviceMap.get(dev) ?? 0) + 1);
-        const br = titleCase(String(row.browser ?? "") || "Unknown");
-        browserMap.set(br, (browserMap.get(br) ?? 0) + 1);
-      }
+      if (isBot) return;
+      bump(sourceMap, bucketLabel(dims.source), n);
+      bump(deviceMap, bucketLabel(dims.device), n);
+      bump(browserMap, bucketLabel(dims.browser), n);
+    };
+
+    for (const row of (archiveRes.data ?? []) as any[]) {
+      addRow(String(row.country ?? ""), !!row.is_bot, Number(row.clicks ?? 0), {
+        device: String(row.device ?? "other"),
+        browser: String(row.browser ?? "other"),
+        source: String(row.source ?? "direct"),
+      });
     }
+
+    for (const row of (clicksRes.data ?? []) as any[]) {
+      addRow(String(row.country ?? ""), !!row.is_bot, 1, {
+        device: deviceBucket(row.ua),
+        browser: browserBucket(row.ua),
+        source: sourceBucket(row.referer_host),
+      });
+    }
+
 
     const series = days.map((d) => byDay.get(d)!);
     const humanClicks = series.reduce((s, r) => s + r.humans, 0);
