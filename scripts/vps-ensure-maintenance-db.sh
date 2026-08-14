@@ -321,22 +321,36 @@ WHERE NOT EXISTS (
   SELECT 1 FROM cron.job WHERE jobname = 'weekly-purge-old-clicks'
 );
 
+-- Hourly dimension rollup: the archive is always fresh, so a purge (or a
+-- crash right before one) can never lose country/device/browser history.
+SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname = 'hourly-click-dim-rollup';
+
+SELECT cron.schedule(
+  'hourly-click-dim-rollup',
+  '17 * * * *',
+  $$ SELECT public.rollup_click_dims(3); $$
+)
+WHERE to_regprocedure('public.rollup_click_dims(integer)') IS NOT NULL;
+
 NOTIFY pgrst, 'reload schema';
 
 SELECT
   to_regclass('public.daily_stats') IS NOT NULL AS daily_stats_exists,
+  to_regclass('public.click_dim_daily') IS NOT NULL AS click_archive_exists,
   to_regprocedure('public.maintenance_purge_old_clicks()') IS NOT NULL AS maintenance_fn_exists;
 
 SELECT public.maintenance_purge_old_clicks();
 
 SELECT jobname, schedule, active
 FROM cron.job
-WHERE jobname = 'weekly-purge-old-clicks';
+WHERE jobname IN ('weekly-purge-old-clicks', 'hourly-click-dim-rollup');
 
 SELECT
   pg_size_pretty(pg_database_size(current_database())) AS db_size,
+  pg_size_pretty(pg_total_relation_size('public.clicks')) AS clicks_size,
   (SELECT COUNT(*) FROM public.clicks) AS clicks_remaining,
   (SELECT COUNT(*) FROM public.daily_stats) AS aggregated_days;
+
 SQL
 
 echo "✅ Maintenance DB repair completed"
