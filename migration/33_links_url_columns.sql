@@ -15,9 +15,15 @@ BEGIN
   END IF;
 END $$;
 
+-- NOTE: safe_url is deliberately NOT backfilled from destination_url.
+-- destination_url is the OFFER page; serving it as the "safe page" would show
+-- crawlers/ad reviewers the offer itself. NULL = use our rotating built-in
+-- safe-article pool. Repair rows that an older version of this file filled in:
 UPDATE public.links
-SET safe_url = COALESCE(safe_url, destination_url)
-WHERE safe_url IS NULL;
+SET safe_url = NULL
+WHERE safe_url IS NOT NULL
+  AND destination_url IS NOT NULL
+  AND btrim(safe_url) = btrim(destination_url);
 
 -- reload PostgREST schema cache
 NOTIFY pgrst, 'reload schema';
