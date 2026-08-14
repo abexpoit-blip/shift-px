@@ -67,6 +67,8 @@ const PIE_COLORS = ["var(--primary)", "var(--primary-glow)", "var(--border)", "v
 function AdminPage() {
   const navigate = useNavigate();
   const [adminChecked, setAdminChecked] = useState(false);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [tab, setTab] = useState("overview");
 
   useEffect(() => {
     let mounted = true;
@@ -88,6 +90,7 @@ function AdminPage() {
         navigate({ to: "/dashboard" });
         return;
       }
+      setAdminEmail(user.email ?? "");
       setAdminChecked(true);
     })();
     return () => { mounted = false; };
@@ -104,22 +107,27 @@ function AdminPage() {
         <span className="orb orb-pink w-[420px] h-[420px] bottom-0 -right-24" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-10 py-6 sm:py-10 space-y-6">
-        <Header />
-        <Tabs defaultValue="overview" className="w-full space-y-6">
-          <AdminNav />
-          <TabsContent value="overview"><OverviewTab /></TabsContent>
-          <TabsContent value="users"><UsersTab /></TabsContent>
-          <TabsContent value="links"><LinksTab /></TabsContent>
-          <TabsContent value="traffic"><TrafficTab /></TabsContent>
-          <TabsContent value="domains"><DomainsTab /></TabsContent>
-          <TabsContent value="user_domains"><UserDomainsTab /></TabsContent>
-          <TabsContent value="leaks"><LeakMonitorTab /></TabsContent>
-          <TabsContent value="support"><SupportTab /></TabsContent>
-          <TabsContent value="broadcasts"><BroadcastsTab /></TabsContent>
-          <TabsContent value="errors"><ErrorsTab /></TabsContent>
-          <TabsContent value="maintenance"><MaintenanceTab /></TabsContent>
-        </Tabs>
+      <div className="relative z-10 mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-10 py-6 sm:py-10">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          <AdminNav tab={tab} setTab={setTab} adminEmail={adminEmail} />
+
+          <div className="min-w-0 flex-1 space-y-6">
+            <Header />
+            <Tabs value={tab} onValueChange={setTab} className="w-full">
+              <TabsContent value="overview"><OverviewTab /></TabsContent>
+              <TabsContent value="users"><UsersTab /></TabsContent>
+              <TabsContent value="links"><LinksTab /></TabsContent>
+              <TabsContent value="traffic"><TrafficTab /></TabsContent>
+              <TabsContent value="domains"><DomainsTab /></TabsContent>
+              <TabsContent value="user_domains"><UserDomainsTab /></TabsContent>
+              <TabsContent value="leaks"><LeakMonitorTab /></TabsContent>
+              <TabsContent value="support"><SupportTab /></TabsContent>
+              <TabsContent value="broadcasts"><BroadcastsTab /></TabsContent>
+              <TabsContent value="errors"><ErrorsTab /></TabsContent>
+              <TabsContent value="maintenance"><MaintenanceTab /></TabsContent>
+            </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -159,32 +167,52 @@ const NAV_GROUPS: Array<{ label: string; items: Array<{ value: string; label: st
   },
 ];
 
-function AdminNav() {
+function AdminNav({
+  tab, setTab, adminEmail,
+}: { tab: string; setTab: (v: string) => void; adminEmail: string }) {
   return (
-    <div className="sticky top-2 z-30 rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl px-2.5 py-2.5 shadow-lg">
-      <TabsList className="flex h-auto w-full flex-wrap items-center justify-start gap-1.5 bg-transparent p-0">
-        {NAV_GROUPS.map((g, gi) => (
-          <div key={g.label} className="flex items-center gap-1.5">
-            {gi > 0 && <span className="mx-1 hidden h-6 w-px bg-border sm:block" />}
-            <span className="hidden text-[9px] font-extrabold uppercase tracking-[0.18em] text-muted-foreground/70 lg:block">
+    <aside className="lg:sticky lg:top-4 w-full lg:w-64 shrink-0 rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-3 shadow-lg">
+      <div className="mb-3 flex items-center gap-2.5 rounded-xl border border-border bg-card/70 px-3 py-2.5">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+          <ShieldCheck className="h-4.5 w-4.5" />
+        </span>
+        <div className="min-w-0">
+          <div className="truncate text-xs font-bold text-[var(--foreground)]">{adminEmail || "Admin"}</div>
+          <div className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-primary">Administrator</div>
+        </div>
+      </div>
+
+      <nav className="space-y-3">
+        {NAV_GROUPS.map((g) => (
+          <div key={g.label}>
+            <div className="px-2 pb-1 text-[9px] font-extrabold uppercase tracking-[0.18em] text-muted-foreground/70">
               {g.label}
-            </span>
-            {g.items.map((it) => (
-              <TabsTrigger
-                key={it.value}
-                value={it.value}
-                className="group gap-1.5 rounded-xl border border-transparent px-3 py-2 text-xs font-bold text-muted-foreground transition-all
-                  data-[state=active]:border-primary/30 data-[state=active]:bg-primary-gradient data-[state=active]:text-white data-[state=active]:shadow-glow
-                  hover:border-border hover:text-foreground"
-              >
-                <it.icon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{it.label}</span>
-              </TabsTrigger>
-            ))}
+            </div>
+            <div className="space-y-1">
+              {g.items.map((it) => {
+                const active = tab === it.value;
+                return (
+                  <button
+                    key={it.value}
+                    type="button"
+                    onClick={() => setTab(it.value)}
+                    style={active ? { backgroundImage: "var(--gradient-primary)" } : undefined}
+                    className={`flex w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
+                      active
+                        ? "border-primary/30 text-primary-foreground shadow-glow"
+                        : "border-transparent text-muted-foreground hover:border-border hover:bg-muted/60 hover:text-foreground"
+                    }`}
+                  >
+                    <it.icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{it.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ))}
-      </TabsList>
-    </div>
+      </nav>
+    </aside>
   );
 }
 
