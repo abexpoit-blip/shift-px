@@ -1410,7 +1410,7 @@ async function getOfferRows(linkId: string): Promise<{ abRows: any[]; geoRows: a
 
 import { logServerError } from "@/lib/error-log.server";
 
-async function safeHandle(request: Request, code: string, record: boolean) {
+export async function safeHandle(request: Request, code: string, record: boolean) {
   try {
     return await handleRedirect(request, code, record);
   } catch (err) {
