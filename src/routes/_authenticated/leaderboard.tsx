@@ -184,7 +184,7 @@ function LeaderboardPage() {
                       e.isYou ? "bg-primary/8 ring-1 ring-inset ring-primary/25" : ""
                     }`}
                   >
-                    <span className="w-9 shrink-0 text-center font-bold tabular-nums text-sm text-muted-foreground">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-border bg-card/70 text-xs font-extrabold tabular-nums text-muted-foreground">
                       {e.rank}
                     </span>
                     <RankDelta rank={e.rank} prevRank={e.prevRank} />
@@ -205,12 +205,14 @@ function LeaderboardPage() {
                             style={{ width: `${Math.max(6, (e.humanClicks / (rows[0]?.humanClicks || 1)) * 100)}%` }}
                           />
                         </div>
-                        <span className="text-[11px] text-muted-foreground tabular-nums">
+                        <span className="text-[11px] font-semibold text-muted-foreground tabular-nums">
                           {fmt(e.humanClicks)} visits
                         </span>
                       </div>
                     </div>
-                    <span className="text-sm font-extrabold tabular-nums">${e.earnings.toFixed(2)}</span>
+                    <span className="rounded-lg bg-primary/8 px-2 py-1 text-sm font-extrabold tabular-nums text-foreground">
+                      ${e.earnings.toFixed(2)}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -272,7 +274,7 @@ function Avatar({ name, country }: { name: string; country?: string }) {
 function RankDelta({ rank, prevRank }: { rank: number; prevRank: number | null }) {
   if (prevRank == null || prevRank === rank) {
     return (
-      <span className="w-9 shrink-0 inline-flex items-center justify-center gap-0.5 text-[10px] font-bold text-muted-foreground">
+      <span title="No change" className="w-10 shrink-0 inline-flex items-center justify-center text-[10px] font-bold text-muted-foreground/60">
         <Minus className="h-3 w-3" />
       </span>
     );
@@ -281,8 +283,9 @@ function RankDelta({ rank, prevRank }: { rank: number; prevRank: number | null }
   const diff = Math.abs(prevRank - rank);
   return (
     <span
-      className={`w-9 shrink-0 inline-flex items-center justify-center gap-0.5 text-[10px] font-bold ${
-        up ? "rank-up" : "rank-down"
+      title={up ? `Up ${diff}` : `Down ${diff}`}
+      className={`w-10 shrink-0 inline-flex items-center justify-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-extrabold ${
+        up ? "rank-up bg-emerald-500/12 text-emerald-600" : "rank-down bg-rose-500/12 text-rose-600"
       }`}
     >
       {up ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -292,9 +295,9 @@ function RankDelta({ rank, prevRank }: { rank: number; prevRank: number | null }
 }
 
 const PLACE_STYLE: Record<number, { ring: string; badge: string; medal: string; h: string }> = {
-  1: { ring: "ring-2 ring-amber-400/60", badge: "from-amber-300 to-amber-500", medal: "text-amber-500", h: "pt-6 pb-7" },
-  2: { ring: "ring-1 ring-slate-300/70", badge: "from-slate-200 to-slate-400", medal: "text-slate-400", h: "pt-5 pb-5" },
-  3: { ring: "ring-1 ring-amber-700/40", badge: "from-amber-500/80 to-amber-800/80", medal: "text-amber-700", h: "pt-5 pb-5" },
+  1: { ring: "ring-2 ring-amber-400/70", badge: "from-amber-400 to-amber-600 text-white", medal: "text-amber-500", h: "pt-7 pb-8" },
+  2: { ring: "ring-1 ring-slate-400/60", badge: "from-slate-400 to-slate-600 text-white", medal: "text-slate-500", h: "pt-5 pb-5" },
+  3: { ring: "ring-1 ring-orange-700/50", badge: "from-orange-600 to-amber-800 text-white", medal: "text-orange-700", h: "pt-5 pb-5" },
 };
 
 function PodiumCard({ row, place }: { row: Row; place: 1 | 2 | 3 }) {
@@ -327,14 +330,18 @@ function PodiumCard({ row, place }: { row: Row; place: 1 | 2 | 3 }) {
 
       <div className="mt-3 flex items-center justify-center gap-1.5">
         <Medal className={`h-4 w-4 ${s.medal}`} />
-        <span className={`inline-block rounded-full bg-gradient-to-r ${s.badge} px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-white/95`}>
+        <span className={`inline-block rounded-full bg-gradient-to-r ${s.badge} px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider shadow-sm`}>
           #{place}
         </span>
       </div>
 
-      <div className="mt-2 text-xs sm:text-sm font-bold truncate">{row.name}</div>
-      <div className="text-[11px] text-muted-foreground tabular-nums">{fmt(row.humanClicks)} visits</div>
-      <div className={`mt-1.5 font-extrabold tabular-nums ${place === 1 ? "text-xl text-gradient" : "text-base"}`}>
+      <div className="mt-2 text-[13px] sm:text-sm font-bold truncate text-foreground">{row.name}</div>
+      <div className="text-[11px] font-semibold text-muted-foreground tabular-nums">{fmt(row.humanClicks)} visits</div>
+      <div
+        className={`mt-2 inline-block rounded-lg border border-primary/20 bg-primary/8 px-2.5 py-1 font-extrabold tabular-nums ${
+          place === 1 ? "text-xl text-primary" : "text-base text-foreground"
+        }`}
+      >
         ${row.earnings.toFixed(2)}
       </div>
       <div className="mt-2 flex justify-center">

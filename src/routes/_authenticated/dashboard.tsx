@@ -479,22 +479,33 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function AreaChart({ vals, peakIdx, labels }: { vals: number[]; peakIdx: number; labels: string[] }) {
   const max = Math.max(1, ...vals);
+  const [hover, setHover] = useState<number | null>(null);
   const sw = 800,
-    sh = 180;
+    sh = 200;
+
   const pts =
     vals.length > 1
       ? vals.map((v, i) => {
           const x = (i / (vals.length - 1)) * sw;
-          const y = sh - (v / max) * (sh - 24) - 12;
+          const y = sh - (v / max) * (sh - 30) - 14;
           return [x, y] as const;
         })
       : ([
           [0, sh / 2],
           [sw, sh / 2],
         ] as const);
-  const line = "M" + pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" L");
+
+  // smooth cubic path
+  const line =
+    pts.length > 1
+      ? pts.reduce((d, [x, y], i, a) => {
+          if (i === 0) return `M${x.toFixed(1)},${y.toFixed(1)}`;
+          const [px, py] = a[i - 1];
+          const cx = (px + x) / 2;
+          return `${d} C${cx.toFixed(1)},${py.toFixed(1)} ${cx.toFixed(1)},${y.toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)}`;
+        }, "")
+      : `M0,${sh / 2} L${sw},${sh / 2}`;
   const area = `${line} L${sw},${sh} L0,${sh} Z`;
-  const peak = pts[Math.min(peakIdx, pts.length - 1)];
 
   const fmtLabel = (k: string) => {
     if (!k) return "";
@@ -503,82 +514,114 @@ function AreaChart({ vals, peakIdx, labels }: { vals: number[]; peakIdx: number;
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
-  return (
-    <div className="space-y-4">
-      <div className="relative w-full">
-        <svg viewBox={`0 0 ${sw} ${sh}`} preserveAspectRatio="none" className="w-full h-[190px] overflow-visible">
-          <defs>
-            <linearGradient id="dashLine" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="var(--primary-glow)" />
-              <stop offset="100%" stopColor="var(--primary)" />
-            </linearGradient>
-            <linearGradient id="dashArea" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.30" />
-              <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          {[0.25, 0.5, 0.75].map((g) => (
-            <line key={g} x1="0" x2={sw} y1={sh * g} y2={sh * g} stroke="var(--border)" strokeWidth="1" strokeDasharray="4 6" />
-          ))}
-          <path d={area} fill="url(#dashArea)" />
-          <path
-            d={line}
-            fill="none"
-            stroke="url(#dashLine)"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="anim-fade"
-          />
-          <circle cx={peak[0]} cy={peak[1]} r="5" fill="var(--primary)" stroke="var(--card)" strokeWidth="2.5" />
-        </svg>
-        <div
-          className="absolute pointer-events-none -translate-x-1/2 -translate-y-full"
-          style={{ left: `${(peak[0] / sw) * 100}%`, top: `${(peak[1] / sh) * 100}%`, marginTop: -8 }}
-        >
-          <div className="bg-foreground text-background text-[10px] font-bold px-2 py-1 rounded-md shadow-lg whitespace-nowrap" style={display}>
-            {fmtCompact(vals[peakIdx] ?? 0)}
-            <span className="block text-[8px] font-normal opacity-70 leading-none mt-0.5">{fmtLabel(labels[peakIdx] ?? "")}</span>
-          </div>
-        </div>
-      </div>
+  const active = hover ?? peakIdx;
+  const activePt = pts[Math.min(active, pts.length - 1)];
 
-      {/* bar distribution */}
-      <div className="flex items-end gap-[3px] h-24">
-        {vals.map((v, i) => {
-          const isPeak = i === peakIdx;
-          const pct = (v / max) * 100;
-          return (
-            <div key={i} className="group relative flex-1 flex items-end h-full">
-              <div
-                className={`w-full rounded-t-md transition-all duration-500 cursor-pointer ${
-                  isPeak ? "bg-primary-gradient shadow-glow" : "bg-border hover:bg-primary/70 hover:scale-y-105 origin-bottom"
-                }`}
-                style={{ height: `${Math.max(4, pct)}%` }}
+  return (
+    <div className="space-y-3">
+      <div className="relative flex gap-2">
+        {/* y axis */}
+        <div className="flex w-10 shrink-0 flex-col justify-between py-1 text-right text-[10px] font-bold tabular-nums text-muted-foreground/70">
+          {[1, 0.66, 0.33, 0].map((g) => (
+            <span key={g}>{fmtCompact(max * g)}</span>
+          ))}
+        </div>
+
+        <div className="relative flex-1">
+          <svg viewBox={`0 0 ${sw} ${sh}`} preserveAspectRatio="none" className="w-full h-[210px] overflow-visible">
+            <defs>
+              <linearGradient id="dashLine" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="var(--primary-glow)" />
+                <stop offset="100%" stopColor="var(--primary)" />
+              </linearGradient>
+              <linearGradient id="dashArea" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.32" />
+                <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {[0, 0.33, 0.66, 1].map((g) => (
+              <line
+                key={g}
+                x1="0"
+                x2={sw}
+                y1={Math.max(1, sh * g)}
+                y2={Math.max(1, sh * g)}
+                stroke="var(--border)"
+                strokeWidth="1"
+                strokeDasharray="4 6"
               />
-              <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="bg-foreground text-background text-[10px] font-bold px-2 py-1 rounded-md shadow-lg whitespace-nowrap" style={display}>
-                  {fmtCompact(v)}
-                  <span className="block text-[8px] font-normal opacity-70 leading-none mt-0.5">{fmtLabel(labels[i] ?? "")}</span>
-                </div>
+            ))}
+            <path d={area} fill="url(#dashArea)" />
+            <path
+              d={line}
+              fill="none"
+              stroke="url(#dashLine)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="anim-fade"
+            />
+            {activePt && (
+              <>
+                <line
+                  x1={activePt[0]}
+                  x2={activePt[0]}
+                  y1={activePt[1]}
+                  y2={sh}
+                  stroke="var(--primary)"
+                  strokeWidth="1"
+                  strokeDasharray="3 4"
+                  opacity="0.5"
+                />
+                <circle cx={activePt[0]} cy={activePt[1]} r="5.5" fill="var(--primary)" stroke="var(--card)" strokeWidth="2.5" />
+              </>
+            )}
+          </svg>
+
+          {/* hover hit-areas */}
+          <div className="absolute inset-0 flex">
+            {vals.map((_, i) => (
+              <div
+                key={i}
+                className="flex-1 cursor-pointer"
+                onMouseEnter={() => setHover(i)}
+                onMouseLeave={() => setHover(null)}
+              />
+            ))}
+          </div>
+
+          {activePt && (
+            <div
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-full"
+              style={{ left: `${(activePt[0] / sw) * 100}%`, top: `${(activePt[1] / sh) * 100}%`, marginTop: -10 }}
+            >
+              <div
+                className="rounded-lg bg-foreground text-background px-2.5 py-1.5 text-[11px] font-bold shadow-lg whitespace-nowrap"
+                style={display}
+              >
+                {fmtCompact(vals[active] ?? 0)} clicks
+                <span className="block text-[9px] font-normal opacity-70 leading-none mt-0.5">
+                  {fmtLabel(labels[active] ?? "")}
+                </span>
               </div>
             </div>
-          );
-        })}
-      </div>
+          )}
 
-      <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-0.5">
-        {labels.length > 0 && (
-          <>
-            <span>{fmtLabel(labels[0])}</span>
-            {labels.length > 6 && <span>{fmtLabel(labels[Math.floor(labels.length / 2)])}</span>}
-            <span className="text-primary">{fmtLabel(labels[labels.length - 1])}</span>
-          </>
-        )}
+          <div className="mt-1 flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            {labels.length > 0 && (
+              <>
+                <span>{fmtLabel(labels[0])}</span>
+                {labels.length > 6 && <span>{fmtLabel(labels[Math.floor(labels.length / 2)])}</span>}
+                <span className="text-primary">{fmtLabel(labels[labels.length - 1])}</span>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
 
 function RegionRow({ name, pct, tone, delay = 0 }: { name: string; pct: number; tone: string; delay?: number }) {
   const [w, setW] = useState(0);
