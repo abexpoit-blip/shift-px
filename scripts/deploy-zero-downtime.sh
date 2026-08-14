@@ -315,7 +315,7 @@ if [ -n "$bad" ]; then
   echo "  ❌ current bundle references $bad instead of the self-hosted backend"
   rollback
 fi
-for i in 0 1 2 3 4 5 6 7; do
+for i in "${!PORTS[@]}"; do
   p="${PORTS[$i]}"
   printf "  adspx-%s (%s): %s\n" "$i" "$p" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "http://127.0.0.1:$p/" || echo DOWN)"
 done
