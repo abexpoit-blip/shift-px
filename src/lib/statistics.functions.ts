@@ -37,9 +37,40 @@ function hotCutoff() {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Hard cap on every stats query. A slow/locked table must never hang a PM2
+ * worker (nginx read timeout is 60s) — we return a degraded panel instead.
+ */
+const STATS_TIMEOUT_MS = 8000;
+
+function guard<T>(p: PromiseLike<T>, label: string, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    let done = false;
+    const t = setTimeout(() => {
+      if (done) return;
+      done = true;
+      console.warn(`[stats][TIMEOUT] ${label} > ${STATS_TIMEOUT_MS}ms — degraded`);
+      resolve(fallback);
+    }, STATS_TIMEOUT_MS);
+    Promise.resolve(p).then(
+      (v) => { if (!done) { done = true; clearTimeout(t); resolve(v); } },
+      (e) => {
+        if (done) return;
+        done = true;
+        clearTimeout(t);
+        console.error(`[stats][ERR] ${label}: ${(e as Error)?.message ?? e}`);
+        resolve(fallback);
+      },
+    );
+  });
+}
+
+const EMPTY_RES = { data: [] as any[] };
+
 function bump(map: Map<string, number>, key: string, by: number) {
   map.set(key, (map.get(key) ?? 0) + by);
 }
+
 
 function topEntries(map: Map<string, number>, n: number) {
   return [...map.entries()]
