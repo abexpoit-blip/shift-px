@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ============================================================================
-# ZERO-DOWNTIME DEPLOY — Adspx (8 PM2 fork workers, ports 4000..4007, nginx)
+# ZERO-DOWNTIME DEPLOY — Adspx (12 PM2 fork workers, ports 4000..4011, nginx)
 # ============================================================================
 # Guarantees:
 #   * Divergent git branches are detected BEFORE anything is built.
 #   * A hardlink snapshot of the live build is taken before the build starts,
 #     so a failed build is restored instantly (no downtime, no traffic loss).
 #   * Old hashed asset chunks stay resolvable while old tabs drain.
-#   * Workers restart ONE at a time; nginx always keeps >= 7 healthy backends.
+#   * Workers restart ONE at a time; nginx always keeps >= 11 healthy backends.
 #   * Any worker that fails to come back => automatic rollback.
 #
 # Usage:
@@ -23,7 +23,7 @@ APP_DIR="/opt/adspx-app-new"
 cd "$APP_DIR" 2>/dev/null || cd "$(dirname "$0")/.." || { echo "❌ app dir not found"; exit 1; }
 APP_DIR="$PWD"
 
-PORTS=(4000 4001 4002 4003 4004 4005 4006 4007)
+PORTS=(4000 4001 4002 4003 4004 4005 4006 4007 4008 4009 4010 4011)
 BRANCH="${DEPLOY_BRANCH:-main}"
 PREV="$APP_DIR/.output.previous"
 LIVE="$APP_DIR/.output"
@@ -76,7 +76,7 @@ wait_for_worker() {
 
 rolling_restart() {
   local failed=""
-  for i in 0 1 2 3 4 5 6 7; do
+  for i in "${!PORTS[@]}"; do
     local name="adspx-$i" port="${PORTS[$i]}"
     echo "--- restarting $name (port $port) ---"
     if pm2 describe "$name" >/dev/null 2>&1; then
@@ -315,7 +315,7 @@ if [ -n "$bad" ]; then
   echo "  ❌ current bundle references $bad instead of the self-hosted backend"
   rollback
 fi
-for i in 0 1 2 3 4 5 6 7; do
+for i in "${!PORTS[@]}"; do
   p="${PORTS[$i]}"
   printf "  adspx-%s (%s): %s\n" "$i" "$p" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "http://127.0.0.1:$p/" || echo DOWN)"
 done
