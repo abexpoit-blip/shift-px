@@ -3,6 +3,9 @@
 -- as their "safe page". That must never be served to crawlers or ad reviewers.
 -- NULL means: use our rotating built-in safe-article pool.
 
+-- Safe to run before 33: it self-skips when the column is not there yet.
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS safe_url text;
+
 UPDATE public.links
 SET safe_url = NULL
 WHERE safe_url IS NOT NULL
