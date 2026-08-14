@@ -18,6 +18,25 @@ import { DEFAULT_SHORT_ORIGIN } from "@/lib/short-domains";
 
 
 const SAFE_FALLBACK = `${DEFAULT_SHORT_ORIGIN}/`;
+
+/**
+ * A link's OWN safe / landing page, if the user set one.
+ * Only accepts a valid http(s) URL and ignores the legacy
+ * `sleepox.com` / SaaS-homepage default that used to be stored.
+ */
+function customSafePage(link: { safe_url?: string | null }): string | null {
+  const raw = (link.safe_url ?? "").trim();
+  if (!raw) return null;
+  if (raw === SAFE_FALLBACK || raw === SAFE_FALLBACK.replace(/\/$/, "")) return null;
+  if (/^https?:\/\/(www\.)?sleepox\.com\/?$/i.test(raw)) return null;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
 const RESERVED_PUBLIC_PATHS = new Set([
   "about",
   "privacy",
@@ -1205,7 +1224,7 @@ function processLinkRow(code: string, row: Record<string, unknown> | null): { li
   const destination = (row.destination_url as string | null) ?? null;
   const adsterra = (row.adsterra_url as string | null) ?? adsterraDirect ?? destination ?? null;
   const safe =
-    (row.safe_url as string | null) ?? (adsterraDirect ? destination : null) ?? SAFE_FALLBACK;
+    (row.safe_url as string | null) ?? (adsterraDirect ? destination : null) ?? null;
   const isActive =
     typeof row.is_active === "boolean" ? (row.is_active as boolean) : row.status === "active";
   // Deterministic per-short-code article template. Same code → same article
@@ -1225,7 +1244,7 @@ function processLinkRow(code: string, row: Record<string, unknown> | null): { li
     clicks_count: (row.clicks_count as number | null) ?? 0,
     bot_clicks_count: (row.bot_clicks_count as number | null) ?? 0,
     adsterra_url: adsterra,
-    safe_url: safe || SAFE_FALLBACK,
+    safe_url: safe || null,
     safe_url_category: (row.safe_url_category as string | null) ?? null,
     is_active: isActive,
     prelanding_template: validTpl,
@@ -2129,6 +2148,55 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
   let abVariantLabel: string | null = null;
 
   if (isBot) {
+    // USER-OWNED SAFE PAGE — highest priority. If the owner supplied their own
+    // safe/landing page, EVERY bot (incl. FB/Meta crawlers and ad reviewers)
+    // goes there. Preview scrape and human reviewer then see the exact same
+    // page, so there is no cloaking mismatch.
+    const ownSafePage = customSafePage(link);
+    if (ownSafePage) {
+      routedTo = "safe";
+      console.log(JSON.stringify({
+        event: "redirect.custom_safe_page",
+        code,
+        fp: fpHash,
+        target: ownSafePage,
+        reason,
+        ua_class: isFbBot ? "fb-bot" : "non-fb-bot",
+      }));
+      if (shouldRecordClick) {
+        recordRedirectClick({
+          linkId: link.id,
+          userId: link.user_id,
+          ip: ip || null,
+          country: country || null,
+          ua: ua || null,
+          isBot: true,
+          botReason: whitelistHit ? `whitelist:${whitelistHit.label}` : reason,
+          routedTo: "safe",
+          utm,
+          refererHost: refererDomain || null,
+          botScore: Math.max(80, signals.score),
+          challengePassed: false,
+          signals: {
+            source: "custom-safe-page",
+            reasons: reason ? [reason, ...signals.reasons] : signals.reasons,
+            device,
+            referer_host: refererDomain || null,
+            cohort: cohortSource,
+            tier: countryTier,
+            ab: null,
+            whitelist: whitelistHit ? { id: whitelistHit.id, label: whitelistHit.label } : null,
+            target_host: "custom",
+          },
+          fingerprintHash: fpHash,
+          abVariant: null,
+        }).catch((error) => {
+          console.error("custom-safe-page click logging failed", { linkId: link.id, error });
+        });
+      }
+      return Response.redirect(ownSafePage, 302);
+    }
+
     // FB-class crawlers (facebookexternalhit, meta-*, FB ASN/IP) MUST receive
     // a 200 OK HTML article — NOT a 302 redirect to Wikipedia. Wikipedia
     // actively blocks facebookexternalhit with 403, which causes FB to mark
@@ -2186,9 +2254,7 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     // Phase A: rotate across 5 fixed real Breezy URLs (sitemap-indexed, real
     // content) instead of random safe_url. Same visitor+code → same URL.
     // Pool auto-skips unhealthy URLs (4xx/5xx) until next health check.
-    if (link.safe_url && link.safe_url !== SAFE_FALLBACK) {
-      target = link.safe_url;
-    } else {
+    {
       const pick = pickSafePage(code, fpHash, publicOrigin);
       target = pick.url;
       console.log(JSON.stringify({
