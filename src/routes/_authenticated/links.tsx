@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "re
 import { toast } from "sonner";
 import {
   Copy, Trash2, Play, Pause, Plus, Search, ArrowRight, Filter, RefreshCw,
-  Shield, ShieldCheck, Link2,
+  Shield, ShieldCheck, Link2, Sparkles, FileText,
 } from "lucide-react";
 
 import { getDashboardData, refreshDashboardData, createLink, deleteLink, toggleLink } from "@/lib/links.functions";
@@ -82,6 +82,7 @@ function LinksPage() {
 
   const [adsterra, setAdsterra] = useState("");
   const [safe, setSafe] = useState("");
+  const [safeMode, setSafeMode] = useState<"auto" | "custom">("auto");
   const [title, setTitle] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
@@ -90,7 +91,7 @@ function LinksPage() {
     mutationFn: (vars: { title?: string; adsterra_url: string; safe_url?: string }) => create({ data: vars }),
     onSuccess: () => {
       toast.success("Link created");
-      setAdsterra(""); setSafe(""); setTitle(""); setShowCreate(false);
+      setAdsterra(""); setSafe(""); setTitle(""); setSafeMode("auto"); setShowCreate(false);
       refreshMut.mutate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -106,7 +107,7 @@ function LinksPage() {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    createMut.mutate({ title: title || undefined, adsterra_url: adsterra, safe_url: safe || undefined });
+    createMut.mutate({ title: title || undefined, adsterra_url: adsterra, safe_url: safeMode === "custom" && safe ? safe : undefined });
   };
 
   const primaryFn = useServerFn(getPrimaryShortenerDomain);
