@@ -240,11 +240,15 @@ max_parallel_workers_per_gather = 4
 random_page_cost = 1.1
 ```
 
-**Hybrid retention (no data loss)** — apply once:
+**Hybrid retention (no data loss)** — apply once. Use the runner below; it
+finds the database itself (env → `.env` → `supabase-db` container), so you
+never need `DATABASE_URL` exported in the shell:
 
 ```bash
-psql "$DATABASE_URL" -f migration/32_hybrid_lifetime_archive.sql
+bash scripts/vps-apply-migrations.sh            # all pending migrations
+bash scripts/vps-apply-migrations.sh migration/35_hybrid_click_storage.sql
 ```
+
 
 Then schedule the weekly job (Sunday 03:00 UTC). It archives lifetime totals
 into `link_lifetime_stats` / `user_lifetime_stats` **before** trimming raw
