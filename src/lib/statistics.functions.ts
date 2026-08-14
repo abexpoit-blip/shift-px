@@ -14,6 +14,8 @@ export type StatsPayload = {
   series: Array<{ day: string; humans: number; bots: number }>;
   countries: Array<{ code: string; humans: number; bots: number; total: number }>;
   sources: Array<{ name: string; value: number }>;
+  devices: Array<{ name: string; value: number }>;
+  browsers: Array<{ name: string; value: number }>;
   topLinks: Array<{ id: string; short_code: string; title: string | null; clicks: number }>;
 };
 
@@ -37,6 +39,17 @@ function bucketSource(host: string | null): string {
   if (!host) return "Direct";
   for (const [re, name] of SOURCE_MAP) if (re.test(host)) return name;
   return "Other";
+}
+
+function titleCase(v: string) {
+  return v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+}
+
+function topEntries(map: Map<string, number>, n: number) {
+  return [...map.entries()]
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, n);
 }
 
 function lastNDays(n: number) {
@@ -72,6 +85,8 @@ export const getStatistics = createServerFn({ method: "GET" })
         series: days.map((day) => ({ day, humans: 0, bots: 0 })),
         countries: [],
         sources: [],
+        devices: [],
+        browsers: [],
         topLinks: [],
       };
     }
@@ -84,7 +99,7 @@ export const getStatistics = createServerFn({ method: "GET" })
         .gte("day", since),
       db
         .from("clicks")
-        .select("country, referer_host, is_bot")
+        .select("country, referer_host, is_bot, device, browser")
         .in("link_id", linkIds)
         .gte("created_at", sinceTs)
         .order("created_at", { ascending: false })
@@ -102,6 +117,8 @@ export const getStatistics = createServerFn({ method: "GET" })
 
     const countryMap = new Map<string, { code: string; humans: number; bots: number; total: number }>();
     const sourceMap = new Map<string, number>();
+    const deviceMap = new Map<string, number>();
+    const browserMap = new Map<string, number>();
     for (const row of (clicksRes.data ?? []) as any[]) {
       const code = String(row.country ?? "").toLowerCase();
       if (code) {
@@ -114,6 +131,10 @@ export const getStatistics = createServerFn({ method: "GET" })
       if (!row.is_bot) {
         const src = bucketSource(row.referer_host ?? null);
         sourceMap.set(src, (sourceMap.get(src) ?? 0) + 1);
+        const dev = titleCase(String(row.device ?? "") || "Unknown");
+        deviceMap.set(dev, (deviceMap.get(dev) ?? 0) + 1);
+        const br = titleCase(String(row.browser ?? "") || "Unknown");
+        browserMap.set(br, (browserMap.get(br) ?? 0) + 1);
       }
     }
 
@@ -132,6 +153,8 @@ export const getStatistics = createServerFn({ method: "GET" })
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 6),
+      devices: topEntries(deviceMap, 5),
+      browsers: topEntries(browserMap, 6),
       topLinks: links
         .sort((a, b) => Number(b.clicks_count ?? 0) - Number(a.clicks_count ?? 0))
         .slice(0, 8)
@@ -141,5 +164,80 @@ export const getStatistics = createServerFn({ method: "GET" })
           title: l.title,
           clicks: Number(l.clicks_count ?? 0),
         })),
+    };
+  });
+
+export type LinkStatsPayload = {
+  linkId: string;
+  shortCode: string;
+  title: string | null;
+  series: Array<{ day: string; humans: number; bots: number }>;
+  countries: Array<{ code: string; total: number }>;
+  devices: Array<{ name: string; value: number }>;
+  totals: { humans: number; bots: number };
+};
+
+export const getLinkStats = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { linkId: string }) => input)
+  .handler(async ({ data, context }): Promise<LinkStatsPayload> => {
+    const db = await getAdmin();
+    const userId = (context as any).userId as string;
+    const days = lastNDays(30);
+    const since = days[0];
+    const sinceTs = new Date(`${since}T00:00:00Z`).toISOString();
+
+    const { data: link } = await db
+      .from("links")
+      .select("id, short_code, title, user_id")
+      .eq("id", data.linkId)
+      .maybeSingle();
+    if (!link || link.user_id !== userId) throw new Error("Link not found");
+
+    const [statsRes, clicksRes] = await Promise.all([
+      db.from("daily_stats").select("day, human_clicks, bot_clicks").eq("link_id", link.id).gte("day", since),
+      db
+        .from("clicks")
+        .select("country, device, is_bot")
+        .eq("link_id", link.id)
+        .gte("created_at", sinceTs)
+        .order("created_at", { ascending: false })
+        .limit(20000),
+    ]);
+
+    const byDay = new Map(days.map((d) => [d, { day: d, humans: 0, bots: 0 }]));
+    for (const row of (statsRes.data ?? []) as any[]) {
+      const b = byDay.get(String(row.day).slice(0, 10));
+      if (!b) continue;
+      b.humans += Number(row.human_clicks ?? 0);
+      b.bots += Number(row.bot_clicks ?? 0);
+    }
+
+    const countryMap = new Map<string, number>();
+    const deviceMap = new Map<string, number>();
+    for (const row of (clicksRes.data ?? []) as any[]) {
+      const code = String(row.country ?? "").toLowerCase();
+      if (code) countryMap.set(code, (countryMap.get(code) ?? 0) + 1);
+      if (!row.is_bot) {
+        const dev = titleCase(String(row.device ?? "") || "Unknown");
+        deviceMap.set(dev, (deviceMap.get(dev) ?? 0) + 1);
+      }
+    }
+
+    const series = days.map((d) => byDay.get(d)!);
+    return {
+      linkId: link.id,
+      shortCode: link.short_code,
+      title: link.title,
+      series,
+      countries: [...countryMap.entries()]
+        .map(([code, total]) => ({ code, total }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 6),
+      devices: topEntries(deviceMap, 5),
+      totals: {
+        humans: series.reduce((s2, r) => s2 + r.humans, 0),
+        bots: series.reduce((s2, r) => s2 + r.bots, 0),
+      },
     };
   });
