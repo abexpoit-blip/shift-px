@@ -26,7 +26,8 @@ function normalizeLink(row: LinkRow) {
   return {
     ...row,
     adsterra_url: row.adsterra_url ?? row.adsterra_direct_link ?? row.destination_url ?? "",
-    safe_url: row.safe_url ?? (row.adsterra_direct_link ? row.destination_url : null) ?? null,
+    // Only an explicit safe_url counts — destination_url holds the offer.
+    safe_url: row.safe_url ?? null,
     is_active: row.is_active ?? row.status === "active",
     blocked_countries: Array.isArray(row.blocked_countries) ? row.blocked_countries : [],
   };
@@ -275,7 +276,7 @@ export const createLink = createServerFn({ method: "POST" })
       user_id: context.userId,
       short_code: code,
       title: data.title ?? null,
-      destination_url: safeUrlToStore ?? data.adsterra_url,
+      destination_url: data.adsterra_url,
       status: "active",
       // Auto-shield US by default — FB ad reviewers concentrate in US datacenters.
       // Users can remove via Country Shield dialog on the dashboard.

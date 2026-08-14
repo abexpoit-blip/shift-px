@@ -1227,8 +1227,11 @@ function processLinkRow(code: string, row: Record<string, unknown> | null): { li
   const adsterraDirect = (row.adsterra_direct_link as string | null) ?? null;
   const destination = (row.destination_url as string | null) ?? null;
   const adsterra = (row.adsterra_url as string | null) ?? adsterraDirect ?? destination ?? null;
-  const safe =
-    (row.safe_url as string | null) ?? (adsterraDirect ? destination : null) ?? null;
+  // Only an explicit safe_url counts. NEVER fall back to destination_url —
+  // on links created without a safe page that column holds the OFFER url,
+  // which would send FB/Google reviewers straight to the offer.
+  const safeRaw = (row.safe_url as string | null) ?? null;
+  const safe = safeRaw && safeRaw !== adsterra && safeRaw !== adsterraDirect ? safeRaw : null;
   const isActive =
     typeof row.is_active === "boolean" ? (row.is_active as boolean) : row.status === "active";
   // Deterministic per-short-code article template. Same code → same article
