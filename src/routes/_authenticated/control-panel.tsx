@@ -1487,28 +1487,64 @@ function BroadcastsTab() {
 
       {/* List */}
       <div className="lg:col-span-3 space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <div className="text-[11px] font-extrabold uppercase tracking-widest text-[var(--muted-foreground)]">
+            Published notices
+          </div>
+          <div className="flex items-center gap-2 text-[10px] font-bold">
+            <span className="px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+              {items.filter((b: any) => b.is_active).length} live
+            </span>
+            <span className="px-2 py-1 rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] border border-[var(--border)]">
+              {items.length} total
+            </span>
+          </div>
+        </div>
         {listQ.isLoading && <div className="text-xs text-[var(--muted-foreground)] p-6 text-center">Loading…</div>}
         {!listQ.isLoading && items.length === 0 && <div className="text-xs text-[var(--muted-foreground)] p-10 text-center glass-card rounded-2xl">No broadcasts yet</div>}
         {items.map((b: any) => {
           const Icon = BROADCAST_ICONS.find((i) => i.id === b.icon)?.Icon ?? Sparkles;
           const t = BROADCAST_TONES.find((x) => x.id === b.tone) ?? BROADCAST_TONES[0];
           return (
-            <div key={b.id} className={`rounded-2xl bg-card border ${b.is_active ? "border-[var(--border)]" : "border-border opacity-60"} shadow-sm p-4`}>
-              <div className="flex gap-3">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${t.cls} flex items-center justify-center shadow-md shrink-0`}>
+            <div
+              key={b.id}
+              className={`group relative rounded-2xl glass-card overflow-hidden transition-all duration-300 hover:-translate-y-0.5 ${b.is_active ? "" : "opacity-55"}`}
+            >
+              <span className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${t.cls}`} />
+              <div className="p-4 pl-5 flex gap-3">
+                <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${t.cls} flex items-center justify-center shadow-lg shrink-0 group-hover:scale-105 transition-transform`}>
                   <Icon className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="font-bold text-sm">{b.title}</div>
+                    <div className="min-w-0">
+                      <div className="font-extrabold text-sm truncate">{b.title}</div>
+                      <div className="mt-0.5 flex items-center gap-2 text-[10px] font-semibold text-[var(--muted-foreground)]">
+                        <span className={`px-1.5 py-0.5 rounded-md bg-gradient-to-r ${t.cls} text-primary-foreground uppercase tracking-wide`}>{t.label}</span>
+                        <span>{new Date(b.created_at).toLocaleString()}</span>
+                      </div>
+                    </div>
                     <div className="flex gap-1.5 shrink-0">
-                      <button onClick={() => toggleMut.mutate({ id: b.id, is_active: !b.is_active })} className={`px-2 py-1 rounded-lg text-[10px] font-bold ${b.is_active ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
-                        {b.is_active ? "Active" : "Inactive"}
+                      <button
+                        onClick={() => toggleMut.mutate({ id: b.id, is_active: !b.is_active })}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition-colors ${b.is_active ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" : "bg-[var(--muted)] text-[var(--muted-foreground)] border-[var(--border)]"}`}
+                      >
+                        {b.is_active ? "● Live" : "Paused"}
                       </button>
-                      <button onClick={() => { if (confirm("Delete?")) delMut.mutate(b.id); }} className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center"><Trash2 className="w-3 h-3" /></button>
+                      <button onClick={() => { if (confirm("Delete?")) delMut.mutate(b.id); }} className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center"><Trash2 className="w-3 h-3" /></button>
                     </div>
                   </div>
-                  <div className="mt-1"><BroadcastMarkdown muted>{b.body}</BroadcastMarkdown></div>
+                  <div className="mt-2"><BroadcastMarkdown muted>{b.body}</BroadcastMarkdown></div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
                   <div className="text-[10px] text-[var(--muted-foreground)] mt-2">{new Date(b.created_at).toLocaleString()}</div>
                 </div>
               </div>
