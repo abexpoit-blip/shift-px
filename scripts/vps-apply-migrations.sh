@@ -8,8 +8,12 @@
 #   4) docker exec into the supabase-db container (no host psql needed)
 #
 # Usage:
-#   bash scripts/vps-apply-migrations.sh                      # all migration/*.sql (idempotent)
+#   bash scripts/vps-apply-migrations.sh                      # safe auto mode
 #   bash scripts/vps-apply-migrations.sh migration/35_*.sql   # only these files
+#
+# 01_schema.sql is a full pg_dump/bootstrap file, not an idempotent migration.
+# Auto mode only uses it for a genuinely empty database. On an existing Adspx
+# database it applies the safe incremental migrations instead.
 set -uo pipefail
 
 APP_DIR="${APP_DIR:-/opt/adspx-app-new}"
@@ -59,7 +63,18 @@ fi
 
 FILES=("$@")
 if [[ ${#FILES[@]} -eq 0 ]]; then
-  mapfile -t FILES < <(ls -1 migration/*.sql | sort -V)
+  HAS_CORE_SCHEMA="$(run_sql "SELECT CASE WHEN to_regclass('public.links') IS NULL THEN 'no' ELSE 'yes' END" 2>/dev/null || true)"
+  if [[ "$HAS_CORE_SCHEMA" == "yes" ]]; then
+    FILES=(
+      migration/33_links_url_columns.sql
+      migration/34_clear_legacy_safe_urls.sql
+      migration/35_hybrid_click_storage.sql
+    )
+    echo "ℹ️  Existing Adspx database detected; skipping the non-idempotent 01_schema.sql bootstrap."
+  else
+    mapfile -t FILES < <(ls -1 migration/*.sql | sort -V)
+    echo "ℹ️  Empty database detected; running the complete bootstrap sequence."
+  fi
 fi
 
 FAILED=0

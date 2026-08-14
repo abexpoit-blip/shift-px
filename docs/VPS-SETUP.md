@@ -245,9 +245,13 @@ finds the database itself (env → `.env` → `supabase-db` container), so you
 never need `DATABASE_URL` exported in the shell:
 
 ```bash
-bash scripts/vps-apply-migrations.sh            # all pending migrations
+bash scripts/vps-apply-migrations.sh            # auto: existing DB gets safe incremental migrations
 bash scripts/vps-apply-migrations.sh migration/35_hybrid_click_storage.sql
 ```
+
+`01_schema.sql` is a full bootstrap dump, so the runner only applies it to an
+empty database. It is automatically skipped when the existing `links` table is
+detected.
 
 
 Then schedule the weekly job (Sunday 03:00 UTC). It archives lifetime totals
