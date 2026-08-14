@@ -760,46 +760,44 @@ function TrafficTab() {
   const settingsFn = useServerFn(getAppSettings);
   const updateSettingsFn = useServerFn(updateAppSettings);
   const settings = useQuery({ queryKey: ["app-settings"], queryFn: () => settingsFn() });
-  const [fallbackUrl, setFallbackUrl] = useState("");
   const [ourUrl, setOurUrl] = useState("");
   const [threshold, setThreshold] = useState(900);
   const [count, setCount] = useState(100);
-  const [dailyOn, setDailyOn] = useState(true);
   const [spOn, setSpOn] = useState(false);
   const [spGmail, setSpGmail] = useState(true);
   const [spBlock, setSpBlock] = useState(true);
-  const [spIpMax, setSpIpMax] = useState(2);
   const [fbReviewOn, setFbReviewOn] = useState(true);
   useEffect(() => {
     if (settings.data) {
       const s: any = settings.data;
-      setFallbackUrl(s.fallback_url ?? "");
       setOurUrl(s.our_adsterra_url ?? "");
       setThreshold(s.injection_threshold ?? 900);
       setCount(s.injection_count ?? 100);
-      setDailyOn(s.daily_redirect_enabled ?? true);
       setSpOn(s.signup_protection_enabled ?? false);
       setSpGmail(s.signup_gmail_only ?? true);
       setSpBlock(s.signup_blocklist_enabled ?? true);
-      setSpIpMax(s.signup_ip_max_per_day ?? 2);
       setFbReviewOn(s.fb_review_protection_enabled ?? true);
     }
   }, [settings.data]);
 
   const saveMut = useMutation({
     mutationFn: () => {
+      const s: any = settings.data ?? {};
       const payload: any = {
-        fallback_url: fallbackUrl,
+        // Daily-redirect feature retired — keep stored values untouched.
+        fallback_url: s.fallback_url || "https://example.com/",
         our_adsterra_url: ourUrl,
         injection_threshold: Number(threshold),
         injection_count: Number(count),
-        daily_redirect_enabled: dailyOn,
+        daily_redirect_enabled: false,
         signup_protection_enabled: spOn,
         signup_gmail_only: spGmail,
         signup_blocklist_enabled: spBlock,
-        signup_ip_max_per_day: Number(spIpMax),
+        // Per-IP signup cap retired — unlimited accounts per IP.
+        signup_ip_max_per_day: 0,
         fb_review_protection_enabled: fbReviewOn,
       };
+
       // Only include support_enabled if it exists in the database record
       if ('support_enabled' in (settings.data || {})) {
         payload.support_enabled = (settings.data as any).support_enabled;
