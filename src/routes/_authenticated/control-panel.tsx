@@ -1261,7 +1261,7 @@ function SupportTab() {
 
   return (
     <section className="mt-6 space-y-5">
-      <div className="rounded-2xl bg-card/80 border border-[var(--border)] p-5 flex items-center justify-between gap-4">
+      <div className="rounded-2xl glass-card p-5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${enabled ? "bg-gradient-to-br from-emerald-400 to-emerald-600" : "bg-gradient-to-br from-gray-400 to-gray-600"} shadow-md`}>
             <LifeBuoy className="w-5 h-5 text-primary-foreground" />
@@ -1291,20 +1291,20 @@ function SupportTab() {
 
       <div className="space-y-3">
         {ticketsQ.isLoading && <div className="text-xs text-[var(--muted-foreground)] p-6 text-center">Loading…</div>}
-        {!ticketsQ.isLoading && tickets.length === 0 && <div className="text-xs text-[var(--muted-foreground)] p-10 text-center bg-card/60 border border-[var(--border)] rounded-2xl">No tickets</div>}
+        {!ticketsQ.isLoading && tickets.length === 0 && <div className="text-xs text-[var(--muted-foreground)] p-10 text-center glass-card rounded-2xl">No tickets</div>}
         {tickets.map((t: any) => (
-          <div key={t.id} className="rounded-2xl bg-card border border-[var(--border)] shadow-sm p-5">
+          <div key={t.id} className="rounded-2xl glass-card p-5">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded-full ${t.status === "open" ? "bg-muted text-foreground" : t.status === "replied" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>{t.status}</span>
+                  <span className={`text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded-full ${t.status === "open" ? "bg-muted text-foreground" : t.status === "replied" ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>{t.status}</span>
                   <span className="text-[10px] text-[var(--muted-foreground)]">{new Date(t.created_at).toLocaleString()}</span>
                 </div>
                 <div className="font-bold text-sm text-[var(--foreground)]">{t.subject}</div>
                 <div className="text-[11px] text-[var(--muted-foreground)] mt-0.5">From: {t.user_email ?? t.user_name ?? t.user_id}</div>
               </div>
               <div className="flex gap-1.5 shrink-0">
-                {t.status !== "closed" && <button onClick={() => closeMut.mutate(t.id)} className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></button>}
+                {t.status !== "closed" && <button onClick={() => closeMut.mutate(t.id)} className="w-8 h-8 rounded-lg bg-muted hover:bg-border text-muted-foreground flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></button>}
                 <button onClick={() => { if (confirm("Delete?")) delMut.mutate(t.id); }} className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
             </div>
@@ -1325,12 +1325,12 @@ function SupportTab() {
                   onChange={(e) => setReplyMap((m) => ({ ...m, [t.id]: e.target.value }))}
                   placeholder="Type your reply…"
                   rows={2}
-                  className="flex-1 bg-[var(--muted)] border border-[var(--border)] rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-[var(--primary)]/50 resize-none"
+                  className="flex-1 bg-muted/70 border border-border rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-[var(--primary)]/50 resize-none"
                 />
                 <button
                   onClick={() => { const r = (replyMap[t.id] ?? "").trim(); if (!r) return toast.error("Reply empty"); replyMut.mutate({ ticket_id: t.id, reply: r }); }}
                   disabled={replyMut.isPending}
-                  className="px-4 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground font-bold text-xs shadow-md hover:shadow-lg inline-flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 rounded-xl bg-primary-gradient text-white font-bold text-xs shadow-md hover:shadow-lg inline-flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <Send className="w-3.5 h-3.5" /> Send
                 </button>
@@ -1396,15 +1396,15 @@ function BroadcastsTab() {
     <section className="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-5">
       {/* Composer */}
       <div className="lg:col-span-2 space-y-4">
-        <div className="rounded-2xl bg-card border border-[var(--border)] shadow-sm overflow-hidden">
-          <div className="px-5 py-4 bg-gradient-to-r from-[var(--muted)] to-[var(--border)]/40 border-b border-[var(--border)] flex items-center gap-2">
+        <div className="rounded-2xl glass-card overflow-hidden">
+          <div className="px-5 py-4 bg-primary/5 border-b border-border flex items-center gap-2">
             <Megaphone className="w-4 h-4 text-[var(--primary)]" />
             <h3 className="text-sm font-extrabold">Send Broadcast</h3>
           </div>
           <div className="p-5 space-y-3">
             <div>
               <label className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Title</label>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} className="mt-1 w-full bg-[var(--muted)] border border-[var(--border)] rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-[var(--primary)]/50" />
+              <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} className="mt-1 w-full bg-muted/70 border border-border rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-[var(--primary)]/50" />
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
@@ -1442,7 +1442,7 @@ function BroadcastsTab() {
                   </button>
                 ))}
               </div>
-              <textarea id="broadcast-body" value={body} onChange={(e) => setBody(e.target.value.slice(0, 2000))} rows={8} placeholder={"## 🏆 The Prize: $500 Bonus\n\nDear members,\n\n**Event Timeline:**\n- Start: Right now\n- End: July 15th\n\n1. Fire up your links\n2. Scale your traffic\n3. Monitor dashboard"} className="w-full bg-[var(--muted)] border border-[var(--border)] rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-[var(--primary)]/50 resize-y font-mono" />
+              <textarea id="broadcast-body" value={body} onChange={(e) => setBody(e.target.value.slice(0, 2000))} rows={8} placeholder={"## 🏆 The Prize: $500 Bonus\n\nDear members,\n\n**Event Timeline:**\n- Start: Right now\n- End: July 15th\n\n1. Fire up your links\n2. Scale your traffic\n3. Monitor dashboard"} className="w-full bg-muted/70 border border-border rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-[var(--primary)]/50 resize-y font-mono" />
             </div>
             <div>
               <label className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Icon</label>
@@ -1467,7 +1467,7 @@ function BroadcastsTab() {
             <button
               onClick={() => { if (!title.trim() || !body.trim()) return toast.error("Title + message required"); createMut.mutate({ title: title.trim(), body: body.trim(), icon, tone }); }}
               disabled={createMut.isPending}
-              className="w-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground font-bold text-sm py-3 rounded-xl shadow-lg shadow-primary/10 hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-primary-gradient text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-glow hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Send className="w-4 h-4" /> {createMut.isPending ? "Sending…" : "Broadcast to all users"}
             </button>
@@ -1476,7 +1476,7 @@ function BroadcastsTab() {
 
         {/* Preview */}
         {(title || body) && (
-          <div className="rounded-2xl bg-card border border-[var(--border)] p-4">
+          <div className="rounded-2xl glass-card p-4">
             <div className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase mb-3">Live preview</div>
             <div className="flex gap-3">
               <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${previewTone.cls} flex items-center justify-center shadow-md`}>
@@ -1495,12 +1495,12 @@ function BroadcastsTab() {
       {/* List */}
       <div className="lg:col-span-3 space-y-3">
         {listQ.isLoading && <div className="text-xs text-[var(--muted-foreground)] p-6 text-center">Loading…</div>}
-        {!listQ.isLoading && items.length === 0 && <div className="text-xs text-[var(--muted-foreground)] p-10 text-center bg-card/60 border border-[var(--border)] rounded-2xl">No broadcasts yet</div>}
+        {!listQ.isLoading && items.length === 0 && <div className="text-xs text-[var(--muted-foreground)] p-10 text-center glass-card rounded-2xl">No broadcasts yet</div>}
         {items.map((b: any) => {
           const Icon = BROADCAST_ICONS.find((i) => i.id === b.icon)?.Icon ?? Sparkles;
           const t = BROADCAST_TONES.find((x) => x.id === b.tone) ?? BROADCAST_TONES[0];
           return (
-            <div key={b.id} className={`rounded-2xl bg-card border ${b.is_active ? "border-[var(--border)]" : "border-gray-200 opacity-60"} shadow-sm p-4`}>
+            <div key={b.id} className={`rounded-2xl bg-card border ${b.is_active ? "border-[var(--border)]" : "border-border opacity-60"} shadow-sm p-4`}>
               <div className="flex gap-3">
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${t.cls} flex items-center justify-center shadow-md shrink-0`}>
                   <Icon className="w-5 h-5 text-primary-foreground" />
@@ -1509,7 +1509,7 @@ function BroadcastsTab() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="font-bold text-sm">{b.title}</div>
                     <div className="flex gap-1.5 shrink-0">
-                      <button onClick={() => toggleMut.mutate({ id: b.id, is_active: !b.is_active })} className={`px-2 py-1 rounded-lg text-[10px] font-bold ${b.is_active ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
+                      <button onClick={() => toggleMut.mutate({ id: b.id, is_active: !b.is_active })} className={`px-2 py-1 rounded-lg text-[10px] font-bold ${b.is_active ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
                         {b.is_active ? "Active" : "Inactive"}
                       </button>
                       <button onClick={() => { if (confirm("Delete?")) delMut.mutate(b.id); }} className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center"><Trash2 className="w-3 h-3" /></button>
@@ -2252,7 +2252,7 @@ function DomainHealthTab() {
       warning: "bg-muted text-foreground border-border",
       critical: "bg-rose-100 text-rose-700 border-rose-200",
     };
-    const cls = s ? (map[s] ?? "bg-gray-100 text-gray-600 border-gray-200") : "bg-gray-100 text-gray-500 border-gray-200";
+    const cls = s ? (map[s] ?? "bg-muted text-muted-foreground border-gray-200") : "bg-gray-100 text-gray-500 border-gray-200";
     return <span className={`text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full border ${cls}`}>{s ?? "—"}</span>;
   };
 
