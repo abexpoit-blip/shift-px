@@ -815,14 +815,10 @@ function TrafficTab() {
       <div className="h-6" />
     <Panel icon={Settings2} title="Traffic & Monetization">
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Fallback / Daily redirect URL"><input value={fallbackUrl} onChange={(e) => setFallbackUrl(e.target.value)} className={inputCls} /></Field>
         <Field label="Our Adsterra Direct URL"><input value={ourUrl} onChange={(e) => setOurUrl(e.target.value)} className={inputCls} /></Field>
         <Field label="Injection threshold"><input type="number" min={100} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} className={inputCls} /></Field>
         <Field label="Injection count"><input type="number" min={1} value={count} onChange={(e) => setCount(Number(e.target.value))} className={inputCls} /></Field>
-        <label className="sm:col-span-2 flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" checked={dailyOn} onChange={(e) => setDailyOn(e.target.checked)} className="w-4 h-4 accent-[var(--primary)]" />
-          <span className="text-sm">Daily auto-redirect on first dashboard login</span>
-        </label>
+
       </div>
 
       <div className="mt-8 pt-6 border-t border-[var(--border)]">
