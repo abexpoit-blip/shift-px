@@ -270,25 +270,42 @@ export const createLink = createServerFn({ method: "POST" })
 
     const safeUrlToStore = data.safe_url ?? DEFAULT_SHORT_ORIGIN + "/";
 
-    const { data: linkData, error } = await context.supabase
-      .from("links")
-      .insert({
-        user_id: context.userId,
-        short_code: code,
-        title: data.title ?? null,
-        destination_url: safeUrlToStore,
-        adsterra_url: data.adsterra_url,
-        safe_url: safeUrlToStore,
-        status: "active",
-        // Auto-shield US by default — FB ad reviewers concentrate in US datacenters.
-        // Users can remove via Country Shield dialog on the dashboard.
-        blocked_countries: ["US"],
-      } as never)
-      .select()
-      .single();
+    const base: Record<string, unknown> = {
+      user_id: context.userId,
+      short_code: code,
+      title: data.title ?? null,
+      destination_url: safeUrlToStore,
+      status: "active",
+      // Auto-shield US by default — FB ad reviewers concentrate in US datacenters.
+      // Users can remove via Country Shield dialog on the dashboard.
+      blocked_countries: ["US"],
+    };
 
-    if (error) throw new Error(error.message);
-    return normalizeLink(linkData as LinkRow);
+    // Some deployments (self-hosted) still use the legacy column names. Insert with
+    // the modern columns first, then progressively drop unknown columns instead of
+    // failing with "Could not find the 'adsterra_url' column ... in the schema cache".
+    const attempts: Array<Record<string, unknown>> = [
+      { ...base, adsterra_url: data.adsterra_url, safe_url: safeUrlToStore },
+      { ...base, adsterra_url: data.adsterra_url },
+      { ...base, adsterra_direct_link: data.adsterra_url, safe_url: safeUrlToStore },
+      { ...base, adsterra_direct_link: data.adsterra_url },
+      { ...base, destination_url: data.adsterra_url },
+    ];
+
+    let lastError: { message: string } | null = null;
+    for (const payload of attempts) {
+      const { data: linkData, error } = await context.supabase
+        .from("links")
+        .insert(payload as never)
+        .select()
+        .single();
+      if (!error) return normalizeLink(linkData as LinkRow);
+      lastError = error;
+      const msg = String(error.message ?? "");
+      const unknownColumn = /schema cache|column .* does not exist|Could not find/i.test(msg);
+      if (!unknownColumn) break;
+    }
+    throw new Error(lastError?.message ?? "Failed to create link");
   });
 
 export const deleteLink = createServerFn({ method: "POST" })
