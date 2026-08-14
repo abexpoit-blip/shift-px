@@ -1438,16 +1438,6 @@ function BroadcastsTab() {
               <textarea id="broadcast-body" value={body} onChange={(e) => setBody(e.target.value.slice(0, 2000))} rows={8} placeholder={"## 🏆 The Prize: $500 Bonus\n\nDear members,\n\n**Event Timeline:**\n- Start: Right now\n- End: July 15th\n\n1. Fire up your links\n2. Scale your traffic\n3. Monitor dashboard"} className="w-full bg-muted/70 border border-border rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-[var(--primary)]/50 resize-y font-mono" />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Icon</label>
-              <div className="mt-1 grid grid-cols-5 gap-1.5">
-                {BROADCAST_ICONS.map(({ id, Icon }) => (
-                  <button key={id} onClick={() => setIcon(id)} className={`aspect-square rounded-lg flex items-center justify-center transition-all ${icon === id ? "bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground shadow-md" : "bg-[var(--muted)] border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)]/40"}`}>
-                    <Icon className="w-4 h-4" />
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
               <label className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Tone</label>
               <div className="mt-1 grid grid-cols-2 gap-1.5">
                 {BROADCAST_TONES.map((t) => (
