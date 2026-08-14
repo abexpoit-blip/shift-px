@@ -76,7 +76,7 @@ wait_for_worker() {
 
 rolling_restart() {
   local failed=""
-  for i in 0 1 2 3 4 5 6 7; do
+  for i in "${!PORTS[@]}"; do
     local name="adspx-$i" port="${PORTS[$i]}"
     echo "--- restarting $name (port $port) ---"
     if pm2 describe "$name" >/dev/null 2>&1; then
