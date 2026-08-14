@@ -1545,16 +1545,7 @@ function BroadcastsTab() {
   );
 }
 
-                  <div className="text-[10px] text-[var(--muted-foreground)] mt-2">{new Date(b.created_at).toLocaleString()}</div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
+
 
 // ============================================================
 // Errors Tab — runtime error / bug viewer (admin debugging)
