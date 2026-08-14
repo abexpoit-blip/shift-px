@@ -272,49 +272,58 @@ export const createLink = createServerFn({ method: "POST" })
     // Never store the SaaS homepage as a safe page.
     const safeUrlToStore = data.safe_url ?? null;
 
-    const base: Record<string, unknown> = {
+    // Minimal insert first — only columns that exist in every schema version.
+    // Optional columns are applied afterwards, each ignoring "column missing"
+    // errors, so a partially-migrated DB can still create links.
+    const minimal: Record<string, unknown> = {
       user_id: context.userId,
       short_code: code,
       title: data.title ?? null,
       destination_url: data.adsterra_url,
       status: "active",
-      // Auto-shield US by default — FB ad reviewers concentrate in US datacenters.
-      // Users can remove via Country Shield dialog on the dashboard.
-      blocked_countries: ["US"],
     };
 
-    // Some deployments (self-hosted) still use the legacy column names. Insert with
-    // the modern columns first, then progressively drop unknown columns instead of
-    // failing with "Could not find the 'adsterra_url' column ... in the schema cache".
-    const noShield = { ...base };
-    delete (noShield as Record<string, unknown>).blocked_countries;
-
-    const attempts: Array<Record<string, unknown>> = [
-      { ...base, adsterra_url: data.adsterra_url, safe_url: safeUrlToStore },
-      { ...base, adsterra_url: data.adsterra_url },
-      // DB without the blocked_countries column (older self-host schema)
-      { ...noShield, adsterra_url: data.adsterra_url, safe_url: safeUrlToStore },
-      { ...noShield, adsterra_url: data.adsterra_url },
-      { ...noShield, adsterra_direct_link: data.adsterra_url, safe_url: safeUrlToStore },
-      { ...noShield, adsterra_direct_link: data.adsterra_url },
-      { ...noShield, destination_url: data.adsterra_url },
-    ];
-
-
+    let created: LinkRow | null = null;
     let lastError: { message: string } | null = null;
-    for (const payload of attempts) {
+
+    for (const payload of [
+      minimal,
+      // Ultra-legacy schema without destination_url
+      (() => { const p = { ...minimal }; delete p.destination_url; return { ...p, adsterra_direct_link: data.adsterra_url }; })(),
+    ]) {
       const { data: linkData, error } = await context.supabase
         .from("links")
         .insert(payload as never)
         .select()
         .single();
-      if (!error) return normalizeLink(linkData as LinkRow);
+      if (!error) { created = linkData as LinkRow; break; }
       lastError = error;
       const msg = String(error.message ?? "");
-      const unknownColumn = /schema cache|column .* does not exist|Could not find/i.test(msg);
-      if (!unknownColumn) break;
+      if (!/schema cache|column .* does not exist|Could not find/i.test(msg)) break;
     }
-    throw new Error(lastError?.message ?? "Failed to create link");
+
+    if (!created) throw new Error(lastError?.message ?? "Failed to create link");
+
+    // Best-effort optional columns (ignored when the column is absent).
+    const optional: Array<Record<string, unknown>> = [
+      { adsterra_url: data.adsterra_url },
+      { safe_url: safeUrlToStore },
+      { is_active: true },
+      // Auto-shield US by default — FB ad reviewers concentrate in US datacenters.
+      { blocked_countries: ["US"] },
+    ];
+    for (const patch of optional) {
+      const { data: updated } = await (context.supabase as any)
+        .from("links")
+        .update(patch)
+        .eq("id", (created as any).id)
+        .select()
+        .maybeSingle();
+      if (updated) created = updated as LinkRow;
+    }
+
+    return normalizeLink(created);
+
   });
 
 export const deleteLink = createServerFn({ method: "POST" })
