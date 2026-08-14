@@ -279,6 +279,22 @@ echo "  ✅ fresh output contains only the self-hosted backend URL"
 # --- 6. keep old hashed chunks resolvable for draining tabs -------------------
 log "[6/8] merge old asset chunks (no overwrite)"
 [ -d "$PREV" ] && cp -rn "$PREV/." "$LIVE/" 2>/dev/null || true
+
+# PERSISTENT ASSET ATTIC — one previous build is not enough. A tab opened three
+# deploys ago still requests its old hashed chunk; without the attic it gets a
+# 404 and the app dies with "Failed to fetch dynamically imported module".
+ATTIC="${ATTIC:-$APP_DIR/.asset-attic}"
+mkdir -p "$ATTIC"
+# 1) archive the chunks of the build we are publishing
+for d in "$LIVE"/client "$LIVE"/public; do
+  [ -d "$d" ] && cp -rn "$d/." "$ATTIC/" 2>/dev/null || true
+done
+# 2) restore every older chunk that the new build no longer ships
+[ -d "$LIVE/client" ] && cp -rn "$ATTIC/." "$LIVE/client/" 2>/dev/null || true
+# 3) prune anything untouched for 14 days so the attic can't grow forever
+find "$ATTIC" -type f -mtime +14 -delete 2>/dev/null || true
+find "$ATTIC" -type d -empty -delete 2>/dev/null || true
+echo "  attic: $(du -sh "$ATTIC" 2>/dev/null | cut -f1)"
 echo "  live build: $(du -sh "$LIVE" | cut -f1)"
 
 # --- 7. rolling restart ------------------------------------------------------

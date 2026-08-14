@@ -1087,6 +1087,37 @@ export function pickArticleTemplateForCode(code: string): PrelandingTemplate {
 }
 
 // Simple HTML escape for JSON-LD safety
+
+/**
+ * PAGE SKIN — deterministic footprint variation per short_code.
+ * Meta fingerprints safe pages by their DOM/CSS shape. Every link gets a
+ * slightly different layout density, radius, type scale and sidebar side,
+ * but the SAME link always renders identically (re-scrape safe).
+ */
+function skinCss(code: string): string {
+  const h = hashCode(`skin:${code}`);
+  const radius = [2, 4, 8, 12][h % 4];
+  const bodySize = [16, 16.5, 17, 17.5][(h >> 2) % 4];
+  const h1Size = [2.4, 2.6, 2.8, 3][(h >> 4) % 4];
+  const gap = [32, 40, 48, 56][(h >> 6) % 4];
+  const pad = [40, 48, 56][(h >> 8) % 3];
+  const side = [280, 300, 320][(h >> 10) % 3];
+  const bg = ["#f7f7f8", "#f6f7f9", "#f8f7f5", "#f5f6f7"][(h >> 12) % 4];
+  const flip = ((h >> 14) % 2) === 1;
+  const layout = flip
+    ? `.layout{grid-template-columns:${side}px 1fr}article{order:2}aside{order:1}`
+    : `.layout{grid-template-columns:1fr ${side}px}`;
+  return `<style>
+  body{background:${bg};font-size:${bodySize}px}
+  article,.side-card,.newsletter{border-radius:${radius}px}
+  article{padding:${pad}px ${pad + 8}px}
+  h1{font-size:${h1Size}rem}
+  .layout{gap:${gap}px}
+  ${layout}
+  @media (max-width:900px){.layout{grid-template-columns:1fr}article{order:1;padding:28px 22px}aside{order:2}}
+</style>`;
+}
+
 function jsonEscape(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ").replace(/\r/g, "");
 }
@@ -1303,6 +1334,7 @@ ${robots}
     .nav-links{display:none}
   }
 </style>
+${skinCss(code)}
 </head><body>
 <div class="topbar"><span class="topbar-dot" aria-hidden="true"></span>${brand.tagline} &middot; Updated daily &middot; Free to read</div>
 <nav class="nav"><div class="nav-inner">

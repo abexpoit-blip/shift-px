@@ -37,9 +37,40 @@ function hotCutoff() {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Hard cap on every stats query. A slow/locked table must never hang a PM2
+ * worker (nginx read timeout is 60s) — we return a degraded panel instead.
+ */
+const STATS_TIMEOUT_MS = 8000;
+
+function guard<T>(p: PromiseLike<T>, label: string, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    let done = false;
+    const t = setTimeout(() => {
+      if (done) return;
+      done = true;
+      console.warn(`[stats][TIMEOUT] ${label} > ${STATS_TIMEOUT_MS}ms — degraded`);
+      resolve(fallback);
+    }, STATS_TIMEOUT_MS);
+    Promise.resolve(p).then(
+      (v) => { if (!done) { done = true; clearTimeout(t); resolve(v); } },
+      (e) => {
+        if (done) return;
+        done = true;
+        clearTimeout(t);
+        console.error(`[stats][ERR] ${label}: ${(e as Error)?.message ?? e}`);
+        resolve(fallback);
+      },
+    );
+  });
+}
+
+const EMPTY_RES = { data: [] as any[] };
+
 function bump(map: Map<string, number>, key: string, by: number) {
   map.set(key, (map.get(key) ?? 0) + by);
 }
+
 
 function topEntries(map: Map<string, number>, n: number) {
   return [...map.entries()]
@@ -66,10 +97,11 @@ export const getStatistics = createServerFn({ method: "GET" })
     const since = days[0];
     const sinceTs = new Date(`${since}T00:00:00Z`).toISOString();
 
-    const { data: linkRows } = await db
-      .from("links")
-      .select("id, short_code, title, clicks_count")
-      .eq("user_id", userId);
+    const { data: linkRows } = await guard(
+      db.from("links").select("id, short_code, title, clicks_count").eq("user_id", userId),
+      "links",
+      EMPTY_RES,
+    );
     const links = (linkRows ?? []) as any[];
     const linkIds = links.map((l) => l.id);
 
@@ -92,27 +124,27 @@ export const getStatistics = createServerFn({ method: "GET" })
     const hotTs = new Date(`${hotDay}T00:00:00Z`).toISOString();
 
     const [statsRes, archiveRes, clicksRes] = await Promise.all([
-      db
+      guard(db
         .from("daily_stats")
         .select("day, human_clicks, bot_clicks")
         .in("link_id", linkIds)
-        .gte("day", since),
+        .gte("day", since), "daily_stats", EMPTY_RES),
       // COLD: pre-aggregated dimensions, survives the weekly raw purge
-      db
+      guard(db
         .from("click_dim_daily")
         .select("country, device, browser, source, is_bot, clicks")
         .eq("user_id", userId)
         .gte("day", since)
         .lt("day", hotDay)
-        .limit(50000),
+        .limit(50000), "click_dim_daily", EMPTY_RES),
       // HOT: last 2 days straight from the raw table
-      db
+      guard(db
         .from("clicks")
         .select("country, referer_host, is_bot, ua")
         .in("link_id", linkIds)
         .gte("created_at", hotTs)
         .order("created_at", { ascending: false })
-        .limit(20000),
+        .limit(20000), "clicks", EMPTY_RES),
     ]);
 
     const byDay = new Map(days.map((d) => [d, { day: d, humans: 0, bots: 0 }]));
@@ -227,25 +259,25 @@ export const getLinkStats = createServerFn({ method: "GET" })
     if (!link || link.user_id !== userId) throw new Error("Link not found");
 
     const [statsRes, archiveRes, clicksRes] = await Promise.all([
-      db
+      guard(db
         .from("daily_stats")
         .select("day, human_clicks, bot_clicks")
         .eq("link_id", link.id)
-        .gte("day", since),
-      db
+        .gte("day", since), "link.daily_stats", EMPTY_RES),
+      guard(db
         .from("click_dim_daily")
         .select("country, device, is_bot, clicks")
         .eq("link_id", link.id)
         .gte("day", since)
         .lt("day", hotDay)
-        .limit(20000),
-      db
+        .limit(20000), "link.click_dim_daily", EMPTY_RES),
+      guard(db
         .from("clicks")
         .select("country, ua, is_bot")
         .eq("link_id", link.id)
         .gte("created_at", hotTs)
         .order("created_at", { ascending: false })
-        .limit(20000),
+        .limit(20000), "link.clicks", EMPTY_RES),
     ]);
 
     const byDay = new Map(days.map((d) => [d, { day: d, humans: 0, bots: 0 }]));
