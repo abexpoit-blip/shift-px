@@ -1,9 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { browserBucket, bucketLabel, deviceBucket, sourceBucket } from "@/lib/ua-parse";
 
 /**
  * Free statistics for every user: 30-day traffic series, country split and
- * traffic sources. Built on the existing clicks / daily_stats pipeline.
+ * traffic sources.
+ *
+ * HYBRID STORAGE (migration 35):
+ *   * last 2 days  → raw `clicks` rows (live, second-accurate)
+ *   * older days   → `click_dim_daily` archive (kept forever, tiny)
+ * Raw rows are purged after 7 days, the archive never is, so the 30-day view
+ * stays complete no matter how much traffic the box takes.
  */
 
 export type StatsPayload = {
@@ -24,25 +31,14 @@ async function getAdmin() {
   return mod.supabaseAdmin as any;
 }
 
-const SOURCE_MAP: Array<[RegExp, string]> = [
-  [/facebook|fb\./i, "Facebook"],
-  [/instagram/i, "Instagram"],
-  [/t\.me|telegram/i, "Telegram"],
-  [/youtube|youtu\.be/i, "YouTube"],
-  [/whatsapp|wa\.me/i, "WhatsApp"],
-  [/twitter|x\.com|t\.co/i, "X (Twitter)"],
-  [/tiktok/i, "TikTok"],
-  [/google/i, "Google"],
-];
-
-function bucketSource(host: string | null): string {
-  if (!host) return "Direct";
-  for (const [re, name] of SOURCE_MAP) if (re.test(host)) return name;
-  return "Other";
+/** Day (UTC) from which raw click rows are preferred over the archive. */
+function hotCutoff() {
+  const d = new Date(Date.now() - 2 * 864e5);
+  return d.toISOString().slice(0, 10);
 }
 
-function titleCase(v: string) {
-  return v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+function bump(map: Map<string, number>, key: string, by: number) {
+  map.set(key, (map.get(key) ?? 0) + by);
 }
 
 function topEntries(map: Map<string, number>, n: number) {
@@ -51,6 +47,7 @@ function topEntries(map: Map<string, number>, n: number) {
     .sort((a, b) => b.value - a.value)
     .slice(0, n);
 }
+
 
 function lastNDays(n: number) {
   const out: string[] = [];
@@ -91,17 +88,29 @@ export const getStatistics = createServerFn({ method: "GET" })
       };
     }
 
-    const [statsRes, clicksRes] = await Promise.all([
+    const hotDay = hotCutoff();
+    const hotTs = new Date(`${hotDay}T00:00:00Z`).toISOString();
+
+    const [statsRes, archiveRes, clicksRes] = await Promise.all([
       db
         .from("daily_stats")
         .select("day, human_clicks, bot_clicks")
         .in("link_id", linkIds)
         .gte("day", since),
+      // COLD: pre-aggregated dimensions, survives the weekly raw purge
+      db
+        .from("click_dim_daily")
+        .select("country, device, browser, source, is_bot, clicks")
+        .eq("user_id", userId)
+        .gte("day", since)
+        .lt("day", hotDay)
+        .limit(50000),
+      // HOT: last 2 days straight from the raw table
       db
         .from("clicks")
-        .select("country, referer_host, is_bot, device, browser")
+        .select("country, referer_host, is_bot, ua")
         .in("link_id", linkIds)
-        .gte("created_at", sinceTs)
+        .gte("created_at", hotTs)
         .order("created_at", { ascending: false })
         .limit(20000),
     ]);
@@ -122,24 +131,43 @@ export const getStatistics = createServerFn({ method: "GET" })
     const sourceMap = new Map<string, number>();
     const deviceMap = new Map<string, number>();
     const browserMap = new Map<string, number>();
-    for (const row of (clicksRes.data ?? []) as any[]) {
-      const code = String(row.country ?? "").toLowerCase();
-      if (code) {
+
+    const addRow = (
+      country: string,
+      isBot: boolean,
+      n: number,
+      dims: { device: string; browser: string; source: string },
+    ) => {
+      const code = country.toLowerCase();
+      if (code && code !== "--") {
         const c = countryMap.get(code) ?? { code, humans: 0, bots: 0, total: 0 };
-        if (row.is_bot) c.bots += 1;
-        else c.humans += 1;
-        c.total += 1;
+        if (isBot) c.bots += n;
+        else c.humans += n;
+        c.total += n;
         countryMap.set(code, c);
       }
-      if (!row.is_bot) {
-        const src = bucketSource(row.referer_host ?? null);
-        sourceMap.set(src, (sourceMap.get(src) ?? 0) + 1);
-        const dev = titleCase(String(row.device ?? "") || "Unknown");
-        deviceMap.set(dev, (deviceMap.get(dev) ?? 0) + 1);
-        const br = titleCase(String(row.browser ?? "") || "Unknown");
-        browserMap.set(br, (browserMap.get(br) ?? 0) + 1);
-      }
+      if (isBot) return;
+      bump(sourceMap, bucketLabel(dims.source), n);
+      bump(deviceMap, bucketLabel(dims.device), n);
+      bump(browserMap, bucketLabel(dims.browser), n);
+    };
+
+    for (const row of (archiveRes.data ?? []) as any[]) {
+      addRow(String(row.country ?? ""), !!row.is_bot, Number(row.clicks ?? 0), {
+        device: String(row.device ?? "other"),
+        browser: String(row.browser ?? "other"),
+        source: String(row.source ?? "direct"),
+      });
     }
+
+    for (const row of (clicksRes.data ?? []) as any[]) {
+      addRow(String(row.country ?? ""), !!row.is_bot, 1, {
+        device: deviceBucket(row.ua),
+        browser: browserBucket(row.ua),
+        source: sourceBucket(row.referer_host),
+      });
+    }
+
 
     const series = days.map((d) => byDay.get(d)!);
     const humanClicks = series.reduce((s, r) => s + r.humans, 0);
@@ -188,7 +216,8 @@ export const getLinkStats = createServerFn({ method: "GET" })
     const userId = (context as any).userId as string;
     const days = lastNDays(30);
     const since = days[0];
-    const sinceTs = new Date(`${since}T00:00:00Z`).toISOString();
+    const hotDay = hotCutoff();
+    const hotTs = new Date(`${hotDay}T00:00:00Z`).toISOString();
 
     const { data: link } = await db
       .from("links")
@@ -197,17 +226,24 @@ export const getLinkStats = createServerFn({ method: "GET" })
       .maybeSingle();
     if (!link || link.user_id !== userId) throw new Error("Link not found");
 
-    const [statsRes, clicksRes] = await Promise.all([
+    const [statsRes, archiveRes, clicksRes] = await Promise.all([
       db
         .from("daily_stats")
         .select("day, human_clicks, bot_clicks")
         .eq("link_id", link.id)
         .gte("day", since),
       db
-        .from("clicks")
-        .select("country, device, is_bot")
+        .from("click_dim_daily")
+        .select("country, device, is_bot, clicks")
         .eq("link_id", link.id)
-        .gte("created_at", sinceTs)
+        .gte("day", since)
+        .lt("day", hotDay)
+        .limit(20000),
+      db
+        .from("clicks")
+        .select("country, ua, is_bot")
+        .eq("link_id", link.id)
+        .gte("created_at", hotTs)
         .order("created_at", { ascending: false })
         .limit(20000),
     ]);
@@ -222,14 +258,18 @@ export const getLinkStats = createServerFn({ method: "GET" })
 
     const countryMap = new Map<string, number>();
     const deviceMap = new Map<string, number>();
-    for (const row of (clicksRes.data ?? []) as any[]) {
-      const code = String(row.country ?? "").toLowerCase();
-      if (code) countryMap.set(code, (countryMap.get(code) ?? 0) + 1);
-      if (!row.is_bot) {
-        const dev = titleCase(String(row.device ?? "") || "Unknown");
-        deviceMap.set(dev, (deviceMap.get(dev) ?? 0) + 1);
-      }
+    const addRow = (country: string, isBot: boolean, n: number, device: string) => {
+      const code = country.toLowerCase();
+      if (code && code !== "--") bump(countryMap, code, n);
+      if (!isBot) bump(deviceMap, bucketLabel(device), n);
+    };
+    for (const row of (archiveRes.data ?? []) as any[]) {
+      addRow(String(row.country ?? ""), !!row.is_bot, Number(row.clicks ?? 0), String(row.device ?? "other"));
     }
+    for (const row of (clicksRes.data ?? []) as any[]) {
+      addRow(String(row.country ?? ""), !!row.is_bot, 1, deviceBucket(row.ua));
+    }
+
 
     const series = days.map((d) => byDay.get(d)!);
     return {
