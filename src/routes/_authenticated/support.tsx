@@ -60,18 +60,18 @@ function SupportPage() {
   const tickets = ticketsQ.data ?? [];
 
   return (
-    <div className="min-h-screen bg-[var(--muted)] text-[var(--foreground)]" style={display}>
+    <div className="min-h-screen text-foreground" style={display}>
       <div className="fixed top-[-20%] left-[-10%] w-[55%] h-[55%] bg-[var(--primary)]/12 blur-[160px] rounded-full pointer-events-none" />
       <div className="fixed bottom-[-15%] right-[-15%] w-[55%] h-[55%] bg-[var(--primary-glow)]/15 blur-[160px] rounded-full pointer-events-none" />
 
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Top bar */}
-        <div className="rounded-2xl bg-card/70 backdrop-blur-xl border border-border/80 shadow-sm shadow-primary/10 px-5 py-3 flex items-center gap-3">
+        <div className="rounded-2xl glass-card px-5 py-3 flex items-center gap-3">
           <Link to="/dashboard" className="w-9 h-9 rounded-xl bg-[var(--muted)] border border-[var(--border)] flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--primary)]">
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-glow)] flex items-center justify-center shadow-md shadow-primary/10">
+            <div className="w-9 h-9 rounded-xl bg-primary-gradient flex items-center justify-center shadow-md shadow-primary/10">
               <LifeBuoy className="w-4.5 h-4.5 text-primary-foreground" />
             </div>
             <div>
@@ -82,7 +82,7 @@ function SupportPage() {
         </div>
 
         {!enabled && (
-          <div className="rounded-2xl bg-muted border border-border p-5 flex items-start gap-3">
+          <div className="rounded-2xl glass-card p-5 flex items-start gap-3">
             <XCircle className="w-5 h-5 text-foreground mt-0.5 shrink-0" />
             <div>
               <div className="font-bold text-foreground text-sm">Support is temporarily disabled</div>
@@ -94,8 +94,8 @@ function SupportPage() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
           {/* Send form */}
           <div className="lg:col-span-2">
-            <div className="rounded-2xl bg-card border border-[var(--border)] shadow-sm shadow-primary/10 overflow-hidden">
-              <div className="px-5 py-4 bg-gradient-to-r from-[var(--muted)] to-[var(--border)]/40 border-b border-[var(--border)]">
+            <div className="rounded-2xl glass-card overflow-hidden">
+              <div className="px-5 py-4 bg-primary/5 border-b border-border">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-[var(--primary)]" />
                   <h2 className="text-sm font-extrabold">Send a message</h2>
@@ -111,7 +111,7 @@ function SupportPage() {
                     maxLength={200}
                     placeholder="e.g. Cannot create new link"
                     disabled={!enabled}
-                    className="mt-1.5 w-full bg-[var(--muted)]/70 border border-[var(--border)] rounded-xl py-2.5 px-3 text-sm placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)]/50 focus:bg-card transition-all disabled:opacity-50"
+                    className="mt-1.5 w-full bg-muted/70 border border-border rounded-xl py-2.5 px-3 text-sm placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)]/50 focus:bg-card transition-all disabled:opacity-50"
                   />
                 </div>
                 <div>
@@ -125,13 +125,13 @@ function SupportPage() {
                     rows={8}
                     placeholder="Describe your issue in detail…"
                     disabled={!enabled}
-                    className="mt-1.5 w-full bg-[var(--muted)]/70 border border-[var(--border)] rounded-xl py-2.5 px-3 text-sm placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)]/50 focus:bg-card transition-all resize-none disabled:opacity-50"
+                    className="mt-1.5 w-full bg-muted/70 border border-border rounded-xl py-2.5 px-3 text-sm placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)]/50 focus:bg-card transition-all resize-none disabled:opacity-50"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={!enabled || createMut.isPending}
-                  className="w-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground font-bold text-sm py-3 rounded-xl shadow-lg shadow-primary/10 hover:shadow-xl hover:shadow-primary/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-primary-gradient text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-glow hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="w-4 h-4" />
                   {createMut.isPending ? "Sending…" : "Send message"}
@@ -142,8 +142,8 @@ function SupportPage() {
 
           {/* My tickets */}
           <div className="lg:col-span-3">
-            <div className="rounded-2xl bg-card border border-[var(--border)] shadow-sm shadow-primary/10 overflow-hidden">
-              <div className="px-5 py-4 bg-gradient-to-r from-[var(--muted)] to-[var(--border)]/40 border-b border-[var(--border)] flex items-center justify-between">
+            <div className="rounded-2xl glass-card overflow-hidden">
+              <div className="px-5 py-4 bg-primary/5 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <MessageCircle className="w-4 h-4 text-[var(--primary)]" />
                   <h2 className="text-sm font-extrabold">My tickets</h2>
@@ -175,12 +175,12 @@ function SupportPage() {
                       </div>
                     </summary>
                     <div className="px-5 pb-5 pt-1 space-y-3">
-                      <div className="rounded-xl bg-[var(--muted)] border border-[var(--border)] p-3.5">
+                      <div className="rounded-xl bg-muted/60 border border-border p-3.5">
                         <div className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-wide mb-1.5">Your message</div>
                         <div className="text-[12.5px] text-[var(--foreground)] whitespace-pre-wrap leading-relaxed">{t.message}</div>
                       </div>
                       {t.admin_reply ? (
-                        <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-50/30 border border-emerald-200 p-3.5">
+                        <div className="rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/30 p-3.5">
                           <div className="flex items-center gap-1.5 mb-1.5">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                             <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Adspx team reply</span>
@@ -209,7 +209,7 @@ function SupportPage() {
 function StatusBadge({ status }: { status: string }) {
   if (status === "replied") {
     return (
-      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[9.5px] font-extrabold uppercase tracking-wide">
+      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 text-[9.5px] font-extrabold uppercase tracking-wide">
         <CheckCircle2 className="w-3 h-3" /> Replied
       </span>
     );
