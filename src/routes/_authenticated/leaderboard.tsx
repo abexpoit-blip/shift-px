@@ -107,7 +107,8 @@ function LeaderboardPage() {
       .map((r, i) => ({ ...r, rank: i + 1, prevRank: prevRankOf.get(r.name) ?? null }));
   }, [data, slot]);
 
-  const yourRank = rows.find((r) => r.isYou)?.rank ?? null;
+  const you = rows.find((r) => r.isYou) ?? null;
+  const yourRank = you?.rank ?? null;
   const podium = rows.slice(0, 3);
   const rest = rows.slice(3);
   const totalVisits = rows.reduce((s, r) => s + r.humanClicks, 0);
@@ -219,6 +220,34 @@ function LeaderboardPage() {
             </section>
           </>
         )}
+
+        {/* STICKY YOUR POSITION */}
+        <div className="sticky bottom-3 z-20">
+          <div className="rounded-2xl border border-primary/35 bg-card/85 backdrop-blur-xl shadow-xl shadow-glow px-4 py-3 flex items-center gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary-gradient text-white text-xs font-extrabold shadow-glow">
+              {you ? `#${you.rank}` : "—"}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Your position</div>
+              {you ? (
+                <div className="mt-0.5 flex items-center gap-2 text-sm font-bold truncate">
+                  {you.name}
+                  <span className="text-[11px] font-semibold text-muted-foreground tabular-nums">
+                    {fmt(you.humanClicks)} visits
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  Not ranked yet — bring verified human visits to enter the board.
+                </div>
+              )}
+            </div>
+            {you && <RankDelta rank={you.rank} prevRank={you.prevRank} />}
+            <span className="rounded-lg bg-primary/10 px-2.5 py-1 text-sm font-extrabold tabular-nums text-primary">
+              ${(you?.earnings ?? 0).toFixed(2)}
+            </span>
+          </div>
+        </div>
 
         <p className="text-xs text-muted-foreground text-center">
           Ranking is based on verified human visits only — bot traffic never counts. Earnings shown at the standard
