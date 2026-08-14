@@ -1,9 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { browserBucket, bucketLabel, deviceBucket, sourceBucket } from "@/lib/ua-parse";
 
 /**
  * Free statistics for every user: 30-day traffic series, country split and
- * traffic sources. Built on the existing clicks / daily_stats pipeline.
+ * traffic sources.
+ *
+ * HYBRID STORAGE (migration 35):
+ *   * last 2 days  → raw `clicks` rows (live, second-accurate)
+ *   * older days   → `click_dim_daily` archive (kept forever, tiny)
+ * Raw rows are purged after 7 days, the archive never is, so the 30-day view
+ * stays complete no matter how much traffic the box takes.
  */
 
 export type StatsPayload = {
@@ -24,25 +31,14 @@ async function getAdmin() {
   return mod.supabaseAdmin as any;
 }
 
-const SOURCE_MAP: Array<[RegExp, string]> = [
-  [/facebook|fb\./i, "Facebook"],
-  [/instagram/i, "Instagram"],
-  [/t\.me|telegram/i, "Telegram"],
-  [/youtube|youtu\.be/i, "YouTube"],
-  [/whatsapp|wa\.me/i, "WhatsApp"],
-  [/twitter|x\.com|t\.co/i, "X (Twitter)"],
-  [/tiktok/i, "TikTok"],
-  [/google/i, "Google"],
-];
-
-function bucketSource(host: string | null): string {
-  if (!host) return "Direct";
-  for (const [re, name] of SOURCE_MAP) if (re.test(host)) return name;
-  return "Other";
+/** Day (UTC) from which raw click rows are preferred over the archive. */
+function hotCutoff() {
+  const d = new Date(Date.now() - 2 * 864e5);
+  return d.toISOString().slice(0, 10);
 }
 
-function titleCase(v: string) {
-  return v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+function bump(map: Map<string, number>, key: string, by: number) {
+  map.set(key, (map.get(key) ?? 0) + by);
 }
 
 function topEntries(map: Map<string, number>, n: number) {
@@ -51,6 +47,7 @@ function topEntries(map: Map<string, number>, n: number) {
     .sort((a, b) => b.value - a.value)
     .slice(0, n);
 }
+
 
 function lastNDays(n: number) {
   const out: string[] = [];
