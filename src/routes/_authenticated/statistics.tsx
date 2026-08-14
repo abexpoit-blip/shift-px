@@ -2,9 +2,26 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BarChart3, Users, Bot, Globe2, Loader2, Activity, Share2, Link2, TrendingUp } from "lucide-react";
+import {
+  BarChart3,
+  Users,
+  Bot,
+  Globe2,
+  Loader2,
+  Activity,
+  Share2,
+  Link2,
+  TrendingUp,
+  Smartphone,
+  Monitor,
+  Tablet,
+  Chrome,
+  Coins,
+  ChevronRight,
+  X,
+} from "lucide-react";
 
-import { getStatistics } from "@/lib/statistics.functions";
+import { getStatistics, getLinkStats } from "@/lib/statistics.functions";
 
 export const Route = createFileRoute("/_authenticated/statistics")({
   head: () => ({
@@ -223,9 +240,154 @@ function Donut({ data }: { data: Array<{ name: string; value: number }> }) {
   );
 }
 
+function HBar({
+  rows,
+  icons,
+}: {
+  rows: Array<{ name: string; value: number }>;
+  icons?: Record<string, any>;
+}) {
+  const max = Math.max(1, ...rows.map((r) => r.value));
+  const total = rows.reduce((s2, r) => s2 + r.value, 0) || 1;
+  return (
+    <ul className="space-y-3">
+      {rows.map((r) => {
+        const Icon = icons?.[r.name] ?? icons?.["_"] ?? null;
+        return (
+          <li key={r.name} className="flex items-center gap-3">
+            {Icon && (
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-border bg-card/70 text-primary">
+                <Icon className="h-3.5 w-3.5" />
+              </span>
+            )}
+            <span className="w-24 shrink-0 truncate text-xs font-bold">{r.name}</span>
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-border">
+              <div
+                className="h-full rounded-full bg-primary-gradient transition-[width] duration-700"
+                style={{ width: `${Math.max(4, (r.value / max) * 100)}%` }}
+              />
+            </div>
+            <span className="w-12 text-right text-xs font-bold tabular-nums text-muted-foreground">
+              {Math.round((r.value / total) * 100)}%
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+const DEVICE_ICONS: Record<string, any> = {
+  Mobile: Smartphone,
+  Desktop: Monitor,
+  Tablet: Tablet,
+  _: Smartphone,
+};
+
+/** Drill-down panel for one link. */
+function LinkDrilldown({ linkId, onClose }: { linkId: string; onClose: () => void }) {
+  const fn = useServerFn(getLinkStats);
+  const { data, isLoading } = useQuery({
+    queryKey: ["link-stats", linkId],
+    queryFn: () => fn({ data: { linkId } }),
+  });
+
+  return (
+    <Panel className="p-5 sm:p-6 anim-rise">
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-1.5">
+            <Activity className="h-3.5 w-3.5 text-primary" /> Link drill-down
+          </p>
+          <h3 className="mt-1 text-lg font-extrabold truncate">
+            {data ? data.title || `/${data.shortCode}` : "Loading…"}
+          </h3>
+          {data && <p className="font-mono text-xs text-muted-foreground">/{data.shortCode}</p>}
+        </div>
+        <button
+          onClick={onClose}
+          aria-label="Close drill-down"
+          className="grid h-8 w-8 place-items-center rounded-lg border border-border bg-card/70 text-muted-foreground hover:text-foreground transition"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      {isLoading || !data ? (
+        <div className="flex items-center justify-center py-16 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+        </div>
+      ) : (
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="rounded-xl surface-soft p-3">
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Humans · 30d</div>
+              <div className="mt-1 text-xl font-extrabold tabular-nums">{fmtCompact(data.totals.humans)}</div>
+            </div>
+            <div className="rounded-xl surface-soft p-3">
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Bots filtered</div>
+              <div className="mt-1 text-xl font-extrabold tabular-nums">{fmtCompact(data.totals.bots)}</div>
+            </div>
+            <div className="rounded-xl surface-soft p-3 col-span-2 sm:col-span-1">
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Earned</div>
+              <div className="mt-1 text-xl font-extrabold tabular-nums text-primary">
+                ${(data.totals.humans / 50000).toFixed(2)}
+              </div>
+            </div>
+          </div>
+
+          <TrafficChart series={data.series} />
+
+          <div className="grid sm:grid-cols-2 gap-5">
+            <div>
+              <h4 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Top countries</h4>
+              {data.countries.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No data yet.</p>
+              ) : (
+                <HBar rows={data.countries.map((c) => ({ name: c.code.toUpperCase(), value: c.total }))} />
+              )}
+            </div>
+            <div>
+              <h4 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Devices</h4>
+              {data.devices.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No data yet.</p>
+              ) : (
+                <HBar rows={data.devices} icons={DEVICE_ICONS} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 function StatisticsPage() {
   const statsFn = useServerFn(getStatistics);
   const { data, isLoading } = useQuery({ queryKey: ["statistics"], queryFn: () => statsFn({}) });
+
+  const [openLink, setOpenLink] = useState<string | null>(null);
+
+  const forecast = useMemo(() => {
+    const series = data?.series ?? [];
+    const last7 = series.slice(-7);
+    const avg = last7.length ? last7.reduce((s2, d) => s2 + d.humans, 0) / last7.length : 0;
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const daysLeft = daysInMonth - now.getDate();
+    const monthSoFar = series
+      .filter((d) => d.day.slice(0, 7) === now.toISOString().slice(0, 7))
+      .reduce((s2, d) => s2 + d.humans, 0);
+    const projectedVisits = monthSoFar + avg * daysLeft;
+    return {
+      avg,
+      daysLeft,
+      monthSoFar,
+      projectedVisits,
+      earnedSoFar: monthSoFar / 50000,
+      projectedEarnings: projectedVisits / 50000,
+    };
+  }, [data]);
 
   const humanShare = useMemo(() => {
     if (!data || data.totalClicks === 0) return 0;
@@ -333,24 +495,99 @@ function StatisticsPage() {
           </Panel>
         </div>
 
+        <div className="grid lg:grid-cols-3 gap-5">
+          <Panel className="p-5 sm:p-6 anim-rise d-3">
+            <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-muted-foreground flex items-center gap-2 mb-4">
+              <Smartphone className="h-4 w-4 text-primary" /> Devices
+            </h2>
+            {data.devices.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No device data yet.</p>
+            ) : (
+              <HBar rows={data.devices} icons={DEVICE_ICONS} />
+            )}
+          </Panel>
+
+          <Panel className="p-5 sm:p-6 anim-rise d-3">
+            <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-muted-foreground flex items-center gap-2 mb-4">
+              <Chrome className="h-4 w-4 text-primary" /> Browsers
+            </h2>
+            {data.browsers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No browser data yet.</p>
+            ) : (
+              <HBar rows={data.browsers} />
+            )}
+          </Panel>
+
+          <Panel className="relative overflow-hidden p-5 sm:p-6 anim-rise d-4 border-primary/25">
+            <div className="absolute -top-12 -right-10 h-40 w-40 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
+            <h2 className="relative text-sm font-bold uppercase tracking-[0.16em] text-muted-foreground flex items-center gap-2 mb-4">
+              <Coins className="h-4 w-4 text-primary" /> Earnings forecast
+            </h2>
+            <div className="relative">
+              <div className="text-3xl font-extrabold tabular-nums text-primary">
+                ${forecast.projectedEarnings.toFixed(2)}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Projected month-end at your current pace ({fmtCompact(forecast.avg)} humans/day).
+              </p>
+              <div className="mt-4 h-2 rounded-full bg-border overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary-gradient transition-[width] duration-700"
+                  style={{
+                    width: `${Math.min(100, forecast.projectedEarnings > 0 ? (forecast.earnedSoFar / forecast.projectedEarnings) * 100 : 0)}%`,
+                  }}
+                />
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Earned so far</div>
+                  <div className="text-base font-extrabold tabular-nums">${forecast.earnedSoFar.toFixed(2)}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Days left</div>
+                  <div className="text-base font-extrabold tabular-nums">{forecast.daysLeft}</div>
+                </div>
+              </div>
+            </div>
+          </Panel>
+        </div>
+
+        {openLink && <LinkDrilldown linkId={openLink} onClose={() => setOpenLink(null)} />}
+
         <Panel className="p-5 sm:p-6 anim-rise d-4">
           <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-muted-foreground flex items-center gap-2 mb-4">
             <Link2 className="h-4 w-4 text-primary" /> Top links
+            <span className="ml-auto text-[10px] font-semibold normal-case tracking-normal text-muted-foreground/80">
+              Click a link for drill-down
+            </span>
           </h2>
           {data.topLinks.length === 0 ? (
             <p className="text-sm text-muted-foreground">No links yet.</p>
           ) : (
             <ul className="divide-y divide-border">
               {data.topLinks.map((l, i) => (
-                <li key={l.id} className="flex items-center gap-3 py-3">
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-border bg-card/70 text-[11px] font-extrabold tabular-nums text-muted-foreground">
-                    {i + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold truncate">{l.title || l.short_code}</div>
-                    <div className="text-xs text-muted-foreground font-mono truncate">/{l.short_code}</div>
-                  </div>
-                  <span className="text-sm font-extrabold tabular-nums">{fmt(l.clicks)}</span>
+                <li key={l.id}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenLink(openLink === l.id ? null : l.id)}
+                    className={`flex w-full items-center gap-3 rounded-xl px-2 py-3 text-left transition-colors hover:bg-primary/5 ${
+                      openLink === l.id ? "bg-primary/8" : ""
+                    }`}
+                  >
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-border bg-card/70 text-[11px] font-extrabold tabular-nums text-muted-foreground">
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold truncate">{l.title || l.short_code}</div>
+                      <div className="text-xs text-muted-foreground font-mono truncate">/{l.short_code}</div>
+                    </div>
+                    <span className="text-sm font-extrabold tabular-nums">{fmt(l.clicks)}</span>
+                    <ChevronRight
+                      className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                        openLink === l.id ? "rotate-90 text-primary" : ""
+                      }`}
+                    />
+                  </button>
                 </li>
               ))}
             </ul>
