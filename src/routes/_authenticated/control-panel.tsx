@@ -851,9 +851,8 @@ function TrafficTab() {
             <input type="checkbox" checked={spBlock} onChange={(e) => setSpBlock(e.target.checked)} disabled={!spOn} className="w-4 h-4 accent-[var(--primary)]" />
             <span className="text-sm">Block disposable / temp email domains</span>
           </label>
-          <Field label="Max signups per IP per day (0 = unlimited)">
-            <input type="number" min={0} max={100} value={spIpMax} onChange={(e) => setSpIpMax(Number(e.target.value))} disabled={!spOn} className={inputCls} />
-          </Field>
+          <div className="sm:col-span-2 text-[11px] text-[var(--muted-foreground)]">Unlimited accounts per IP — no signup cap.</div>
+
         </div>
       </div>
 
