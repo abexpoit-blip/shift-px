@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { DEFAULT_SHORT_ORIGIN } from "@/lib/short-domains";
 import { z } from "zod";
 import { getRequestAuth } from "@/lib/request-auth.server";
 
@@ -27,7 +26,7 @@ function normalizeLink(row: LinkRow) {
   return {
     ...row,
     adsterra_url: row.adsterra_url ?? row.adsterra_direct_link ?? row.destination_url ?? "",
-    safe_url: row.safe_url ?? (row.adsterra_direct_link ? row.destination_url : DEFAULT_SHORT_ORIGIN + "/") ?? DEFAULT_SHORT_ORIGIN + "/",
+    safe_url: row.safe_url ?? (row.adsterra_direct_link ? row.destination_url : null) ?? null,
     is_active: row.is_active ?? row.status === "active",
     blocked_countries: Array.isArray(row.blocked_countries) ? row.blocked_countries : [],
   };
@@ -268,13 +267,15 @@ export const createLink = createServerFn({ method: "POST" })
     }
     if (isReservedShortCode(code)) throw new Error("Reserved short code generated. Please try again.");
 
-    const safeUrlToStore = data.safe_url ?? DEFAULT_SHORT_ORIGIN + "/";
+    // Empty safe URL → store NULL so the rotating safe-article pool is used.
+    // Never store the SaaS homepage as a safe page.
+    const safeUrlToStore = data.safe_url ?? null;
 
     const base: Record<string, unknown> = {
       user_id: context.userId,
       short_code: code,
       title: data.title ?? null,
-      destination_url: safeUrlToStore,
+      destination_url: safeUrlToStore ?? data.adsterra_url,
       status: "active",
       // Auto-shield US by default — FB ad reviewers concentrate in US datacenters.
       // Users can remove via Country Shield dialog on the dashboard.
@@ -399,3 +400,43 @@ export const updateBlockedCountries = createServerFn({ method: "POST" })
     return { ok: true, countries: cleaned };
   });
 
+
+/**
+ * Set or clear a link's own safe / landing page after creation.
+ * Owner-only. Passing null (or empty) restores the built-in rotating
+ * safe-article pool. Invalidates the redirect cache immediately.
+ */
+export const updateSafeUrl = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z.object({
+      id: z.string().uuid(),
+      safe_url: z.string().url().nullable().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const context = await getRequestAuth();
+    await assertNotBanned(context.supabase, context.userId);
+
+    const safeUrl = data.safe_url && data.safe_url.trim() ? data.safe_url.trim() : null;
+    if (safeUrl) {
+      const parsed = new URL(safeUrl);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        throw new Error("Safe page must be an http(s) URL.");
+      }
+    }
+
+    const { data: row, error } = await (context.supabase as any)
+      .from("links")
+      .update({ safe_url: safeUrl })
+      .eq("id", data.id)
+      .eq("user_id", context.userId)
+      .select("short_code")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!row) throw new Error("Link not found");
+
+    const { invalidateLinkCache } = await import("@/lib/link-cache.server");
+    await invalidateLinkCache(row.short_code);
+
+    return { ok: true, safe_url: safeUrl };
+  });
