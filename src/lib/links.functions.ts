@@ -132,10 +132,18 @@ async function computeDashboardPayload(context: Awaited<ReturnType<typeof getReq
   const linksRes = await selectLinks(context.supabase);
   const linkIds = (linksRes.data ?? []).map((l: any) => l.id);
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-  const [profileRes, statsRes, domainsRes, archivedRes] = await Promise.all([
-    context.supabase.from("profiles").select(
+  // Some self-hosted schemas lag behind on profile columns; fall back to `*`
+  // instead of 500-ing the whole dashboard.
+  const loadProfile = async () => {
+    const full = await context.supabase.from("profiles").select(
       "id, email, full_name, plan_slug, link_limit, links_used, click_quota, clicks_used, ours_clicks, plan_expires_at, avatar_url, is_banned, clicks_period_start"
-    ).eq("id", context.userId).single(),
+    ).eq("id", context.userId).maybeSingle();
+    if (!full.error) return full;
+    return await context.supabase.from("profiles").select("*").eq("id", context.userId).maybeSingle();
+  };
+
+  const [profileRes, statsRes, domainsRes, archivedRes] = await Promise.all([
+    loadProfile(),
     context.supabase.rpc("get_dashboard_stats" as never, { _user_id: context.userId } as never),
     context.supabase.from("custom_domains").select("domain").eq("user_id", context.userId).eq("verified", true),
     linkIds.length
@@ -144,6 +152,7 @@ async function computeDashboardPayload(context: Awaited<ReturnType<typeof getReq
   ]);
   if (linksRes.error) throw new Error(linksRes.error.message);
   if (profileRes.error) throw new Error(profileRes.error.message);
+
 
   const links = linksRes.data ?? [];
   const customDomains = (domainsRes.data ?? []).map((d: any) => d.domain);
