@@ -8,9 +8,9 @@ import {
   Shield, ShieldCheck, Link2, Sparkles, FileText,
 } from "lucide-react";
 
-import { getDashboardData, refreshDashboardData, createLink, deleteLink, toggleLink } from "@/lib/links.functions";
+import { getDashboardData, refreshDashboardData, createLink, deleteLink, toggleLink, updateSafeUrl } from "@/lib/links.functions";
 import { getPrimaryShortenerDomain } from "@/lib/shortener-domains.functions";
-import { DEFAULT_SHORT_HOST, DEFAULT_SHORT_ORIGIN, isFlaggedShortDomain } from "@/lib/short-domains";
+import { DEFAULT_SHORT_HOST, isFlaggedShortDomain } from "@/lib/short-domains";
 import { CountryShieldDialog } from "@/components/CountryShieldDialog";
 
 export const Route = createFileRoute("/_authenticated/links")({
@@ -105,6 +105,17 @@ function LinksPage() {
     onSuccess: () => refreshMut.mutate(),
   });
 
+  const saveSafe = useServerFn(updateSafeUrl);
+  const safeMut = useMutation({
+    mutationFn: (v: { id: string; safe_url: string | null }) => saveSafe({ data: v }),
+    onSuccess: (_d, v) => {
+      toast.success(v.safe_url ? "Safe page saved" : "Reverted to built-in article");
+      setSafeFor(null);
+      refreshMut.mutate();
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not save safe page"),
+  });
+
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     createMut.mutate({ title: title || undefined, adsterra_url: adsterra, safe_url: safeMode === "custom" && safe ? safe : undefined });
@@ -127,6 +138,7 @@ function LinksPage() {
   const stats = dashQ.data?.stats;
   const profile = dashQ.data?.profile;
   const [shieldFor, setShieldFor] = useState<null | { id: string; title: string; initial: string[] }>(null);
+  const [safeFor, setSafeFor] = useState<null | { id: string; title: string; current: string }>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -234,7 +246,7 @@ function LinksPage() {
               </Field>
 
               <div className="sm:col-span-2">
-                <label className="block text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2">Safe page for bots &amp; reviewers</label>
+                <label className="block text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2">Your own safe page / landing page (optional)</label>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <button
                     type="button"
@@ -285,7 +297,9 @@ function LinksPage() {
                   </div>
                 )}
                 {safeMode === "auto" && (
-                  <p className="text-[11px] text-muted-foreground mt-2">Default: {DEFAULT_SHORT_ORIGIN}/ safe article pool.</p>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    Leave empty and we rotate our built-in safe article pool for this link. You can add your own page later at any time.
+                  </p>
                 )}
               </div>
 
@@ -405,6 +419,15 @@ function LinksPage() {
                             >
                               <Shield className="w-4 h-4" />
                             </button>
+                            <button
+                              title={(l as any).safe_url ? "Custom safe page set" : "Safe page (built-in article)"}
+                              onClick={() => setSafeFor({ id: l.id, title: l.title || l.short_code, current: (l as any).safe_url ?? "" })}
+                              className={`p-1.5 rounded-lg hover:bg-border/60 shrink-0 ${
+                                (l as any).safe_url ? "text-amber-500" : "text-muted-foreground hover:text-primary"
+                              }`}
+                            >
+                              <FileText className="w-4 h-4" />
+                            </button>
                             <a href={shortUrl} target="_blank" rel="noopener noreferrer"
                               title={`Verify ${primaryDomain}/${l.short_code}`}
                               className="text-muted-foreground hover:text-emerald-600 p-1.5 rounded-lg hover:bg-emerald-50 shrink-0">
@@ -446,6 +469,8 @@ function LinksPage() {
         />
       )}
 
+      {safeFor && <SafePageDialog entry={safeFor} onClose={() => setSafeFor(null)} pending={safeMut.isPending} onSave={(url) => safeMut.mutate({ id: safeFor.id, safe_url: url })} />}
+
       {selectedIds.size > 0 && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 rounded-2xl bg-foreground text-background shadow-2xl border border-primary/40 max-w-[95vw] flex-wrap justify-center">
           <span className="text-xs font-bold whitespace-nowrap">{selectedIds.size} selected</span>
@@ -466,6 +491,69 @@ function LinksPage() {
       )}
 
       {stats == null && null}
+    </div>
+  );
+}
+
+function SafePageDialog({
+  entry, onClose, onSave, pending,
+}: {
+  entry: { id: string; title: string; current: string };
+  onClose: () => void;
+  onSave: (url: string | null) => void;
+  pending: boolean;
+}) {
+  const [value, setValue] = useState(entry.current);
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl glass-card p-6 space-y-4" onClick={(e) => e.stopPropagation()} style={display}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary-gradient flex items-center justify-center shadow-lg shadow-glow">
+            <FileText className="w-5 h-5 text-white" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-base font-extrabold tracking-tight truncate">Safe page</h3>
+            <p className="text-[11px] text-muted-foreground truncate">{entry.title}</p>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2">
+            Your own safe page / landing page (optional)
+          </label>
+          <input
+            type="url"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="https://yoursite.com/my-article"
+            className={fieldCls}
+          />
+          <p className="text-[11px] text-muted-foreground mt-2">
+            When set, every bot — including Facebook/Meta crawlers and ad reviewers — lands on this exact page,
+            so the link preview and the reviewer see the same content. Leave empty to use our built-in rotating article.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2 pt-1">
+          <button
+            disabled={pending || !value.trim()}
+            onClick={() => onSave(value.trim())}
+            className="px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-primary-gradient shadow-lg shadow-glow disabled:opacity-50"
+          >
+            {pending ? "Saving…" : "Save safe page"}
+          </button>
+          <button
+            disabled={pending}
+            onClick={() => onSave(null)}
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground border border-border hover:bg-muted disabled:opacity-50"
+          >
+            Use built-in article
+          </button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground">
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
