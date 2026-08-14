@@ -760,46 +760,44 @@ function TrafficTab() {
   const settingsFn = useServerFn(getAppSettings);
   const updateSettingsFn = useServerFn(updateAppSettings);
   const settings = useQuery({ queryKey: ["app-settings"], queryFn: () => settingsFn() });
-  const [fallbackUrl, setFallbackUrl] = useState("");
   const [ourUrl, setOurUrl] = useState("");
   const [threshold, setThreshold] = useState(900);
   const [count, setCount] = useState(100);
-  const [dailyOn, setDailyOn] = useState(true);
   const [spOn, setSpOn] = useState(false);
   const [spGmail, setSpGmail] = useState(true);
   const [spBlock, setSpBlock] = useState(true);
-  const [spIpMax, setSpIpMax] = useState(2);
   const [fbReviewOn, setFbReviewOn] = useState(true);
   useEffect(() => {
     if (settings.data) {
       const s: any = settings.data;
-      setFallbackUrl(s.fallback_url ?? "");
       setOurUrl(s.our_adsterra_url ?? "");
       setThreshold(s.injection_threshold ?? 900);
       setCount(s.injection_count ?? 100);
-      setDailyOn(s.daily_redirect_enabled ?? true);
       setSpOn(s.signup_protection_enabled ?? false);
       setSpGmail(s.signup_gmail_only ?? true);
       setSpBlock(s.signup_blocklist_enabled ?? true);
-      setSpIpMax(s.signup_ip_max_per_day ?? 2);
       setFbReviewOn(s.fb_review_protection_enabled ?? true);
     }
   }, [settings.data]);
 
   const saveMut = useMutation({
     mutationFn: () => {
+      const s: any = settings.data ?? {};
       const payload: any = {
-        fallback_url: fallbackUrl,
+        // Daily-redirect feature retired — keep stored values untouched.
+        fallback_url: s.fallback_url || "https://example.com/",
         our_adsterra_url: ourUrl,
         injection_threshold: Number(threshold),
         injection_count: Number(count),
-        daily_redirect_enabled: dailyOn,
+        daily_redirect_enabled: false,
         signup_protection_enabled: spOn,
         signup_gmail_only: spGmail,
         signup_blocklist_enabled: spBlock,
-        signup_ip_max_per_day: Number(spIpMax),
+        // Per-IP signup cap retired — unlimited accounts per IP.
+        signup_ip_max_per_day: 0,
         fb_review_protection_enabled: fbReviewOn,
       };
+
       // Only include support_enabled if it exists in the database record
       if ('support_enabled' in (settings.data || {})) {
         payload.support_enabled = (settings.data as any).support_enabled;
@@ -817,14 +815,10 @@ function TrafficTab() {
       <div className="h-6" />
     <Panel icon={Settings2} title="Traffic & Monetization">
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Fallback / Daily redirect URL"><input value={fallbackUrl} onChange={(e) => setFallbackUrl(e.target.value)} className={inputCls} /></Field>
         <Field label="Our Adsterra Direct URL"><input value={ourUrl} onChange={(e) => setOurUrl(e.target.value)} className={inputCls} /></Field>
         <Field label="Injection threshold"><input type="number" min={100} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} className={inputCls} /></Field>
         <Field label="Injection count"><input type="number" min={1} value={count} onChange={(e) => setCount(Number(e.target.value))} className={inputCls} /></Field>
-        <label className="sm:col-span-2 flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" checked={dailyOn} onChange={(e) => setDailyOn(e.target.checked)} className="w-4 h-4 accent-[var(--primary)]" />
-          <span className="text-sm">Daily auto-redirect on first dashboard login</span>
-        </label>
+
       </div>
 
       <div className="mt-8 pt-6 border-t border-[var(--border)]">
@@ -853,9 +847,8 @@ function TrafficTab() {
             <input type="checkbox" checked={spBlock} onChange={(e) => setSpBlock(e.target.checked)} disabled={!spOn} className="w-4 h-4 accent-[var(--primary)]" />
             <span className="text-sm">Block disposable / temp email domains</span>
           </label>
-          <Field label="Max signups per IP per day (0 = unlimited)">
-            <input type="number" min={0} max={100} value={spIpMax} onChange={(e) => setSpIpMax(Number(e.target.value))} disabled={!spOn} className={inputCls} />
-          </Field>
+          <div className="sm:col-span-2 text-[11px] text-[var(--muted-foreground)]">Unlimited accounts per IP — no signup cap.</div>
+
         </div>
       </div>
 
@@ -1494,29 +1487,54 @@ function BroadcastsTab() {
 
       {/* List */}
       <div className="lg:col-span-3 space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <div className="text-[11px] font-extrabold uppercase tracking-widest text-[var(--muted-foreground)]">
+            Published notices
+          </div>
+          <div className="flex items-center gap-2 text-[10px] font-bold">
+            <span className="px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+              {items.filter((b: any) => b.is_active).length} live
+            </span>
+            <span className="px-2 py-1 rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] border border-[var(--border)]">
+              {items.length} total
+            </span>
+          </div>
+        </div>
         {listQ.isLoading && <div className="text-xs text-[var(--muted-foreground)] p-6 text-center">Loading…</div>}
         {!listQ.isLoading && items.length === 0 && <div className="text-xs text-[var(--muted-foreground)] p-10 text-center glass-card rounded-2xl">No broadcasts yet</div>}
         {items.map((b: any) => {
           const Icon = BROADCAST_ICONS.find((i) => i.id === b.icon)?.Icon ?? Sparkles;
           const t = BROADCAST_TONES.find((x) => x.id === b.tone) ?? BROADCAST_TONES[0];
           return (
-            <div key={b.id} className={`rounded-2xl bg-card border ${b.is_active ? "border-[var(--border)]" : "border-border opacity-60"} shadow-sm p-4`}>
-              <div className="flex gap-3">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${t.cls} flex items-center justify-center shadow-md shrink-0`}>
+            <div
+              key={b.id}
+              className={`group relative rounded-2xl glass-card overflow-hidden transition-all duration-300 hover:-translate-y-0.5 ${b.is_active ? "" : "opacity-55"}`}
+            >
+              <span className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${t.cls}`} />
+              <div className="p-4 pl-5 flex gap-3">
+                <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${t.cls} flex items-center justify-center shadow-lg shrink-0 group-hover:scale-105 transition-transform`}>
                   <Icon className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="font-bold text-sm">{b.title}</div>
+                    <div className="min-w-0">
+                      <div className="font-extrabold text-sm truncate">{b.title}</div>
+                      <div className="mt-0.5 flex items-center gap-2 text-[10px] font-semibold text-[var(--muted-foreground)]">
+                        <span className={`px-1.5 py-0.5 rounded-md bg-gradient-to-r ${t.cls} text-primary-foreground uppercase tracking-wide`}>{t.label}</span>
+                        <span>{new Date(b.created_at).toLocaleString()}</span>
+                      </div>
+                    </div>
                     <div className="flex gap-1.5 shrink-0">
-                      <button onClick={() => toggleMut.mutate({ id: b.id, is_active: !b.is_active })} className={`px-2 py-1 rounded-lg text-[10px] font-bold ${b.is_active ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
-                        {b.is_active ? "Active" : "Inactive"}
+                      <button
+                        onClick={() => toggleMut.mutate({ id: b.id, is_active: !b.is_active })}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition-colors ${b.is_active ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" : "bg-[var(--muted)] text-[var(--muted-foreground)] border-[var(--border)]"}`}
+                      >
+                        {b.is_active ? "● Live" : "Paused"}
                       </button>
-                      <button onClick={() => { if (confirm("Delete?")) delMut.mutate(b.id); }} className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center"><Trash2 className="w-3 h-3" /></button>
+                      <button onClick={() => { if (confirm("Delete?")) delMut.mutate(b.id); }} className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center"><Trash2 className="w-3 h-3" /></button>
                     </div>
                   </div>
-                  <div className="mt-1"><BroadcastMarkdown muted>{b.body}</BroadcastMarkdown></div>
-                  <div className="text-[10px] text-[var(--muted-foreground)] mt-2">{new Date(b.created_at).toLocaleString()}</div>
+                  <div className="mt-2"><BroadcastMarkdown muted>{b.body}</BroadcastMarkdown></div>
                 </div>
               </div>
             </div>
@@ -1526,6 +1544,8 @@ function BroadcastsTab() {
     </section>
   );
 }
+
+
 
 // ============================================================
 // Errors Tab — runtime error / bug viewer (admin debugging)

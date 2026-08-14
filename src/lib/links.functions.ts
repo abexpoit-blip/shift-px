@@ -286,13 +286,20 @@ export const createLink = createServerFn({ method: "POST" })
     // Some deployments (self-hosted) still use the legacy column names. Insert with
     // the modern columns first, then progressively drop unknown columns instead of
     // failing with "Could not find the 'adsterra_url' column ... in the schema cache".
+    const noShield = { ...base };
+    delete (noShield as Record<string, unknown>).blocked_countries;
+
     const attempts: Array<Record<string, unknown>> = [
       { ...base, adsterra_url: data.adsterra_url, safe_url: safeUrlToStore },
       { ...base, adsterra_url: data.adsterra_url },
-      { ...base, adsterra_direct_link: data.adsterra_url, safe_url: safeUrlToStore },
-      { ...base, adsterra_direct_link: data.adsterra_url },
-      { ...base, destination_url: data.adsterra_url },
+      // DB without the blocked_countries column (older self-host schema)
+      { ...noShield, adsterra_url: data.adsterra_url, safe_url: safeUrlToStore },
+      { ...noShield, adsterra_url: data.adsterra_url },
+      { ...noShield, adsterra_direct_link: data.adsterra_url, safe_url: safeUrlToStore },
+      { ...noShield, adsterra_direct_link: data.adsterra_url },
+      { ...noShield, destination_url: data.adsterra_url },
     ];
+
 
     let lastError: { message: string } | null = null;
     for (const payload of attempts) {
