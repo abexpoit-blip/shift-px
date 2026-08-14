@@ -115,7 +115,10 @@ export const getStatistics = createServerFn({ method: "GET" })
       bucket.bots += Number(row.bot_clicks ?? 0);
     }
 
-    const countryMap = new Map<string, { code: string; humans: number; bots: number; total: number }>();
+    const countryMap = new Map<
+      string,
+      { code: string; humans: number; bots: number; total: number }
+    >();
     const sourceMap = new Map<string, number>();
     const deviceMap = new Map<string, number>();
     const browserMap = new Map<string, number>();
@@ -195,7 +198,11 @@ export const getLinkStats = createServerFn({ method: "GET" })
     if (!link || link.user_id !== userId) throw new Error("Link not found");
 
     const [statsRes, clicksRes] = await Promise.all([
-      db.from("daily_stats").select("day, human_clicks, bot_clicks").eq("link_id", link.id).gte("day", since),
+      db
+        .from("daily_stats")
+        .select("day, human_clicks, bot_clicks")
+        .eq("link_id", link.id)
+        .gte("day", since),
       db
         .from("clicks")
         .select("country, device, is_bot")

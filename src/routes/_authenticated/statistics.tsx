@@ -27,9 +27,16 @@ export const Route = createFileRoute("/_authenticated/statistics")({
   head: () => ({
     meta: [
       { title: "Statistics — Adspx" },
-      { name: "description", content: "Traffic analytics for your Adspx links: verified human visits, countries and traffic sources over the last 30 days." },
+      {
+        name: "description",
+        content:
+          "Traffic analytics for your Adspx links: verified human visits, countries and traffic sources over the last 30 days.",
+      },
       { property: "og:title", content: "Statistics — Adspx" },
-      { property: "og:description", content: "Traffic analytics for your Adspx links over the last 30 days." },
+      {
+        property: "og:description",
+        content: "Traffic analytics for your Adspx links over the last 30 days.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -94,21 +101,32 @@ function StatCard({
   const v = useCountUp(value);
   return (
     <div className={`group relative overflow-hidden rounded-2xl glass-card p-4 ${className}`}>
-      <div className={`absolute inset-0 bg-gradient-to-br opacity-70 pointer-events-none ${ACCENTS[accent]}`} />
+      <div
+        className={`absolute inset-0 bg-gradient-to-br opacity-70 pointer-events-none ${ACCENTS[accent]}`}
+      />
       <div className="relative flex items-start justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</span>
+        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+          {label}
+        </span>
         <span
-          className={`grid h-8 w-8 place-items-center rounded-xl border border-border bg-card/80 shadow-sm ${ACCENTS[accent]
+          className={`grid h-8 w-8 place-items-center rounded-xl border border-border bg-card/80 shadow-sm ${ACCENTS[
+            accent
+          ]
             .split(" ")
             .pop()} group-hover:scale-110 transition-transform`}
         >
           <Icon className="h-4 w-4" />
         </span>
       </div>
-      <div className="relative mt-2 text-2xl lg:text-3xl font-extrabold tabular-nums" style={display}>
+      <div
+        className="relative mt-2 text-2xl lg:text-3xl font-extrabold tabular-nums"
+        style={display}
+      >
         {fmtCompact(v)}
       </div>
-      {hint && <div className="relative mt-1 text-[11px] font-semibold text-muted-foreground">{hint}</div>}
+      {hint && (
+        <div className="relative mt-1 text-[11px] font-semibold text-muted-foreground">{hint}</div>
+      )}
     </div>
   );
 }
@@ -118,7 +136,11 @@ function Panel({ children, className = "" }: { children: React.ReactNode; classN
 }
 
 /** Premium stacked column chart: humans + bots per day with hover tooltip. */
-function TrafficChart({ series }: { series: Array<{ day: string; humans: number; bots: number }> }) {
+function TrafficChart({
+  series,
+}: {
+  series: Array<{ day: string; humans: number; bots: number }>;
+}) {
   const max = Math.max(1, ...series.map((d) => d.humans + d.bots));
   const [hover, setHover] = useState<number | null>(null);
   const label = (d: string) =>
@@ -157,7 +179,10 @@ function TrafficChart({ series }: { series: Array<{ day: string; humans: number;
                   }`}
                   style={{ height: `${Math.max(3, h)}%` }}
                 >
-                  <div className="w-full bg-muted-foreground/25" style={{ height: `${100 - hp}%` }} />
+                  <div
+                    className="w-full bg-muted-foreground/25"
+                    style={{ height: `${100 - hp}%` }}
+                  />
                   <div className="w-full bg-primary-gradient" style={{ height: `${hp}%` }} />
                 </div>
                 {active && (
@@ -179,7 +204,9 @@ function TrafficChart({ series }: { series: Array<{ day: string; humans: number;
         <div className="mt-2 flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
           <span>{series.length ? label(series[0].day) : ""}</span>
           <span>{series.length > 6 ? label(series[Math.floor(series.length / 2)].day) : ""}</span>
-          <span className="text-primary">{series.length ? label(series[series.length - 1].day) : ""}</span>
+          <span className="text-primary">
+            {series.length ? label(series[series.length - 1].day) : ""}
+          </span>
         </div>
       </div>
     </div>
@@ -188,7 +215,14 @@ function TrafficChart({ series }: { series: Array<{ day: string; humans: number;
 
 function Donut({ data }: { data: Array<{ name: string; value: number }> }) {
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
-  const tones = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--primary-glow)"];
+  const tones = [
+    "var(--chart-1)",
+    "var(--chart-2)",
+    "var(--chart-3)",
+    "var(--chart-4)",
+    "var(--chart-5)",
+    "var(--primary-glow)",
+  ];
   let acc = 0;
   const r = 54;
   const c = 2 * Math.PI * r;
@@ -223,16 +257,23 @@ function Donut({ data }: { data: Array<{ name: string; value: number }> }) {
             <div className="text-lg font-extrabold tabular-nums" style={display}>
               {fmtCompact(total)}
             </div>
-            <div className="text-[9px] uppercase tracking-[0.18em] font-bold text-muted-foreground">visits</div>
+            <div className="text-[9px] uppercase tracking-[0.18em] font-bold text-muted-foreground">
+              visits
+            </div>
           </div>
         </div>
       </div>
       <ul className="flex-1 min-w-[160px] space-y-2">
         {data.map((d, i) => (
           <li key={d.name} className="flex items-center gap-2 text-sm">
-            <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: tones[i % tones.length] }} />
+            <span
+              className="h-2.5 w-2.5 rounded-full shrink-0"
+              style={{ background: tones[i % tones.length] }}
+            />
             <span className="flex-1 truncate">{d.name}</span>
-            <span className="font-bold tabular-nums text-xs">{Math.round((d.value / total) * 100)}%</span>
+            <span className="font-bold tabular-nums text-xs">
+              {Math.round((d.value / total) * 100)}%
+            </span>
           </li>
         ))}
       </ul>
@@ -321,15 +362,25 @@ function LinkDrilldown({ linkId, onClose }: { linkId: string; onClose: () => voi
         <div className="space-y-5">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="rounded-xl surface-soft p-3">
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Humans · 30d</div>
-              <div className="mt-1 text-xl font-extrabold tabular-nums">{fmtCompact(data.totals.humans)}</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                Humans · 30d
+              </div>
+              <div className="mt-1 text-xl font-extrabold tabular-nums">
+                {fmtCompact(data.totals.humans)}
+              </div>
             </div>
             <div className="rounded-xl surface-soft p-3">
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Bots filtered</div>
-              <div className="mt-1 text-xl font-extrabold tabular-nums">{fmtCompact(data.totals.bots)}</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                Bots filtered
+              </div>
+              <div className="mt-1 text-xl font-extrabold tabular-nums">
+                {fmtCompact(data.totals.bots)}
+              </div>
             </div>
             <div className="rounded-xl surface-soft p-3 col-span-2 sm:col-span-1">
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Earned</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                Earned
+              </div>
               <div className="mt-1 text-xl font-extrabold tabular-nums text-primary">
                 ${(data.totals.humans / 50000).toFixed(2)}
               </div>
@@ -340,15 +391,21 @@ function LinkDrilldown({ linkId, onClose }: { linkId: string; onClose: () => voi
 
           <div className="grid sm:grid-cols-2 gap-5">
             <div>
-              <h4 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Top countries</h4>
+              <h4 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                Top countries
+              </h4>
               {data.countries.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No data yet.</p>
               ) : (
-                <HBar rows={data.countries.map((c) => ({ name: c.code.toUpperCase(), value: c.total }))} />
+                <HBar
+                  rows={data.countries.map((c) => ({ name: c.code.toUpperCase(), value: c.total }))}
+                />
               )}
             </div>
             <div>
-              <h4 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Devices</h4>
+              <h4 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                Devices
+              </h4>
               {data.devices.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No data yet.</p>
               ) : (
@@ -420,15 +477,44 @@ function StatisticsPage() {
             Traffic <span className="text-gradient">statistics</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-1.5">
-            Verified human visits, bot filtering, countries and traffic sources across all your links.
+            Verified human visits, bot filtering, countries and traffic sources across all your
+            links.
           </p>
         </header>
 
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard className="anim-rise d-1" icon={BarChart3} label="Total visits" value={data.totalClicks} hint="All recorded traffic" accent="indigo" />
-          <StatCard className="anim-rise d-2" icon={Users} label="Verified humans" value={data.humanClicks} hint={`${humanShare}% of traffic · counted for earnings`} accent="violet" />
-          <StatCard className="anim-rise d-3" icon={Bot} label="Bots filtered" value={data.botClicks} hint="Blocked, never paid" accent="emerald" />
-          <StatCard className="anim-rise d-4" icon={Globe2} label="Countries" value={data.countriesSeen} hint="Unique visitor regions" accent="pink" />
+          <StatCard
+            className="anim-rise d-1"
+            icon={BarChart3}
+            label="Total visits"
+            value={data.totalClicks}
+            hint="All recorded traffic"
+            accent="indigo"
+          />
+          <StatCard
+            className="anim-rise d-2"
+            icon={Users}
+            label="Verified humans"
+            value={data.humanClicks}
+            hint={`${humanShare}% of traffic · counted for earnings`}
+            accent="violet"
+          />
+          <StatCard
+            className="anim-rise d-3"
+            icon={Bot}
+            label="Bots filtered"
+            value={data.botClicks}
+            hint="Blocked, never paid"
+            accent="emerald"
+          />
+          <StatCard
+            className="anim-rise d-4"
+            icon={Globe2}
+            label="Countries"
+            value={data.countriesSeen}
+            hint="Unique visitor regions"
+            accent="pink"
+          />
         </section>
 
         <Panel className="p-5 sm:p-6 anim-rise d-2">
@@ -437,7 +523,9 @@ function StatisticsPage() {
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-1.5">
                 <TrendingUp className="h-3.5 w-3.5 text-primary" /> Daily traffic
               </p>
-              <div className="mt-1 text-3xl font-extrabold tabular-nums">{fmtCompact(data.totalClicks)}</div>
+              <div className="mt-1 text-3xl font-extrabold tabular-nums">
+                {fmtCompact(data.totalClicks)}
+              </div>
               <p className="text-xs text-muted-foreground mt-0.5">Humans and bots, day by day</p>
             </div>
             <div className="flex items-center gap-3 text-[11px] font-bold text-muted-foreground">
@@ -469,14 +557,18 @@ function StatisticsPage() {
                       loading="lazy"
                       className="h-4 w-6 rounded-[3px] border border-border object-cover shrink-0"
                     />
-                    <span className="w-8 text-xs font-bold uppercase text-muted-foreground">{c.code}</span>
+                    <span className="w-8 text-xs font-bold uppercase text-muted-foreground">
+                      {c.code}
+                    </span>
                     <div className="flex-1 h-2 rounded-full bg-border overflow-hidden">
                       <div
                         className="h-full rounded-full bg-primary-gradient transition-[width] duration-700"
                         style={{ width: `${Math.max(4, (c.total / maxCountry) * 100)}%` }}
                       />
                     </div>
-                    <span className="text-xs font-bold tabular-nums w-16 text-right">{fmtCompact(c.humans)}</span>
+                    <span className="text-xs font-bold tabular-nums w-16 text-right">
+                      {fmtCompact(c.humans)}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -540,11 +632,17 @@ function StatisticsPage() {
               </div>
               <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Earned so far</div>
-                  <div className="text-base font-extrabold tabular-nums">${forecast.earnedSoFar.toFixed(2)}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                    Earned so far
+                  </div>
+                  <div className="text-base font-extrabold tabular-nums">
+                    ${forecast.earnedSoFar.toFixed(2)}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Days left</div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                    Days left
+                  </div>
                   <div className="text-base font-extrabold tabular-nums">{forecast.daysLeft}</div>
                 </div>
               </div>
@@ -578,8 +676,12 @@ function StatisticsPage() {
                       {i + 1}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold truncate">{l.title || l.short_code}</div>
-                      <div className="text-xs text-muted-foreground font-mono truncate">/{l.short_code}</div>
+                      <div className="text-sm font-semibold truncate">
+                        {l.title || l.short_code}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-mono truncate">
+                        /{l.short_code}
+                      </div>
                     </div>
                     <span className="text-sm font-extrabold tabular-nums">{fmt(l.clicks)}</span>
                     <ChevronRight
