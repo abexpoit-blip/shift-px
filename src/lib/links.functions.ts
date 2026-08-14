@@ -276,7 +276,7 @@ export const createLink = createServerFn({ method: "POST" })
       user_id: context.userId,
       short_code: code,
       title: data.title ?? null,
-      destination_url: safeUrlToStore ?? data.adsterra_url,
+      destination_url: data.adsterra_url,
       status: "active",
       // Auto-shield US by default — FB ad reviewers concentrate in US datacenters.
       // Users can remove via Country Shield dialog on the dashboard.
