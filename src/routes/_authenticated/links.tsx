@@ -198,26 +198,100 @@ function LinksPage() {
         </button>
 
         {showCreate && (
-          <Panel className="p-6">
-            <h3 className="text-lg font-bold text-foreground mb-1" style={display}>Create Smart Link</h3>
-            <p className="text-xs text-muted-foreground mb-5">Wrap your Adsterra link with bot-shield & cloak page.</p>
-            <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+          <Panel className="overflow-hidden">
+            <div className="relative px-6 py-5 border-b border-border overflow-hidden">
+              <div className="absolute -top-16 -right-10 w-52 h-52 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
+              <div className="relative flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-primary-gradient flex items-center justify-center shadow-lg shadow-glow">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold tracking-tight" style={display}>New smart link</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Direct link in, protected short link out — bots never see your offer.</p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={onSubmit} className="p-6 grid gap-5 sm:grid-cols-2">
               <Field label="Title (optional)" full>
                 <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="My ad campaign" className={fieldCls} />
               </Field>
-              <Field label="Adsterra Direct Link *">
-                <input type="url" required value={adsterra} onChange={(e) => setAdsterra(e.target.value)} placeholder="https://..." className={fieldCls} />
+
+              <Field label="Direct link *" full>
+                <div className="relative">
+                  <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+                  <input
+                    type="url"
+                    required
+                    value={adsterra}
+                    onChange={(e) => setAdsterra(e.target.value)}
+                    placeholder="https://your-direct-link.com/..."
+                    className={fieldCls + " pl-11"}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1.5">Paste any direct link (Adsterra, offer page, affiliate URL).</p>
               </Field>
-              <Field label="Safe URL (optional)" full>
-                <input type="url" value={safe} onChange={(e) => setSafe(e.target.value)} placeholder={`${DEFAULT_SHORT_ORIGIN}/`} className={fieldCls} />
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  FB crawler & ad reviewers automatically receive our built safe article (200 OK HTML). Real users go to your offer.
-                </p>
-              </Field>
-              <div className="sm:col-span-2 flex gap-3 pt-1">
+
+              <div className="sm:col-span-2">
+                <label className="block text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2">Safe page for bots &amp; reviewers</label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => { setSafeMode("auto"); setSafe(""); }}
+                    className={`text-left rounded-2xl border p-4 transition-all ${
+                      safeMode === "auto"
+                        ? "border-primary/60 bg-primary/10 shadow-lg shadow-glow"
+                        : "border-border bg-muted/50 hover:border-primary/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className={`w-4 h-4 ${safeMode === "auto" ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className="text-sm font-bold">Built-in safe article</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1.5">We serve a real, indexable article page (200 OK) to crawlers automatically.</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSafeMode("custom")}
+                    className={`text-left rounded-2xl border p-4 transition-all ${
+                      safeMode === "custom"
+                        ? "border-primary/60 bg-primary/10 shadow-lg shadow-glow"
+                        : "border-border bg-muted/50 hover:border-primary/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className={`w-4 h-4 ${safeMode === "custom" ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className="text-sm font-bold">My own article URL</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1.5">Use your own safe page / blog article instead of ours.</p>
+                  </button>
+                </div>
+
+                {safeMode === "custom" && (
+                  <div className="mt-3">
+                    <input
+                      type="url"
+                      required
+                      value={safe}
+                      onChange={(e) => setSafe(e.target.value)}
+                      placeholder="https://yoursite.com/my-article"
+                      className={fieldCls}
+                    />
+                    <p className="text-[11px] text-muted-foreground mt-1.5">
+                      Must be a live page with real content — bots, Facebook/Meta reviewers and Google will land here.
+                    </p>
+                  </div>
+                )}
+                {safeMode === "auto" && (
+                  <p className="text-[11px] text-muted-foreground mt-2">Default: {DEFAULT_SHORT_ORIGIN}/ safe article pool.</p>
+                )}
+              </div>
+
+              <div className="sm:col-span-2 flex flex-wrap gap-3 pt-1">
                 <button type="submit" disabled={createMut.isPending}
                   className="px-6 py-3 rounded-xl font-bold text-sm text-white bg-primary-gradient shadow-lg shadow-glow hover:scale-[1.02] transition-transform disabled:opacity-50">
-                  {createMut.isPending ? "Creating…" : "Create Link"}
+                  {createMut.isPending ? "Creating…" : "Create link"}
                 </button>
                 <button type="button" onClick={() => setShowCreate(false)}
                   className="px-6 py-3 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground border border-border hover:bg-muted">
@@ -227,6 +301,7 @@ function LinksPage() {
             </form>
           </Panel>
         )}
+
 
         <Panel className="overflow-hidden">
           <div className="p-5 flex justify-between items-center flex-wrap gap-3">
