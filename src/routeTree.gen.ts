@@ -30,6 +30,7 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as CodeRouteImport } from './routes/$code'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
@@ -157,6 +158,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CodeRoute = CodeRouteImport.update({
+  id: '/$code',
+  path: '/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -276,6 +282,7 @@ const ApiPublicHooksDomainHealthScanRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$code': typeof CodeRoute
   '/about': typeof AboutRoute
   '/blog': typeof BlogRouteWithChildren
   '/cart': typeof CartRoute
@@ -320,6 +327,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$code': typeof CodeRoute
   '/about': typeof AboutRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
@@ -364,6 +372,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$code': typeof CodeRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/about': typeof AboutRoute
   '/blog': typeof BlogRouteWithChildren
@@ -411,6 +420,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$code'
     | '/about'
     | '/blog'
     | '/cart'
@@ -455,6 +465,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$code'
     | '/about'
     | '/cart'
     | '/checkout'
@@ -498,6 +509,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/$code'
     | '/_authenticated'
     | '/about'
     | '/blog'
@@ -544,6 +556,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CodeRoute: typeof CodeRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AboutRoute: typeof AboutRoute
   BlogRoute: typeof BlogRouteWithChildren
@@ -721,6 +734,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$code': {
+      id: '/$code'
+      path: '/$code'
+      fullPath: '/$code'
+      preLoaderRoute: typeof CodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -936,6 +956,7 @@ const ShopRouteWithChildren = ShopRoute._addFileChildren(ShopRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CodeRoute: CodeRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AboutRoute: AboutRoute,
   BlogRoute: BlogRouteWithChildren,
