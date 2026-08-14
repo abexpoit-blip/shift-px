@@ -204,12 +204,18 @@ BEGIN
   END IF;
 END $$;
 
+-- HYBRID retention (see migration/35_hybrid_click_storage.sql):
+--   daily_stats  = per-link per-day totals (forever)
+--   click_dim_daily = per-day country/device/browser/source split (forever)
+--   clicks       = raw rows, hot window of 7 days only
 CREATE OR REPLACE FUNCTION public.maintenance_purge_old_clicks()
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $function$
+DECLARE
+  removed integer;
 BEGIN
   INSERT INTO public.daily_stats (link_id, day, human_clicks, bot_clicks, country_breakdown, device_breakdown)
   SELECT
@@ -241,14 +247,20 @@ BEGIN
     ) grouped_country
   ) countries ON true
   LEFT JOIN LATERAL (
-    SELECT jsonb_object_agg(device, cnt) AS device_breakdown
+    SELECT jsonb_object_agg(dev, cnt) AS device_breakdown
     FROM (
-      SELECT device, COUNT(*)::int AS cnt
+      SELECT
+        CASE
+          WHEN c.ua ~* 'ipad|tablet'              THEN 'tablet'
+          WHEN c.ua ~* 'mobi|android|iphone|ipod' THEN 'mobile'
+          WHEN c.ua IS NULL OR c.ua = ''          THEN 'other'
+          ELSE 'desktop'
+        END AS dev,
+        COUNT(*)::int AS cnt
       FROM public.clicks c
       WHERE c.link_id = daily.link_id
         AND c.created_at::date = daily.day
-        AND c.device IS NOT NULL
-      GROUP BY device
+      GROUP BY 1
     ) grouped_device
   ) devices ON true
   ON CONFLICT (link_id, day) DO UPDATE SET
@@ -257,8 +269,25 @@ BEGIN
     country_breakdown = EXCLUDED.country_breakdown,
     device_breakdown = EXCLUDED.device_breakdown;
 
-  DELETE FROM public.clicks
-  WHERE created_at < (now() - interval '7 days');
+  -- lifetime totals + per-day dimension archive BEFORE anything is deleted
+  IF to_regprocedure('public.archive_lifetime_stats()') IS NOT NULL THEN
+    PERFORM public.archive_lifetime_stats();
+  END IF;
+  IF to_regprocedure('public.rollup_click_dims(integer)') IS NOT NULL THEN
+    PERFORM public.rollup_click_dims(14);
+  END IF;
+
+  -- batched purge keeps locks short under heavy traffic
+  LOOP
+    DELETE FROM public.clicks
+    WHERE ctid IN (
+      SELECT ctid FROM public.clicks
+      WHERE created_at < (now() - interval '7 days')
+      LIMIT 5000
+    );
+    GET DIAGNOSTICS removed = ROW_COUNT;
+    EXIT WHEN removed = 0;
+  END LOOP;
 
   IF to_regclass('public.error_logs') IS NOT NULL THEN
     DELETE FROM public.error_logs
@@ -266,6 +295,7 @@ BEGIN
   END IF;
 END;
 $function$;
+
 
 DO $$
 BEGIN
