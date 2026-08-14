@@ -361,11 +361,8 @@ export function TopBar({
           </CommandGroup>
           <CommandSeparator />
           <CommandGroup heading="Earnings">
-            <CommandItem onSelect={() => go("/withdraw", { view: "request" })}>
-              <Wallet className="h-4 w-4 mr-2" /> New withdraw request
-            </CommandItem>
-            <CommandItem onSelect={() => go("/withdraw", { view: "history" })}>
-              <Wallet className="h-4 w-4 mr-2" /> Withdraw history
+            <CommandItem onSelect={() => go("/withdraw")}>
+              <Wallet className="h-4 w-4 mr-2" /> Withdraw
             </CommandItem>
           </CommandGroup>
           <CommandSeparator />
