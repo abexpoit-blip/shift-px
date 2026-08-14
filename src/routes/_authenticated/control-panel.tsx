@@ -1362,7 +1362,7 @@ function BroadcastsTab() {
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [icon, setIcon] = useState("sparkles");
+  const icon = "sparkles";
   const [tone, setTone] = useState<"premium" | "info" | "success" | "warning">("premium");
 
   const listQ = useQuery({ queryKey: ["admin-broadcasts"], queryFn: () => listFn(), staleTime: 30_000 });
