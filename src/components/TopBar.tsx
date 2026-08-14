@@ -237,7 +237,7 @@ export function TopBar({
                     return (
                       <a
                         key={m.id}
-                        href="/inbox"
+                        href="/notices"
                         className="block border-b last:border-0 px-3 py-2.5 hover:bg-muted/50 transition"
                       >
                         <div className="flex items-start gap-2">
@@ -270,7 +270,7 @@ export function TopBar({
                 )}
               </div>
               <div className="border-t p-2">
-                <a href="/inbox"
+                <a href="/notices"
                   className="block text-center text-xs text-primary hover:underline py-1"
                 >
                   View all messages
@@ -324,7 +324,7 @@ export function TopBar({
               </DropdownMenuItem>
               {isAdmin && (
                 <DropdownMenuItem asChild>
-                  <a href="/admin">
+                  <a href="/control-panel">
                     <Shield className="h-4 w-4 mr-2" /> Admin Panel
                   </a>
                 </DropdownMenuItem>
