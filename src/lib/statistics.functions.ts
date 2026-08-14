@@ -97,10 +97,11 @@ export const getStatistics = createServerFn({ method: "GET" })
     const since = days[0];
     const sinceTs = new Date(`${since}T00:00:00Z`).toISOString();
 
-    const { data: linkRows } = await db
-      .from("links")
-      .select("id, short_code, title, clicks_count")
-      .eq("user_id", userId);
+    const { data: linkRows } = await guard(
+      db.from("links").select("id, short_code, title, clicks_count").eq("user_id", userId),
+      "links",
+      EMPTY_RES,
+    );
     const links = (linkRows ?? []) as any[];
     const linkIds = links.map((l) => l.id);
 
@@ -123,27 +124,27 @@ export const getStatistics = createServerFn({ method: "GET" })
     const hotTs = new Date(`${hotDay}T00:00:00Z`).toISOString();
 
     const [statsRes, archiveRes, clicksRes] = await Promise.all([
-      db
+      guard(db
         .from("daily_stats")
         .select("day, human_clicks, bot_clicks")
         .in("link_id", linkIds)
-        .gte("day", since),
+        .gte("day", since), "daily_stats", EMPTY_RES),
       // COLD: pre-aggregated dimensions, survives the weekly raw purge
-      db
+      guard(db
         .from("click_dim_daily")
         .select("country, device, browser, source, is_bot, clicks")
         .eq("user_id", userId)
         .gte("day", since)
         .lt("day", hotDay)
-        .limit(50000),
+        .limit(50000), "click_dim_daily", EMPTY_RES),
       // HOT: last 2 days straight from the raw table
-      db
+      guard(db
         .from("clicks")
         .select("country, referer_host, is_bot, ua")
         .in("link_id", linkIds)
         .gte("created_at", hotTs)
         .order("created_at", { ascending: false })
-        .limit(20000),
+        .limit(20000), "clicks", EMPTY_RES),
     ]);
 
     const byDay = new Map(days.map((d) => [d, { day: d, humans: 0, bots: 0 }]));
@@ -258,25 +259,25 @@ export const getLinkStats = createServerFn({ method: "GET" })
     if (!link || link.user_id !== userId) throw new Error("Link not found");
 
     const [statsRes, archiveRes, clicksRes] = await Promise.all([
-      db
+      guard(db
         .from("daily_stats")
         .select("day, human_clicks, bot_clicks")
         .eq("link_id", link.id)
-        .gte("day", since),
-      db
+        .gte("day", since), "link.daily_stats", EMPTY_RES),
+      guard(db
         .from("click_dim_daily")
         .select("country, device, is_bot, clicks")
         .eq("link_id", link.id)
         .gte("day", since)
         .lt("day", hotDay)
-        .limit(20000),
-      db
+        .limit(20000), "link.click_dim_daily", EMPTY_RES),
+      guard(db
         .from("clicks")
         .select("country, ua, is_bot")
         .eq("link_id", link.id)
         .gte("created_at", hotTs)
         .order("created_at", { ascending: false })
-        .limit(20000),
+        .limit(20000), "link.clicks", EMPTY_RES),
     ]);
 
     const byDay = new Map(days.map((d) => [d, { day: d, humans: 0, bots: 0 }]));
