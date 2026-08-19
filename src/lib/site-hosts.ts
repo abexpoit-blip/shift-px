@@ -25,12 +25,7 @@ export function isAdspxSaasHost(host: string): boolean {
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(h)) return true; // raw IP = internal/proxy hit
   if (!h.includes(".")) return true; // upstream/service name (e.g. "adspx_backend") = internal hit
 
-  return (
-    h === "adspx.com" ||
-    h === "www.adspx.com" ||
-    h.endsWith(".lovable.app") ||
-    h.endsWith(".lovableproject.com")
-  );
+  return h === "adspx.com" || h === "www.adspx.com";
 }
 
 /** True for tekuc.com, breezysocial.com, user custom domains, … */

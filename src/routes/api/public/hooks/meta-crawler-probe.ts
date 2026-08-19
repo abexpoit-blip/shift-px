@@ -73,14 +73,13 @@ export const Route = createFileRoute("/api/public/hooks/meta-crawler-probe")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        // Auth: standard `apikey` header pattern used by pg_cron.
-        // Accept any of the common env var names so this works on both
-        // Lovable Cloud and self-hosted VPS deploys.
+        // Auth: standard `apikey` header pattern used by cron/hooks.
         const anonCandidates = [
           process.env.SUPABASE_PUBLISHABLE_KEY,
           process.env.SUPABASE_ANON_KEY,
           process.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           process.env.VITE_SUPABASE_ANON_KEY,
+          process.env.ANON_KEY,
         ].filter((v): v is string => Boolean(v && v.length > 20));
 
         const providedApiKey = request.headers.get("apikey") ?? "";

@@ -1,16 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#7c3aed"/>
-      <stop offset="100%" stop-color="#ec4899"/>
+    <linearGradient id="fav-core" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00F5FF"/>
+      <stop offset="50%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#D946EF"/>
+    </linearGradient>
+    <linearGradient id="fav-ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00F5FF"/>
+      <stop offset="100%" stop-color="#D946EF"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
-  <!-- P -->
-  <path d="M14 46 V18 h11 a8 8 0 0 1 0 16 h-6 v12 z M19 22 v8 h6 a4 4 0 0 0 0-8 z" fill="#fff"/>
-  <!-- x -->
-  <path d="M32 28 h4.5 l3.5 5 l3.5-5 h4.5 l-5.7 8 l5.9 8 h-4.6 l-3.6-5.2 l-3.6 5.2 h-4.6 l5.9-8 z" fill="#fff"/>
-  <!-- pixel accents -->
-  <rect x="46" y="14" width="4" height="4" rx="1" fill="#fff" fill-opacity="0.9"/>
-  <rect x="52" y="18" width="2.5" height="2.5" rx="0.6" fill="#fff" fill-opacity="0.7"/>
+  <!-- Base Dark Shield -->
+  <rect x="2" y="2" width="44" height="44" rx="12" fill="#070913" stroke="url(#fav-ring)" stroke-width="1.8"/>
+  <!-- Glowing Monogram A+X -->
+  <path d="M13 33 L21 15 C21.6 13.8 23.4 13.8 24 15 L26 19.5 L19 33 Z" fill="url(#fav-core)"/>
+  <path d="M35 33 L25 15 C24.4 13.8 22.6 13.8 22 15 L20 19.5 L31 33 Z" fill="#00F5FF" opacity="0.9"/>
+  <path d="M16.5 25.5 L31.5 25.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+  <circle cx="24" cy="20" r="2.2" fill="#FFFFFF"/>
 </svg>
+

@@ -1,24 +1,28 @@
-# Remix of Comeback Code
+# AdsPx — High-Performance Smart Link Platform & Link Cloaker
 
-i was already working with you but suddenly credit finish then i work myself update all codes direct vps without vps then i copy all codes that running on vps and get back to you now lets edit and fix bugs again
+AdsPx is an enterprise-grade link management and traffic monetization platform engineered for high-volume publishers, Adsterra affiliates, and media buyers. Built with TanStack Start (React 19), Vite 7, Tailwind CSS v4, Self-Hosted Supabase, and Redis.
 
-This project was built with [Lovable](https://lovable.dev).
+## Core Features
 
-## Build with Lovable
+- 🛡️ **Advanced Anti-Bot Cloaking**: Multi-layered bot shield detecting headless crawlers, Facebook review bots, datacenter ASNs, and scanner bursts.
+- 🎯 **Adsterra & Meta SubID Auto-Mapping**: Preserves `fbclid`, `utm_campaign`, and ad attribution parameters seamlessly.
+- 💰 **International Earning Engine**: Transparent payout tracking at $1 per 100,000 verified human visits with USDT (TRC20, BEP20, ERC20) withdrawals.
+- ☁️ **Cloudflare-Grade Multi-Domain Edge**: Zero-latency geo routing and full IP masking behind Cloudflare proxies.
+- 📊 **Hybrid Time-Series Analytics**: Live second-accurate raw clicks merged with perpetual aggregated dimensions.
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/efa9d849-2e10-4695-b561-3b03001c44ed).
+## Production Deployment
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+```bash
+# 1. Clone repository
+git clone https://github.com/abexpoit-blip/swiftpx.git
+cd swiftpx
 
-## Development
+# 2. Install dependencies & build
+npm install
+npm run build
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+# 3. Start PM2 Cluster
+pm2 start ecosystem.config.cjs
+pm2 save
 ```
+

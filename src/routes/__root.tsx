@@ -88,11 +88,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Smart Gadgets for Calm, Modern Living" },
+      { title: "AdsPx — High-Performance Smart Link Platform & Link Cloaker" },
       {
         name: "description",
         content:
-          "Thoughtfully designed tools for better sleep, sharper focus, and easier travel. Free shipping over $50. 30-day returns.",
+          "AdsPx is a next-generation link management platform with advanced anti-bot cloaking, real-time analytics, and instant crypto payout infrastructure.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
