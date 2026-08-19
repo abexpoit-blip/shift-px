@@ -13,6 +13,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { CartProvider } from "@/lib/cart-context";
 import { installChunkErrorRecovery, isChunkLoadError, recoverFromChunkError } from "@/lib/chunk-recovery";
+import { installAuthWatchdog } from "@/lib/auth-watchdog";
 import appCss from "../styles.css?url";
 
 
@@ -131,6 +132,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useEffect(() => installChunkErrorRecovery(), []);
+  useEffect(() => installAuthWatchdog(), []);
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>

