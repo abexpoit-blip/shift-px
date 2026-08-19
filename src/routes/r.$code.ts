@@ -2486,8 +2486,16 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     : whitelistHit
     ? `wl:${whitelistHit.label}`
     : routedTo === "ours"
-    ? "quota-or-injection"
+    ? "injection"
     : "ok";
+
+  // Humans (offer AND ours) always pass through the content bridge + gate.
+  if (!isBot && (routedTo === "offer" || routedTo === "ours")) {
+    const tpl = (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code);
+    const markup = renderPrelanding(tpl, code, "", "human", publicOrigin);
+    return contentBridge(markup, target, routedTo, reasonOut, true);
+  }
+
   return redirectTo(
     target,
     routedTo as "safe" | "offer" | "ours",
@@ -2495,3 +2503,4 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     !isBot && routedTo === "offer",
   );
 }
+
