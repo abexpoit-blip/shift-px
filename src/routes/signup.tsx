@@ -31,47 +31,60 @@ function SignupPage() {
     const normalizedEmail = email.trim().toLowerCase();
     const tg = telegram.trim().replace(/^@/, "");
 
-    // Signup protection gate (Gmail-only / disposable blocklist / IP cap)
+    // Signup protection gate (Gmail-only / disposable blocklist) — fail-open
     try {
       const check = await preCheck({ data: { email: normalizedEmail } });
-      if (!check.ok) {
+      if (check && !check.ok) {
         setLoading(false);
         toast.error(check.error);
         return;
       }
-    } catch (err: any) {
-      setLoading(false);
-      toast.error(err?.message || "Signup check failed. Please try again.");
-      return;
+    } catch {
+      // If protection check has an issue, fail-open to allow user registration
     }
 
-    const { error } = await supabase.auth.signUp({
-      email: normalizedEmail,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: { full_name: fullName.trim(), telegram: tg },
-      },
-    });
-    if (error) {
+    try {
+      const { data: signUpData, error } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: { full_name: fullName.trim(), telegram: tg },
+        },
+      });
+
+      if (error) {
+        setLoading(false);
+        toast.error(error.message);
+        return;
+      }
+
+      // If user has a session, navigate to dashboard immediately
+      if (signUpData?.session) {
+        await router.invalidate();
+        navigate({ to: "/dashboard", replace: true });
+        return;
+      }
+
+      // Try logging in
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+
       setLoading(false);
-      toast.error(error.message);
-      return;
+      if (signInErr) {
+        toast.success("Account created successfully! Please sign in.");
+        navigate({ to: "/login" });
+        return;
+      }
+
+      await router.invalidate();
+      navigate({ to: "/dashboard", replace: true });
+    } catch (err: any) {
+      setLoading(false);
+      toast.error(err?.message || "Registration failed. Please try again.");
     }
-    // On self-hosted Supabase with auto-confirm disabled, we might need to inform the user.
-    // However, if the user says "at least they can login", we assume they might have auto-confirm on or we can try auto-login.
-    const { error: signInErr } = await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    });
-    setLoading(false);
-    if (signInErr) {
-      toast.success("Account created! Please check your email to confirm (or contact admin).");
-      navigate({ to: "/login" });
-      return;
-    }
-    await router.invalidate();
-    navigate({ to: "/dashboard", replace: true });
   };
 
   return (

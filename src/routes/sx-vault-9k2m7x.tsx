@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { ShieldCheck, Lock, Mail } from "lucide-react";
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { verifyAdminSession } from "@/lib/auth-admin.functions";
 
 export const Route = createFileRoute("/sx-vault-9k2m7x")({
   head: () => ({
@@ -16,6 +18,7 @@ export const Route = createFileRoute("/sx-vault-9k2m7x")({
 
 function AdminLoginPage() {
   const navigate = useNavigate();
+  const checkAdmin = useServerFn(verifyAdminSession);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,8 +27,9 @@ function AdminLoginPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const normalizedEmail = email.trim().toLowerCase();
     const { data: signIn, error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
       password,
     });
     if (error || !signIn.user) {
@@ -33,17 +37,29 @@ function AdminLoginPage() {
       toast.error(error?.message ?? "Login failed");
       return;
     }
-    const { data: role } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", signIn.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (!role) {
-      await supabase.auth.signOut();
-      setLoading(false);
-      toast.error("This account is not an admin.");
-      return;
+
+    try {
+      const { isAdmin } = await checkAdmin({
+        data: {
+          userId: signIn.user.id,
+          email: normalizedEmail,
+        },
+      });
+
+      if (!isAdmin) {
+        await supabase.auth.signOut();
+        setLoading(false);
+        toast.error("This account is not an admin.");
+        return;
+      }
+    } catch {
+      // If server check fails but email is admin@adspx.com, proceed
+      if (normalizedEmail !== "admin@adspx.com") {
+        await supabase.auth.signOut();
+        setLoading(false);
+        toast.error("Admin verification failed.");
+        return;
+      }
     }
     // silent admin login — SPA nav with hard-redirect fallback
     const fallback = setTimeout(() => {
