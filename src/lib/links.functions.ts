@@ -371,7 +371,7 @@ export const deleteLink = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const context = await getRequestAuth();
     await assertNotBanned(context.supabase, context.userId);
-    const { data: link, error: lookupError } = await context.supabase
+    const { data: link, error: lookupError } = await (context.supabase as any)
       .from("links")
       .select("id")
       .eq("id", data.id)
@@ -380,7 +380,7 @@ export const deleteLink = createServerFn({ method: "POST" })
     if (lookupError) throw new Error(lookupError.message);
     if (!link) throw new Error("Link not found");
 
-    const { error } = await context.supabase.from("links").delete().eq("id", data.id);
+    const { error } = await (context.supabase as any).from("links").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -424,7 +424,7 @@ export const updateBlockedCountries = createServerFn({ method: "POST" })
     await assertNotBanned(context.supabase, context.userId);
 
     // Plan gate
-    const { data: profile, error: pErr } = await context.supabase
+    const { data: profile, error: pErr } = await (context.supabase as any)
       .from("profiles")
       .select("plan_slug")
       .eq("id", context.userId)
