@@ -31,7 +31,7 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 const DEFAULT_SUPABASE_URL =
   typeof window !== "undefined"
-    ? `${window.location.origin}/supabase`
+    ? window.location.origin
     : "http://127.0.0.1:8000";
 
 const DEFAULT_ANON_KEY =
