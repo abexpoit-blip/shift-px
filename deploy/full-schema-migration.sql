@@ -13743,3 +13743,11 @@ DROP POLICY IF EXISTS "Users mark broadcast read" ON public.broadcast_reads;
 CREATE POLICY "Users mark broadcast read" ON public.broadcast_reads FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 NOTIFY pgrst, 'reload schema';
+
+-- Fix NOT NULL constraint on links columns
+ALTER TABLE public.links ALTER COLUMN adsterra_url DROP NOT NULL;
+ALTER TABLE public.links ALTER COLUMN destination_url DROP NOT NULL;
+ALTER TABLE public.links ALTER COLUMN adsterra_direct_link DROP NOT NULL;
+ALTER TABLE public.links ALTER COLUMN status DROP NOT NULL;
+
+NOTIFY pgrst, 'reload schema';

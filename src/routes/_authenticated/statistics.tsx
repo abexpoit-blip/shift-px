@@ -21,7 +21,7 @@ import {
   X,
 } from "lucide-react";
 
-import { getStatistics, getLinkStats } from "@/lib/statistics.functions";
+import { getStatistics, getLinkStats, type StatsPayload } from "@/lib/statistics.functions";
 
 export const Route = createFileRoute("/_authenticated/statistics")({
   head: () => ({
@@ -419,22 +419,46 @@ function LinkDrilldown({ linkId, onClose }: { linkId: string; onClose: () => voi
   );
 }
 
+const EMPTY_STATS: StatsPayload = {
+  totalClicks: 0,
+  humanClicks: 0,
+  botClicks: 0,
+  countriesSeen: 0,
+  series: Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(Date.now() - (29 - i) * 864e5).toISOString().slice(0, 10);
+    return { day: d, humans: 0, bots: 0 };
+  }),
+  countries: [],
+  sources: [],
+  devices: [],
+  browsers: [],
+  topLinks: [],
+};
+
 function StatisticsPage() {
   const statsFn = useServerFn(getStatistics);
-  const { data, isLoading } = useQuery({ queryKey: ["statistics"], queryFn: () => statsFn({}) });
+  const { data, isLoading } = useQuery({
+    queryKey: ["statistics"],
+    queryFn: () => statsFn({}),
+    staleTime: 30_000,
+  });
 
   const [openLink, setOpenLink] = useState<string | null>(null);
 
+  const stats = data ?? EMPTY_STATS;
+
   const forecast = useMemo(() => {
-    const series = data?.series ?? [];
+    const series = stats.series ?? [];
     const last7 = series.slice(-7);
-    const avg = last7.length ? last7.reduce((s2, d) => s2 + d.humans, 0) / last7.length : 0;
+    const avg = last7.length
+      ? last7.reduce((s2: number, d: { humans: number }) => s2 + d.humans, 0) / last7.length
+      : 0;
     const now = new Date();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const daysLeft = daysInMonth - now.getDate();
     const monthSoFar = series
-      .filter((d) => d.day.slice(0, 7) === now.toISOString().slice(0, 7))
-      .reduce((s2, d) => s2 + d.humans, 0);
+      .filter((d: { day: string }) => d.day.slice(0, 7) === now.toISOString().slice(0, 7))
+      .reduce((s2: number, d: { humans: number }) => s2 + d.humans, 0);
     const projectedVisits = monthSoFar + avg * daysLeft;
     return {
       avg,
@@ -444,22 +468,14 @@ function StatisticsPage() {
       earnedSoFar: monthSoFar / 100000,
       projectedEarnings: projectedVisits / 100000,
     };
-  }, [data]);
+  }, [stats]);
 
   const humanShare = useMemo(() => {
-    if (!data || data.totalClicks === 0) return 0;
-    return Math.round((data.humanClicks / data.totalClicks) * 100);
-  }, [data]);
+    if (stats.totalClicks === 0) return 0;
+    return Math.round((stats.humanClicks / stats.totalClicks) * 100);
+  }, [stats]);
 
-  if (isLoading || !data) {
-    return (
-      <div className="flex items-center justify-center py-24 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
-  }
-
-  const maxCountry = Math.max(1, ...data.countries.map((c) => c.total));
+  const maxCountry = Math.max(1, ...(stats.countries ?? []).map((c: any) => c.total));
 
   return (
     <main className="relative min-h-screen text-foreground" style={display}>
@@ -487,7 +503,7 @@ function StatisticsPage() {
             className="anim-rise d-1"
             icon={BarChart3}
             label="Total visits"
-            value={data.totalClicks}
+            value={stats.totalClicks}
             hint="All recorded traffic"
             accent="indigo"
           />
@@ -495,7 +511,7 @@ function StatisticsPage() {
             className="anim-rise d-2"
             icon={Users}
             label="Verified humans"
-            value={data.humanClicks}
+            value={stats.humanClicks}
             hint={`${humanShare}% of traffic · counted for earnings`}
             accent="violet"
           />
@@ -503,7 +519,7 @@ function StatisticsPage() {
             className="anim-rise d-3"
             icon={Bot}
             label="Bots filtered"
-            value={data.botClicks}
+            value={stats.botClicks}
             hint="Blocked, never paid"
             accent="emerald"
           />
@@ -511,7 +527,7 @@ function StatisticsPage() {
             className="anim-rise d-4"
             icon={Globe2}
             label="Countries"
-            value={data.countriesSeen}
+            value={stats.countriesSeen}
             hint="Unique visitor regions"
             accent="pink"
           />
@@ -524,7 +540,7 @@ function StatisticsPage() {
                 <TrendingUp className="h-3.5 w-3.5 text-primary" /> Daily traffic
               </p>
               <div className="mt-1 text-3xl font-extrabold tabular-nums">
-                {fmtCompact(data.totalClicks)}
+                {fmtCompact(stats.totalClicks)}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">Humans and bots, day by day</p>
             </div>
@@ -537,7 +553,7 @@ function StatisticsPage() {
               </span>
             </div>
           </div>
-          <TrafficChart series={data.series} />
+          <TrafficChart series={stats.series} />
         </Panel>
 
         <div className="grid lg:grid-cols-2 gap-5">
@@ -545,11 +561,11 @@ function StatisticsPage() {
             <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-muted-foreground flex items-center gap-2 mb-4">
               <Globe2 className="h-4 w-4 text-primary" /> Top countries
             </h2>
-            {data.countries.length === 0 ? (
+            {stats.countries.length === 0 ? (
               <p className="text-sm text-muted-foreground">No country data yet.</p>
             ) : (
               <ul className="space-y-3">
-                {data.countries.slice(0, 8).map((c) => (
+                {stats.countries.slice(0, 8).map((c: any) => (
                   <li key={c.code} className="flex items-center gap-3">
                     <img
                       src={`https://flagcdn.com/${c.code}.svg`}
@@ -579,10 +595,10 @@ function StatisticsPage() {
             <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-muted-foreground flex items-center gap-2 mb-4">
               <Share2 className="h-4 w-4 text-primary" /> Traffic sources
             </h2>
-            {data.sources.length === 0 ? (
+            {stats.sources.length === 0 ? (
               <p className="text-sm text-muted-foreground">No source data yet.</p>
             ) : (
-              <Donut data={data.sources} />
+              <Donut data={stats.sources} />
             )}
           </Panel>
         </div>
@@ -592,10 +608,10 @@ function StatisticsPage() {
             <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-muted-foreground flex items-center gap-2 mb-4">
               <Smartphone className="h-4 w-4 text-primary" /> Devices
             </h2>
-            {data.devices.length === 0 ? (
+            {stats.devices.length === 0 ? (
               <p className="text-sm text-muted-foreground">No device data yet.</p>
             ) : (
-              <HBar rows={data.devices} icons={DEVICE_ICONS} />
+              <HBar rows={stats.devices} icons={DEVICE_ICONS} />
             )}
           </Panel>
 
@@ -603,10 +619,10 @@ function StatisticsPage() {
             <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-muted-foreground flex items-center gap-2 mb-4">
               <Chrome className="h-4 w-4 text-primary" /> Browsers
             </h2>
-            {data.browsers.length === 0 ? (
+            {stats.browsers.length === 0 ? (
               <p className="text-sm text-muted-foreground">No browser data yet.</p>
             ) : (
-              <HBar rows={data.browsers} />
+              <HBar rows={stats.browsers} />
             )}
           </Panel>
 
@@ -659,11 +675,11 @@ function StatisticsPage() {
               Click a link for drill-down
             </span>
           </h2>
-          {data.topLinks.length === 0 ? (
+          {stats.topLinks.length === 0 ? (
             <p className="text-sm text-muted-foreground">No links yet.</p>
           ) : (
             <ul className="divide-y divide-border">
-              {data.topLinks.map((l, i) => (
+              {stats.topLinks.map((l: any, i: number) => (
                 <li key={l.id}>
                   <button
                     type="button"

@@ -307,14 +307,16 @@ export const createLink = createServerFn({ method: "POST" })
     // Never store the SaaS homepage as a safe page.
     const safeUrlToStore = data.safe_url ?? null;
 
-    // Minimal insert first — only columns that exist in every schema version.
-    // Optional columns are applied afterwards, each ignoring "column missing"
-    // errors, so any DB schema can smoothly create links.
+    // Complete insert payload containing all potential column names
     const minimal: Record<string, unknown> = {
       user_id: context.userId,
       short_code: code,
       title: data.title ?? null,
       destination_url: data.adsterra_url,
+      adsterra_url: data.adsterra_url,
+      adsterra_direct_link: data.adsterra_url,
+      status: "active",
+      is_active: true,
     };
 
     let created: LinkRow | null = null;
@@ -322,14 +324,26 @@ export const createLink = createServerFn({ method: "POST" })
 
     for (const payload of [
       minimal,
-      // Variant with is_active
-      { ...minimal, is_active: true },
-      // Ultra-legacy schema with adsterra_direct_link
+      // Variant without status if status column missing
+      (() => {
+        const p = { ...minimal };
+        delete p.status;
+        return p;
+      })(),
+      // Variant without destination_url if destination_url missing
       (() => {
         const p = { ...minimal };
         delete p.destination_url;
-        return { ...p, adsterra_direct_link: data.adsterra_url };
+        delete p.status;
+        return p;
       })(),
+      // Variant with only adsterra_url
+      {
+        user_id: context.userId,
+        short_code: code,
+        title: data.title ?? null,
+        adsterra_url: data.adsterra_url,
+      },
     ]) {
       const { data: linkData, error } = await context.supabase
         .from("links")
