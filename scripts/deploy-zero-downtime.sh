@@ -80,7 +80,8 @@ rolling_restart() {
     local name="adspx-$i" port="${PORTS[$i]}"
     echo "--- restarting $name (port $port) ---"
     if pm2 describe "$name" >/dev/null 2>&1; then
-      pm2 restart "$name" --update-env >/dev/null 2>&1
+      # reload = zero-downtime (new process boots before the old one is cut)
+      pm2 reload "$name" --update-env >/dev/null 2>&1 || pm2 restart "$name" --update-env >/dev/null 2>&1
     else
       pm2 start ecosystem.config.cjs --only "$name" --update-env >/dev/null 2>&1
     fi
