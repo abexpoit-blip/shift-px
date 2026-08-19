@@ -29,20 +29,27 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
-const DEFAULT_SUPABASE_URL =
-  typeof window !== "undefined"
-    ? window.location.origin
-    : "http://127.0.0.1:8000";
-
 const DEFAULT_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgyODE0NjM5LCJleHAiOjIwOTgxNzQ2Mzl9.uzi5eworVCioXTFFqf0sojuQrwgeRZ7tV7dzRQ8BZ8E";
 
-function createSupabaseClient() {
-  const SUPABASE_URL =
-    import.meta.env["VITE_SUPABASE_URL"] ||
+function getClientSupabaseUrl(): string {
+  if (typeof window !== "undefined") {
+    // In browser: if baked-in env var is localhost / 127.0.0.1, ignore it and use current origin
+    const envUrl = (import.meta.env["VITE_SUPABASE_URL"] as string | undefined) || "";
+    if (envUrl && !envUrl.includes("127.0.0.1") && !envUrl.includes("localhost")) {
+      return envUrl;
+    }
+    return window.location.origin;
+  }
+  return (
     process.env["VITE_SUPABASE_URL"] ||
     process.env["SUPABASE_URL"] ||
-    DEFAULT_SUPABASE_URL;
+    "http://127.0.0.1:8000"
+  );
+}
+
+function createSupabaseClient() {
+  const SUPABASE_URL = getClientSupabaseUrl();
 
   const SUPABASE_PUBLISHABLE_KEY =
     import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
