@@ -131,6 +131,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useEffect(() => installChunkErrorRecovery(), []);
+  useEffect(() => installAuthWatchdog(), []);
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>
