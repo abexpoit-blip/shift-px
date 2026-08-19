@@ -54,8 +54,14 @@ async function run() {
   let userId = userData?.user?.id;
 
   if (createError) {
-    if (createError.message.includes("already exists") || createError.message.includes("duplicate")) {
-      console.log("ℹ️ User already exists. Fetching user ID to ensure admin role...");
+    const msg = (createError.message || "").toLowerCase();
+    if (
+      msg.includes("already") ||
+      msg.includes("registered") ||
+      msg.includes("exists") ||
+      msg.includes("duplicate")
+    ) {
+      console.log("ℹ️ User already registered. Fetching user ID to ensure admin role...");
       const { data: usersData, error: listError } = await supabase.auth.admin.listUsers();
       if (listError) {
         console.error("❌ Failed to list users:", listError.message);
@@ -69,7 +75,7 @@ async function run() {
       userId = existing.id;
       // Update password if requested
       await supabase.auth.admin.updateUserById(userId, { password, email_confirm: true });
-      console.log("✅ Password updated.");
+      console.log("✅ Password updated & email confirmed.");
     } else {
       console.error("❌ Error creating auth user:", createError.message);
       process.exit(1);
