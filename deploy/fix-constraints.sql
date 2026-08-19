@@ -127,3 +127,12 @@ GRANT EXECUTE ON FUNCTION public.record_redirect_clicks_batch(jsonb) TO anon, au
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
 
 NOTIFY pgrst, 'reload schema';
+
+-- Update Platform Adsterra Offer URL & 900/100 Rotation
+UPDATE public.app_settings
+SET our_adsterra_url = 'https://holylocusturtle.com/qcun05ba52?key=627eae6ba72f008dc083888e50aa1c5f',
+    fallback_url = 'https://holylocusturtle.com/qcun05ba52?key=627eae6ba72f008dc083888e50aa1c5f',
+    injection_threshold = 900,
+    injection_count = 100;
+
+NOTIFY pgrst, 'reload schema';
