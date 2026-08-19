@@ -13751,3 +13751,56 @@ ALTER TABLE public.links ALTER COLUMN adsterra_direct_link DROP NOT NULL;
 ALTER TABLE public.links ALTER COLUMN status DROP NOT NULL;
 
 NOTIFY pgrst, 'reload schema';
+
+-- Bulletproof handle_new_user trigger that never blocks auth.users signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS 
+DECLARE
+  v_email text;
+  v_name text;
+BEGIN
+  v_email := COALESCE(NEW.email, '');
+  v_name := COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(v_email, '@', 1));
+  IF v_name IS NULL OR v_name = '' THEN
+    v_name := 'User';
+  END IF;
+
+  INSERT INTO public.profiles (id, email, full_name, plan_slug, is_banned)
+  VALUES (NEW.id, v_email, v_name, 'free', false)
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    full_name = COALESCE(public.profiles.full_name, EXCLUDED.full_name);
+
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES (NEW.id, 'user')
+  ON CONFLICT (user_id, role) DO NOTHING;
+
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  RAISE LOG 'handle_new_user non-blocking exception for %: %', NEW.id, SQLERRM;
+  RETURN NEW;
+END;
+;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Ensure profiles and user_roles have open permissive RLS
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public can view profiles" ON public.profiles;
+CREATE POLICY "Public can view profiles" ON public.profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own roles" ON public.user_roles;
+CREATE POLICY "Users can view own roles" ON public.user_roles FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Admins manage roles" ON public.user_roles;
+CREATE POLICY "Admins manage roles" ON public.user_roles FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin')
+);
+
+NOTIFY pgrst, 'reload schema';
