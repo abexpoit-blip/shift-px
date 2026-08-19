@@ -19,6 +19,8 @@ import {
   Sparkles,
   FileText,
   Check,
+  Flame,
+  Zap,
 } from "lucide-react";
 
 import {
@@ -214,8 +216,14 @@ function LinksPage() {
   return (
     <div className="min-h-screen w-full text-foreground" style={display}>
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        <header className="flex flex-wrap items-end justify-between gap-3">
+        <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 mb-3">
+              <Zap className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+                Link Manager
+              </span>
+            </div>
             <h1
               className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2"
               style={display}
@@ -245,28 +253,16 @@ function LinksPage() {
             >
               <RefreshCw className={`w-4 h-4 ${refreshMut.isPending ? "animate-spin" : ""}`} />
             </button>
+            <button
+              onClick={() => setShowCreate((v) => !v)}
+              className="relative inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-primary-gradient shadow-lg shadow-glow hover:shadow-xl hover:scale-[1.03] transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Create Link</span>
+              <span className="absolute -inset-0.5 rounded-xl bg-primary/20 blur-sm -z-10 pointer-events-none" />
+            </button>
           </div>
         </header>
-
-        {/* CTA */}
-        <button
-          onClick={() => setShowCreate((v) => !v)}
-          className="w-full group relative overflow-hidden rounded-2xl bg-primary-gradient p-5 flex items-center gap-4 shadow-xl shadow-glow hover:shadow-2xl transition-all"
-        >
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/15 blur-3xl rounded-full pointer-events-none" />
-          <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shrink-0">
-            <Plus className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex-1 text-left">
-            <h4 className="text-white font-bold text-[15px]" style={display}>
-              Create new smart link
-            </h4>
-            <p className="text-white/85 text-xs mt-0.5">Setup advanced redirection & cloaking</p>
-          </div>
-          <span className="hidden sm:flex items-center gap-1.5 bg-white text-primary px-4 py-2 rounded-lg font-bold text-xs group-hover:scale-105 transition-transform">
-            Quick Start <ArrowRight className="w-3.5 h-3.5" />
-          </span>
-        </button>
 
         {showCreate && (
           <Panel className="overflow-hidden">
@@ -456,11 +452,44 @@ function LinksPage() {
           </div>
 
           {dashQ.isLoading && (
-            <div className="py-16 text-center text-sm text-muted-foreground">Loading links…</div>
+            <div className="p-4 space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4 animate-pulse">
+                  <div className="w-4 h-4 rounded bg-muted-foreground/10 shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3.5 bg-muted-foreground/10 rounded w-1/3" />
+                    <div className="h-2.5 bg-muted-foreground/10 rounded w-1/2" />
+                  </div>
+                  <div className="h-3.5 bg-muted-foreground/10 rounded w-12" />
+                  <div className="h-6 bg-muted-foreground/10 rounded-full w-20" />
+                  <div className="h-8 bg-muted-foreground/10 rounded-xl w-24" />
+                </div>
+              ))}
+            </div>
           )}
           {!dashQ.isLoading && filtered.length === 0 && (
-            <div className="py-16 text-center text-sm text-muted-foreground">
-              {search ? "No links match." : "No links yet — click Create new smart link above."}
+            <div className="py-20 flex flex-col items-center gap-4 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                <Link2 className="w-7 h-7 text-primary/60" />
+              </div>
+              <div>
+                <p className="text-base font-semibold text-foreground">
+                  {search ? "No links match your search" : "No smart links yet"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {search
+                    ? "Try a different keyword or clear the search."
+                    : "Create your first short link to start earning!"}
+                </p>
+              </div>
+              {!search && (
+                <button
+                  onClick={() => setShowCreate(true)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-primary-gradient shadow-lg shadow-glow hover:scale-[1.03] transition-all"
+                >
+                  <Plus className="w-4 h-4" /> Create your first link
+                </button>
+              )}
             </div>
           )}
 
@@ -470,8 +499,8 @@ function LinksPage() {
                 <colgroup>
                   <col className="w-[44px]" />
                   <col />
-                  <col className="w-[80px]" />
-                  <col className="hidden sm:table-column w-[90px]" />
+                  <col className="w-[90px]" />
+                  <col className="hidden sm:table-column w-[110px]" />
                   <col className="w-[160px]" />
                 </colgroup>
                 <thead className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground border-y border-border">
@@ -500,6 +529,8 @@ function LinksPage() {
                   {filtered.map((l) => {
                     const shortUrl = `${origin}/${l.short_code}`;
                     const isSelected = selectedIds.has(l.id);
+                    const clicks = l.clicks_count || 0;
+                    const isHot = clicks > 100;
                     return (
                       <tr
                         key={l.id}
@@ -521,34 +552,55 @@ function LinksPage() {
                           <button
                             onClick={() => {
                               navigator.clipboard.writeText(shortUrl);
-                              toast.success("Copied");
+                              toast.success("Short URL copied!");
                             }}
-                            className="text-[11px] text-primary hover:text-primary flex items-center gap-1 mt-0.5 font-mono truncate max-w-full"
+                            title="Copy short URL"
+                            className="text-[11px] text-primary hover:text-primary flex items-center gap-1 mt-0.5 font-mono truncate max-w-full group"
                           >
-                            <span className="truncate">
-                              {primaryDomain}/{l.short_code}
-                            </span>{" "}
-                            <Copy className="w-3 h-3 shrink-0" />
+                            <span className="inline-flex items-center gap-1 bg-muted/80 border border-border rounded px-1.5 py-0.5 group-hover:border-primary/40 transition-colors">
+                              <span className="truncate">
+                                {primaryDomain}/{l.short_code}
+                              </span>
+                              <Copy className="w-3 h-3 shrink-0" />
+                            </span>
                           </button>
                         </td>
                         <td className="px-3 py-4">
                           <div
-                            className="text-sm font-bold text-foreground tabular-nums"
+                            className="flex items-center gap-1 text-sm font-bold text-foreground tabular-nums"
                             style={display}
                           >
-                            {(l.clicks_count || 0).toLocaleString()}
+                            {isHot && <Flame className="w-3.5 h-3.5 text-orange-500 shrink-0" />}
+                            {clicks.toLocaleString()}
                           </div>
                         </td>
                         <td className="hidden sm:table-cell px-3 py-4">
+                          {/* Toggle switch */}
                           <button
                             onClick={() => togMut.mutate({ id: l.id, is_active: !l.is_active })}
-                            className={
-                              l.is_active
-                                ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700"
-                                : "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700"
-                            }
+                            role="switch"
+                            aria-checked={l.is_active}
+                            aria-label={l.is_active ? "Deactivate link" : "Activate link"}
+                            className="group relative inline-flex items-center gap-2 focus:outline-none"
                           >
-                            {l.is_active ? "ACTIVE" : "PAUSED"}
+                            <span
+                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                                l.is_active ? "bg-emerald-500" : "bg-muted-foreground/30"
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                  l.is_active ? "translate-x-4" : "translate-x-0"
+                                }`}
+                              />
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold uppercase tracking-wide ${
+                                l.is_active ? "text-emerald-600" : "text-muted-foreground"
+                              }`}
+                            >
+                              {l.is_active ? "Active" : "Paused"}
+                            </span>
                           </button>
                         </td>
                         <td className="px-3 sm:px-5 py-4 text-right">

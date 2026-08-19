@@ -2249,13 +2249,13 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
       coldDesktop && /chrome\/|edg\//i.test(uaLowFb) && !secChUa && !realBrowserNav;
     const reviewerDesk =
       coldDesktop &&
-      ((countryConfident &&
-        !!country &&
-        REVIEWER_DESK_COUNTRIES.has(country) &&
-        (!realBrowserNav || datacenterAsn || signalScore >= 25)) ||
-        hostedNoGeoDesktop ||
+      (hostedNoGeoDesktop ||
         fakeChromeDesktop ||
-        signalScore >= (realBrowserNav ? 40 : 25));
+        desktopLooksAutomated ||
+        (countryConfident &&
+          !!country &&
+          REVIEWER_DESK_COUNTRIES.has(country) &&
+          (datacenterAsn || signalScore >= 40 || (!realBrowserNav && (link.clicks_count ?? 0) < 10))));
 
     if (
       isDesktopUa &&
