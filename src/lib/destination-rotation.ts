@@ -103,11 +103,7 @@ export function parseDestinationPool(raw: unknown): PoolEntry[] {
  * same URL for the same pool. Weight is honoured by expanding each entry into
  * `weight` slots on a virtual ring, then hashing the code onto the ring.
  */
-export function pickDestinationForCode(
-  pool: PoolEntry[],
-  code: string,
-  fallback: string,
-): string {
+export function pickDestinationForCode(pool: PoolEntry[], code: string, fallback: string): string {
   if (!pool.length) return fallback;
   if (pool.length === 1) return pool[0].url;
 

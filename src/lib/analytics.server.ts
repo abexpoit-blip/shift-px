@@ -21,16 +21,36 @@ type AnalyticsContext = {
 const hideBots = (real: number) => real;
 
 const BOT_UA_PATTERNS: Array<{ re: RegExp; name: string; slug: string; color: string }> = [
-  { re: /facebookexternalhit|facebot|facebookcatalog|facebookplatform/i, name: "Facebook Crawler", slug: "facebook", color: "1877F2" },
-  { re: /meta-external|metainspector|instagram-fbexternalhit/i, name: "Meta Crawler", slug: "meta", color: "0668E1" },
-  { re: /googlebot|google-inspection|adsbot-google|mediapartners-google|google-read-aloud|google favicon/i, name: "Googlebot", slug: "google", color: "4285F4" },
+  {
+    re: /facebookexternalhit|facebot|facebookcatalog|facebookplatform/i,
+    name: "Facebook Crawler",
+    slug: "facebook",
+    color: "1877F2",
+  },
+  {
+    re: /meta-external|metainspector|instagram-fbexternalhit/i,
+    name: "Meta Crawler",
+    slug: "meta",
+    color: "0668E1",
+  },
+  {
+    re: /googlebot|google-inspection|adsbot-google|mediapartners-google|google-read-aloud|google favicon/i,
+    name: "Googlebot",
+    slug: "google",
+    color: "4285F4",
+  },
   { re: /bingbot|adidxbot|bingpreview/i, name: "Bingbot", slug: "microsoftbing", color: "008373" },
   { re: /yandexbot|yandeximages/i, name: "YandexBot", slug: "yandex", color: "FF0000" },
   { re: /baiduspider/i, name: "Baidu Spider", slug: "baidu", color: "2932E1" },
   { re: /duckduckbot/i, name: "DuckDuckBot", slug: "duckduckgo", color: "DE5833" },
   { re: /applebot/i, name: "Applebot", slug: "apple", color: "000000" },
   { re: /twitterbot/i, name: "Twitterbot", slug: "x", color: "000000" },
-  { re: /linkedinbot|linkedin-newsletter/i, name: "LinkedInBot", slug: "linkedin", color: "0A66C2" },
+  {
+    re: /linkedinbot|linkedin-newsletter/i,
+    name: "LinkedInBot",
+    slug: "linkedin",
+    color: "0A66C2",
+  },
   { re: /telegrambot/i, name: "TelegramBot", slug: "telegram", color: "26A5E4" },
   { re: /discordbot/i, name: "DiscordBot", slug: "discord", color: "5865F2" },
   { re: /slackbot|slack-imgproxy/i, name: "Slackbot", slug: "slack", color: "4A154B" },
@@ -38,16 +58,46 @@ const BOT_UA_PATTERNS: Array<{ re: RegExp; name: string; slug: string; color: st
   { re: /pinterestbot/i, name: "PinterestBot", slug: "pinterest", color: "BD081C" },
   { re: /redditbot/i, name: "RedditBot", slug: "reddit", color: "FF4500" },
   { re: /bytespider|tiktokbot/i, name: "ByteSpider", slug: "tiktok", color: "000000" },
-  { re: /ahrefsbot|semrushbot|mj12bot|dotbot|petalbot|seznambot/i, name: "SEO Crawler", slug: "spider", color: "64748b" },
-  { re: /gptbot|chatgpt-user|claude-web|anthropic|perplexitybot|youbot|ccbot/i, name: "AI Crawler", slug: "robot", color: "8B5CF6" },
+  {
+    re: /ahrefsbot|semrushbot|mj12bot|dotbot|petalbot|seznambot/i,
+    name: "SEO Crawler",
+    slug: "spider",
+    color: "64748b",
+  },
+  {
+    re: /gptbot|chatgpt-user|claude-web|anthropic|perplexitybot|youbot|ccbot/i,
+    name: "AI Crawler",
+    slug: "robot",
+    color: "8B5CF6",
+  },
   { re: /curl\//i, name: "curl", slug: "terminal", color: "073551" },
   { re: /wget\//i, name: "wget", slug: "terminal", color: "073551" },
-  { re: /python-requests|python-urllib|aiohttp|httpx/i, name: "Python Script", slug: "python", color: "3776AB" },
+  {
+    re: /python-requests|python-urllib|aiohttp|httpx/i,
+    name: "Python Script",
+    slug: "python",
+    color: "3776AB",
+  },
   { re: /node-fetch|axios|got\//i, name: "Node Script", slug: "nodedotjs", color: "5FA04E" },
-  { re: /go-http-client|java\/|okhttp|apache-httpclient/i, name: "HTTP Client", slug: "robot", color: "64748b" },
+  {
+    re: /go-http-client|java\/|okhttp|apache-httpclient/i,
+    name: "HTTP Client",
+    slug: "robot",
+    color: "64748b",
+  },
   { re: /postmanruntime|insomnia/i, name: "API Tool", slug: "postman", color: "FF6C37" },
-  { re: /headlesschrome|phantomjs|puppeteer|playwright|selenium/i, name: "Headless Browser", slug: "robot", color: "8B5CF6" },
-  { re: /\bbot\b|crawler|spider|scraper|monitor|uptime|pingdom|statuscake/i, name: "Generic Bot", slug: "robot", color: "64748b" },
+  {
+    re: /headlesschrome|phantomjs|puppeteer|playwright|selenium/i,
+    name: "Headless Browser",
+    slug: "robot",
+    color: "8B5CF6",
+  },
+  {
+    re: /\bbot\b|crawler|spider|scraper|monitor|uptime|pingdom|statuscake/i,
+    name: "Generic Bot",
+    slug: "robot",
+    color: "64748b",
+  },
 ];
 
 function detectBotUA(u: string): { name: string; slug: string; color: string } | null {
@@ -86,12 +136,15 @@ function browserFromUA(ua: string | null): { name: string; slug: string; color: 
   const bot = detectBotUA(u);
   if (bot) return bot;
   if (u.includes("edg/")) return { name: "Edge", slug: "microsoftedge", color: "0078D4" };
-  if (u.includes("opr/") || u.includes("opera")) return { name: "Opera", slug: "opera", color: "FF1B2D" };
-  if (u.includes("samsungbrowser")) return { name: "Samsung Internet", slug: "samsung", color: "1428A0" };
+  if (u.includes("opr/") || u.includes("opera"))
+    return { name: "Opera", slug: "opera", color: "FF1B2D" };
+  if (u.includes("samsungbrowser"))
+    return { name: "Samsung Internet", slug: "samsung", color: "1428A0" };
   if (u.includes("ucbrowser")) return { name: "UC Browser", slug: "ucbrowser", color: "F8B500" };
   if (u.includes("brave")) return { name: "Brave", slug: "brave", color: "FB542B" };
   if (u.includes("firefox")) return { name: "Firefox", slug: "firefoxbrowser", color: "FF7139" };
-  if (u.includes("fban") || u.includes("fbav")) return { name: "Facebook App", slug: "facebook", color: "1877F2" };
+  if (u.includes("fban") || u.includes("fbav"))
+    return { name: "Facebook App", slug: "facebook", color: "1877F2" };
   if (u.includes("instagram")) return { name: "Instagram App", slug: "instagram", color: "E4405F" };
   if (u.includes("chrome")) return { name: "Chrome", slug: "googlechrome", color: "4285F4" };
   if (u.includes("safari")) return { name: "Safari", slug: "safari", color: "0FB5EE" };
@@ -99,40 +152,70 @@ function browserFromUA(ua: string | null): { name: string; slug: string; color: 
 }
 
 const COUNTRIES: Record<string, { flag: string; name: string }> = {
-  US: { flag: "🇺🇸", name: "United States" }, GB: { flag: "🇬🇧", name: "United Kingdom" },
-  DE: { flag: "🇩🇪", name: "Germany" },       FR: { flag: "🇫🇷", name: "France" },
-  CA: { flag: "🇨🇦", name: "Canada" },        IN: { flag: "🇮🇳", name: "India" },
-  BD: { flag: "🇧🇩", name: "Bangladesh" },    PK: { flag: "🇵🇰", name: "Pakistan" },
-  JP: { flag: "🇯🇵", name: "Japan" },         CN: { flag: "🇨🇳", name: "China" },
-  BR: { flag: "🇧🇷", name: "Brazil" },        AU: { flag: "🇦🇺", name: "Australia" },
-  NL: { flag: "🇳🇱", name: "Netherlands" },   IT: { flag: "🇮🇹", name: "Italy" },
-  ES: { flag: "🇪🇸", name: "Spain" },         MX: { flag: "🇲🇽", name: "Mexico" },
-  RU: { flag: "🇷🇺", name: "Russia" },        ID: { flag: "🇮🇩", name: "Indonesia" },
-  PH: { flag: "🇵🇭", name: "Philippines" },   NG: { flag: "🇳🇬", name: "Nigeria" },
-  ZA: { flag: "🇿🇦", name: "South Africa" },  SE: { flag: "🇸🇪", name: "Sweden" },
-  PL: { flag: "🇵🇱", name: "Poland" },        TR: { flag: "🇹🇷", name: "Turkey" },
-  KR: { flag: "🇰🇷", name: "South Korea" },   VN: { flag: "🇻🇳", name: "Vietnam" },
-  AE: { flag: "🇦🇪", name: "UAE" },           SA: { flag: "🇸🇦", name: "Saudi Arabia" },
-  EG: { flag: "🇪🇬", name: "Egypt" },         AR: { flag: "🇦🇷", name: "Argentina" },
-  CO: { flag: "🇨🇴", name: "Colombia" },      CL: { flag: "🇨🇱", name: "Chile" },
-  TH: { flag: "🇹🇭", name: "Thailand" },      MY: { flag: "🇲🇾", name: "Malaysia" },
-  SG: { flag: "🇸🇬", name: "Singapore" },     CH: { flag: "🇨🇭", name: "Switzerland" },
-  BE: { flag: "🇧🇪", name: "Belgium" },       AT: { flag: "🇦🇹", name: "Austria" },
-  PT: { flag: "🇵🇹", name: "Portugal" },      IE: { flag: "🇮🇪", name: "Ireland" },
-  NO: { flag: "🇳🇴", name: "Norway" },        DK: { flag: "🇩🇰", name: "Denmark" },
-  FI: { flag: "🇫🇮", name: "Finland" },       NZ: { flag: "🇳🇿", name: "New Zealand" },
+  US: { flag: "🇺🇸", name: "United States" },
+  GB: { flag: "🇬🇧", name: "United Kingdom" },
+  DE: { flag: "🇩🇪", name: "Germany" },
+  FR: { flag: "🇫🇷", name: "France" },
+  CA: { flag: "🇨🇦", name: "Canada" },
+  IN: { flag: "🇮🇳", name: "India" },
+  BD: { flag: "🇧🇩", name: "Bangladesh" },
+  PK: { flag: "🇵🇰", name: "Pakistan" },
+  JP: { flag: "🇯🇵", name: "Japan" },
+  CN: { flag: "🇨🇳", name: "China" },
+  BR: { flag: "🇧🇷", name: "Brazil" },
+  AU: { flag: "🇦🇺", name: "Australia" },
+  NL: { flag: "🇳🇱", name: "Netherlands" },
+  IT: { flag: "🇮🇹", name: "Italy" },
+  ES: { flag: "🇪🇸", name: "Spain" },
+  MX: { flag: "🇲🇽", name: "Mexico" },
+  RU: { flag: "🇷🇺", name: "Russia" },
+  ID: { flag: "🇮🇩", name: "Indonesia" },
+  PH: { flag: "🇵🇭", name: "Philippines" },
+  NG: { flag: "🇳🇬", name: "Nigeria" },
+  ZA: { flag: "🇿🇦", name: "South Africa" },
+  SE: { flag: "🇸🇪", name: "Sweden" },
+  PL: { flag: "🇵🇱", name: "Poland" },
+  TR: { flag: "🇹🇷", name: "Turkey" },
+  KR: { flag: "🇰🇷", name: "South Korea" },
+  VN: { flag: "🇻🇳", name: "Vietnam" },
+  AE: { flag: "🇦🇪", name: "UAE" },
+  SA: { flag: "🇸🇦", name: "Saudi Arabia" },
+  EG: { flag: "🇪🇬", name: "Egypt" },
+  AR: { flag: "🇦🇷", name: "Argentina" },
+  CO: { flag: "🇨🇴", name: "Colombia" },
+  CL: { flag: "🇨🇱", name: "Chile" },
+  TH: { flag: "🇹🇭", name: "Thailand" },
+  MY: { flag: "🇲🇾", name: "Malaysia" },
+  SG: { flag: "🇸🇬", name: "Singapore" },
+  CH: { flag: "🇨🇭", name: "Switzerland" },
+  BE: { flag: "🇧🇪", name: "Belgium" },
+  AT: { flag: "🇦🇹", name: "Austria" },
+  PT: { flag: "🇵🇹", name: "Portugal" },
+  IE: { flag: "🇮🇪", name: "Ireland" },
+  NO: { flag: "🇳🇴", name: "Norway" },
+  DK: { flag: "🇩🇰", name: "Denmark" },
+  FI: { flag: "🇫🇮", name: "Finland" },
+  NZ: { flag: "🇳🇿", name: "New Zealand" },
 };
 
 type AggRow<T> = T;
 type AnalyticsAgg = {
   empty?: boolean;
   links: Array<{ id: string; short_code: string; title: string | null }>;
-  total: number; humans: number; bots: number;
-  unique?: number; uniqueVisitors?: number; unique_ips?: number;
-  last24h: number; last24hHumans: number; last60s: number;
-  offers: number; oursClicks: number;
+  total: number;
+  humans: number;
+  bots: number;
+  unique?: number;
+  uniqueVisitors?: number;
+  unique_ips?: number;
+  last24h: number;
+  last24hHumans: number;
+  last60s: number;
+  offers: number;
+  oursClicks: number;
   hourly: number[];
-  heatmap: number[][]; heatMax: number;
+  heatmap: number[][];
+  heatMax: number;
   countries: Array<{ code: string; humans: number; bots: number; total: number }>;
   devices: Array<{ name: string; cnt: number }>;
   browsers: Array<{ name: string; cnt: number }>;
@@ -140,7 +223,15 @@ type AnalyticsAgg = {
   botReasons: Array<{ name: string; cnt: number }>;
   trafficSources: Array<{ key: string; humans: number; bots: number; total: number }>;
   topLinks: Array<{ link_id: string; humans: number; bots: number; total: number }>;
-  liveEvents: Array<{ id: string; link_id: string; country: string | null; ua: string | null; is_bot: boolean; routed_to: string; created_at: string }>;
+  liveEvents: Array<{
+    id: string;
+    link_id: string;
+    country: string | null;
+    ua: string | null;
+    is_bot: boolean;
+    routed_to: string;
+    created_at: string;
+  }>;
 };
 
 type LiveAnalyticsSummary = {
@@ -175,7 +266,9 @@ const LIVE_ANALYTICS_RPC = "get_live_analytics_summary";
 
 function isMissingLiveAnalyticsRpc(error: any) {
   const text = `${error?.code ?? ""} ${error?.message ?? ""} ${error?.details ?? ""}`;
-  return /PGRST202|schema cache|function .*get_live_analytics_summary|no matches were found/i.test(text);
+  return /PGRST202|schema cache|function .*get_live_analytics_summary|no matches were found/i.test(
+    text,
+  );
 }
 
 function emptyLiveAnalyticsSummary(): LiveAnalyticsSummary {
@@ -224,7 +317,10 @@ function sourceFromReferer(host: string | null | undefined) {
   return "other";
 }
 
-async function loadLiveAnalyticsFallback({ supabase, userId }: AnalyticsContext): Promise<LiveAnalyticsSummary> {
+async function loadLiveAnalyticsFallback({
+  supabase,
+  userId,
+}: AnalyticsContext): Promise<LiveAnalyticsSummary> {
   const { data: linksRaw, error: linksError } = await supabase
     .from("links")
     .select("id, short_code, title")
@@ -243,22 +339,23 @@ async function loadLiveAnalyticsFallback({ supabase, userId }: AnalyticsContext)
   const since1h = new Date(now - 3_600_000).toISOString();
   const since24h = new Date(now - 86_400_000).toISOString();
 
-  const [last60s, last5m, humans1h, bots1h, last24h, last24hHumans, last24hBots, eventsRes] = await Promise.all([
-    countClicks(supabase, linkIds, since60s),
-    countClicks(supabase, linkIds, since5m),
-    countClicks(supabase, linkIds, since1h, false),
-    countClicks(supabase, linkIds, since1h, true),
-    countClicks(supabase, linkIds, since24h),
-    countClicks(supabase, linkIds, since24h, false),
-    countClicks(supabase, linkIds, since24h, true),
-    supabase
-      .from("clicks")
-      .select("id, link_id, country, ua, is_bot, routed_to, referer_host, bot_reason, created_at")
-      .in("link_id", linkIds)
-      .gte("created_at", since24h)
-      .order("created_at", { ascending: false })
-      .limit(50),
-  ]);
+  const [last60s, last5m, humans1h, bots1h, last24h, last24hHumans, last24hBots, eventsRes] =
+    await Promise.all([
+      countClicks(supabase, linkIds, since60s),
+      countClicks(supabase, linkIds, since5m),
+      countClicks(supabase, linkIds, since1h, false),
+      countClicks(supabase, linkIds, since1h, true),
+      countClicks(supabase, linkIds, since24h),
+      countClicks(supabase, linkIds, since24h, false),
+      countClicks(supabase, linkIds, since24h, true),
+      supabase
+        .from("clicks")
+        .select("id, link_id, country, ua, is_bot, routed_to, referer_host, bot_reason, created_at")
+        .in("link_id", linkIds)
+        .gte("created_at", since24h)
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
 
   if (eventsRes.error) throw new Error(eventsRes.error.message);
 
@@ -269,8 +366,14 @@ async function loadLiveAnalyticsFallback({ supabase, userId }: AnalyticsContext)
     title: linkLookup.get(event.link_id)?.title ?? null,
   }));
 
-  const countriesMap = new Map<string, { code: string; count: number; humans: number; bots: number }>();
-  const cohortsMap = new Map<string, { source: string; total: number; humans: number; bots: number }>();
+  const countriesMap = new Map<
+    string,
+    { code: string; count: number; humans: number; bots: number }
+  >();
+  const cohortsMap = new Map<
+    string,
+    { source: string; total: number; humans: number; bots: number }
+  >();
 
   for (const event of events) {
     const code = (event.country ?? "??").toUpperCase();
@@ -304,7 +407,10 @@ async function loadLiveAnalyticsFallback({ supabase, userId }: AnalyticsContext)
 }
 
 async function loadLiveAnalyticsSummary(context: AnalyticsContext): Promise<LiveAnalyticsSummary> {
-  const { data, error } = await context.supabase.rpc(LIVE_ANALYTICS_RPC as never, { _user_id: context.userId } as never);
+  const { data, error } = await context.supabase.rpc(
+    LIVE_ANALYTICS_RPC as never,
+    { _user_id: context.userId } as never,
+  );
   if (!error) return (data ?? emptyLiveAnalyticsSummary()) as LiveAnalyticsSummary;
   if (isMissingLiveAnalyticsRpc(error)) return loadLiveAnalyticsFallback(context);
   throw new Error(error.message);
@@ -326,8 +432,14 @@ const BROWSER_META: Record<string, { slug: string; color: string }> = {
 };
 
 const OS_META: Record<string, string> = {
-  iOS: "ios", Android: "android", Windows: "windows", macOS: "macos",
-  ChromeOS: "googlechrome", Linux: "linux", Unknown: "unknown", Other: "unknown",
+  iOS: "ios",
+  Android: "android",
+  Windows: "windows",
+  macOS: "macos",
+  ChromeOS: "googlechrome",
+  Linux: "linux",
+  Unknown: "unknown",
+  Other: "unknown",
 };
 
 function friendlyReason(raw: string): string {
@@ -344,28 +456,85 @@ function friendlyReason(raw: string): string {
 
 export function emptyAnalytics() {
   return {
-    kpis: { total: 0, humans: 0, bots: 0, unique: 0, cps: "0.0", last24h: 0, humanRate: 100, activeLinks: 0, oursClicks: 0 },
+    kpis: {
+      total: 0,
+      humans: 0,
+      bots: 0,
+      unique: 0,
+      cps: "0.0",
+      last24h: 0,
+      humanRate: 100,
+      activeLinks: 0,
+      oursClicks: 0,
+    },
     series24h: new Array(24).fill(0),
     heatmap: Array.from({ length: 7 }, () => new Array(24).fill(0)),
     heatMax: 1,
-    topCountries: [] as Array<{ code: string; flag: string; name: string; count: number; humans: number; bots: number; pct: number }>,
+    topCountries: [] as Array<{
+      code: string;
+      flag: string;
+      name: string;
+      count: number;
+      humans: number;
+      bots: number;
+      pct: number;
+    }>,
     devices: [] as Array<{ name: string; count: number; pct: number }>,
-    browsers: [] as Array<{ name: string; slug: string; color: string; count: number; pct: number }>,
+    browsers: [] as Array<{
+      name: string;
+      slug: string;
+      color: string;
+      count: number;
+      pct: number;
+    }>,
     operatingSystems: [] as Array<{ name: string; slug: string; count: number; pct: number }>,
     botReasons: [] as Array<{ name: string; count: number; pct: number }>,
-    topLinks: [] as Array<{ id: string; code: string; title: string | null; count: number; humans: number; bots: number; health: number }>,
-    liveEvents: [] as Array<{ id: string; time: string; country: string; countryName: string; flag: string; device: string; browser: string; browserSlug: string; browserColor: string; isBot: boolean; routed: string }>,
-    trafficSources: [] as Array<{ key: string; name: string; slug: string; color: string; humans: number; bots: number; total: number; pct: number; quality: number }>,
+    topLinks: [] as Array<{
+      id: string;
+      code: string;
+      title: string | null;
+      count: number;
+      humans: number;
+      bots: number;
+      health: number;
+    }>,
+    liveEvents: [] as Array<{
+      id: string;
+      time: string;
+      country: string;
+      countryName: string;
+      flag: string;
+      device: string;
+      browser: string;
+      browserSlug: string;
+      browserColor: string;
+      isBot: boolean;
+      routed: string;
+    }>,
+    trafficSources: [] as Array<{
+      key: string;
+      name: string;
+      slug: string;
+      color: string;
+      humans: number;
+      bots: number;
+      total: number;
+      pct: number;
+      quality: number;
+    }>,
     funnel: [] as Array<{ stage: string; value: number; pct: number; color: string }>,
   };
 }
 
 export async function loadAnalyticsData({ supabase, userId }: AnalyticsContext) {
   const [aggRes, live] = await Promise.all([
-    supabase.rpc("get_analytics_summary" as never, {
-      _user_id: userId,
-      _days: 7,
-    } as never),
+    supabase.rpc(
+      "get_analytics_summary" as never,
+      {
+        _user_id: userId,
+        _days: 7,
+      } as never,
+    ),
     loadLiveAnalyticsSummary({ supabase, userId }).catch(() => null),
   ]);
   const { data: aggRaw, error: aggErr } = aggRes;
@@ -397,9 +566,10 @@ export async function loadAnalyticsData({ supabase, userId }: AnalyticsContext) 
     { stage: "Final Landing", value: fLanding, pct: pct(fLanding), color: "#10B981" },
   ];
 
-  const hourBuckets = Array.isArray(agg.hourly) && agg.hourly.length === 24
-    ? agg.hourly.map(Number)
-    : new Array(24).fill(0);
+  const hourBuckets =
+    Array.isArray(agg.hourly) && agg.hourly.length === 24
+      ? agg.hourly.map(Number)
+      : new Array(24).fill(0);
 
   const heatmapRaw = Array.isArray(agg.heatmap) ? agg.heatmap : [];
   const heatmap: number[][] = Array.from({ length: 7 }, (_, i) =>
@@ -440,18 +610,22 @@ export async function loadAnalyticsData({ supabase, userId }: AnalyticsContext) 
     };
   });
 
-  const operatingSystems = (agg.operatingSystems ?? []).map((o: AggRow<AnalyticsAgg["operatingSystems"][number]>) => ({
-    name: o.name,
-    slug: OS_META[o.name] ?? "unknown",
-    count: Number(o.cnt),
-    pct: Math.round((Number(o.cnt) / totalHumansForDev) * 1000) / 10,
-  }));
+  const operatingSystems = (agg.operatingSystems ?? []).map(
+    (o: AggRow<AnalyticsAgg["operatingSystems"][number]>) => ({
+      name: o.name,
+      slug: OS_META[o.name] ?? "unknown",
+      count: Number(o.cnt),
+      pct: Math.round((Number(o.cnt) / totalHumansForDev) * 1000) / 10,
+    }),
+  );
 
-  const botReasons = (agg.botReasons ?? []).map((r: AggRow<AnalyticsAgg["botReasons"][number]>) => ({
-    name: friendlyReason(r.name),
-    count: hideBots(Number(r.cnt)),
-    pct: realBots ? Math.round((Number(r.cnt) / realBots) * 1000) / 10 : 0,
-  }));
+  const botReasons = (agg.botReasons ?? []).map(
+    (r: AggRow<AnalyticsAgg["botReasons"][number]>) => ({
+      name: friendlyReason(r.name),
+      count: hideBots(Number(r.cnt)),
+      pct: realBots ? Math.round((Number(r.cnt) / realBots) * 1000) / 10 : 0,
+    }),
+  );
 
   const SOURCE_META: Record<string, { name: string; slug: string; color: string }> = {
     facebook: { name: "Facebook", slug: "facebook", color: "1877F2" },
@@ -469,24 +643,29 @@ export async function loadAnalyticsData({ supabase, userId }: AnalyticsContext) 
     other: { name: "Other", slug: "direct", color: "7D6452" },
   };
 
-  const totalSrcHumans = Math.max(1, (agg.trafficSources ?? []).reduce((s, v) => s + Number(v.humans), 0));
-  const trafficSources = (agg.trafficSources ?? []).map((v: AggRow<AnalyticsAgg["trafficSources"][number]>) => {
-    const meta = SOURCE_META[v.key] ?? { name: v.key, slug: "direct", color: "7D6452" };
-    const tot = Number(v.total);
-    const hum = Number(v.humans);
-    const quality = tot ? Math.round((hum / tot) * 100) : 100;
-    return {
-      key: v.key,
-      name: meta.name,
-      slug: meta.slug,
-      color: meta.color,
-      humans: hum,
-      bots: hideBots(Number(v.bots)),
-      total: hum + hideBots(Number(v.bots)),
-      pct: Math.round((hum / totalSrcHumans) * 1000) / 10,
-      quality,
-    };
-  });
+  const totalSrcHumans = Math.max(
+    1,
+    (agg.trafficSources ?? []).reduce((s, v) => s + Number(v.humans), 0),
+  );
+  const trafficSources = (agg.trafficSources ?? []).map(
+    (v: AggRow<AnalyticsAgg["trafficSources"][number]>) => {
+      const meta = SOURCE_META[v.key] ?? { name: v.key, slug: "direct", color: "7D6452" };
+      const tot = Number(v.total);
+      const hum = Number(v.humans);
+      const quality = tot ? Math.round((hum / tot) * 100) : 100;
+      return {
+        key: v.key,
+        name: meta.name,
+        slug: meta.slug,
+        color: meta.color,
+        humans: hum,
+        bots: hideBots(Number(v.bots)),
+        total: hum + hideBots(Number(v.bots)),
+        pct: Math.round((hum / totalSrcHumans) * 1000) / 10,
+        quality,
+      };
+    },
+  );
 
   const linkLookup = new Map(agg.links.map((l) => [l.id, l]));
   const topLinks = (agg.topLinks ?? []).map((t: AggRow<AnalyticsAgg["topLinks"][number]>) => {
@@ -552,9 +731,17 @@ export async function loadAnalyticsData({ supabase, userId }: AnalyticsContext) 
 }
 
 export async function loadCohortRetention({ supabase, userId }: AnalyticsContext) {
-  const { data, error } = await supabase.rpc("get_cohort_retention" as never, { _user_id: userId } as never);
-  if (error || !data) return { rows: [] as Array<{ day: string; size: number; d1: number; d7: number; d30: number }> };
-  const rows = (data as Array<{ day_label: string; size: number; d1: number; d7: number; d30: number }>).map((r) => {
+  const { data, error } = await supabase.rpc(
+    "get_cohort_retention" as never,
+    { _user_id: userId } as never,
+  );
+  if (error || !data)
+    return {
+      rows: [] as Array<{ day: string; size: number; d1: number; d7: number; d30: number }>,
+    };
+  const rows = (
+    data as Array<{ day_label: string; size: number; d1: number; d7: number; d30: number }>
+  ).map((r) => {
     const size = Number(r.size);
     const d1 = Number(r.d1);
     const d7 = Number(r.d7);
@@ -570,8 +757,11 @@ export async function loadCohortRetention({ supabase, userId }: AnalyticsContext
   return { rows };
 }
 
-
-export async function loadLinkDrilldown({ supabase, userId, linkId }: AnalyticsContext & { linkId: string }) {
+export async function loadLinkDrilldown({
+  supabase,
+  userId,
+  linkId,
+}: AnalyticsContext & { linkId: string }) {
   const { data: link } = await supabase
     .from("links")
     .select("id, short_code, title, user_id, clicks_count, bot_clicks_count, created_at")
@@ -589,13 +779,21 @@ export async function loadLinkDrilldown({ supabase, userId, linkId }: AnalyticsC
     .order("created_at", { ascending: false })
     .limit(10000);
 
-  const clicks = (rawC ?? []) as Array<{ country: string | null; ua: string | null; is_bot: boolean; routed_to: string; created_at: string }>;
+  const clicks = (rawC ?? []) as Array<{
+    country: string | null;
+    ua: string | null;
+    is_bot: boolean;
+    routed_to: string;
+    created_at: string;
+  }>;
   const now = Date.now();
   const series = new Array(24).fill(0);
-  clicks.filter((c) => !c.is_bot).forEach((c) => {
-    const h = Math.floor((now - new Date(c.created_at).getTime()) / 3_600_000);
-    if (h >= 0 && h < 24) series[23 - h]++;
-  });
+  clicks
+    .filter((c) => !c.is_bot)
+    .forEach((c) => {
+      const h = Math.floor((now - new Date(c.created_at).getTime()) / 3_600_000);
+      if (h >= 0 && h < 24) series[23 - h]++;
+    });
 
   const cMap = new Map<string, number>();
   clicks.forEach((c) => {
@@ -603,36 +801,55 @@ export async function loadLinkDrilldown({ supabase, userId, linkId }: AnalyticsC
     cMap.set(k, (cMap.get(k) ?? 0) + 1);
   });
   const tot = Math.max(1, clicks.length);
-  const countries = [...cMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([code, count]) => ({
-    code,
-    flag: COUNTRIES[code]?.flag ?? "🌐",
-    name: COUNTRIES[code]?.name ?? code,
-    count,
-    pct: Math.round((count / tot) * 1000) / 10,
-  }));
+  const countries = [...cMap.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([code, count]) => ({
+      code,
+      flag: COUNTRIES[code]?.flag ?? "🌐",
+      name: COUNTRIES[code]?.name ?? code,
+      count,
+      pct: Math.round((count / tot) * 1000) / 10,
+    }));
 
   const bMap = new Map<string, { count: number; slug: string; color: string }>();
-  clicks.filter((c) => !c.is_bot).forEach((c) => {
-    const b = browserFromUA(c.ua);
-    const cur = bMap.get(b.name) ?? { count: 0, slug: b.slug, color: b.color };
-    cur.count++;
-    bMap.set(b.name, cur);
-  });
+  clicks
+    .filter((c) => !c.is_bot)
+    .forEach((c) => {
+      const b = browserFromUA(c.ua);
+      const cur = bMap.get(b.name) ?? { count: 0, slug: b.slug, color: b.color };
+      cur.count++;
+      bMap.set(b.name, cur);
+    });
 
   const humans = clicks.filter((c) => !c.is_bot).length;
   const totH = Math.max(1, humans);
-  const browsers = [...bMap.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 6).map(([name, v]) => ({
-    name,
-    slug: v.slug,
-    color: v.color,
-    count: v.count,
-    pct: Math.round((v.count / totH) * 1000) / 10,
-  }));
+  const browsers = [...bMap.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 6)
+    .map(([name, v]) => ({
+      name,
+      slug: v.slug,
+      color: v.color,
+      count: v.count,
+      pct: Math.round((v.count / totH) * 1000) / 10,
+    }));
 
   const bots = clicks.filter((c) => c.is_bot).length;
   return {
-    link: { id: link.id, code: link.short_code, title: link.title, total: link.clicks_count, created_at: link.created_at },
-    kpis24h: { total: clicks.length, humans, bots: hideBots(bots), humanRate: clicks.length ? Math.round((humans / clicks.length) * 1000) / 10 : 100 },
+    link: {
+      id: link.id,
+      code: link.short_code,
+      title: link.title,
+      total: link.clicks_count,
+      created_at: link.created_at,
+    },
+    kpis24h: {
+      total: clicks.length,
+      humans,
+      bots: hideBots(bots),
+      humanRate: clicks.length ? Math.round((humans / clicks.length) * 1000) / 10 : 100,
+    },
     series,
     countries,
     browsers,
@@ -641,15 +858,40 @@ export async function loadLinkDrilldown({ supabase, userId, linkId }: AnalyticsC
 
 export async function loadLiveFeed({ supabase, userId }: AnalyticsContext) {
   const summary = await loadLiveAnalyticsSummary({ supabase, userId });
-  const typedLinks = (summary.links ?? []) as Array<{ id: string; short_code: string; title: string | null }>;
+  const typedLinks = (summary.links ?? []) as Array<{
+    id: string;
+    short_code: string;
+    title: string | null;
+  }>;
   const linkIds = typedLinks.map((l) => l.id);
   if (linkIds.length === 0) {
     return {
       cps5m: 0,
       humans1h: 0,
       bots1h: 0,
-      events: [] as Array<{ id: string; created_at: string; short_code: string; country: string; flag: string; countryName: string; ua: string | null; is_bot: boolean; referrer_source: string | null; device: string; deviceOs: string; browser: string; browserSlug: string; browserColor: string }>,
-      countries: [] as Array<{ code: string; flag: string; name: string; count: number; pct: number }>,
+      events: [] as Array<{
+        id: string;
+        created_at: string;
+        short_code: string;
+        country: string;
+        flag: string;
+        countryName: string;
+        ua: string | null;
+        is_bot: boolean;
+        referrer_source: string | null;
+        device: string;
+        deviceOs: string;
+        browser: string;
+        browserSlug: string;
+        browserColor: string;
+      }>,
+      countries: [] as Array<{
+        code: string;
+        flag: string;
+        name: string;
+        count: number;
+        pct: number;
+      }>,
       cohorts: [] as Array<{ source: string; total: number; humans: number; humanRate: number }>,
     };
   }
@@ -713,7 +955,9 @@ export async function loadLiveFeed({ supabase, userId }: AnalyticsContext) {
     source: v.source,
     total: Number(v.total ?? 0),
     humans: Number(v.humans ?? 0),
-    humanRate: Number(v.total ?? 0) ? Math.round((Number(v.humans ?? 0) / Number(v.total ?? 0)) * 100) : 0,
+    humanRate: Number(v.total ?? 0)
+      ? Math.round((Number(v.humans ?? 0) / Number(v.total ?? 0)) * 100)
+      : 0,
   }));
 
   return {

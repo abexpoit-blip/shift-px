@@ -28,11 +28,11 @@ export function BreezyHome() {
               className="text-5xl md:text-6xl lg:text-7xl text-[#2A2A28] leading-[1.05] mb-6"
               style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
             >
-              Smart gadgets for{" "}
-              <span className="italic text-[#5A7A55]">calm,</span> modern living.
+              Smart gadgets for <span className="italic text-[#5A7A55]">calm,</span> modern living.
             </h1>
             <p className="text-lg text-[#5A554C] leading-relaxed mb-8 max-w-md">
-              Thoughtfully designed tools for better sleep, sharper focus, and easier travel — curated, tested, and shipped from California.
+              Thoughtfully designed tools for better sleep, sharper focus, and easier travel —
+              curated, tested, and shipped from California.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
@@ -77,7 +77,10 @@ export function BreezyHome() {
             <div className="text-xs uppercase tracking-[0.2em] text-[#7D9B76] font-semibold mb-2">
               The Collection
             </div>
-            <h2 className="text-3xl md:text-4xl text-[#2A2A28]" style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}>
+            <h2
+              className="text-3xl md:text-4xl text-[#2A2A28]"
+              style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
+            >
               Featured this week
             </h2>
           </div>
@@ -100,7 +103,10 @@ export function BreezyHome() {
               <div className="text-xs uppercase tracking-[0.2em] text-[#7D9B76] font-semibold mb-2">
                 The Journal
               </div>
-              <h2 className="text-3xl md:text-4xl text-[#2A2A28]" style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}>
+              <h2
+                className="text-3xl md:text-4xl text-[#2A2A28]"
+                style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
+              >
                 Stories worth reading
               </h2>
             </div>
@@ -120,7 +126,14 @@ export function BreezyHome() {
                 >
                   <div className="aspect-[16/10] bg-gradient-to-br from-[#FAF7F2] to-[#E8E2D5] overflow-hidden flex items-center justify-center">
                     {img ? (
-                      <img src={img} alt={a.title} loading="lazy" width={1536} height={1024} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img
+                        src={img}
+                        alt={a.title}
+                        loading="lazy"
+                        width={1536}
+                        height={1024}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
                     ) : (
                       <span className="text-6xl">{a.emoji}</span>
                     )}
@@ -129,7 +142,10 @@ export function BreezyHome() {
                     <div className="text-[10px] uppercase tracking-wider text-[#7D9B76] font-semibold mb-2">
                       {a.category} · {a.readTime} min read
                     </div>
-                    <h3 className="text-xl text-[#2A2A28] mb-2 leading-snug group-hover:text-[#5A7A55] transition-colors" style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}>
+                    <h3
+                      className="text-xl text-[#2A2A28] mb-2 leading-snug group-hover:text-[#5A7A55] transition-colors"
+                      style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
+                    >
                       {a.title}
                     </h3>
                     <p className="text-sm text-[#7A7468] line-clamp-2">{a.excerpt}</p>
@@ -146,11 +162,15 @@ export function BreezyHome() {
         <div className="text-xs uppercase tracking-[0.2em] text-[#7D9B76] font-semibold mb-3">
           Stay connected
         </div>
-        <h2 className="text-3xl md:text-4xl text-[#2A2A28] mb-4" style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}>
+        <h2
+          className="text-3xl md:text-4xl text-[#2A2A28] mb-4"
+          style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
+        >
           Get 10% off your first order
         </h2>
         <p className="text-[#5A554C] mb-8">
-          Subscribe for product launches, gift guides, and wellness tips. No spam — just the good stuff.
+          Subscribe for product launches, gift guides, and wellness tips. No spam — just the good
+          stuff.
         </p>
         <form
           className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto"

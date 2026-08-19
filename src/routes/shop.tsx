@@ -23,7 +23,6 @@ export const Route = createFileRoute("/shop")({
   component: ShopPage,
 });
 
-
 function ShopPage() {
   return (
     <BreezyLayout>
@@ -32,18 +31,24 @@ function ShopPage() {
           <div className="text-xs uppercase tracking-[0.2em] text-[#7D9B76] font-semibold mb-3">
             The full collection
           </div>
-          <h1 className="text-5xl md:text-6xl text-[#2A2A28] mb-4" style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}>
+          <h1
+            className="text-5xl md:text-6xl text-[#2A2A28] mb-4"
+            style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
+          >
             Shop all products
           </h1>
           <p className="text-[#5A554C] max-w-xl mx-auto">
-            Eight thoughtfully designed gadgets — chosen for craftsmanship, lasting value, and real impact on daily life.
+            Eight thoughtfully designed gadgets — chosen for craftsmanship, lasting value, and real
+            impact on daily life.
           </p>
         </div>
       </section>
       <TrustBar />
       <section className="max-w-6xl mx-auto px-6 py-16">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {PRODUCTS.map((p) => <ProductCard key={p.slug} product={p} />)}
+          {PRODUCTS.map((p) => (
+            <ProductCard key={p.slug} product={p} />
+          ))}
         </div>
       </section>
     </BreezyLayout>

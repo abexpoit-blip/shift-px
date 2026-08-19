@@ -18,7 +18,12 @@ export function EarningsStrip() {
   const num = (n: number) => (n ?? 0).toLocaleString();
 
   const cards = [
-    { icon: Wallet, label: "Available balance", value: money(data?.balanceAvailable ?? 0), accent: true },
+    {
+      icon: Wallet,
+      label: "Available balance",
+      value: money(data?.balanceAvailable ?? 0),
+      accent: true,
+    },
     { icon: TrendingUp, label: "Earned today", value: money(data?.todayEarned ?? 0) },
     { icon: Users, label: "Verified humans", value: num(data?.humanClicks ?? 0) },
     { icon: Bot, label: "Bots filtered", value: num(data?.botClicks ?? 0) },
@@ -51,8 +56,8 @@ export function EarningsStrip() {
         </div>
       ))}
       <p className="sm:col-span-2 lg:col-span-4 text-[11px] text-muted-foreground">
-        All features are free · you earn {money(data?.ratePer1k ?? 0)} per 1,000 verified human visits · minimum payout{" "}
-        {money(data?.minWithdrawal ?? 10)}.
+        All features are free · you earn {money(data?.ratePer1k ?? 0)} per 1,000 verified human
+        visits · minimum payout {money(data?.minWithdrawal ?? 10)}.
       </p>
     </div>
   );

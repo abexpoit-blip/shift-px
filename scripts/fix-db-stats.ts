@@ -1,11 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 // Configuration for your self-hosted database from ecosystem.config.cjs
 const SUPABASE_URL = "https://supabase.adspx.com";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false }
+  auth: { persistSession: false },
 });
 
 async function runMigration() {
@@ -44,18 +44,22 @@ async function runMigration() {
     // So we'll try a common trick to execute it via a temporary function if possible
     // but the most reliable way for self-hosted is the Dashboard.
     // However, I will try to see if I can run it via the API.
-    
+
     console.log("Checking connectivity...");
-    const { count, error: checkError } = await supabase.from('clicks').select('*', { count: 'exact', head: true });
-    
+    const { count, error: checkError } = await supabase
+      .from("clicks")
+      .select("*", { count: "exact", head: true });
+
     if (checkError) {
       console.error("❌ Connection error:", checkError.message);
       return;
     }
-    
+
     console.log(`✅ Connected! Database has ${count} clicks.`);
     console.log("\n⚠️ MANUAL ACTION REQUIRED ⚠️");
-    console.log("Since you are self-hosting, I cannot run 'GRANT' or 'CREATE FUNCTION' via the API.");
+    console.log(
+      "Since you are self-hosting, I cannot run 'GRANT' or 'CREATE FUNCTION' via the API.",
+    );
     console.log("Please follow these EXACT steps:");
     console.log("1. Open your browser to: https://supabase.adspx.com");
     console.log("2. Log in to your Supabase Dashboard.");

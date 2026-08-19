@@ -6,10 +6,7 @@ import { BreezyLayout } from "@/components/breezy/BreezyLayout";
 export const Route = createFileRoute("/order-confirmed")({
   validateSearch: z.object({ o: z.string().optional() }),
   head: () => ({
-    meta: [
-      { title: "Order Confirmed" },
-      { name: "robots", content: "noindex,nofollow" },
-    ],
+    meta: [{ title: "Order Confirmed" }, { name: "robots", content: "noindex,nofollow" }],
   }),
   component: OrderConfirmedPage,
 });
@@ -29,7 +26,9 @@ function OrderConfirmedPage() {
     try {
       const raw = sessionStorage.getItem("breezy_last_order");
       if (raw) setOrder(JSON.parse(raw));
-    } catch {/* ignore */}
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const orderNumber = order?.orderNumber || o || "BS-2026-XXXXXX";
@@ -38,7 +37,16 @@ function OrderConfirmedPage() {
     <BreezyLayout>
       <div className="max-w-2xl mx-auto px-6 py-20 text-center">
         <div className="w-20 h-20 rounded-full bg-[#7D9B76]/15 mx-auto flex items-center justify-center mb-6">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#5A7A55" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="36"
+            height="36"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#5A7A55"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M20 6 9 17l-5-5" />
           </svg>
         </div>
@@ -66,7 +74,9 @@ function OrderConfirmedPage() {
             <ul className="space-y-3 mb-5">
               {order.items.map((i) => (
                 <li key={i.slug} className="flex justify-between text-sm">
-                  <span className="text-[#5A554C]">{i.name} × {i.qty}</span>
+                  <span className="text-[#5A554C]">
+                    {i.name} × {i.qty}
+                  </span>
                   <span className="font-medium">${(i.price * i.qty).toFixed(2)}</span>
                 </li>
               ))}

@@ -25,9 +25,11 @@ export async function logServerError(
     const linkId = (context.linkId as string | undefined) ?? null;
     const userId = (context.userId as string | undefined) ?? null;
 
-    await (supabaseAdmin.from as unknown as (t: string) => {
-      insert: (row: Record<string, unknown>) => Promise<unknown>;
-    })("error_logs").insert({
+    await (
+      supabaseAdmin.from as unknown as (t: string) => {
+        insert: (row: Record<string, unknown>) => Promise<unknown>;
+      }
+    )("error_logs").insert({
       source,
       level,
       message,

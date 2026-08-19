@@ -53,8 +53,8 @@ export function MouseWaves() {
     window.addEventListener("mouseleave", onLeave);
     window.addEventListener("touchmove", onTouch, { passive: true });
 
-    const LINES = 26;         // number of stacked streams
-    const DOT_STEP = 10;      // spacing between dots along each stream
+    const LINES = 26; // number of stacked streams
+    const DOT_STEP = 10; // spacing between dots along each stream
 
     const draw = () => {
       t += 0.006;
@@ -98,15 +98,14 @@ export function MouseWaves() {
           const y = baseY + flow + push;
 
           // twinkle along the stream so dots feel like moving particles
-          const twinkle =
-            0.35 + (Math.sin(x * 0.03 - t * 3 + i * 0.6) * 0.5 + 0.5) * 0.65;
+          const twinkle = 0.35 + (Math.sin(x * 0.03 - t * 3 + i * 0.6) * 0.5 + 0.5) * 0.65;
 
           // radius fades at the horizontal edges (soft mask)
           const edge = Math.min(1, Math.min(x, width - x) / 120);
           const edgeFade = Math.max(0, edge);
 
           const size = (0.7 + depthCurve * 2.2) * (0.6 + twinkle * 0.6);
-          const alpha = (0.10 + depthCurve * 0.35) * twinkle * edgeFade;
+          const alpha = (0.1 + depthCurve * 0.35) * twinkle * edgeFade;
           const blur = 2 + depthCurve * 10;
 
           ctx.beginPath();
@@ -134,11 +133,5 @@ export function MouseWaves() {
     };
   }, []);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      aria-hidden
-      className="pointer-events-none fixed inset-0 z-[1]"
-    />
-  );
+  return <canvas ref={canvasRef} aria-hidden className="pointer-events-none fixed inset-0 z-[1]" />;
 }

@@ -27,9 +27,15 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard — Adspx" },
-      { name: "description", content: "Live traffic, verified visits and payout progress for your Adspx smart links." },
+      {
+        name: "description",
+        content: "Live traffic, verified visits and payout progress for your Adspx smart links.",
+      },
       { property: "og:title", content: "Dashboard — Adspx" },
-      { property: "og:description", content: "Live traffic, verified visits and payout progress for your Adspx smart links." },
+      {
+        property: "og:description",
+        content: "Live traffic, verified visits and payout progress for your Adspx smart links.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -115,8 +121,8 @@ function DashboardPage() {
   const uniqueVisitors = stats?.uniqueVisitors ?? 0;
   const botPct = allTraffic > 0 ? (botBlocked / allTraffic) * 100 : 0;
 
-  // Free-for-all payout model: $1 per 50,000 verified human visits.
-  const CLICKS_PER_DOLLAR = 50_000;
+  // Payout model: $1 per 100,000 verified human visits (matches earnings.functions.ts DEFAULT_RATE_PER_1K=0.01)
+  const CLICKS_PER_DOLLAR = 100_000;
   const payoutEarned = totalClicks / CLICKS_PER_DOLLAR;
   const payoutProgress = totalClicks % CLICKS_PER_DOLLAR;
   const payoutRemaining = CLICKS_PER_DOLLAR - payoutProgress;
@@ -150,8 +156,13 @@ function DashboardPage() {
     const tones = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)"];
     const top = entries.slice(0, 3);
     const otherCount = entries.slice(3).reduce((s, [, n]) => s + n, 0);
-    const rows = top.map(([name, n], i) => ({ name, pct: Math.round((n / total) * 100), tone: tones[i] }));
-    if (otherCount > 0) rows.push({ name: "Other", pct: Math.round((otherCount / total) * 100), tone: tones[3] });
+    const rows = top.map(([name, n], i) => ({
+      name,
+      pct: Math.round((n / total) * 100),
+      tone: tones[i],
+    }));
+    if (otherCount > 0)
+      rows.push({ name: "Other", pct: Math.round((otherCount / total) * 100), tone: tones[3] });
     return rows;
   }, [stats]);
 
@@ -178,7 +189,11 @@ function DashboardPage() {
             </h1>
             <p className="text-sm text-muted-foreground mt-1.5">
               Verified human visits, shield activity and payout progress — all in real time.
-              {cachedAt && <span className="ml-1 text-muted-foreground/70">Updated {formatRelativeTime(cachedAt)}.</span>}
+              {cachedAt && (
+                <span className="ml-1 text-muted-foreground/70">
+                  Updated {formatRelativeTime(cachedAt)}.
+                </span>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -188,7 +203,9 @@ function DashboardPage() {
                   key={r}
                   onClick={() => setRange(r)}
                   className={`px-3.5 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                    range === r ? "bg-primary-gradient text-white shadow-glow" : "text-muted-foreground hover:text-foreground"
+                    range === r
+                      ? "bg-primary-gradient text-white shadow-glow"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {r}
@@ -259,10 +276,14 @@ function DashboardPage() {
               <div className="flex items-start justify-between mb-5 flex-wrap gap-3">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5 text-primary" /> Clicks over {range === "7D" ? "7 days" : "30 days"}
+                    <Activity className="w-3.5 h-3.5 text-primary" /> Clicks over{" "}
+                    {range === "7D" ? "7 days" : "30 days"}
                   </p>
                   <div className="flex items-baseline gap-2 mt-1.5">
-                    <AnimatedNumber value={chartData.total} className="text-3xl font-extrabold tabular-nums" />
+                    <AnimatedNumber
+                      value={chartData.total}
+                      className="text-3xl font-extrabold tabular-nums"
+                    />
                     <span
                       className={`text-xs font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
                         chartData.delta >= 0
@@ -270,14 +291,24 @@ function DashboardPage() {
                           : "text-rose-600 bg-rose-500/10"
                       }`}
                     >
-                      {chartData.delta >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                      {chartData.delta >= 0 ? (
+                        <ArrowUpRight className="w-3 h-3" />
+                      ) : (
+                        <ArrowDownRight className="w-3 h-3" />
+                      )}
                       {Math.abs(chartData.delta).toFixed(1)}%
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Compared with the previous period</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Compared with the previous period
+                  </p>
                 </div>
               </div>
-              <AreaChart vals={chartData.vals} peakIdx={chartData.peakIdx} labels={chartData.labels} />
+              <AreaChart
+                vals={chartData.vals}
+                peakIdx={chartData.peakIdx}
+                labels={chartData.labels}
+              />
             </Panel>
 
             {/* MANAGE LINKS CTA (creation lives on /links) */}
@@ -294,7 +325,8 @@ function DashboardPage() {
                   Manage your smart links
                 </h4>
                 <p className="text-white/85 text-xs mt-0.5">
-                  {links.length} link{links.length === 1 ? "" : "s"} · {activeLinks} active · create & edit in one place
+                  {links.length} link{links.length === 1 ? "" : "s"} · {activeLinks} active · create
+                  & edit in one place
                 </p>
               </div>
               <span className="hidden sm:flex items-center gap-1.5 bg-white text-primary px-4 py-2 rounded-lg font-bold text-xs group-hover:scale-105 transition-transform">
@@ -308,8 +340,9 @@ function DashboardPage() {
                 <Archive className="w-4 h-4 text-primary" /> Lifetime data is safe
               </h4>
               <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                Raw per-click logs are trimmed weekly so the platform stays fast at any scale, but your lifetime
-                click totals, country stats and earnings are archived permanently — no weekly reset, no lost balance.
+                Raw per-click logs are trimmed weekly so the platform stays fast at any scale, but
+                your lifetime click totals, country stats and earnings are archived permanently — no
+                weekly reset, no lost balance.
               </p>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <MiniStat label="Lifetime visits" value={fmtCompact(totalClicks)} icon={Users} />
@@ -326,10 +359,16 @@ function DashboardPage() {
               <h4 className="text-base font-bold flex items-center gap-2" style={display}>
                 <Coins className="w-4 h-4 text-primary" /> Payout progress
               </h4>
-              <p className="text-xs text-muted-foreground mt-1">$1 for every 50,000 verified human visits.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                $1 for every 50,000 verified human visits.
+              </p>
 
               <div className="mt-5 flex items-center justify-center">
-                <ProgressRing pct={payoutPct} label={`$${payoutEarned.toFixed(2)}`} caption="earned" />
+                <ProgressRing
+                  pct={payoutPct}
+                  label={`$${payoutEarned.toFixed(2)}`}
+                  caption="earned"
+                />
               </div>
 
               <div className="mt-5 space-y-2 text-xs">
@@ -337,7 +376,10 @@ function DashboardPage() {
                 <Row label="Next $1 milestone" value={`${fmtCompact(payoutRemaining)} left`} />
               </div>
               <div className="mt-3 h-2.5 rounded-full bg-border overflow-hidden stripe-track">
-                <div className="h-full rounded-full bar-fill shadow-glow" style={{ width: `${payoutPct}%` }} />
+                <div
+                  className="h-full rounded-full bar-fill shadow-glow"
+                  style={{ width: `${payoutPct}%` }}
+                />
               </div>
               <p className="mt-2 text-[10px] uppercase tracking-[0.16em] font-bold text-muted-foreground flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-primary" /> {payoutPct}% to your next dollar
@@ -430,13 +472,19 @@ function KpiCard({
 }) {
   return (
     <div className={`group rounded-2xl glass-card p-4 relative overflow-hidden ${className}`}>
-      <div className={`absolute inset-0 bg-gradient-to-br opacity-70 pointer-events-none ${ACCENTS[accent] ?? ACCENTS.indigo}`} />
+      <div
+        className={`absolute inset-0 bg-gradient-to-br opacity-70 pointer-events-none ${ACCENTS[accent] ?? ACCENTS.indigo}`}
+      />
       <div className="relative flex items-start justify-between">
-        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
+        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+          {label}
+        </div>
         <span
-          className={`grid h-8 w-8 place-items-center rounded-xl bg-card/80 border border-border shadow-sm ${
-            (ACCENTS[accent] ?? ACCENTS.indigo).split(" ").pop()
-          } group-hover:scale-110 transition-transform`}
+          className={`grid h-8 w-8 place-items-center rounded-xl bg-card/80 border border-border shadow-sm ${(
+            ACCENTS[accent] ?? ACCENTS.indigo
+          )
+            .split(" ")
+            .pop()} group-hover:scale-110 transition-transform`}
         >
           <Icon className="h-4 w-4" />
         </span>
@@ -477,7 +525,15 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function AreaChart({ vals, peakIdx, labels }: { vals: number[]; peakIdx: number; labels: string[] }) {
+function AreaChart({
+  vals,
+  peakIdx,
+  labels,
+}: {
+  vals: number[];
+  peakIdx: number;
+  labels: string[];
+}) {
   const max = Math.max(1, ...vals);
   const [hover, setHover] = useState<number | null>(null);
   const sw = 800,
@@ -528,7 +584,11 @@ function AreaChart({ vals, peakIdx, labels }: { vals: number[]; peakIdx: number;
         </div>
 
         <div className="relative flex-1">
-          <svg viewBox={`0 0 ${sw} ${sh}`} preserveAspectRatio="none" className="w-full h-[210px] overflow-visible">
+          <svg
+            viewBox={`0 0 ${sw} ${sh}`}
+            preserveAspectRatio="none"
+            className="w-full h-[210px] overflow-visible"
+          >
             <defs>
               <linearGradient id="dashLine" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor="var(--primary-glow)" />
@@ -573,7 +633,14 @@ function AreaChart({ vals, peakIdx, labels }: { vals: number[]; peakIdx: number;
                   strokeDasharray="3 4"
                   opacity="0.5"
                 />
-                <circle cx={activePt[0]} cy={activePt[1]} r="5.5" fill="var(--primary)" stroke="var(--card)" strokeWidth="2.5" />
+                <circle
+                  cx={activePt[0]}
+                  cy={activePt[1]}
+                  r="5.5"
+                  fill="var(--primary)"
+                  stroke="var(--card)"
+                  strokeWidth="2.5"
+                />
               </>
             )}
           </svg>
@@ -593,7 +660,11 @@ function AreaChart({ vals, peakIdx, labels }: { vals: number[]; peakIdx: number;
           {activePt && (
             <div
               className="pointer-events-none absolute -translate-x-1/2 -translate-y-full"
-              style={{ left: `${(activePt[0] / sw) * 100}%`, top: `${(activePt[1] / sh) * 100}%`, marginTop: -10 }}
+              style={{
+                left: `${(activePt[0] / sw) * 100}%`,
+                top: `${(activePt[1] / sh) * 100}%`,
+                marginTop: -10,
+              }}
             >
               <div
                 className="rounded-lg bg-foreground text-background px-2.5 py-1.5 text-[11px] font-bold shadow-lg whitespace-nowrap"
@@ -611,7 +682,9 @@ function AreaChart({ vals, peakIdx, labels }: { vals: number[]; peakIdx: number;
             {labels.length > 0 && (
               <>
                 <span>{fmtLabel(labels[0])}</span>
-                {labels.length > 6 && <span>{fmtLabel(labels[Math.floor(labels.length / 2)])}</span>}
+                {labels.length > 6 && (
+                  <span>{fmtLabel(labels[Math.floor(labels.length / 2)])}</span>
+                )}
                 <span className="text-primary">{fmtLabel(labels[labels.length - 1])}</span>
               </>
             )}
@@ -622,8 +695,17 @@ function AreaChart({ vals, peakIdx, labels }: { vals: number[]; peakIdx: number;
   );
 }
 
-
-function RegionRow({ name, pct, tone, delay = 0 }: { name: string; pct: number; tone: string; delay?: number }) {
+function RegionRow({
+  name,
+  pct,
+  tone,
+  delay = 0,
+}: {
+  name: string;
+  pct: number;
+  tone: string;
+  delay?: number;
+}) {
   const [w, setW] = useState(0);
   useEffect(() => {
     const t = setTimeout(() => setW(pct), 80 + delay);
@@ -675,7 +757,14 @@ function ProgressRing({
             <stop offset="100%" stopColor="var(--primary-glow)" />
           </linearGradient>
         </defs>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="var(--border)"
+          strokeWidth={stroke}
+        />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -693,7 +782,9 @@ function ProgressRing({
         <span className="text-2xl font-extrabold tabular-nums" style={display}>
           {label}
         </span>
-        <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-bold">{caption}</span>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-bold">
+          {caption}
+        </span>
       </div>
     </div>
   );

@@ -18,8 +18,7 @@ import { isSaasOnlyPath } from "./site-hosts";
 
 export const LEAK_SOURCE = "leak_monitor";
 
-export const FB_UA =
-  "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
+export const FB_UA = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
 export const META_AGENT_UA =
   "meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler)";
 export const DESKTOP_UA =
@@ -217,7 +216,6 @@ export async function scanDomain(
     });
   }
 
-
   // ---- 4. robots.txt must let Meta in -------------------------------------
   const robots = await probe(base + "/robots.txt", DESKTOP_UA);
   const rb = robots.body.toLowerCase();
@@ -268,7 +266,6 @@ export async function scanDomain(
       });
     }
   }
-
 
   // ---- 6. Redirect behaviour on a real short code -------------------------
   if (sampleCode) {

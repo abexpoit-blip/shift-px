@@ -7,19 +7,21 @@ import { User, KeyRound, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  getMySettings,
-  updateMyProfile,
-  changeMyPassword,
-} from "@/lib/user-settings.functions";
+import { getMySettings, updateMyProfile, changeMyPassword } from "@/lib/user-settings.functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
       { title: "Account Settings — Adspx" },
-      { name: "description", content: "Manage your Adspx account name, password and plan details." },
+      {
+        name: "description",
+        content: "Manage your Adspx account name, password and plan details.",
+      },
       { property: "og:title", content: "Account Settings — Adspx" },
-      { property: "og:description", content: "Manage your Adspx account name, password and plan details." },
+      {
+        property: "og:description",
+        content: "Manage your Adspx account name, password and plan details.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -27,7 +29,15 @@ export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
 });
 
-function Card({ title, icon: Icon, children }: { title: string; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
+function Card({
+  title,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+}) {
   return (
     <section className="rounded-2xl glass-card p-5 space-y-4">
       <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -94,10 +104,7 @@ function SettingsPage() {
             placeholder="Your name"
           />
         </div>
-        <Button
-          onClick={() => profileMut.mutate()}
-          disabled={profileMut.isPending || q.isLoading}
-        >
+        <Button onClick={() => profileMut.mutate()} disabled={profileMut.isPending || q.isLoading}>
           {profileMut.isPending ? "Saving…" : "Save profile"}
         </Button>
       </Card>
@@ -125,11 +132,11 @@ function SettingsPage() {
 
       <Card title="Plan" icon={ShieldCheck}>
         <p className="text-sm text-muted-foreground">
-          Current plan: <span className="font-medium text-foreground">{q.data?.plan_slug ?? "free"}</span>
+          Current plan:{" "}
+          <span className="font-medium text-foreground">{q.data?.plan_slug ?? "free"}</span>
         </p>
         <p className="text-sm text-muted-foreground">
-          Member since{" "}
-          {q.data?.created_at ? new Date(q.data.created_at).toLocaleDateString() : "—"}
+          Member since {q.data?.created_at ? new Date(q.data.created_at).toLocaleDateString() : "—"}
         </p>
       </Card>
     </div>

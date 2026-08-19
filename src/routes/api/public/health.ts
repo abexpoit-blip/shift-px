@@ -54,11 +54,7 @@ export const Route = createFileRoute("/api/public/health")({
           }
         }
 
-        const status = !db.connected
-          ? "error"
-          : (db.latencyMs ?? 0) > 1500
-            ? "degraded"
-            : "ok";
+        const status = !db.connected ? "error" : (db.latencyMs ?? 0) > 1500 ? "degraded" : "ok";
 
         const body = {
           status,

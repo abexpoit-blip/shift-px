@@ -33,9 +33,16 @@ export const Route = createFileRoute("/_authenticated/withdraw")({
   head: () => ({
     meta: [
       { title: "Withdraw earnings — Adspx" },
-      { name: "description", content: "Cash out your Adspx earnings in USDT (TRC20 / BEP20). Minimum $10, processed within 24 hours." },
+      {
+        name: "description",
+        content:
+          "Cash out your Adspx earnings in USDT (TRC20 / BEP20). Minimum $10, processed within 24 hours.",
+      },
       { property: "og:title", content: "Withdraw earnings — Adspx" },
-      { property: "og:description", content: "Cash out your Adspx earnings in USDT. Minimum $10, processed within 24 hours." },
+      {
+        property: "og:description",
+        content: "Cash out your Adspx earnings in USDT. Minimum $10, processed within 24 hours.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -45,7 +52,8 @@ export const Route = createFileRoute("/_authenticated/withdraw")({
 
 const NETWORK_LABEL: Record<string, string> = {
   USDT_TRC20: "USDT · TRC20",
-  USDT_BEP20: "USDT · BEP20",
+  USDT_BEP20: "USDT · BEP20 (BSC)",
+  USDT_ERC20: "USDT · ERC20 (ETH)",
 };
 
 function money(n: number) {
@@ -54,15 +62,33 @@ function money(n: number) {
 
 function StatusBadge({ status }: { status: WithdrawalRow["status"] }) {
   const map = {
-    pending: { icon: Clock, cls: "bg-amber-500/10 text-amber-600 border-amber-500/20", label: "Pending" },
-    approved: { icon: Clock, cls: "bg-blue-500/10 text-blue-600 border-blue-500/20", label: "Approved" },
-    paid: { icon: CheckCircle2, cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20", label: "Paid" },
-    rejected: { icon: XCircle, cls: "bg-red-500/10 text-red-600 border-red-500/20", label: "Rejected" },
+    pending: {
+      icon: Clock,
+      cls: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+      label: "Pending",
+    },
+    approved: {
+      icon: Clock,
+      cls: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+      label: "Approved",
+    },
+    paid: {
+      icon: CheckCircle2,
+      cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+      label: "Paid",
+    },
+    rejected: {
+      icon: XCircle,
+      cls: "bg-red-500/10 text-red-600 border-red-500/20",
+      label: "Rejected",
+    },
   } as const;
   const cfg = map[status] ?? map.pending;
   const Icon = cfg.icon;
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${cfg.cls}`}>
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${cfg.cls}`}
+    >
       <Icon className="h-3 w-3" />
       {cfg.label}
     </span>
@@ -95,7 +121,8 @@ function WithdrawPage() {
   const minAmount = overview.data?.minWithdrawal ?? 10;
 
   const saveWallet = useMutation({
-    mutationFn: () => addWalletFn({ data: { network, address: address.trim(), label: label.trim() || undefined } }),
+    mutationFn: () =>
+      addWalletFn({ data: { network, address: address.trim(), label: label.trim() || undefined } }),
     onSuccess: () => {
       toast.success("Wallet saved");
       setAddress("");
@@ -120,7 +147,11 @@ function WithdrawPage() {
       const w = (wallets.data ?? []).find((x) => x.id === walletId);
       if (!w) throw new Error("Select a wallet first");
       return requestFn({
-        data: { amount: Number(amount), network: w.network as (typeof PAYOUT_NETWORKS)[number], address: w.address },
+        data: {
+          amount: Number(amount),
+          network: w.network as (typeof PAYOUT_NETWORKS)[number],
+          address: w.address,
+        },
       });
     },
     onSuccess: () => {
@@ -134,14 +165,20 @@ function WithdrawPage() {
 
   const amountNum = Number(amount);
   const canSubmit =
-    !!walletId && Number.isFinite(amountNum) && amountNum >= minAmount && amountNum <= balance && !submit.isPending;
+    !!walletId &&
+    Number.isFinite(amountNum) &&
+    amountNum >= minAmount &&
+    amountNum <= balance &&
+    !submit.isPending;
 
   return (
     <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-5xl space-y-5 sm:space-y-7">
       <header>
-        <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">Withdraw earnings</h1>
+        <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
+          Withdraw earnings
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          USDT payouts on TRC20 / BEP20 · minimum {money(minAmount)} · processed within 24 hours.
+          USDT payouts · TRC20, BEP20 or ERC20 · minimum {money(minAmount)} · processed within 24 h.
         </p>
       </header>
 
@@ -188,7 +225,9 @@ function WithdrawPage() {
                   type="button"
                   onClick={() => setNetwork(n)}
                   className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-                    network === n ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                    network === n
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground"
                   }`}
                 >
                   {NETWORK_LABEL[n]}
@@ -202,19 +241,33 @@ function WithdrawPage() {
                   id="addr"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="T... / 0x..."
+                  placeholder="T… (TRC20) · 0x… (BEP20 / ERC20)"
                   maxLength={120}
                   className="mt-1.5 font-mono text-xs"
                 />
               </div>
               <div>
                 <Label htmlFor="wlabel">Label (optional)</Label>
-                <Input id="wlabel" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={60} className="mt-1.5" />
+                <Input
+                  id="wlabel"
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  maxLength={60}
+                  className="mt-1.5"
+                />
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => saveWallet.mutate()} disabled={address.trim().length < 20 || saveWallet.isPending}>
-                {saveWallet.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save wallet"}
+              <Button
+                size="sm"
+                onClick={() => saveWallet.mutate()}
+                disabled={address.trim().length < 20 || saveWallet.isPending}
+              >
+                {saveWallet.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Save wallet"
+                )}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>
                 Cancel
@@ -224,16 +277,23 @@ function WithdrawPage() {
         )}
 
         {(wallets.data ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground">No wallets yet — add one to request a payout.</p>
+          <p className="text-sm text-muted-foreground">
+            No wallets yet — add one to request a payout.
+          </p>
         ) : (
           <ul className="space-y-2">
             {(wallets.data ?? []).map((w) => (
-              <li key={w.id} className="flex items-center gap-3 rounded-xl border border-border p-3">
+              <li
+                key={w.id}
+                className="flex items-center gap-3 rounded-xl border border-border p-3"
+              >
                 <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium">
                   {NETWORK_LABEL[w.network] ?? w.network}
                 </span>
                 {w.label && <span className="text-sm">{w.label}</span>}
-                <span className="font-mono text-xs text-muted-foreground truncate flex-1">{w.address}</span>
+                <span className="font-mono text-xs text-muted-foreground truncate flex-1">
+                  {w.address}
+                </span>
                 <button
                   onClick={() => removeWallet.mutate(w.id)}
                   className="text-muted-foreground hover:text-destructive transition"
@@ -284,17 +344,25 @@ function WithdrawPage() {
                   type="button"
                   onClick={() => setWalletId(w.id)}
                   className={`rounded-xl border p-3 text-left transition ${
-                    walletId === w.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                    walletId === w.id
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/40"
                   }`}
                 >
                   <div className="text-xs font-medium">{NETWORK_LABEL[w.network] ?? w.network}</div>
-                  <div className="font-mono text-[11px] text-muted-foreground truncate">{w.address}</div>
+                  <div className="font-mono text-[11px] text-muted-foreground truncate">
+                    {w.address}
+                  </div>
                 </button>
               ))}
             </div>
           )}
 
-          <Button onClick={() => submit.mutate()} disabled={!canSubmit} className="bg-primary-gradient">
+          <Button
+            onClick={() => submit.mutate()}
+            disabled={!canSubmit}
+            className="bg-primary-gradient"
+          >
             {submit.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Request withdrawal"}
           </Button>
         </div>
@@ -319,8 +387,12 @@ function WithdrawPage() {
               <tbody>
                 {(history.data ?? []).map((w) => (
                   <tr key={w.id} className="border-t border-border">
-                    <td className="py-2.5 pr-3 whitespace-nowrap">{new Date(w.created_at).toLocaleDateString()}</td>
-                    <td className="py-2.5 pr-3 font-semibold tabular-nums">{money(Number(w.amount_usd))}</td>
+                    <td className="py-2.5 pr-3 whitespace-nowrap">
+                      {new Date(w.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="py-2.5 pr-3 font-semibold tabular-nums">
+                      {money(Number(w.amount_usd))}
+                    </td>
                     <td className="py-2.5 pr-3">{NETWORK_LABEL[w.network] ?? w.network}</td>
                     <td className="py-2.5 pr-3 font-mono text-xs text-muted-foreground max-w-[180px] truncate">
                       {w.wallet_address}

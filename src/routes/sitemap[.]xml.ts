@@ -47,7 +47,8 @@ export const Route = createFileRoute("/sitemap.xml")({
         // Build the public origin from forwarded headers so the
         // sitemap reflects the host the crawler actually hit (not the
         // upstream localhost behind nginx).
-        const fwdHost = request.headers.get("x-forwarded-host") || request.headers.get("host") || "adspx.com";
+        const fwdHost =
+          request.headers.get("x-forwarded-host") || request.headers.get("host") || "adspx.com";
         const fwdProto = (request.headers.get("x-forwarded-proto") || "https").split(",")[0].trim();
         const origin = `${fwdProto}://${fwdHost.split(",")[0].trim()}`;
 
@@ -119,7 +120,6 @@ export const Route = createFileRoute("/sitemap.xml")({
             // 15-min edge cache — new codes show up within 15 min,
             // Google re-fetches roughly daily anyway.
             "cache-control": "public, max-age=900, s-maxage=900",
-
           },
         });
       },

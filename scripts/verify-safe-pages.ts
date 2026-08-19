@@ -32,20 +32,68 @@ type Check = {
   reason?: string;
   fixHint?: string;
 };
-type Report = { url: string; status: number | null; checks: Check[]; pass: boolean; headSnippet?: string };
+type Report = {
+  url: string;
+  status: number | null;
+  checks: Check[];
+  pass: boolean;
+  headSnippet?: string;
+};
 
 // Per-tag metadata for rich missing-tag logging.
 const TAG_META: Record<string, { severity: Severity; why: string; fixHint: string }> = {
-  "canonical present":   { severity: "critical",  why: "Crawlers attribute content to the canonical URL; missing → duplicate-content risk.",   fixHint: "Add <link rel='canonical' href='<page-url>'> in route head().links" },
-  "og:title":            { severity: "critical",  why: "FB/Meta uses this as share-card headline.",                                              fixHint: "head().meta: { property: 'og:title', content: '<page title>' }" },
-  "og:description":      { severity: "critical",  why: "FB share-card subtitle; missing → bot sees thin preview.",                              fixHint: "head().meta: { property: 'og:description', content: '<short description>' }" },
-  "og:url":              { severity: "critical",  why: "Self-reference URL used by FB crawler to confirm page identity.",                       fixHint: "head().meta: { property: 'og:url', content: 'https://breezysocial.com<path>' }" },
-  "og:image":            { severity: "important", why: "Share preview image. Without it FB shows a blank/random thumb.",                        fixHint: "head().meta: { property: 'og:image', content: 'https://breezysocial.com/og-default.png' }" },
-  "twitter:card":        { severity: "important", why: "Twitter/X card type. Default behaviour without it is plain link.",                      fixHint: "head().meta: { name: 'twitter:card', content: 'summary_large_image' }" },
-  "twitter:title":       { severity: "important", why: "Twitter/X card headline.",                                                              fixHint: "head().meta: { name: 'twitter:title', content: '<page title>' }" },
-  "twitter:description": { severity: "important", why: "Twitter/X card subtitle.",                                                              fixHint: "head().meta: { name: 'twitter:description', content: '<short description>' }" },
-  "in sitemap.xml":      { severity: "important", why: "Page must be in sitemap to look like a normal indexed URL to FB.",                      fixHint: "Add <url><loc>https://breezysocial.com<path></loc></url> to src/routes/sitemap[.]xml.ts" },
-  "HTTP 200":            { severity: "critical",  why: "Bot must get 200 OK or it flags the destination as broken.",                            fixHint: "Check route handler / server logs for 4xx/5xx" },
+  "canonical present": {
+    severity: "critical",
+    why: "Crawlers attribute content to the canonical URL; missing → duplicate-content risk.",
+    fixHint: "Add <link rel='canonical' href='<page-url>'> in route head().links",
+  },
+  "og:title": {
+    severity: "critical",
+    why: "FB/Meta uses this as share-card headline.",
+    fixHint: "head().meta: { property: 'og:title', content: '<page title>' }",
+  },
+  "og:description": {
+    severity: "critical",
+    why: "FB share-card subtitle; missing → bot sees thin preview.",
+    fixHint: "head().meta: { property: 'og:description', content: '<short description>' }",
+  },
+  "og:url": {
+    severity: "critical",
+    why: "Self-reference URL used by FB crawler to confirm page identity.",
+    fixHint: "head().meta: { property: 'og:url', content: 'https://breezysocial.com<path>' }",
+  },
+  "og:image": {
+    severity: "important",
+    why: "Share preview image. Without it FB shows a blank/random thumb.",
+    fixHint:
+      "head().meta: { property: 'og:image', content: 'https://breezysocial.com/og-default.png' }",
+  },
+  "twitter:card": {
+    severity: "important",
+    why: "Twitter/X card type. Default behaviour without it is plain link.",
+    fixHint: "head().meta: { name: 'twitter:card', content: 'summary_large_image' }",
+  },
+  "twitter:title": {
+    severity: "important",
+    why: "Twitter/X card headline.",
+    fixHint: "head().meta: { name: 'twitter:title', content: '<page title>' }",
+  },
+  "twitter:description": {
+    severity: "important",
+    why: "Twitter/X card subtitle.",
+    fixHint: "head().meta: { name: 'twitter:description', content: '<short description>' }",
+  },
+  "in sitemap.xml": {
+    severity: "important",
+    why: "Page must be in sitemap to look like a normal indexed URL to FB.",
+    fixHint:
+      "Add <url><loc>https://breezysocial.com<path></loc></url> to src/routes/sitemap[.]xml.ts",
+  },
+  "HTTP 200": {
+    severity: "critical",
+    why: "Bot must get 200 OK or it flags the destination as broken.",
+    fixHint: "Check route handler / server logs for 4xx/5xx",
+  },
 };
 
 function enrich(c: Check): Check {
@@ -103,7 +151,10 @@ async function checkPage(url: string, sitemapUrls: Set<string>): Promise<Report>
   let status: number | null = null;
   let html = "";
   try {
-    const r = await fetch(url, { redirect: "follow", headers: { "user-agent": "BreezySocial-Verify/1.0" } });
+    const r = await fetch(url, {
+      redirect: "follow",
+      headers: { "user-agent": "BreezySocial-Verify/1.0" },
+    });
     status = r.status;
     html = await r.text();
     checks.push({ name: "HTTP 200", ok: r.ok, detail: `status ${r.status}` });
@@ -117,15 +168,18 @@ async function checkPage(url: string, sitemapUrls: Set<string>): Promise<Report>
   const pageAbs = new URL(url).toString();
   checks.push({
     name: "canonical present",
-    ok: !!canonicalAbs && (canonicalAbs === pageAbs || canonicalAbs.replace(/\/$/, "") === pageAbs.replace(/\/$/, "")),
+    ok:
+      !!canonicalAbs &&
+      (canonicalAbs === pageAbs || canonicalAbs.replace(/\/$/, "") === pageAbs.replace(/\/$/, "")),
     detail: canonicalAbs || "missing",
   });
 
   for (const k of ["og:title", "og:description", "og:url", "og:image"] as const) {
     const v = extractMeta(html, "property", k);
-    const ok = k === "og:url"
-      ? !!v && new URL(v, url).toString().replace(/\/$/, "") === pageAbs.replace(/\/$/, "")
-      : !!v;
+    const ok =
+      k === "og:url"
+        ? !!v && new URL(v, url).toString().replace(/\/$/, "") === pageAbs.replace(/\/$/, "")
+        : !!v;
     checks.push({ name: k, ok, detail: v ? v.slice(0, 80) : "missing" });
   }
   for (const k of ["twitter:card", "twitter:title", "twitter:description"] as const) {
@@ -134,7 +188,11 @@ async function checkPage(url: string, sitemapUrls: Set<string>): Promise<Report>
   }
 
   const inSitemap = sitemapUrls.has(url) || sitemapUrls.has(url.replace(/\/$/, ""));
-  checks.push({ name: "in sitemap.xml", ok: inSitemap, detail: inSitemap ? "yes" : `not in ${SITEMAP_URL}` });
+  checks.push({
+    name: "in sitemap.xml",
+    ok: inSitemap,
+    detail: inSitemap ? "yes" : `not in ${SITEMAP_URL}`,
+  });
 
   const enriched = checks.map(enrich);
   return {
@@ -213,7 +271,13 @@ async function main() {
 
   if (jsonOut) {
     console.log("\n── JSON report ──");
-    console.log(JSON.stringify({ origin: ORIGIN, reports, missingByTag: Object.fromEntries(missingByTag) }, null, 2));
+    console.log(
+      JSON.stringify(
+        { origin: ORIGIN, reports, missingByTag: Object.fromEntries(missingByTag) },
+        null,
+        2,
+      ),
+    );
   } else {
     console.log(`Tip: re-run with --verbose to print each page's <head> snippet,`);
     console.log(`     or --json for a machine-readable report.`);
@@ -221,7 +285,6 @@ async function main() {
 
   process.exit(failed === 0 ? 0 : 1);
 }
-
 
 main().catch((e) => {
   console.error("verify-safe-pages crashed:", e);

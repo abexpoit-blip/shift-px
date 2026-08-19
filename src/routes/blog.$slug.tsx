@@ -70,8 +70,12 @@ export const Route = createFileRoute("/blog/$slug")({
   notFoundComponent: () => (
     <BreezyLayout>
       <div className="max-w-2xl mx-auto px-6 py-32 text-center">
-        <h1 className="text-3xl mb-4" style={{ fontFamily: "'Instrument Serif', serif" }}>Article not found</h1>
-        <Link to="/blog" className="text-[#5A7A55] hover:underline">← Back to journal</Link>
+        <h1 className="text-3xl mb-4" style={{ fontFamily: "'Instrument Serif', serif" }}>
+          Article not found
+        </h1>
+        <Link to="/blog" className="text-[#5A7A55] hover:underline">
+          ← Back to journal
+        </Link>
       </div>
     </BreezyLayout>
   ),
@@ -119,7 +123,9 @@ function ArticlePage() {
   const rb = useRebrand();
   const { article } = Route.useLoaderData();
   const a = article as Article;
-  const related: Product[] = a.relatedProducts.map(getProduct).filter((x): x is Product => Boolean(x));
+  const related: Product[] = a.relatedProducts
+    .map(getProduct)
+    .filter((x): x is Product => Boolean(x));
   const body = rb(ARTICLE_BODIES[a.slug] || a.body);
   const img = BLOG_IMAGES[a.slug];
 
@@ -127,28 +133,51 @@ function ArticlePage() {
     <BreezyLayout>
       <article className="max-w-3xl mx-auto px-6 py-16">
         <nav className="text-xs text-[#9A9488] mb-6">
-          <Link to="/" className="hover:text-[#5A7A55]">Home</Link>
+          <Link to="/" className="hover:text-[#5A7A55]">
+            Home
+          </Link>
           <span className="mx-2">/</span>
-          <Link to="/blog" className="hover:text-[#5A7A55]">Journal</Link>
+          <Link to="/blog" className="hover:text-[#5A7A55]">
+            Journal
+          </Link>
         </nav>
         <div className="text-xs uppercase tracking-[0.2em] text-[#7D9B76] font-semibold mb-3">
           {a.category} · {a.readTime} min read
         </div>
-        <h1 className="text-4xl md:text-5xl text-[#2A2A28] mb-6 leading-tight" style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}>
+        <h1
+          className="text-4xl md:text-5xl text-[#2A2A28] mb-6 leading-tight"
+          style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
+        >
           {a.title}
         </h1>
         <div className="flex items-center gap-3 mb-10 text-sm text-[#7A7468] border-b border-[#E8E2D5] pb-6">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7D9B76] to-[#5A7A55] flex items-center justify-center text-white text-sm font-semibold">
-            {a.author.split(" ").map((n: string) => n[0]).join("")}
+            {a.author
+              .split(" ")
+              .map((n: string) => n[0])
+              .join("")}
           </div>
           <div>
             <div className="text-[#2A2A28] font-medium">{a.author}</div>
-            <div className="text-xs">{a.authorRole} · {new Date(a.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</div>
+            <div className="text-xs">
+              {a.authorRole} ·{" "}
+              {new Date(a.date).toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </div>
           </div>
         </div>
         <div className="aspect-[16/9] rounded-2xl bg-gradient-to-br from-[#F2EDE3] to-[#E8E2D5] overflow-hidden mb-10 flex items-center justify-center">
           {img ? (
-            <img src={img} alt={a.title} width={1536} height={1024} className="w-full h-full object-cover" />
+            <img
+              src={img}
+              alt={a.title}
+              width={1536}
+              height={1024}
+              className="w-full h-full object-cover"
+            />
           ) : (
             <span className="text-[8rem]">{a.emoji}</span>
           )}
@@ -158,13 +187,18 @@ function ArticlePage() {
           {body ? (
             renderMarkdown(body)
           ) : (
-            <p className="text-[#9A9488]">Full article content is being prepared and will be published shortly.</p>
+            <p className="text-[#9A9488]">
+              Full article content is being prepared and will be published shortly.
+            </p>
           )}
         </div>
 
         {related.length > 0 && (
           <section className="mt-16 border-t border-[#E8E2D5] pt-12">
-            <h2 className="text-2xl mb-6" style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}>
+            <h2
+              className="text-2xl mb-6"
+              style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
+            >
               Products mentioned in this article
             </h2>
             <div className="grid sm:grid-cols-3 gap-6">

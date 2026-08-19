@@ -3,16 +3,36 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  Sparkles, Megaphone, Gift, AlertTriangle, Info, CheckCircle2,
-  Crown, Zap, Rocket, Star, Trophy, X, ChevronLeft, ChevronRight,
+  Sparkles,
+  Megaphone,
+  Gift,
+  AlertTriangle,
+  Info,
+  CheckCircle2,
+  Crown,
+  Zap,
+  Rocket,
+  Star,
+  Trophy,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { listActiveBroadcasts, markBroadcastRead } from "@/lib/broadcasts.functions";
 import { BroadcastMarkdown } from "@/components/broadcast-markdown";
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  sparkles: Sparkles, megaphone: Megaphone, gift: Gift, warning: AlertTriangle,
-  info: Info, check: CheckCircle2, crown: Crown, zap: Zap, rocket: Rocket,
-  star: Star, trophy: Trophy,
+  sparkles: Sparkles,
+  megaphone: Megaphone,
+  gift: Gift,
+  warning: AlertTriangle,
+  info: Info,
+  check: CheckCircle2,
+  crown: Crown,
+  zap: Zap,
+  rocket: Rocket,
+  star: Star,
+  trophy: Trophy,
 };
 
 const TONE: Record<string, { grad: string; ring: string; badge: string; accent: string }> = {
@@ -54,10 +74,7 @@ export function BroadcastLoginPopup() {
     staleTime: 60_000,
   });
 
-  const unread = useMemo(
-    () => (q.data?.items ?? []).filter((b: any) => !b.is_read),
-    [q.data],
-  );
+  const unread = useMemo(() => (q.data?.items ?? []).filter((b: any) => !b.is_read), [q.data]);
 
   const [open, setOpen] = useState(false);
   const [idx, setIdx] = useState(0);
@@ -81,7 +98,9 @@ export function BroadcastLoginPopup() {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [open]);
 
   if (!mounted || !open || unread.length === 0) return null;
@@ -93,13 +112,17 @@ export function BroadcastLoginPopup() {
   const total = unread.length;
 
   const goNext = async () => {
-    try { await mark({ data: { broadcast_id: current.id } }); } catch {}
+    try {
+      await mark({ data: { broadcast_id: current.id } });
+    } catch {}
     if (idx + 1 < total) setIdx(idx + 1);
     else close();
   };
   const goPrev = () => setIdx(Math.max(0, idx - 1));
   const close = async () => {
-    try { await mark({ data: { broadcast_id: current.id } }); } catch {}
+    try {
+      await mark({ data: { broadcast_id: current.id } });
+    } catch {}
     setOpen(false);
   };
 
@@ -111,20 +134,23 @@ export function BroadcastLoginPopup() {
       aria-labelledby="notice-title"
     >
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-[#1a0f08]/70 backdrop-blur-md"
-        onClick={close}
-      />
+      <div className="absolute inset-0 bg-[#1a0f08]/70 backdrop-blur-md" onClick={close} />
 
       {/* Card — fluid width, capped, never taller than viewport */}
       <div
         className={`relative w-full max-w-[min(96vw,42rem)] max-h-[92vh] flex flex-col rounded-2xl sm:rounded-3xl overflow-hidden bg-white ${tone.ring} animate-in zoom-in-95 slide-in-from-bottom-4 duration-300`}
       >
         {/* Top gradient banner */}
-        <div className={`relative h-28 sm:h-36 md:h-40 shrink-0 bg-gradient-to-br ${tone.grad} overflow-hidden`}>
-          <div className="absolute inset-0 opacity-30" style={{
-            backgroundImage: "radial-gradient(circle at 20% 30%, rgba(255,255,255,0.6) 0%, transparent 40%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.4) 0%, transparent 40%)",
-          }} />
+        <div
+          className={`relative h-28 sm:h-36 md:h-40 shrink-0 bg-gradient-to-br ${tone.grad} overflow-hidden`}
+        >
+          <div
+            className="absolute inset-0 opacity-30"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 20% 30%, rgba(255,255,255,0.6) 0%, transparent 40%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.4) 0%, transparent 40%)",
+            }}
+          />
           <div className="absolute -bottom-8 -right-6 w-40 h-40 rounded-full bg-white/20 blur-2xl" />
 
           <button
@@ -144,7 +170,9 @@ export function BroadcastLoginPopup() {
           {/* Floating icon */}
           <div className="absolute -bottom-8 left-5 sm:left-7">
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white shadow-lg flex items-center justify-center ring-4 ring-white">
-              <div className={`w-full h-full rounded-2xl bg-gradient-to-br ${tone.grad} flex items-center justify-center`}>
+              <div
+                className={`w-full h-full rounded-2xl bg-gradient-to-br ${tone.grad} flex items-center justify-center`}
+              >
                 <Icon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
             </div>
@@ -154,11 +182,16 @@ export function BroadcastLoginPopup() {
         {/* Body — flexes and scrolls internally so footer stays visible */}
         <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-8 pt-12 sm:pt-14 pb-5 sm:pb-6">
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${tone.badge}`}>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${tone.badge}`}
+            >
               {current.tone === "premium" ? "✦ Premium" : current.tone}
             </span>
             <span className="text-[11px] text-[#9A9488]">
-              {new Date(current.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+              {new Date(current.created_at).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+              })}
             </span>
           </div>
 
@@ -178,14 +211,15 @@ export function BroadcastLoginPopup() {
         {/* Footer actions */}
         <div className="shrink-0 flex items-center justify-between gap-3 px-5 sm:px-8 py-4 bg-[#FAF7F2] border-t border-[#EFE9DD]">
           <div className="flex items-center gap-1.5 min-w-0">
-            {total > 1 && Array.from({ length: total }).map((_, i) => (
-              <span
-                key={i}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === idx ? `w-6 bg-gradient-to-r ${tone.grad}` : "w-1.5 bg-[#DDD5C4]"
-                }`}
-              />
-            ))}
+            {total > 1 &&
+              Array.from({ length: total }).map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === idx ? `w-6 bg-gradient-to-r ${tone.grad}` : "w-1.5 bg-[#DDD5C4]"
+                  }`}
+                />
+              ))}
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -203,7 +237,9 @@ export function BroadcastLoginPopup() {
               className={`px-5 sm:px-6 h-10 sm:h-11 rounded-full bg-gradient-to-r ${tone.grad} text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all flex items-center gap-1.5`}
             >
               {idx + 1 < total ? (
-                <>Next <ChevronRight className="w-4 h-4" /></>
+                <>
+                  Next <ChevronRight className="w-4 h-4" />
+                </>
               ) : (
                 <>Got it ✦</>
               )}

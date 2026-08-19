@@ -33,13 +33,14 @@ function normalizeLink(row: LinkRow) {
   };
 }
 
-
-async function selectLinks(supabase: any): Promise<{ data: DashboardLink[] | null; error: { message: string } | null }> {
+async function selectLinks(
+  supabase: any,
+): Promise<{ data: DashboardLink[] | null; error: { message: string } | null }> {
   const { data, error } = await supabase
     .from("links")
     .select("*")
     .order("created_at", { ascending: false });
-  
+
   if (error) return { data: null, error: { message: error.message } };
   return { data: (data ?? []).map((row: LinkRow) => normalizeLink(row)), error: null };
 }
@@ -63,11 +64,7 @@ async function getProfileQuota(supabase: any, userId: string) {
  * Even if the UI is bypassed, the server refuses the request.
  */
 async function assertNotBanned(supabase: any, userId: string) {
-  const { data } = await supabase
-    .from("profiles")
-    .select("is_banned")
-    .eq("id", userId)
-    .single();
+  const { data } = await supabase.from("profiles").select("is_banned").eq("id", userId).single();
   if (data?.is_banned) {
     throw new Error("Your account has been suspended. Please contact support.");
   }
@@ -104,14 +101,12 @@ function isReservedShortCode(code: string) {
   return RESERVED_SHORT_CODES.has(code.trim().toLowerCase());
 }
 
-export const listMyLinks = createServerFn({ method: "GET" })
-  .handler(async () => {
-    const context = await getRequestAuth();
-    const { data, error } = await selectLinks(context.supabase);
-    if (error) throw new Error(error.message);
-    return data;
-  });
-
+export const listMyLinks = createServerFn({ method: "GET" }).handler(async () => {
+  const context = await getRequestAuth();
+  const { data, error } = await selectLinks(context.supabase);
+  if (error) throw new Error(error.message);
+  return data;
+});
 
 type DashboardPayload = {
   links: any[];
@@ -128,31 +123,48 @@ type DashboardPayload = {
   _fresh?: boolean;
 };
 
-async function computeDashboardPayload(context: Awaited<ReturnType<typeof getRequestAuth>>): Promise<DashboardPayload> {
+async function computeDashboardPayload(
+  context: Awaited<ReturnType<typeof getRequestAuth>>,
+): Promise<DashboardPayload> {
   const linksRes = await selectLinks(context.supabase);
   const linkIds = (linksRes.data ?? []).map((l: any) => l.id);
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   // Some self-hosted schemas lag behind on profile columns; fall back to `*`
   // instead of 500-ing the whole dashboard.
   const loadProfile = async () => {
-    const full = await context.supabase.from("profiles").select(
-      "id, email, full_name, plan_slug, link_limit, links_used, click_quota, clicks_used, ours_clicks, plan_expires_at, avatar_url, is_banned, clicks_period_start"
-    ).eq("id", context.userId).maybeSingle();
+    const full = await context.supabase
+      .from("profiles")
+      .select(
+        "id, email, full_name, plan_slug, link_limit, links_used, click_quota, clicks_used, ours_clicks, plan_expires_at, avatar_url, is_banned, clicks_period_start",
+      )
+      .eq("id", context.userId)
+      .maybeSingle();
     if (!full.error) return full;
-    return await context.supabase.from("profiles").select("*").eq("id", context.userId).maybeSingle();
+    return await context.supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", context.userId)
+      .maybeSingle();
   };
 
   const [profileRes, statsRes, domainsRes, archivedRes] = await Promise.all([
     loadProfile(),
     context.supabase.rpc("get_dashboard_stats" as never, { _user_id: context.userId } as never),
-    context.supabase.from("custom_domains").select("domain").eq("user_id", context.userId).eq("verified", true),
+    context.supabase
+      .from("custom_domains")
+      .select("domain")
+      .eq("user_id", context.userId)
+      .eq("verified", true),
     linkIds.length
-      ? context.supabase.from("daily_stats").select("day, human_clicks").in("link_id", linkIds).gte("day", thirtyDaysAgo)
+      ? context.supabase
+          .from("daily_stats")
+          .select("day, human_clicks")
+          .in("link_id", linkIds)
+          .gte("day", thirtyDaysAgo)
       : Promise.resolve({ data: [] as any[], error: null as any }),
   ]);
   if (linksRes.error) throw new Error(linksRes.error.message);
   if (profileRes.error) throw new Error(profileRes.error.message);
-
 
   const links = linksRes.data ?? [];
   const customDomains = (domainsRes.data ?? []).map((d: any) => d.domain);
@@ -165,14 +177,18 @@ async function computeDashboardPayload(context: Awaited<ReturnType<typeof getReq
     perLinkDaily: Record<string, number[]>;
   };
   const stats = (statsRes.data as DashStats | null) ?? {
-    clicksByDay: {}, countryStats: {}, mobilePct: 0, uniqueVisitors: 0, perLinkDaily: {},
+    clicksByDay: {},
+    countryStats: {},
+    mobilePct: 0,
+    uniqueVisitors: 0,
+    perLinkDaily: {},
   };
 
   const perLinkDaily: Record<string, number[]> = {};
   for (const l of links) {
     const arr = stats.perLinkDaily?.[l.id];
-    perLinkDaily[l.id] = Array.isArray(arr) && arr.length === 7
-      ? arr.map(Number) : new Array(7).fill(0);
+    perLinkDaily[l.id] =
+      Array.isArray(arr) && arr.length === 7 ? arr.map(Number) : new Array(7).fill(0);
   }
 
   const clicksByDay: Record<string, number> = {};
@@ -209,52 +225,57 @@ async function saveDashboardCache(userId: string, payload: DashboardPayload) {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // strip meta fields before persisting
     const { _cachedAt, _fresh, ...cacheable } = payload;
-    await supabaseAdmin
-      .from("dashboard_cache" as never)
-      .upsert({ user_id: userId, data: cacheable as never, updated_at: new Date().toISOString() } as never);
+    await supabaseAdmin.from("dashboard_cache" as never).upsert({
+      user_id: userId,
+      data: cacheable as never,
+      updated_at: new Date().toISOString(),
+    } as never);
   } catch (e) {
     console.error("[dashboard-cache] save failed", e);
   }
 }
 
-export const getDashboardData = createServerFn({ method: "GET" })
-  .handler(async () => {
-    const context = await getRequestAuth();
+export const getDashboardData = createServerFn({ method: "GET" }).handler(async () => {
+  const context = await getRequestAuth();
 
-    // 1) Try cache first — instant load, zero DB pressure on heavy RPC
-    const cacheRes = await context.supabase
-      .from("dashboard_cache" as never)
-      .select("data, updated_at")
-      .eq("user_id", context.userId)
-      .maybeSingle();
+  // 1) Try cache first — instant load, zero DB pressure on heavy RPC
+  const cacheRes = await context.supabase
+    .from("dashboard_cache" as never)
+    .select("data, updated_at")
+    .eq("user_id", context.userId)
+    .maybeSingle();
 
-    const cached = cacheRes.data as { data: DashboardPayload; updated_at: string } | null;
-    if (cached?.data) {
-      return { ...cached.data, _cachedAt: cached.updated_at, _fresh: false } satisfies DashboardPayload;
-    }
+  const cached = cacheRes.data as { data: DashboardPayload; updated_at: string } | null;
+  if (cached?.data) {
+    return {
+      ...cached.data,
+      _cachedAt: cached.updated_at,
+      _fresh: false,
+    } satisfies DashboardPayload;
+  }
 
-    // 2) No cache yet → compute + save so next visit is instant
-    const fresh = await computeDashboardPayload(context);
-    await saveDashboardCache(context.userId, fresh);
-    return { ...fresh, _cachedAt: new Date().toISOString(), _fresh: true } satisfies DashboardPayload;
-  });
+  // 2) No cache yet → compute + save so next visit is instant
+  const fresh = await computeDashboardPayload(context);
+  await saveDashboardCache(context.userId, fresh);
+  return { ...fresh, _cachedAt: new Date().toISOString(), _fresh: true } satisfies DashboardPayload;
+});
 
-export const refreshDashboardData = createServerFn({ method: "POST" })
-  .handler(async () => {
-    const context = await getRequestAuth();
-    const fresh = await computeDashboardPayload(context);
-    await saveDashboardCache(context.userId, fresh);
-    return { ...fresh, _cachedAt: new Date().toISOString(), _fresh: true } satisfies DashboardPayload;
-  });
-
+export const refreshDashboardData = createServerFn({ method: "POST" }).handler(async () => {
+  const context = await getRequestAuth();
+  const fresh = await computeDashboardPayload(context);
+  await saveDashboardCache(context.userId, fresh);
+  return { ...fresh, _cachedAt: new Date().toISOString(), _fresh: true } satisfies DashboardPayload;
+});
 
 export const createLink = createServerFn({ method: "POST" })
   .inputValidator((d) =>
-    z.object({
-      title: z.string().max(200).optional(),
-      adsterra_url: z.string().url(),
-      safe_url: z.string().url().optional(),
-    }).parse(d),
+    z
+      .object({
+        title: z.string().max(200).optional(),
+        adsterra_url: z.string().url(),
+        safe_url: z.string().url().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data }) => {
     const context = await getRequestAuth();
@@ -271,11 +292,15 @@ export const createLink = createServerFn({ method: "POST" })
         continue;
       }
       const { data: exists } = await context.supabase
-        .from("links").select("id").eq("short_code", code).maybeSingle();
+        .from("links")
+        .select("id")
+        .eq("short_code", code)
+        .maybeSingle();
       if (!exists) break;
       code = randomCode();
     }
-    if (isReservedShortCode(code)) throw new Error("Reserved short code generated. Please try again.");
+    if (isReservedShortCode(code))
+      throw new Error("Reserved short code generated. Please try again.");
 
     // Empty safe URL → store NULL so the rotating safe-article pool is used.
     // Never store the SaaS homepage as a safe page.
@@ -298,14 +323,21 @@ export const createLink = createServerFn({ method: "POST" })
     for (const payload of [
       minimal,
       // Ultra-legacy schema without destination_url
-      (() => { const p = { ...minimal }; delete p.destination_url; return { ...p, adsterra_direct_link: data.adsterra_url }; })(),
+      (() => {
+        const p = { ...minimal };
+        delete p.destination_url;
+        return { ...p, adsterra_direct_link: data.adsterra_url };
+      })(),
     ]) {
       const { data: linkData, error } = await context.supabase
         .from("links")
         .insert(payload as never)
         .select()
         .single();
-      if (!error) { created = linkData as LinkRow; break; }
+      if (!error) {
+        created = linkData as LinkRow;
+        break;
+      }
       lastError = error;
       const msg = String(error.message ?? "");
       if (!/schema cache|column .* does not exist|Could not find/i.test(msg)) break;
@@ -332,7 +364,6 @@ export const createLink = createServerFn({ method: "POST" })
     }
 
     return normalizeLink(created);
-
   });
 
 export const deleteLink = createServerFn({ method: "POST" })
@@ -361,9 +392,9 @@ export const toggleLink = createServerFn({ method: "POST" })
     await assertNotBanned(context.supabase, context.userId);
     const { data: row, error } = await (context.supabase as any)
       .from("links")
-      .update({ 
+      .update({
         is_active: data.is_active,
-        status: data.is_active ? "active" : "paused"
+        status: data.is_active ? "active" : "paused",
       })
       .eq("id", data.id)
       .eq("user_id", context.userId)
@@ -375,17 +406,18 @@ export const toggleLink = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 // COUNTRY SHIELD — paid-only feature. Users on `monthly` or `lifetime` plans
 // can block specific countries per link. Visitors from those countries are
 // forced to the safe/article page (offer URL never served).
 const ISO_COUNTRY = /^[A-Z]{2}$/;
 export const updateBlockedCountries = createServerFn({ method: "POST" })
   .inputValidator((d) =>
-    z.object({
-      id: z.string().uuid(),
-      countries: z.array(z.string().length(2)).max(60),
-    }).parse(d),
+    z
+      .object({
+        id: z.string().uuid(),
+        countries: z.array(z.string().length(2)).max(60),
+      })
+      .parse(d),
   )
   .handler(async ({ data }) => {
     const context = await getRequestAuth();
@@ -401,11 +433,7 @@ export const updateBlockedCountries = createServerFn({ method: "POST" })
 
     // Normalize + dedupe
     const cleaned = Array.from(
-      new Set(
-        data.countries
-          .map((c) => c.trim().toUpperCase())
-          .filter((c) => ISO_COUNTRY.test(c)),
-      ),
+      new Set(data.countries.map((c) => c.trim().toUpperCase()).filter((c) => ISO_COUNTRY.test(c))),
     );
 
     const { data: updatedLink, error } = await (context.supabase as any)
@@ -426,7 +454,6 @@ export const updateBlockedCountries = createServerFn({ method: "POST" })
     return { ok: true, countries: cleaned };
   });
 
-
 /**
  * Set or clear a link's own safe / landing page after creation.
  * Owner-only. Passing null (or empty) restores the built-in rotating
@@ -434,10 +461,12 @@ export const updateBlockedCountries = createServerFn({ method: "POST" })
  */
 export const updateSafeUrl = createServerFn({ method: "POST" })
   .inputValidator((d) =>
-    z.object({
-      id: z.string().uuid(),
-      safe_url: z.string().url().nullable().optional(),
-    }).parse(d),
+    z
+      .object({
+        id: z.string().uuid(),
+        safe_url: z.string().url().nullable().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data }) => {
     const context = await getRequestAuth();

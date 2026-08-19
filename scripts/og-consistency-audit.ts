@@ -98,7 +98,10 @@ async function check(domain: string, code: string): Promise<Issue> {
   const fetchUrl = `https://${domain}/r/${code}`;
   const problems: string[] = [];
   let status = 0;
-  let ogUrl = "", canonical = "", twitterUrl = "", ogImage = "";
+  let ogUrl = "",
+    canonical = "",
+    twitterUrl = "",
+    ogImage = "";
   try {
     const res = await fetch(fetchUrl, {
       headers: { "user-agent": UA, accept: "text/html" },
@@ -116,10 +119,13 @@ async function check(domain: string, code: string): Promise<Issue> {
     ogImage = metaContent(html, "property", "og:image");
 
     if (ogUrl !== expectedUrl) problems.push(`og:url=${ogUrl || "(missing)"} ≠ ${expectedUrl}`);
-    if (canonical !== expectedUrl) problems.push(`canonical=${canonical || "(missing)"} ≠ ${expectedUrl}`);
-    if (twitterUrl !== expectedUrl) problems.push(`twitter:url=${twitterUrl || "(missing)"} ≠ ${expectedUrl}`);
+    if (canonical !== expectedUrl)
+      problems.push(`canonical=${canonical || "(missing)"} ≠ ${expectedUrl}`);
+    if (twitterUrl !== expectedUrl)
+      problems.push(`twitter:url=${twitterUrl || "(missing)"} ≠ ${expectedUrl}`);
     if (!ogImage) problems.push("og:image missing");
-    else if (!/^https:\/\//i.test(ogImage)) problems.push(`og:image not absolute https: ${ogImage}`);
+    else if (!/^https:\/\//i.test(ogImage))
+      problems.push(`og:image not absolute https: ${ogImage}`);
   } catch (e) {
     problems.push("FETCH_FAILED: " + (e as Error).message);
   }
@@ -140,7 +146,9 @@ async function worker() {
     const r = await check(t.domain, t.code);
     results.push(r);
     const tag = r.problems.length ? `❌` : `✅`;
-    console.log(`${tag} ${t.domain} /r/${t.code}${r.problems.length ? "  → " + r.problems.join("; ") : ""}`);
+    console.log(
+      `${tag} ${t.domain} /r/${t.code}${r.problems.length ? "  → " + r.problems.join("; ") : ""}`,
+    );
   }
 }
 await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));

@@ -47,16 +47,21 @@ function CheckoutPage() {
     const orderNumber = `BS-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
     setTimeout(() => {
       try {
-        sessionStorage.setItem("breezy_last_order", JSON.stringify({
-          orderNumber,
-          total,
-          items,
-          subtotal,
-          shipping,
-          tax,
-          date: new Date().toISOString(),
-        }));
-      } catch { /* ignore */ }
+        sessionStorage.setItem(
+          "breezy_last_order",
+          JSON.stringify({
+            orderNumber,
+            total,
+            items,
+            subtotal,
+            shipping,
+            tax,
+            date: new Date().toISOString(),
+          }),
+        );
+      } catch {
+        /* ignore */
+      }
       clear();
       navigate({ to: "/order-confirmed", search: { o: orderNumber } });
     }, 1400);
@@ -103,10 +108,30 @@ function CheckoutPage() {
                 <span>🔒</span>
                 <span>All transactions are secure and encrypted.</span>
               </div>
-              <Field label="Card number" name="card" required placeholder="1234 1234 1234 1234" inputMode="numeric" maxLength={19} />
+              <Field
+                label="Card number"
+                name="card"
+                required
+                placeholder="1234 1234 1234 1234"
+                inputMode="numeric"
+                maxLength={19}
+              />
               <div className="grid sm:grid-cols-2 gap-4">
-                <Field label="Expiration (MM / YY)" name="exp" required placeholder="MM / YY" maxLength={7} />
-                <Field label="CVC" name="cvc" required placeholder="123" inputMode="numeric" maxLength={4} />
+                <Field
+                  label="Expiration (MM / YY)"
+                  name="exp"
+                  required
+                  placeholder="MM / YY"
+                  maxLength={7}
+                />
+                <Field
+                  label="CVC"
+                  name="cvc"
+                  required
+                  placeholder="123"
+                  inputMode="numeric"
+                  maxLength={4}
+                />
               </div>
               <Field label="Name on card" name="cname" required />
             </Section>
@@ -134,7 +159,9 @@ function CheckoutPage() {
             <ul className="space-y-3 mb-5 max-h-72 overflow-y-auto pr-1">
               {items.map((i) => (
                 <li key={i.slug} className="flex justify-between text-sm">
-                  <span className="text-[#5A554C]">{i.name} <span className="text-[#9A9488]">× {i.qty}</span></span>
+                  <span className="text-[#5A554C]">
+                    {i.name} <span className="text-[#9A9488]">× {i.qty}</span>
+                  </span>
                   <span className="font-medium">${(i.price * i.qty).toFixed(2)}</span>
                 </li>
               ))}
@@ -164,9 +191,24 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Field({ label, name, type = "text", required, placeholder, defaultValue, inputMode, maxLength }: {
-  label: string; name: string; type?: string; required?: boolean; placeholder?: string;
-  defaultValue?: string; inputMode?: "text" | "numeric" | "tel" | "email"; maxLength?: number;
+function Field({
+  label,
+  name,
+  type = "text",
+  required,
+  placeholder,
+  defaultValue,
+  inputMode,
+  maxLength,
+}: {
+  label: string;
+  name: string;
+  type?: string;
+  required?: boolean;
+  placeholder?: string;
+  defaultValue?: string;
+  inputMode?: "text" | "numeric" | "tel" | "email";
+  maxLength?: number;
 }) {
   return (
     <label className="block">

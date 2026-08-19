@@ -13,7 +13,11 @@ async function assertLinkOwner(linkId: string, userId: string) {
   if (!data) throw new Error("Link not found");
   if (data.user_id !== userId) {
     const { data: admin } = await supabaseAdmin
-      .from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
     if (!admin) throw new Error("Forbidden");
   }
 }
@@ -25,7 +29,10 @@ export const listGeoOffers = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertLinkOwner(data.link_id, context.userId);
     const { data: rows, error } = await supabaseAdmin
-      .from("geo_offers").select("*").eq("link_id", data.link_id).order("tier");
+      .from("geo_offers")
+      .select("*")
+      .eq("link_id", data.link_id)
+      .order("tier");
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
@@ -76,7 +83,10 @@ export const listAbVariants = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertLinkOwner(data.link_id, context.userId);
     const { data: rows, error } = await supabaseAdmin
-      .from("ab_variants").select("*").eq("link_id", data.link_id).order("variant_label");
+      .from("ab_variants")
+      .select("*")
+      .eq("link_id", data.link_id)
+      .order("variant_label");
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
@@ -87,7 +97,11 @@ export const upsertAbVariant = createServerFn({ method: "POST" })
     z.object({
       id: z.string().uuid().optional(),
       link_id: z.string().uuid(),
-      variant_label: z.string().min(1).max(20).regex(/^[A-Za-z0-9_-]+$/),
+      variant_label: z
+        .string()
+        .min(1)
+        .max(20)
+        .regex(/^[A-Za-z0-9_-]+$/),
       offer_url: z.string().url().max(2000),
       weight_pct: z.number().int().min(1).max(100),
       is_active: z.boolean().default(true),

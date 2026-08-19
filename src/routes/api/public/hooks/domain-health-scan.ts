@@ -15,7 +15,8 @@ export const Route = createFileRoute("/api/public/hooks/domain-health-scan")({
         const expected = process.env.SUPABASE_PUBLISHABLE_KEY || "";
         if (!provided || !expected || provided !== expected) {
           return new Response(JSON.stringify({ error: "unauthorized" }), {
-            status: 401, headers: { "Content-Type": "application/json" },
+            status: 401,
+            headers: { "Content-Type": "application/json" },
           });
         }
 
@@ -32,7 +33,8 @@ export const Route = createFileRoute("/api/public/hooks/domain-health-scan")({
         } catch (e: any) {
           console.error("[domain-health-scan] failed", e);
           return new Response(JSON.stringify({ ok: false, error: e?.message || "scan failed" }), {
-            status: 500, headers: { "Content-Type": "application/json" },
+            status: 500,
+            headers: { "Content-Type": "application/json" },
           });
         }
       },

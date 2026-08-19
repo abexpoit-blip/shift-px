@@ -53,7 +53,13 @@ function guard<T>(p: PromiseLike<T>, label: string, fallback: T): Promise<T> {
       resolve(fallback);
     }, STATS_TIMEOUT_MS);
     Promise.resolve(p).then(
-      (v) => { if (!done) { done = true; clearTimeout(t); resolve(v); } },
+      (v) => {
+        if (!done) {
+          done = true;
+          clearTimeout(t);
+          resolve(v);
+        }
+      },
       (e) => {
         if (done) return;
         done = true;
@@ -71,14 +77,12 @@ function bump(map: Map<string, number>, key: string, by: number) {
   map.set(key, (map.get(key) ?? 0) + by);
 }
 
-
 function topEntries(map: Map<string, number>, n: number) {
   return [...map.entries()]
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
     .slice(0, n);
 }
-
 
 function lastNDays(n: number) {
   const out: string[] = [];
@@ -124,27 +128,39 @@ export const getStatistics = createServerFn({ method: "GET" })
     const hotTs = new Date(`${hotDay}T00:00:00Z`).toISOString();
 
     const [statsRes, archiveRes, clicksRes] = await Promise.all([
-      guard(db
-        .from("daily_stats")
-        .select("day, human_clicks, bot_clicks")
-        .in("link_id", linkIds)
-        .gte("day", since), "daily_stats", EMPTY_RES),
+      guard(
+        db
+          .from("daily_stats")
+          .select("day, human_clicks, bot_clicks")
+          .in("link_id", linkIds)
+          .gte("day", since),
+        "daily_stats",
+        EMPTY_RES,
+      ),
       // COLD: pre-aggregated dimensions, survives the weekly raw purge
-      guard(db
-        .from("click_dim_daily")
-        .select("country, device, browser, source, is_bot, clicks")
-        .eq("user_id", userId)
-        .gte("day", since)
-        .lt("day", hotDay)
-        .limit(50000), "click_dim_daily", EMPTY_RES),
+      guard(
+        db
+          .from("click_dim_daily")
+          .select("country, device, browser, source, is_bot, clicks")
+          .eq("user_id", userId)
+          .gte("day", since)
+          .lt("day", hotDay)
+          .limit(50000),
+        "click_dim_daily",
+        EMPTY_RES,
+      ),
       // HOT: last 2 days straight from the raw table
-      guard(db
-        .from("clicks")
-        .select("country, referer_host, is_bot, ua")
-        .in("link_id", linkIds)
-        .gte("created_at", hotTs)
-        .order("created_at", { ascending: false })
-        .limit(20000), "clicks", EMPTY_RES),
+      guard(
+        db
+          .from("clicks")
+          .select("country, referer_host, is_bot, ua")
+          .in("link_id", linkIds)
+          .gte("created_at", hotTs)
+          .order("created_at", { ascending: false })
+          .limit(20000),
+        "clicks",
+        EMPTY_RES,
+      ),
     ]);
 
     const byDay = new Map(days.map((d) => [d, { day: d, humans: 0, bots: 0 }]));
@@ -199,7 +215,6 @@ export const getStatistics = createServerFn({ method: "GET" })
         source: sourceBucket(row.referer_host),
       });
     }
-
 
     const series = days.map((d) => byDay.get(d)!);
     const humanClicks = series.reduce((s, r) => s + r.humans, 0);
@@ -259,25 +274,37 @@ export const getLinkStats = createServerFn({ method: "GET" })
     if (!link || link.user_id !== userId) throw new Error("Link not found");
 
     const [statsRes, archiveRes, clicksRes] = await Promise.all([
-      guard(db
-        .from("daily_stats")
-        .select("day, human_clicks, bot_clicks")
-        .eq("link_id", link.id)
-        .gte("day", since), "link.daily_stats", EMPTY_RES),
-      guard(db
-        .from("click_dim_daily")
-        .select("country, device, is_bot, clicks")
-        .eq("link_id", link.id)
-        .gte("day", since)
-        .lt("day", hotDay)
-        .limit(20000), "link.click_dim_daily", EMPTY_RES),
-      guard(db
-        .from("clicks")
-        .select("country, ua, is_bot")
-        .eq("link_id", link.id)
-        .gte("created_at", hotTs)
-        .order("created_at", { ascending: false })
-        .limit(20000), "link.clicks", EMPTY_RES),
+      guard(
+        db
+          .from("daily_stats")
+          .select("day, human_clicks, bot_clicks")
+          .eq("link_id", link.id)
+          .gte("day", since),
+        "link.daily_stats",
+        EMPTY_RES,
+      ),
+      guard(
+        db
+          .from("click_dim_daily")
+          .select("country, device, is_bot, clicks")
+          .eq("link_id", link.id)
+          .gte("day", since)
+          .lt("day", hotDay)
+          .limit(20000),
+        "link.click_dim_daily",
+        EMPTY_RES,
+      ),
+      guard(
+        db
+          .from("clicks")
+          .select("country, ua, is_bot")
+          .eq("link_id", link.id)
+          .gte("created_at", hotTs)
+          .order("created_at", { ascending: false })
+          .limit(20000),
+        "link.clicks",
+        EMPTY_RES,
+      ),
     ]);
 
     const byDay = new Map(days.map((d) => [d, { day: d, humans: 0, bots: 0 }]));
@@ -296,12 +323,16 @@ export const getLinkStats = createServerFn({ method: "GET" })
       if (!isBot) bump(deviceMap, bucketLabel(device), n);
     };
     for (const row of (archiveRes.data ?? []) as any[]) {
-      addRow(String(row.country ?? ""), !!row.is_bot, Number(row.clicks ?? 0), String(row.device ?? "other"));
+      addRow(
+        String(row.country ?? ""),
+        !!row.is_bot,
+        Number(row.clicks ?? 0),
+        String(row.device ?? "other"),
+      );
     }
     for (const row of (clicksRes.data ?? []) as any[]) {
       addRow(String(row.country ?? ""), !!row.is_bot, 1, deviceBucket(row.ua));
     }
-
 
     const series = days.map((d) => byDay.get(d)!);
     return {

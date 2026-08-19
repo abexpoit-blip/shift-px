@@ -104,16 +104,22 @@ export function buildOg(opts: BuildOgOptions): { meta: MetaTag[]; links: LinkTag
   const imgW = opts.imageWidth ?? OG_DEFAULT_IMAGE_W;
   const imgH = opts.imageHeight ?? OG_DEFAULT_IMAGE_H;
   const imgAlt = rebrand(opts.imageAlt ?? title, origin);
-  const imgType = image.endsWith(".jpg") || image.endsWith(".jpeg")
-    ? "image/jpeg"
-    : image.endsWith(".webp") ? "image/webp" : "image/png";
+  const imgType =
+    image.endsWith(".jpg") || image.endsWith(".jpeg")
+      ? "image/jpeg"
+      : image.endsWith(".webp")
+        ? "image/webp"
+        : "image/png";
   const type = opts.type ?? "website";
   const updated = opts.updatedTime ?? new Date().toISOString();
 
   const meta: MetaTag[] = [
     { title },
     { name: "description", content: description },
-    { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
+    {
+      name: "robots",
+      content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+    },
 
     { property: "og:site_name", content: siteName },
     { property: "og:locale", content: OG_LOCALE },
@@ -138,23 +144,33 @@ export function buildOg(opts: BuildOgOptions): { meta: MetaTag[]; links: LinkTag
   ];
 
   if (opts.article) {
-    if (opts.article.author) meta.push({ property: "article:author", content: opts.article.author });
-    if (opts.article.publishedTime) meta.push({ property: "article:published_time", content: opts.article.publishedTime });
-    if (opts.article.modifiedTime) meta.push({ property: "article:modified_time", content: opts.article.modifiedTime });
-    if (opts.article.section) meta.push({ property: "article:section", content: opts.article.section });
+    if (opts.article.author)
+      meta.push({ property: "article:author", content: opts.article.author });
+    if (opts.article.publishedTime)
+      meta.push({ property: "article:published_time", content: opts.article.publishedTime });
+    if (opts.article.modifiedTime)
+      meta.push({ property: "article:modified_time", content: opts.article.modifiedTime });
+    if (opts.article.section)
+      meta.push({ property: "article:section", content: opts.article.section });
     for (const tag of opts.article.tags ?? []) {
       meta.push({ property: "article:tag", content: tag });
     }
   }
 
   if (opts.product) {
-    if (opts.product.price != null) meta.push({ property: "product:price:amount", content: String(opts.product.price) });
-    if (opts.product.currency) meta.push({ property: "product:price:currency", content: opts.product.currency });
-    if (opts.product.availability) meta.push({ property: "product:availability", content: opts.product.availability });
+    if (opts.product.price != null)
+      meta.push({ property: "product:price:amount", content: String(opts.product.price) });
+    if (opts.product.currency)
+      meta.push({ property: "product:price:currency", content: opts.product.currency });
+    if (opts.product.availability)
+      meta.push({ property: "product:availability", content: opts.product.availability });
     if (opts.product.brand) meta.push({ property: "product:brand", content: opts.product.brand });
-    if (opts.product.condition) meta.push({ property: "product:condition", content: opts.product.condition });
-    if (opts.product.price != null) meta.push({ property: "og:price:amount", content: String(opts.product.price) });
-    if (opts.product.currency) meta.push({ property: "og:price:currency", content: opts.product.currency });
+    if (opts.product.condition)
+      meta.push({ property: "product:condition", content: opts.product.condition });
+    if (opts.product.price != null)
+      meta.push({ property: "og:price:amount", content: String(opts.product.price) });
+    if (opts.product.currency)
+      meta.push({ property: "og:price:currency", content: opts.product.currency });
   }
 
   const links: LinkTag[] = [{ rel: "canonical", href: url }];

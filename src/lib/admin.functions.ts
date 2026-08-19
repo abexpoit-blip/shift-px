@@ -5,7 +5,11 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 async function assertAdmin(userId: string) {
   const { data } = await supabaseAdmin
-    .from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
   if (!data) throw new Error("Forbidden");
 }
 
@@ -51,7 +55,9 @@ async function applyPackageToProfileIds(userIds: string[], pkg: PackageQuota) {
       update = {
         plan_slug: pkg.slug,
         click_quota:
-          pkg.click_quota == null ? null : Number(profile?.click_quota ?? 0) + Number(pkg.click_quota),
+          pkg.click_quota == null
+            ? null
+            : Number(profile?.click_quota ?? 0) + Number(pkg.click_quota),
         link_limit: pkg.link_limit,
         plan_expires_at: new Date(currentExpiry + PERIOD_MS).toISOString(),
       };
@@ -69,19 +75,19 @@ async function applyPackageToProfileIds(userIds: string[], pkg: PackageQuota) {
       };
     }
 
-    const { error } = await supabaseAdmin.from("profiles").update(update as any).eq("id", id);
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update(update as any)
+      .eq("id", id);
     if (error) throw new Error(error.message);
   }
 }
-
-
-
 
 export const adminStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    
+
     // Auto-expire old pending requests (> 30 minutes) to keep counts accurate
     const expiryCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     await supabaseAdmin
@@ -92,8 +98,10 @@ export const adminStats = createServerFn({ method: "GET" })
 
     // Use UTC midnight for Today stats to be accurate
     const now = new Date();
-    const todayISO = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
-    
+    const todayISO = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    ).toISOString();
+
     const [
       { count: users },
       { count: links },
@@ -106,15 +114,31 @@ export const adminStats = createServerFn({ method: "GET" })
     ] = await Promise.all([
       supabaseAdmin.from("profiles").select("*", { count: "exact", head: true }),
       supabaseAdmin.from("links").select("*", { count: "exact", head: true }),
-      supabaseAdmin.from("links").select("clicks_count, ours_clicks_count, offer_clicks_count, bot_clicks_count"),
-      supabaseAdmin.from("upgrade_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
-      supabaseAdmin.from("profiles").select("*", { count: "exact", head: true }).eq("is_banned", true),
+      supabaseAdmin
+        .from("links")
+        .select("clicks_count, ours_clicks_count, offer_clicks_count, bot_clicks_count"),
+      supabaseAdmin
+        .from("upgrade_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending"),
+      supabaseAdmin
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("is_banned", true),
       supabaseAdmin.from("links").select("*", { count: "exact", head: true }).eq("is_active", true),
-      supabaseAdmin.from("clicks").select("*", { count: "exact", head: true }).gte("created_at", todayISO),
-      supabaseAdmin.from("clicks").select("*", { count: "exact", head: true }).eq("routed_to", "ours").gte("created_at", todayISO),
+      supabaseAdmin
+        .from("clicks")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", todayISO),
+      supabaseAdmin
+        .from("clicks")
+        .select("*", { count: "exact", head: true })
+        .eq("routed_to", "ours")
+        .gte("created_at", todayISO),
     ]);
 
-    if (todayTotalErr) console.error("[adminStats] today_total count failed:", todayTotalErr.message);
+    if (todayTotalErr)
+      console.error("[adminStats] today_total count failed:", todayTotalErr.message);
     if (todayOursErr) console.error("[adminStats] today_ours count failed:", todayOursErr.message);
 
     // The routed_to='ours' count is unindexed and can time out on high-traffic
@@ -131,19 +155,31 @@ export const adminStats = createServerFn({ method: "GET" })
       } else {
         const rows = (series ?? []) as Array<{ date: string; ours: number }>;
         const todayKey = todayISO.slice(0, 10);
-        const row = rows.find((r) => String(r.date).slice(0, 10) === todayKey) ?? rows[rows.length - 1];
+        const row =
+          rows.find((r) => String(r.date).slice(0, 10) === todayKey) ?? rows[rows.length - 1];
         if (row && Number(row.ours) > 0) todayOurs = Number(row.ours);
       }
     }
 
     const globalClicksData = globalClicks ?? [];
 
-    
     // Aggregating human clicks from the links table summary
-    const humansTotalFromLinks = globalClicksData.reduce((s, l: any) => s + (Number(l.clicks_count) || 0), 0);
-    const oursTotalFromLinks = globalClicksData.reduce((s, l: any) => s + (Number(l.ours_clicks_count) || 0), 0);
-    const botsTotalFromLinks = globalClicksData.reduce((s, l: any) => s + (Number(l.bot_clicks_count) || 0), 0);
-    const offerTotalFromLinks = globalClicksData.reduce((s, l: any) => s + (Number(l.offer_clicks_count) || 0), 0);
+    const humansTotalFromLinks = globalClicksData.reduce(
+      (s, l: any) => s + (Number(l.clicks_count) || 0),
+      0,
+    );
+    const oursTotalFromLinks = globalClicksData.reduce(
+      (s, l: any) => s + (Number(l.ours_clicks_count) || 0),
+      0,
+    );
+    const botsTotalFromLinks = globalClicksData.reduce(
+      (s, l: any) => s + (Number(l.bot_clicks_count) || 0),
+      0,
+    );
+    const offerTotalFromLinks = globalClicksData.reduce(
+      (s, l: any) => s + (Number(l.offer_clicks_count) || 0),
+      0,
+    );
 
     // EMERGENCY FALLBACK: If link summary is 0 but we know there are clicks, query the clicks table directly
     // This solves the issue if the linking columns like 'ours_clicks_count' haven't updated yet.
@@ -153,10 +189,20 @@ export const adminStats = createServerFn({ method: "GET" })
     let offerTotal = offerTotalFromLinks;
 
     if (humansTotal === 0) {
-      const { count: absoluteTotal } = await supabaseAdmin.from("clicks").select("*", { count: "exact", head: true }).eq("is_bot", false);
-      const { count: absoluteOurs } = await supabaseAdmin.from("clicks").select("*", { count: "exact", head: true }).eq("is_bot", false).eq("routed_to", "ours");
-      const { count: absoluteBots } = await supabaseAdmin.from("clicks").select("*", { count: "exact", head: true }).eq("is_bot", true);
-      
+      const { count: absoluteTotal } = await supabaseAdmin
+        .from("clicks")
+        .select("*", { count: "exact", head: true })
+        .eq("is_bot", false);
+      const { count: absoluteOurs } = await supabaseAdmin
+        .from("clicks")
+        .select("*", { count: "exact", head: true })
+        .eq("is_bot", false)
+        .eq("routed_to", "ours");
+      const { count: absoluteBots } = await supabaseAdmin
+        .from("clicks")
+        .select("*", { count: "exact", head: true })
+        .eq("is_bot", true);
+
       if ((absoluteTotal ?? 0) > 0) {
         humansTotal = absoluteTotal ?? 0;
         oursTotal = absoluteOurs ?? 0;
@@ -200,20 +246,31 @@ export const adminClicksTimeseries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const { data, error } = await supabaseAdmin.rpc("admin_clicks_timeseries" as never, { _days: 14 } as never);
+    const { data, error } = await supabaseAdmin.rpc(
+      "admin_clicks_timeseries" as never,
+      { _days: 14 } as never,
+    );
     if (error) throw new Error(error.message);
-    return (data ?? []) as Array<{ date: string; total: number; ours: number; offer: number; bots: number }>;
+    return (data ?? []) as Array<{
+      date: string;
+      total: number;
+      ours: number;
+      offer: number;
+      bots: number;
+    }>;
   });
 
 export const adminTopCountries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const { data, error } = await supabaseAdmin.rpc("admin_top_countries" as never, { _days: 7, _limit: 12 } as never);
+    const { data, error } = await supabaseAdmin.rpc(
+      "admin_top_countries" as never,
+      { _days: 7, _limit: 12 } as never,
+    );
     if (error) throw new Error(error.message);
     return (data ?? []) as Array<{ country: string; count: number }>;
   });
-
 
 export const adminTopUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -238,10 +295,21 @@ export const adminTopUsers = createServerFn({ method: "GET" })
       .map(([id]) => id);
     if (topIds.length === 0) return [];
     const { data: profs } = await supabaseAdmin
-      .from("profiles").select("id, email, plan_slug").in("id", topIds);
+      .from("profiles")
+      .select("id, email, plan_slug")
+      .in("id", topIds);
     return topIds.map((id) => {
-      const p = (profs ?? []).find((x: any) => x.id === id) || { id, email: "(unknown)", plan_slug: null };
-      return { ...p, clicks_used: totals[id].humans, bot_clicks: totals[id].bots, ours_clicks: totals[id].ours };
+      const p = (profs ?? []).find((x: any) => x.id === id) || {
+        id,
+        email: "(unknown)",
+        plan_slug: null,
+      };
+      return {
+        ...p,
+        clicks_used: totals[id].humans,
+        bot_clicks: totals[id].bots,
+        ours_clicks: totals[id].ours,
+      };
     });
   });
 
@@ -252,7 +320,7 @@ export const adminRevenueTimeseries = createServerFn({ method: "GET" })
     await assertAdmin(context.userId);
     const days = input.days;
     const fromISO = new Date(Date.now() - days * 86_400_000).toISOString();
-    
+
     // Updated to include all success statuses
     const { data } = await supabaseAdmin
       .from("upgrade_requests")
@@ -265,7 +333,7 @@ export const adminRevenueTimeseries = createServerFn({ method: "GET" })
       const d = new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10);
       buckets[d] = { date: d, revenue: 0, count: 0 };
     }
-    
+
     (data ?? []).forEach((r: any) => {
       const d = (r.created_at as string).slice(0, 10);
       if (!buckets[d]) return;
@@ -275,16 +343,20 @@ export const adminRevenueTimeseries = createServerFn({ method: "GET" })
     return Object.values(buckets);
   });
 
-
 export const adminListUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
     const { data, error } = await supabaseAdmin
-      .from("profiles").select("*").order("created_at", { ascending: false }).limit(1000);
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(1000);
     if (error) throw new Error(error.message);
     const oursByUser: Record<string, number> = {};
-    const { data: linkRows } = await supabaseAdmin.from("links").select("user_id, ours_clicks_count");
+    const { data: linkRows } = await supabaseAdmin
+      .from("links")
+      .select("user_id, ours_clicks_count");
     (linkRows ?? []).forEach((l: any) => {
       oursByUser[l.user_id] = (oursByUser[l.user_id] ?? 0) + (l.ours_clicks_count ?? 0);
     });
@@ -296,17 +368,25 @@ export const adminBanUser = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid(), is_banned: z.boolean() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin.from("profiles").update({ is_banned: data.is_banned } as any).eq("id", data.id);
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ is_banned: data.is_banned } as any)
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
 export const adminBulkBan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ ids: z.array(z.string().uuid()).min(1).max(500), is_banned: z.boolean() }).parse(d))
+  .inputValidator((d) =>
+    z.object({ ids: z.array(z.string().uuid()).min(1).max(500), is_banned: z.boolean() }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin.from("profiles").update({ is_banned: data.is_banned } as any).in("id", data.ids);
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ is_banned: data.is_banned } as any)
+      .in("id", data.ids);
     if (error) throw new Error(error.message);
     return { ok: true, updated: data.ids.length };
   });
@@ -326,11 +406,21 @@ export const adminResetUserQuota = createServerFn({ method: "POST" })
 
 export const adminBulkSetPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ ids: z.array(z.string().uuid()).min(1).max(500), package_slug: z.string().min(1).max(64) }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        ids: z.array(z.string().uuid()).min(1).max(500),
+        package_slug: z.string().min(1).max(64),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { data: pkg } = await supabaseAdmin
-      .from("packages").select("*").eq("slug", data.package_slug).maybeSingle();
+      .from("packages")
+      .select("*")
+      .eq("slug", data.package_slug)
+      .maybeSingle();
     if (!pkg) throw new Error("Package not found");
     await applyPackageToProfileIds(data.ids, pkg);
     return { ok: true, updated: data.ids.length };
@@ -344,7 +434,11 @@ export const adminFixUnlimitedMonthly = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
 
-    const [{ data: packages, error: pkgErr }, { data: profiles, error: profileErr }, { data: paidOrders, error: orderErr }] = await Promise.all([
+    const [
+      { data: packages, error: pkgErr },
+      { data: profiles, error: profileErr },
+      { data: paidOrders, error: orderErr },
+    ] = await Promise.all([
       supabaseAdmin.from("packages").select("slug, click_quota, link_limit"),
       supabaseAdmin
         .from("profiles")
@@ -372,14 +466,20 @@ export const adminFixUnlimitedMonthly = createServerFn({ method: "POST" })
       const pkg = packageMap.get((profile as any).plan_slug) as any;
       if (!pkg) continue;
 
-      const isUnlimited = pkg.slug === "lifetime" || pkg.slug === "unlimited" || pkg.click_quota == null;
-      const startedMs = (profile as any).plan_started_at ? Date.parse((profile as any).plan_started_at) : Number.NaN;
+      const isUnlimited =
+        pkg.slug === "lifetime" || pkg.slug === "unlimited" || pkg.click_quota == null;
+      const startedMs = (profile as any).plan_started_at
+        ? Date.parse((profile as any).plan_started_at)
+        : Number.NaN;
       // Invoice rows are created shortly before plan_started_at is written by
       // the paid callback. Include a 24-hour margin so the first payment in the
       // current cycle is not accidentally excluded.
-      const cycleCutoff = Number.isNaN(startedMs) ? Number.NEGATIVE_INFINITY : startedMs - 86_400_000;
-      const successfulPayments = (ordersByUser.get((profile as any).id) ?? []).filter((order: any) =>
-        order.package_slug === pkg.slug && Date.parse(order.created_at) >= cycleCutoff,
+      const cycleCutoff = Number.isNaN(startedMs)
+        ? Number.NEGATIVE_INFINITY
+        : startedMs - 86_400_000;
+      const successfulPayments = (ordersByUser.get((profile as any).id) ?? []).filter(
+        (order: any) =>
+          order.package_slug === pkg.slug && Date.parse(order.created_at) >= cycleCutoff,
       ).length;
       const entitledPeriods = Math.max(1, successfulPayments);
       const expectedClickQuota = isUnlimited ? null : Number(pkg.click_quota) * entitledPeriods;
@@ -391,13 +491,15 @@ export const adminFixUnlimitedMonthly = createServerFn({ method: "POST" })
           : new Date(startedMs + entitledPeriods * 30 * 86_400_000).toISOString();
       const expiryMatches = isUnlimited
         ? (profile as any).plan_expires_at == null
-        : Number.isNaN(startedMs) || Date.parse((profile as any).plan_expires_at) === Date.parse(expectedExpiry);
+        : Number.isNaN(startedMs) ||
+          Date.parse((profile as any).plan_expires_at) === Date.parse(expectedExpiry);
 
       if (
         (profile as any).click_quota === expectedClickQuota &&
         (profile as any).link_limit === expectedLinkLimit &&
         expiryMatches
-      ) continue;
+      )
+        continue;
 
       const { error } = await supabaseAdmin
         .from("profiles")
@@ -421,14 +523,26 @@ export const adminUserDetail = createServerFn({ method: "GET" })
     await assertAdmin(context.userId);
     const [{ data: profile }, { data: links }, { data: payments }] = await Promise.all([
       supabaseAdmin.from("profiles").select("*").eq("id", data.id).maybeSingle(),
-      supabaseAdmin.from("links").select("*").eq("user_id", data.id).order("created_at", { ascending: false }),
-      supabaseAdmin.from("upgrade_requests").select("*").eq("user_id", data.id).order("created_at", { ascending: false }).limit(50),
+      supabaseAdmin
+        .from("links")
+        .select("*")
+        .eq("user_id", data.id)
+        .order("created_at", { ascending: false }),
+      supabaseAdmin
+        .from("upgrade_requests")
+        .select("*")
+        .eq("user_id", data.id)
+        .order("created_at", { ascending: false })
+        .limit(50),
     ]);
     const linkIds = (links ?? []).map((l: any) => l.id);
     let trend: { date: string; clicks: number; bots: number }[] = [];
     if (linkIds.length) {
-      const { data: trendData } = await supabaseAdmin.rpc("admin_user_trend" as never, { _user_id: data.id, _days: 7 } as never);
-      trend = ((trendData ?? []) as Array<{ date: string; clicks: number; bots: number }>);
+      const { data: trendData } = await supabaseAdmin.rpc(
+        "admin_user_trend" as never,
+        { _user_id: data.id, _days: 7 } as never,
+      );
+      trend = (trendData ?? []) as Array<{ date: string; clicks: number; bots: number }>;
     }
 
     return { profile, links: links ?? [], payments: payments ?? [], trend };
@@ -436,11 +550,16 @@ export const adminUserDetail = createServerFn({ method: "GET" })
 
 export const adminSetUserPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ user_id: z.string().uuid(), package_slug: z.string().min(1).max(64) }).parse(d))
+  .inputValidator((d) =>
+    z.object({ user_id: z.string().uuid(), package_slug: z.string().min(1).max(64) }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { data: pkg } = await supabaseAdmin
-      .from("packages").select("*").eq("slug", data.package_slug).maybeSingle();
+      .from("packages")
+      .select("*")
+      .eq("slug", data.package_slug)
+      .maybeSingle();
     if (!pkg) throw new Error("Package not found");
     await applyPackageToProfileIds([data.user_id], pkg);
     return { ok: true };
@@ -451,7 +570,10 @@ export const adminListPackages = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
     const { data, error } = await supabaseAdmin
-      .from("packages").select("*").eq("is_active", true).order("sort_order");
+      .from("packages")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order");
     if (error) throw new Error(error.message);
     return data;
   });
@@ -460,24 +582,31 @@ export const adminListAllPackages = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const { data, error } = await supabaseAdmin
-      .from("packages").select("*").order("sort_order");
+    const { data, error } = await supabaseAdmin.from("packages").select("*").order("sort_order");
     if (error) throw new Error(error.message);
     return data ?? [];
   });
 
 export const adminUpsertPackage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    id: z.string().uuid().optional(),
-    slug: z.string().min(1).max(64).regex(/^[a-z0-9_-]+$/),
-    name: z.string().min(1).max(120),
-    price_usd: z.number().min(0).max(100000),
-    click_quota: z.number().int().min(0).nullable(),
-    link_limit: z.number().int().min(0).nullable(),
-    sort_order: z.number().int().min(0).max(1000),
-    is_active: z.boolean(),
-  }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid().optional(),
+        slug: z
+          .string()
+          .min(1)
+          .max(64)
+          .regex(/^[a-z0-9_-]+$/),
+        name: z.string().min(1).max(120),
+        price_usd: z.number().min(0).max(100000),
+        click_quota: z.number().int().min(0).nullable(),
+        link_limit: z.number().int().min(0).nullable(),
+        sort_order: z.number().int().min(0).max(1000),
+        is_active: z.boolean(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const payload: any = {
@@ -515,7 +644,7 @@ export const adminListUpgradeRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    
+
     // Auto-expire old pending requests (> 30 minutes) as requested
     const expiryCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     await supabaseAdmin
@@ -526,7 +655,9 @@ export const adminListUpgradeRequests = createServerFn({ method: "GET" })
 
     const { data, error } = await supabaseAdmin
       .from("upgrade_requests")
-      .select("id, user_id, package_slug, amount, status, plisio_invoice_id, plisio_invoice_url, created_at")
+      .select(
+        "id, user_id, package_slug, amount, status, plisio_invoice_id, plisio_invoice_url, created_at",
+      )
       .order("created_at", { ascending: false })
 
       .limit(500);
@@ -535,34 +666,49 @@ export const adminListUpgradeRequests = createServerFn({ method: "GET" })
     let emailMap: Record<string, string> = {};
     if (ids.length > 0) {
       const { data: profs } = await supabaseAdmin
-        .from("profiles").select("id, email").in("id", ids);
+        .from("profiles")
+        .select("id, email")
+        .in("id", ids);
       emailMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.email ?? ""]));
     }
     return (data ?? []).map((r: any) => ({ ...r, email: emailMap[r.user_id] ?? "" }));
   });
 
-
 export const adminDecideUpgradeRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ id: z.string().uuid(), decision: z.enum(["approve", "reject"]) }).parse(d))
+  .inputValidator((d) =>
+    z.object({ id: z.string().uuid(), decision: z.enum(["approve", "reject"]) }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { data: req, error: rErr } = await supabaseAdmin
-      .from("upgrade_requests").select("*").eq("id", data.id).maybeSingle();
+      .from("upgrade_requests")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (rErr || !req) throw new Error("Request not found");
     if (req.status !== "pending") throw new Error(`Request already ${req.status}`);
 
     if (data.decision === "reject") {
-      const { error } = await supabaseAdmin.from("upgrade_requests").update({ status: "rejected" } as any).eq("id", data.id);
+      const { error } = await supabaseAdmin
+        .from("upgrade_requests")
+        .update({ status: "rejected" } as any)
+        .eq("id", data.id);
       if (error) throw new Error(error.message);
       return { ok: true };
     }
 
-    const { data: pkg } = await supabaseAdmin.from("packages").select("*").eq("slug", req.package_slug).maybeSingle();
+    const { data: pkg } = await supabaseAdmin
+      .from("packages")
+      .select("*")
+      .eq("slug", req.package_slug)
+      .maybeSingle();
     if (!pkg) throw new Error("Package not found");
 
     const { error: uErr } = await supabaseAdmin
-      .from("upgrade_requests").update({ status: "paid" } as any).eq("id", data.id);
+      .from("upgrade_requests")
+      .update({ status: "paid" } as any)
+      .eq("id", data.id);
     if (uErr) throw new Error(uErr.message);
 
     await applyPackageToProfileIds([req.user_id], pkg);
@@ -575,18 +721,18 @@ export const adminListLinks = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
     const { data: profiles } = await supabaseAdmin.from("profiles").select("id, email");
-    const emailMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p.email]));
-    
+    const emailMap = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.email]));
+
     const { data, error } = await supabaseAdmin
       .from("links")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(1000);
     if (error) throw new Error(error.message);
-    
+
     return (data ?? []).map((l: any) => ({
       ...l,
-      owner_email: emailMap[l.user_id] ?? "unknown"
+      owner_email: emailMap[l.user_id] ?? "unknown",
     }));
   });
 
@@ -612,14 +758,12 @@ export const adminToggleLink = createServerFn({ method: "POST" })
 export const adminUpdateLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    z
-      .object({
-        id: z.string().uuid(),
-        title: z.string().nullable().optional(),
-        adsterra_url: z.string().url().optional(),
-        safe_url: z.string().url().optional(),
-      })
-      .parse,
+    z.object({
+      id: z.string().uuid(),
+      title: z.string().nullable().optional(),
+      adsterra_url: z.string().url().optional(),
+      safe_url: z.string().url().optional(),
+    }).parse,
   )
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
@@ -655,7 +799,10 @@ export const adminDeleteLink = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
     const { data: row } = await supabaseAdmin
-      .from("links").select("short_code").eq("id", data.id).maybeSingle();
+      .from("links")
+      .select("short_code")
+      .eq("id", data.id)
+      .maybeSingle();
     const { error } = await supabaseAdmin.from("links").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     const { invalidateLinkCache } = await import("@/lib/link-cache.server");
@@ -663,19 +810,29 @@ export const adminDeleteLink = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 export const adminListBotRules = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const { data, error } = await supabaseAdmin.from("bot_rules").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabaseAdmin
+      .from("bot_rules")
+      .select("*")
+      .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
   });
 
 export const adminUpsertBotRule = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ id: z.string().uuid().optional(), rule_type: z.string(), pattern: z.string(), label: z.string().nullable(), is_active: z.boolean() }).parse)
+  .inputValidator(
+    z.object({
+      id: z.string().uuid().optional(),
+      rule_type: z.string(),
+      pattern: z.string(),
+      label: z.string().nullable(),
+      is_active: z.boolean(),
+    }).parse,
+  )
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
     if (data.id) {
@@ -702,14 +859,27 @@ export const adminListCloakingRules = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const { data, error } = await supabaseAdmin.from("cloaking_rules").select("*").order("priority");
+    const { data, error } = await supabaseAdmin
+      .from("cloaking_rules")
+      .select("*")
+      .order("priority");
     if (error) throw new Error(error.message);
     return data ?? [];
   });
 
 export const adminUpsertCloakingRule = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ id: z.string().uuid().optional(), rule_type: z.string(), pattern: z.string(), label: z.string().nullable(), action: z.string(), priority: z.number(), is_active: z.boolean() }).parse)
+  .inputValidator(
+    z.object({
+      id: z.string().uuid().optional(),
+      rule_type: z.string(),
+      pattern: z.string(),
+      label: z.string().nullable(),
+      action: z.string(),
+      priority: z.number(),
+      is_active: z.boolean(),
+    }).parse,
+  )
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
     if (data.id) {
@@ -743,7 +913,10 @@ export const adminListCountryTiers = createServerFn({ method: "GET" })
 
 export const adminUpsertCountryTier = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ country_code: z.string(), tier: z.number(), country_name: z.string().nullable() }).parse)
+  .inputValidator(
+    z.object({ country_code: z.string(), tier: z.number(), country_name: z.string().nullable() })
+      .parse,
+  )
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
     const { error } = await supabaseAdmin.from("country_tiers").upsert(data);
@@ -756,7 +929,10 @@ export const adminDeleteCountryTier = createServerFn({ method: "POST" })
   .inputValidator(z.object({ country_code: z.string() }).parse)
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin.from("country_tiers").delete().eq("country_code", data.country_code);
+    const { error } = await supabaseAdmin
+      .from("country_tiers")
+      .delete()
+      .eq("country_code", data.country_code);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -766,7 +942,11 @@ export const adminImpersonate = createServerFn({ method: "POST" })
   .inputValidator(z.object({ user_id: z.string().uuid() }).parse)
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
-    const { data: target } = await supabaseAdmin.from("profiles").select("*").eq("id", data.user_id).single();
+    const { data: target } = await supabaseAdmin
+      .from("profiles")
+      .select("*")
+      .eq("id", data.user_id)
+      .single();
     if (!target) throw new Error("Target user not found");
 
     // Generate a secure one-time magic link token for the target user
@@ -777,13 +957,13 @@ export const adminImpersonate = createServerFn({ method: "POST" })
 
     if (error) throw new Error(error.message);
 
-    return { 
-      hashed_token: linkData.properties.hashed_token, 
-      target: { 
-        id: target.id, 
-        email: target.email || "unknown", 
-        full_name: target.full_name 
-      } 
+    return {
+      hashed_token: linkData.properties.hashed_token,
+      target: {
+        id: target.id,
+        email: target.email || "unknown",
+        full_name: target.full_name,
+      },
     };
   });
 
@@ -791,7 +971,11 @@ export const adminListErrors = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const { data, error } = await supabaseAdmin.from("error_logs").select("*").order("created_at", { ascending: false }).limit(200);
+    const { data, error } = await supabaseAdmin
+      .from("error_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
     if (error) throw new Error(error.message);
     return { rows: data ?? [] };
   });
@@ -800,19 +984,21 @@ export const adminErrorStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const { data, error } = await supabaseAdmin.from("error_logs").select("source, level, is_resolved, created_at");
+    const { data, error } = await supabaseAdmin
+      .from("error_logs")
+      .select("source, level, is_resolved, created_at");
     if (error) throw new Error(error.message);
-    
+
     const now = Date.now();
-    const last24h = (data ?? []).filter(e => now - new Date(e.created_at).getTime() < 86400000);
+    const last24h = (data ?? []).filter((e) => now - new Date(e.created_at).getTime() < 86400000);
     const bySource: Record<string, number> = {};
-    (data ?? []).forEach(e => bySource[e.source] = (bySource[e.source] || 0) + 1);
-    
+    (data ?? []).forEach((e) => (bySource[e.source] = (bySource[e.source] || 0) + 1));
+
     return {
       total: data?.length || 0,
-      open: data?.filter(e => !e.is_resolved).length || 0,
+      open: data?.filter((e) => !e.is_resolved).length || 0,
       last24h: last24h.length,
-      bySource
+      bySource,
     };
   });
 
@@ -821,7 +1007,10 @@ export const adminResolveError = createServerFn({ method: "POST" })
   .inputValidator(z.object({ id: z.string().uuid(), is_resolved: z.boolean() }).parse)
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin.from("error_logs").update({ is_resolved: data.is_resolved } as any).eq("id", data.id);
+    const { error } = await supabaseAdmin
+      .from("error_logs")
+      .update({ is_resolved: data.is_resolved } as any)
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -859,9 +1048,12 @@ export const adminGetDormantUsers = createServerFn({ method: "GET" })
   .inputValidator(z.object({ days: z.number().int().min(1).max(365).default(15) }).parse)
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
-    const { data: rows, error } = await supabaseAdmin.rpc("admin_get_dormant_users" as never, {
-      _days: data.days,
-    } as never);
+    const { data: rows, error } = await supabaseAdmin.rpc(
+      "admin_get_dormant_users" as never,
+      {
+        _days: data.days,
+      } as never,
+    );
     if (error) throw new Error(error.message);
     return (rows ?? []) as Array<{
       id: string;
@@ -891,8 +1083,14 @@ export const adminGetPurgeStatus = createServerFn({ method: "GET" })
     const clicksCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const errorsCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const [{ count: oldClicks }, { count: oldErrors }] = await Promise.all([
-      supabaseAdmin.from("clicks").select("id", { count: "exact", head: true }).lt("created_at", clicksCutoff),
-      supabaseAdmin.from("error_logs").select("id", { count: "exact", head: true }).lt("created_at", errorsCutoff),
+      supabaseAdmin
+        .from("clicks")
+        .select("id", { count: "exact", head: true })
+        .lt("created_at", clicksCutoff),
+      supabaseAdmin
+        .from("error_logs")
+        .select("id", { count: "exact", head: true })
+        .lt("created_at", errorsCutoff),
     ]);
     return { oldClicks: oldClicks ?? 0, oldErrors: oldErrors ?? 0 };
   });
@@ -900,10 +1098,12 @@ export const adminGetPurgeStatus = createServerFn({ method: "GET" })
 // Deletes ONE batch of old rows. Client calls in a loop until done=true.
 export const adminPurgeBatch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({
-    target: z.enum(["clicks", "errors"]),
-    batchSize: z.number().int().min(100).max(10000).default(2000),
-  }).parse)
+  .inputValidator(
+    z.object({
+      target: z.enum(["clicks", "errors"]),
+      batchSize: z.number().int().min(100).max(10000).default(2000),
+    }).parse,
+  )
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
     const table = data.target === "clicks" ? "clicks" : "error_logs";
@@ -937,9 +1137,9 @@ export const adminDeleteUsers = createServerFn({ method: "POST" })
 
     for (const id of data.ids) {
       // 1. Wipe dependent rows first (FKs without cascade would block profile/auth delete)
-      const linkIds = ((await supabaseAdmin.from("links").select("id").eq("user_id", id)).data ?? []).map(
-        (l) => l.id as string,
-      );
+      const linkIds = (
+        (await supabaseAdmin.from("links").select("id").eq("user_id", id)).data ?? []
+      ).map((l) => l.id as string);
       if (linkIds.length) {
         await supabaseAdmin.from("clicks").delete().in("link_id", linkIds);
       }
@@ -986,19 +1186,54 @@ export const adminTrafficSnapshot = createServerFn({ method: "GET" })
       { data: reasonsData },
       { data: fbBlockedData },
     ] = await Promise.all([
-      supabaseAdmin.from("clicks").select("*", { count: "exact", head: true }).gte("created_at", since),
-      supabaseAdmin.from("clicks").select("*", { count: "exact", head: true }).gte("created_at", since).eq("is_bot", false),
-      supabaseAdmin.from("clicks").select("*", { count: "exact", head: true }).gte("created_at", since).eq("is_bot", true),
-      supabaseAdmin.from("clicks").select("*", { count: "exact", head: true }).gte("created_at", since).eq("routed_to", "offer").eq("is_bot", false),
-      supabaseAdmin.from("clicks").select("*", { count: "exact", head: true }).gte("created_at", since).eq("routed_to", "ours").eq("is_bot", false),
-      supabaseAdmin.from("clicks").select("*", { count: "exact", head: true }).gte("created_at", since).eq("routed_to", "safe"),
-      supabaseAdmin.from("clicks").select("*", { count: "exact", head: true }).gte("created_at", since1h),
-      supabaseAdmin.from("clicks").select("*", { count: "exact", head: true }).gte("created_at", since1h).eq("is_bot", false),
+      supabaseAdmin
+        .from("clicks")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", since),
+      supabaseAdmin
+        .from("clicks")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", since)
+        .eq("is_bot", false),
+      supabaseAdmin
+        .from("clicks")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", since)
+        .eq("is_bot", true),
+      supabaseAdmin
+        .from("clicks")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", since)
+        .eq("routed_to", "offer")
+        .eq("is_bot", false),
+      supabaseAdmin
+        .from("clicks")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", since)
+        .eq("routed_to", "ours")
+        .eq("is_bot", false),
+      supabaseAdmin
+        .from("clicks")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", since)
+        .eq("routed_to", "safe"),
+      supabaseAdmin
+        .from("clicks")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", since1h),
+      supabaseAdmin
+        .from("clicks")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", since1h)
+        .eq("is_bot", false),
       supabaseAdmin.rpc("admin_bot_reasons" as never, { _hours: 24, _limit: 6 } as never),
       supabaseAdmin.rpc("admin_fb_blocked_count" as never, { _hours: 24 } as never),
     ]);
 
-    const topReasons = ((reasonsData ?? []) as Array<{ key: string; count: number }>).map((r) => ({ key: r.key, count: Number(r.count) }));
+    const topReasons = ((reasonsData ?? []) as Array<{ key: string; count: number }>).map((r) => ({
+      key: r.key,
+      count: Number(r.count),
+    }));
     const fbBlocked = Number(fbBlockedData ?? 0);
 
     const t24 = total24h ?? 0;
@@ -1023,7 +1258,6 @@ export const adminTrafficSnapshot = createServerFn({ method: "GET" })
     };
   });
 
-
 // ===== Reset ALL clicks (admin) =====
 export const adminResetAllClicks = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -1038,10 +1272,12 @@ export const adminResetAllClicks = createServerFn({ method: "POST" })
 export const adminTestQuotaSync = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({
-      email: z.string().email(),
-      package_slug: z.string().min(1).max(64),
-    }).parse(d),
+    z
+      .object({
+        email: z.string().email(),
+        package_slug: z.string().min(1).max(64),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
@@ -1052,7 +1288,9 @@ export const adminTestQuotaSync = createServerFn({ method: "POST" })
     push(`Looking up user by email: ${data.email}`);
     const { data: profile, error: pErr } = await supabaseAdmin
       .from("profiles")
-      .select("id, email, plan_slug, click_quota, link_limit, clicks_used, plan_started_at, plan_expires_at")
+      .select(
+        "id, email, plan_slug, click_quota, link_limit, clicks_used, plan_started_at, plan_expires_at",
+      )
       .ilike("email", data.email)
       .maybeSingle();
     if (pErr) throw new Error(pErr.message);
@@ -1063,11 +1301,22 @@ export const adminTestQuotaSync = createServerFn({ method: "POST" })
     push(`✅ Found user id=${profile.id}, current plan=${profile.plan_slug}`);
 
     const { data: pkg, error: kErr } = await supabaseAdmin
-      .from("packages").select("slug, click_quota, link_limit").eq("slug", data.package_slug).maybeSingle();
+      .from("packages")
+      .select("slug, click_quota, link_limit")
+      .eq("slug", data.package_slug)
+      .maybeSingle();
     if (kErr) throw new Error(kErr.message);
     if (!pkg) {
       push(`❌ Package "${data.package_slug}" not found.`);
-      return { ok: false, log, before: profile, expected: null, after: null, pass: false, startedAt };
+      return {
+        ok: false,
+        log,
+        before: profile,
+        expected: null,
+        after: null,
+        pass: false,
+        startedAt,
+      };
     }
     const { data: paidOrders, error: orderErr } = await supabaseAdmin
       .from("upgrade_requests")
@@ -1079,12 +1328,17 @@ export const adminTestQuotaSync = createServerFn({ method: "POST" })
 
     const startedMs = profile.plan_started_at ? Date.parse(profile.plan_started_at) : Number.NaN;
     const cycleCutoff = Number.isNaN(startedMs) ? Number.NEGATIVE_INFINITY : startedMs - 86_400_000;
-    const successfulPayments = (paidOrders ?? []).filter((order: any) => Date.parse(order.created_at) >= cycleCutoff).length;
+    const successfulPayments = (paidOrders ?? []).filter(
+      (order: any) => Date.parse(order.created_at) >= cycleCutoff,
+    ).length;
     const entitledPeriods = Math.max(1, successfulPayments);
-    const unlimitedPlan = pkg.slug === "lifetime" || pkg.slug === "unlimited" || pkg.click_quota == null;
+    const unlimitedPlan =
+      pkg.slug === "lifetime" || pkg.slug === "unlimited" || pkg.click_quota == null;
     const expectedClickQuota = unlimitedPlan ? null : Number(pkg.click_quota) * entitledPeriods;
     const expectedLinkLimit = unlimitedPlan ? null : pkg.link_limit;
-    push(`📦 Package "${pkg.slug}" has ${successfulPayments} successful payment(s) in this cycle; expected click_quota=${expectedClickQuota}, link_limit=${expectedLinkLimit}`);
+    push(
+      `📦 Package "${pkg.slug}" has ${successfulPayments} successful payment(s) in this cycle; expected click_quota=${expectedClickQuota}, link_limit=${expectedLinkLimit}`,
+    );
 
     const before = {
       plan_slug: profile.plan_slug,
@@ -1092,28 +1346,52 @@ export const adminTestQuotaSync = createServerFn({ method: "POST" })
       link_limit: profile.link_limit,
       clicks_used: profile.clicks_used,
     };
-    push(`BEFORE → plan=${before.plan_slug}, click_quota=${before.click_quota}, link_limit=${before.link_limit}, clicks_used=${before.clicks_used}`);
+    push(
+      `BEFORE → plan=${before.plan_slug}, click_quota=${before.click_quota}, link_limit=${before.link_limit}, clicks_used=${before.clicks_used}`,
+    );
 
     push(`🔒 Read-only verification — no package, quota, usage, or expiry fields were changed.`);
     const after = profile;
-    push(`AFTER  → plan=${after?.plan_slug}, click_quota=${after?.click_quota}, link_limit=${after?.link_limit}, clicks_used=${after?.clicks_used}`);
+    push(
+      `AFTER  → plan=${after?.plan_slug}, click_quota=${after?.click_quota}, link_limit=${after?.link_limit}, clicks_used=${after?.clicks_used}`,
+    );
 
     const planOk = after?.plan_slug === pkg.slug;
     const cqOk = after?.click_quota === expectedClickQuota;
     const llOk = after?.link_limit === expectedLinkLimit;
     const pass = planOk && cqOk && llOk;
 
-    push(planOk ? `✅ plan_slug matches` : `❌ plan_slug mismatch (got ${after?.plan_slug}, expected ${pkg.slug})`);
-    push(cqOk ? `✅ click_quota matches (${expectedClickQuota})` : `❌ click_quota mismatch (got ${after?.click_quota}, expected ${expectedClickQuota})`);
-    push(llOk ? `✅ link_limit matches (${expectedLinkLimit})` : `❌ link_limit mismatch (got ${after?.link_limit}, expected ${expectedLinkLimit})`);
-    push(pass ? `🎉 PASS — Quota sync is working correctly.` : `🚨 FAIL — Quota sync did NOT produce expected values.`);
+    push(
+      planOk
+        ? `✅ plan_slug matches`
+        : `❌ plan_slug mismatch (got ${after?.plan_slug}, expected ${pkg.slug})`,
+    );
+    push(
+      cqOk
+        ? `✅ click_quota matches (${expectedClickQuota})`
+        : `❌ click_quota mismatch (got ${after?.click_quota}, expected ${expectedClickQuota})`,
+    );
+    push(
+      llOk
+        ? `✅ link_limit matches (${expectedLinkLimit})`
+        : `❌ link_limit mismatch (got ${after?.link_limit}, expected ${expectedLinkLimit})`,
+    );
+    push(
+      pass
+        ? `🎉 PASS — Quota sync is working correctly.`
+        : `🚨 FAIL — Quota sync did NOT produce expected values.`,
+    );
 
     return {
       ok: true,
       pass,
       startedAt,
       before,
-      expected: { plan_slug: pkg.slug, click_quota: expectedClickQuota, link_limit: expectedLinkLimit },
+      expected: {
+        plan_slug: pkg.slug,
+        click_quota: expectedClickQuota,
+        link_limit: expectedLinkLimit,
+      },
       after: {
         plan_slug: after?.plan_slug ?? null,
         click_quota: after?.click_quota ?? null,
@@ -1136,20 +1414,26 @@ export const adminQuotaSyncStatus = createServerFn({ method: "GET" })
     if (pkgErr) throw new Error(pkgErr.message);
     const pkgMap = new Map<string, { click_quota: number | null; link_limit: number | null }>();
     for (const p of packages ?? []) {
-      pkgMap.set((p as any).slug, { click_quota: (p as any).click_quota, link_limit: (p as any).link_limit });
+      pkgMap.set((p as any).slug, {
+        click_quota: (p as any).click_quota,
+        link_limit: (p as any).link_limit,
+      });
     }
 
-    const [{ data: profiles, error: prErr }, { data: paidOrders, error: orderErr }] = await Promise.all([
-      supabaseAdmin
-        .from("profiles")
-        .select("id, email, plan_slug, plan_started_at, click_quota, link_limit, clicks_used, plan_expires_at")
-        .neq("plan_slug", "free")
-        .order("plan_slug", { ascending: true }),
-      supabaseAdmin
-        .from("upgrade_requests")
-        .select("user_id, package_slug, status, created_at")
-        .in("status", ["paid", "completed", "success", "finished"]),
-    ]);
+    const [{ data: profiles, error: prErr }, { data: paidOrders, error: orderErr }] =
+      await Promise.all([
+        supabaseAdmin
+          .from("profiles")
+          .select(
+            "id, email, plan_slug, plan_started_at, click_quota, link_limit, clicks_used, plan_expires_at",
+          )
+          .neq("plan_slug", "free")
+          .order("plan_slug", { ascending: true }),
+        supabaseAdmin
+          .from("upgrade_requests")
+          .select("user_id, package_slug, status, created_at")
+          .in("status", ["paid", "completed", "success", "finished"]),
+      ]);
     if (prErr) throw new Error(prErr.message);
     if (orderErr) throw new Error(orderErr.message);
 
@@ -1164,14 +1448,18 @@ export const adminQuotaSyncStatus = createServerFn({ method: "GET" })
       const unlimitedPlan = p.plan_slug === "unlimited" || p.plan_slug === "lifetime";
       const exp = pkgMap.get(p.plan_slug);
       const startedMs = p.plan_started_at ? Date.parse(p.plan_started_at) : Number.NaN;
-      const cycleCutoff = Number.isNaN(startedMs) ? Number.NEGATIVE_INFINITY : startedMs - 86_400_000;
-      const successfulPayments = (ordersByUser.get(p.id) ?? []).filter((order: any) =>
-        order.package_slug === p.plan_slug && Date.parse(order.created_at) >= cycleCutoff,
+      const cycleCutoff = Number.isNaN(startedMs)
+        ? Number.NEGATIVE_INFINITY
+        : startedMs - 86_400_000;
+      const successfulPayments = (ordersByUser.get(p.id) ?? []).filter(
+        (order: any) =>
+          order.package_slug === p.plan_slug && Date.parse(order.created_at) >= cycleCutoff,
       ).length;
       const entitledPeriods = Math.max(1, successfulPayments);
-      const expectedQuota = unlimitedPlan || exp?.click_quota == null
-        ? null
-        : Number(exp.click_quota) * entitledPeriods;
+      const expectedQuota =
+        unlimitedPlan || exp?.click_quota == null
+          ? null
+          : Number(exp.click_quota) * entitledPeriods;
       const expectedLinks = unlimitedPlan ? null : (exp?.link_limit ?? null);
       const cqOk = p.click_quota === expectedQuota;
       const llOk = p.link_limit === expectedLinks;
@@ -1188,17 +1476,21 @@ export const adminQuotaSyncStatus = createServerFn({ method: "GET" })
         paid_orders: successfulPayments,
         entitled_periods: entitledPeriods,
         ok: cqOk && llOk,
-        issue: !cqOk && !llOk ? "click_quota + link_limit mismatch"
-          : !cqOk ? "click_quota mismatch"
-          : !llOk ? "link_limit mismatch"
-          : null,
+        issue:
+          !cqOk && !llOk
+            ? "click_quota + link_limit mismatch"
+            : !cqOk
+              ? "click_quota mismatch"
+              : !llOk
+                ? "link_limit mismatch"
+                : null,
       };
     });
 
     const summary = {
       total: rows.length,
-      ok: rows.filter(r => r.ok).length,
-      mismatches: rows.filter(r => !r.ok).length,
+      ok: rows.filter((r) => r.ok).length,
+      mismatches: rows.filter((r) => !r.ok).length,
       byPlan: rows.reduce((acc: Record<string, number>, r) => {
         acc[r.plan_slug] = (acc[r.plan_slug] ?? 0) + 1;
         return acc;

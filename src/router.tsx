@@ -44,7 +44,10 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
           >
             Reload
           </button>
-          <Link to="/" className="rounded-md border border-border bg-background px-4 py-2 text-sm hover:bg-accent">
+          <Link
+            to="/"
+            className="rounded-md border border-border bg-background px-4 py-2 text-sm hover:bg-accent"
+          >
             Home
           </Link>
         </div>
@@ -52,7 +55,6 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
     </div>
   );
 }
-
 
 function DefaultNotFoundComponent() {
   return (

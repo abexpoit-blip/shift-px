@@ -146,13 +146,13 @@ pm2 list
 
 রেজিস্ট্রার/Cloudflare DNS-এ:
 
-| Host | Type | Value | Proxy |
-|------|------|-------|-------|
-| `adspx.com` | A | VPS IP | Proxied (কমলা) ✅ |
-| `www.adspx.com` | A | VPS IP | Proxied ✅ |
-| `supabase.adspx.com` | A | VPS IP | **DNS only** (ধূসর) |
-| `adswapx.com` | A | VPS IP | **DNS only** ❗ |
-| `www.adswapx.com` | A | VPS IP | **DNS only** ❗ |
+| Host                 | Type | Value  | Proxy               |
+| -------------------- | ---- | ------ | ------------------- |
+| `adspx.com`          | A    | VPS IP | Proxied (কমলা) ✅   |
+| `www.adspx.com`      | A    | VPS IP | Proxied ✅          |
+| `supabase.adspx.com` | A    | VPS IP | **DNS only** (ধূসর) |
+| `adswapx.com`        | A    | VPS IP | **DNS only** ❗     |
+| `www.adswapx.com`    | A    | VPS IP | **DNS only** ❗     |
 
 **কেন adswapx.com Cloudflare proxy করা যাবে না:** proxy করলে ভিজিটরের আসল IP / ASN হেডার বদলে যায়, আমাদের bot-detection ভুল সিদ্ধান্ত নেয় এবং real human-ও safe article পেতে পারে। তাই shortener ডোমেইন সবসময় DNS-only।
 
@@ -252,7 +252,6 @@ bash scripts/vps-apply-migrations.sh migration/35_hybrid_click_storage.sql
 `01_schema.sql` is a full bootstrap dump, so the runner only applies it to an
 empty database. It is automatically skipped when the existing `links` table is
 detected.
-
 
 Then schedule the weekly job (Sunday 03:00 UTC). It archives lifetime totals
 into `link_lifetime_stats` / `user_lifetime_stats` **before** trimming raw

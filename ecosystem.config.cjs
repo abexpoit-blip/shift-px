@@ -7,7 +7,8 @@ module.exports = {
     cwd: "/opt/adspx-app-new",
     script: ".output/server/index.mjs",
     interpreter: "node",
-    interpreter_args: "--max-old-space-size=2560 --env-file=/opt/adspx-app-new/.env --import=/opt/adspx-app-new/scripts/uri-guard.mjs",
+    interpreter_args:
+      "--max-old-space-size=2560 --env-file=/opt/adspx-app-new/.env --import=/opt/adspx-app-new/scripts/uri-guard.mjs",
     instances: 1,
     exec_mode: "fork",
     max_memory_restart: "3072M",

@@ -150,23 +150,27 @@ async function headCheck(url: string): Promise<void> {
       markSafePageHealthy(url, r.status);
     } else {
       markSafePageUnhealthy(url, r.status);
-      console.warn(JSON.stringify({
-        event: "safe_pool.unhealthy",
-        url,
-        status: r.status,
-        reason: "non-2xx-on-check",
-      }));
+      console.warn(
+        JSON.stringify({
+          event: "safe_pool.unhealthy",
+          url,
+          status: r.status,
+          reason: "non-2xx-on-check",
+        }),
+      );
     }
   } catch (e) {
     // Network-level failure (DNS/IPv6/hairpin from inside the VPS) is NOT
     // evidence the page is broken for real visitors. Never mark unhealthy on
     // transport errors — only real 4xx/5xx responses count.
-    console.warn(JSON.stringify({
-      event: "safe_pool.check_skipped",
-      url,
-      reason: "transport-error",
-      error: (e as Error)?.message,
-    }));
+    console.warn(
+      JSON.stringify({
+        event: "safe_pool.check_skipped",
+        url,
+        reason: "transport-error",
+        error: (e as Error)?.message,
+      }),
+    );
   } finally {
     clearTimeout(t);
   }
@@ -189,13 +193,17 @@ export function maybeRunHealthCheck(): void {
  * Force a full-pool re-check RIGHT NOW, bypassing the throttle interval.
  * Awaitable — use from an admin trigger route.
  */
-export async function forceHealthCheck(): Promise<Array<{ url: string; healthy: boolean; status: number | null }>> {
+export async function forceHealthCheck(): Promise<
+  Array<{ url: string; healthy: boolean; status: number | null }>
+> {
   // Clear all prior unhealthy marks so a recovered URL gets a clean slate.
   health.clear();
   if (inflightCheck) await inflightCheck;
   lastFullCheckAt = Date.now();
   const p = Promise.allSettled(SAFE_PAGE_POOL.map(headCheck)).then(() => undefined);
-  inflightCheck = p.finally(() => { inflightCheck = null; });
+  inflightCheck = p.finally(() => {
+    inflightCheck = null;
+  });
   await p;
   const now = Date.now();
   return SAFE_PAGE_POOL.map((url) => {
@@ -207,7 +215,6 @@ export async function forceHealthCheck(): Promise<Array<{ url: string; healthy: 
     };
   });
 }
-
 
 export type SafePagePick = {
   url: string;

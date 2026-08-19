@@ -73,10 +73,7 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
  */
 const shortenerShield = createMiddleware().server(async ({ next, request }) => {
   try {
-    const host =
-      request.headers.get("x-forwarded-host") ||
-      request.headers.get("host") ||
-      "";
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
     const pathname = new URL(request.url).pathname;
     if (isShortenerHost(host.split(",")[0].trim()) && isSaasOnlyPath(pathname)) {
       return new Response(NOT_FOUND_HTML, {

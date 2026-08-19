@@ -31,7 +31,11 @@ export function BrandLogo({ className = "", variant = "dark", markOnly = false }
       {!markOnly && (
         <span
           className="text-xl font-extrabold tracking-tight leading-none"
-          style={{ color: text, fontFamily: "'Outfit', system-ui, sans-serif", letterSpacing: "-0.02em" }}
+          style={{
+            color: text,
+            fontFamily: "'Outfit', system-ui, sans-serif",
+            letterSpacing: "-0.02em",
+          }}
         >
           sleep<span style={{ color: accent }}>ox</span>
         </span>

@@ -29,13 +29,7 @@ const META_UAS = [
 
 // Domains we advertise on Facebook / Meta. Keep this list in sync with
 // src/lib/short-domains.ts and the primary app host.
-const TARGET_DOMAINS = [
-  "breezysocial.com",
-  "skypq.com",
-  "mefok.com",
-  "adspx.com",
-  "www.adspx.com",
-];
+const TARGET_DOMAINS = ["breezysocial.com", "skypq.com", "mefok.com", "adspx.com", "www.adspx.com"];
 
 const FETCH_TIMEOUT_MS = 8000;
 
@@ -94,17 +88,13 @@ export const Route = createFileRoute("/api/public/hooks/meta-crawler-probe")({
           request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
         const provided = providedApiKey || providedBearer;
 
-        const ok =
-          anonCandidates.length > 0 &&
-          anonCandidates.some((k) => k === provided);
+        const ok = anonCandidates.length > 0 && anonCandidates.some((k) => k === provided);
 
         if (!ok) {
           return new Response("Unauthorized", { status: 401 });
         }
 
-        const { supabaseAdmin } = await import(
-          "@/integrations/supabase/client.server"
-        );
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         // Pull the newest active short code so we also probe a real link path,
         // not just the domain root. Best-effort — probe still runs without it.
@@ -116,8 +106,7 @@ export const Route = createFileRoute("/api/public/hooks/meta-crawler-probe")({
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
-          sampleCode =
-            (data as { short_code?: string } | null)?.short_code ?? null;
+          sampleCode = (data as { short_code?: string } | null)?.short_code ?? null;
         } catch {
           // ignore — we'll still probe "/"
         }
@@ -160,9 +149,7 @@ export const Route = createFileRoute("/api/public/hooks/meta-crawler-probe")({
               // A block = 403 (WAF / Cloudflare Bot Fight) OR any 5xx OR
               // network error. 200/301/302 are all healthy for Meta.
               const isBlock =
-                r.status === 403 ||
-                (r.status >= 500 && r.status <= 599) ||
-                r.status === 0;
+                r.status === 403 || (r.status >= 500 && r.status <= 599) || r.status === 0;
               if (isBlock) blocks.push(row);
             }
           }

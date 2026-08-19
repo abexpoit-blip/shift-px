@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { ShieldAlert, LogOut, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { exitImpersonation, getImpersonationFlag, type ImpersonationFlag } from "@/lib/impersonation";
+import {
+  exitImpersonation,
+  getImpersonationFlag,
+  type ImpersonationFlag,
+} from "@/lib/impersonation";
 
 export function ImpersonationBanner() {
   const [flag, setFlag] = useState<ImpersonationFlag | null>(null);
@@ -40,11 +44,17 @@ export function ImpersonationBanner() {
             <ShieldAlert className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <div className="text-[10px] font-bold uppercase tracking-widest opacity-90">Admin Impersonation</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest opacity-90">
+              Admin Impersonation
+            </div>
             <div className="text-sm font-semibold truncate">
-              Signed in as <span className="underline decoration-white/50">{flag.target_email}</span>
+              Signed in as{" "}
+              <span className="underline decoration-white/50">{flag.target_email}</span>
               {flag.admin_email && (
-                <span className="hidden sm:inline opacity-80 font-normal"> · admin: {flag.admin_email}</span>
+                <span className="hidden sm:inline opacity-80 font-normal">
+                  {" "}
+                  · admin: {flag.admin_email}
+                </span>
               )}
             </div>
           </div>

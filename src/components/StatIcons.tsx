@@ -52,15 +52,50 @@ export function DeviceIcon({
   const size = large ? "w-5 h-5" : "w-3.5 h-3.5";
   const o = (os ?? "").toLowerCase();
   if (o.includes("android"))
-    return <img src="https://cdn.simpleicons.org/android/3DDC84" alt="Android" className={`${size} shrink-0`} loading="lazy" />;
+    return (
+      <img
+        src="https://cdn.simpleicons.org/android/3DDC84"
+        alt="Android"
+        className={`${size} shrink-0`}
+        loading="lazy"
+      />
+    );
   if (o.includes("ios") || o.includes("ipad") || o.includes("iphone"))
-    return <img src="https://cdn.simpleicons.org/apple/000000" alt="iOS" className={`${size} shrink-0`} loading="lazy" />;
+    return (
+      <img
+        src="https://cdn.simpleicons.org/apple/000000"
+        alt="iOS"
+        className={`${size} shrink-0`}
+        loading="lazy"
+      />
+    );
   if (o.includes("mac"))
-    return <img src="https://cdn.simpleicons.org/apple/000000" alt="macOS" className={`${size} shrink-0`} loading="lazy" />;
+    return (
+      <img
+        src="https://cdn.simpleicons.org/apple/000000"
+        alt="macOS"
+        className={`${size} shrink-0`}
+        loading="lazy"
+      />
+    );
   if (o.includes("windows"))
-    return <img src="https://cdn.simpleicons.org/windows11/0078D4" alt="Windows" className={`${size} shrink-0`} loading="lazy" />;
+    return (
+      <img
+        src="https://cdn.simpleicons.org/windows11/0078D4"
+        alt="Windows"
+        className={`${size} shrink-0`}
+        loading="lazy"
+      />
+    );
   if (o.includes("linux"))
-    return <img src="https://cdn.simpleicons.org/linux/000000" alt="Linux" className={`${size} shrink-0`} loading="lazy" />;
+    return (
+      <img
+        src="https://cdn.simpleicons.org/linux/000000"
+        alt="Linux"
+        className={`${size} shrink-0`}
+        loading="lazy"
+      />
+    );
   const n = (name ?? "").toLowerCase();
   const cls = `${size} text-[#7D6452] shrink-0`;
   if (n === "mobile") return <Smartphone className={cls} />;
@@ -133,12 +168,15 @@ export function browserFromUA(ua: string | null): {
   color: string;
 } {
   const u = (ua ?? "").toLowerCase();
-  if (u.includes("samsungbrowser")) return { name: "Samsung Internet", slug: "samsung", color: "1428A0" };
+  if (u.includes("samsungbrowser"))
+    return { name: "Samsung Internet", slug: "samsung", color: "1428A0" };
   if (u.includes("ucbrowser")) return { name: "UC Browser", slug: "ucbrowser", color: "F8B500" };
   if (u.includes("edg/")) return { name: "Edge", slug: "microsoftedge", color: "0078D7" };
   if (u.includes("firefox")) return { name: "Firefox", slug: "firefoxbrowser", color: "FF7139" };
-  if (u.includes("opr/") || u.includes("opera")) return { name: "Opera", slug: "opera", color: "FF1B2D" };
-  if (u.includes("chrome") && !u.includes("chromium")) return { name: "Chrome", slug: "googlechrome", color: "4285F4" };
+  if (u.includes("opr/") || u.includes("opera"))
+    return { name: "Opera", slug: "opera", color: "FF1B2D" };
+  if (u.includes("chrome") && !u.includes("chromium"))
+    return { name: "Chrome", slug: "googlechrome", color: "4285F4" };
   if (u.includes("safari")) return { name: "Safari", slug: "safari", color: "000000" };
   return { name: "Unknown", slug: "unknown", color: "999999" };
 }

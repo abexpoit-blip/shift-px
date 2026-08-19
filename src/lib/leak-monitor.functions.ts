@@ -29,7 +29,10 @@ async function collectDomains(): Promise<string[]> {
 export const runLeakScan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { domain?: string } | undefined) =>
-    z.object({ domain: z.string().optional() }).optional().parse(d ?? {}),
+    z
+      .object({ domain: z.string().optional() })
+      .optional()
+      .parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
     const { assertAdmin } = await import("./domain-monitor.server");
@@ -61,10 +64,7 @@ export const clearLeakFindings = createServerFn({ method: "POST" })
     const { assertAdmin } = await import("./domain-monitor.server");
     await assertAdmin(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("error_logs")
-      .delete()
-      .eq("source", "leak_monitor");
+    const { error } = await supabaseAdmin.from("error_logs").delete().eq("source", "leak_monitor");
     if (error) throw new Error(error.message);
     return { ok: true };
   });

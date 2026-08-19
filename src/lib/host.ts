@@ -12,10 +12,7 @@ export const getHost = createIsomorphicFn()
   .server(() => {
     try {
       const req = getRequest();
-      const raw =
-        req.headers.get("x-forwarded-host") ||
-        req.headers.get("host") ||
-        "";
+      const raw = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
       return raw.split(",")[0].trim().toLowerCase().replace(/:\d+$/, "");
     } catch {
       return "";

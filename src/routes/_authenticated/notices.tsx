@@ -1,11 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { 
-  Bell, Sparkles, Megaphone, Gift, AlertTriangle, Info, CheckCircle2,
-  Crown, Zap, Rocket, Star, Trophy, CheckCheck, Clock
+import {
+  Bell,
+  Sparkles,
+  Megaphone,
+  Gift,
+  AlertTriangle,
+  Info,
+  CheckCircle2,
+  Crown,
+  Zap,
+  Rocket,
+  Star,
+  Trophy,
+  CheckCheck,
+  Clock,
 } from "lucide-react";
-import { listActiveBroadcasts, markBroadcastRead, markAllBroadcastsRead } from "@/lib/broadcasts.functions";
+import {
+  listActiveBroadcasts,
+  markBroadcastRead,
+  markAllBroadcastsRead,
+} from "@/lib/broadcasts.functions";
 import { Button } from "@/components/ui/button";
 import { BroadcastMarkdown } from "@/components/broadcast-markdown";
 
@@ -79,16 +95,24 @@ function NoticesPage() {
             <h1 className="text-3xl font-extrabold tracking-tight">
               Broadcast <span className="text-[var(--primary)]">Inbox</span>
             </h1>
-            <p className="text-sm text-[var(--muted-foreground)] mt-1">Updates, announcements and news from Adspx.</p>
+            <p className="text-sm text-[var(--muted-foreground)] mt-1">
+              Updates, announcements and news from Adspx.
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-center px-4 py-2 rounded-2xl bg-[var(--muted)]/60 border border-[var(--border)]">
               <div className="text-xl font-black leading-none">{items.length}</div>
-              <div className="text-[9px] font-bold uppercase tracking-widest text-[var(--muted-foreground)] mt-1">Total</div>
+              <div className="text-[9px] font-bold uppercase tracking-widest text-[var(--muted-foreground)] mt-1">
+                Total
+              </div>
             </div>
             <div className="text-center px-4 py-2 rounded-2xl bg-[var(--primary)]/10 border border-[var(--primary)]/25">
-              <div className="text-xl font-black leading-none text-[var(--primary)]">{unreadCount}</div>
-              <div className="text-[9px] font-bold uppercase tracking-widest text-[var(--primary)]/80 mt-1">Unread</div>
+              <div className="text-xl font-black leading-none text-[var(--primary)]">
+                {unreadCount}
+              </div>
+              <div className="text-[9px] font-bold uppercase tracking-widest text-[var(--primary)]/80 mt-1">
+                Unread
+              </div>
             </div>
             {unreadCount > 0 && (
               <Button
@@ -106,7 +130,9 @@ function NoticesPage() {
 
       <div className="relative space-y-4">
         {q.isLoading && (
-          <div className="p-12 text-center text-[var(--muted-foreground)] animate-pulse font-medium">Loading inbox…</div>
+          <div className="p-12 text-center text-[var(--muted-foreground)] animate-pulse font-medium">
+            Loading inbox…
+          </div>
         )}
         {!q.isLoading && items.length === 0 && (
           <div className="p-20 text-center glass-card rounded-[32px]">
@@ -114,7 +140,9 @@ function NoticesPage() {
               <Bell className="w-8 h-8 text-[var(--muted-foreground)]" />
             </div>
             <h3 className="text-lg font-bold">Your inbox is empty</h3>
-            <p className="text-sm text-[var(--muted-foreground)] mt-1">We'll let you know when there's something new.</p>
+            <p className="text-sm text-[var(--muted-foreground)] mt-1">
+              We'll let you know when there's something new.
+            </p>
           </div>
         )}
 
@@ -126,13 +154,17 @@ function NoticesPage() {
               key={b.id}
               onClick={() => !b.is_read && markMut.mutate(b.id)}
               className={`group relative overflow-hidden rounded-[26px] glass-card transition-all duration-300 cursor-pointer hover:-translate-y-0.5 ${
-                !b.is_read ? "ring-1 ring-[var(--primary)]/25 shadow-lg shadow-primary/10" : "opacity-80 hover:opacity-100"
+                !b.is_read
+                  ? "ring-1 ring-[var(--primary)]/25 shadow-lg shadow-primary/10"
+                  : "opacity-80 hover:opacity-100"
               }`}
             >
               <span className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${toneCls}`} />
               <div className="p-5 sm:p-6 pl-6 sm:pl-7 flex gap-4 sm:gap-6">
                 <div className="relative shrink-0">
-                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${toneCls} flex items-center justify-center text-primary-foreground shadow-lg group-hover:scale-110 transition-transform duration-500`}>
+                  <div
+                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${toneCls} flex items-center justify-center text-primary-foreground shadow-lg group-hover:scale-110 transition-transform duration-500`}
+                  >
                     <Icon className="w-6 h-6 sm:w-7 sm:h-7" />
                   </div>
                   {!b.is_read && (
@@ -142,7 +174,9 @@ function NoticesPage() {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4 mb-2">
-                    <h3 className={`text-base sm:text-lg font-extrabold truncate ${!b.is_read ? "" : "text-[var(--muted-foreground)]"}`}>
+                    <h3
+                      className={`text-base sm:text-lg font-extrabold truncate ${!b.is_read ? "" : "text-[var(--muted-foreground)]"}`}
+                    >
                       {b.title}
                     </h3>
                     <div className="flex items-center gap-2 text-[10px] sm:text-xs font-medium text-[var(--muted-foreground)] shrink-0">
@@ -156,12 +190,15 @@ function NoticesPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className={`text-[9.5px] font-black px-2.5 py-1 rounded-full bg-gradient-to-r ${toneCls} text-primary-foreground uppercase tracking-wider`}>
+                    <span
+                      className={`text-[9.5px] font-black px-2.5 py-1 rounded-full bg-gradient-to-r ${toneCls} text-primary-foreground uppercase tracking-wider`}
+                    >
                       {b.tone}
                     </span>
                     {!b.is_read ? (
                       <span className="text-[10px] font-bold text-[var(--primary)] flex items-center gap-1 px-2 py-1 rounded-full bg-[var(--primary)]/10 border border-[var(--primary)]/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]" /> New — tap to mark read
+                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]" /> New — tap
+                        to mark read
                       </span>
                     ) : (
                       <span className="text-[10px] font-bold text-[var(--muted-foreground)] flex items-center gap-1">
@@ -178,4 +215,3 @@ function NoticesPage() {
     </div>
   );
 }
-

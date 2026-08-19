@@ -34,20 +34,149 @@ function skinHash(s: string): number {
 /** Every class name the article template emits. Longest-first is not required
  *  because each replacement is word-boundary anchored. */
 const CLASS_NAMES = [
-  "topbar", "topbar-dot", "nav", "nav-inner", "logo", "nav-links",
-  "layout", "crumbs", "cat-pill", "deck", "byline", "avatar", "byline-text",
-  "share-row", "share-btn", "hero", "hero-cap", "intro", "highlights",
-  "ad-slot", "ad-slot-inner", "tags", "tag", "side-card", "related-item",
+  "topbar",
+  "topbar-dot",
+  "nav",
+  "nav-inner",
+  "logo",
+  "nav-links",
+  "layout",
+  "crumbs",
+  "cat-pill",
+  "deck",
+  "byline",
+  "avatar",
+  "byline-text",
+  "share-row",
+  "share-btn",
+  "hero",
+  "hero-cap",
+  "intro",
+  "highlights",
+  "ad-slot",
+  "ad-slot-inner",
+  "tags",
+  "tag",
+  "side-card",
+  "related-item",
   "newsletter",
 ] as const;
 
 /** Neutral, editorial-looking class-name stems. Picked per code so the emitted
  *  markup reads like a hand-built site rather than a generated one. */
 const STEM_SETS = [
-  ["bar", "band", "brandline", "menu", "mark", "links", "grid", "path", "label", "sub", "meta", "badge", "author", "actions", "act", "lead", "leadcap", "open", "notes", "promo", "promobox", "topics", "topic", "panel", "entry", "signup"],
-  ["strip", "masthead", "site", "navrow", "title", "menulinks", "wrap", "trail", "kicker", "standfirst", "credit", "sig", "creditline", "tools", "tool", "figure", "figcap", "opener", "points", "slot", "slotbox", "chips", "chip", "widget", "story", "subscribe"],
-  ["ticker", "header", "brand", "headrow", "name", "navitems", "shell", "bread", "flag", "summary", "writer", "mono", "writerline", "social", "soc", "photo", "photocap", "first", "recap", "space", "spacebox", "labels", "labelitem", "block", "item", "optin"],
-  ["announce", "bartop", "ident", "identrow", "wordmark", "sections", "page", "crumbline", "eyebrow", "intro-line", "attrib", "circle", "attribline", "sharebar", "sharelink", "lead-img", "lead-cap", "openpara", "keypoints", "advert", "advert-inner", "taglist", "taglink", "card", "rel", "mailform"],
+  [
+    "bar",
+    "band",
+    "brandline",
+    "menu",
+    "mark",
+    "links",
+    "grid",
+    "path",
+    "label",
+    "sub",
+    "meta",
+    "badge",
+    "author",
+    "actions",
+    "act",
+    "lead",
+    "leadcap",
+    "open",
+    "notes",
+    "promo",
+    "promobox",
+    "topics",
+    "topic",
+    "panel",
+    "entry",
+    "signup",
+  ],
+  [
+    "strip",
+    "masthead",
+    "site",
+    "navrow",
+    "title",
+    "menulinks",
+    "wrap",
+    "trail",
+    "kicker",
+    "standfirst",
+    "credit",
+    "sig",
+    "creditline",
+    "tools",
+    "tool",
+    "figure",
+    "figcap",
+    "opener",
+    "points",
+    "slot",
+    "slotbox",
+    "chips",
+    "chip",
+    "widget",
+    "story",
+    "subscribe",
+  ],
+  [
+    "ticker",
+    "header",
+    "brand",
+    "headrow",
+    "name",
+    "navitems",
+    "shell",
+    "bread",
+    "flag",
+    "summary",
+    "writer",
+    "mono",
+    "writerline",
+    "social",
+    "soc",
+    "photo",
+    "photocap",
+    "first",
+    "recap",
+    "space",
+    "spacebox",
+    "labels",
+    "labelitem",
+    "block",
+    "item",
+    "optin",
+  ],
+  [
+    "announce",
+    "bartop",
+    "ident",
+    "identrow",
+    "wordmark",
+    "sections",
+    "page",
+    "crumbline",
+    "eyebrow",
+    "intro-line",
+    "attrib",
+    "circle",
+    "attribline",
+    "sharebar",
+    "sharelink",
+    "lead-img",
+    "lead-cap",
+    "openpara",
+    "keypoints",
+    "advert",
+    "advert-inner",
+    "taglist",
+    "taglink",
+    "card",
+    "rel",
+    "mailform",
+  ],
 ];
 
 type Skin = {
@@ -60,27 +189,33 @@ type Skin = {
 /** Font pairs, all Google-hosted, all common on real publisher sites. */
 const FONT_PAIRS: { head: string; body: string; href: string }[] = [
   {
-    head: "Playfair Display", body: "Source Sans 3",
+    head: "Playfair Display",
+    body: "Source Sans 3",
     href: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap",
   },
   {
-    head: "Libre Baskerville", body: "Karla",
+    head: "Libre Baskerville",
+    body: "Karla",
     href: "https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Karla:wght@400;600;700&display=swap",
   },
   {
-    head: "Merriweather", body: "Inter",
+    head: "Merriweather",
+    body: "Inter",
     href: "https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Inter:wght@400;600;700&display=swap",
   },
   {
-    head: "Lora", body: "Nunito Sans",
+    head: "Lora",
+    body: "Nunito Sans",
     href: "https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Nunito+Sans:wght@400;600;700&display=swap",
   },
   {
-    head: "Bitter", body: "Work Sans",
+    head: "Bitter",
+    body: "Work Sans",
     href: "https://fonts.googleapis.com/css2?family=Bitter:wght@700;800&family=Work+Sans:wght@400;600;700&display=swap",
   },
   {
-    head: "Domine", body: "Rubik",
+    head: "Domine",
+    body: "Rubik",
     href: "https://fonts.googleapis.com/css2?family=Domine:wght@700&family=Rubik:wght@400;500;700&display=swap",
   },
 ];
@@ -154,7 +289,7 @@ function buildSkin(code: string, cls: (n: string) => string): Skin {
  */
 export function applySkin(html: string, code: string): string {
   const stems = STEM_SETS[skinHash(`stems:${code}`) % STEM_SETS.length];
-  const salt = (skinHash(`salt:${code}`) % 900 + 100).toString(36);
+  const salt = ((skinHash(`salt:${code}`) % 900) + 100).toString(36);
 
   const map = new Map<string, string>();
   CLASS_NAMES.forEach((name, i) => {
@@ -180,10 +315,7 @@ export function applySkin(html: string, code: string): string {
 
   // 3. Typeface pair + the Google Fonts request itself.
   const skin = buildSkin(code, cls);
-  out = out.replace(
-    /https:\/\/fonts\.googleapis\.com\/css2\?[^"']+/,
-    skin.fontsHref,
-  );
+  out = out.replace(/https:\/\/fonts\.googleapis\.com\/css2\?[^"']+/, skin.fontsHref);
   out = out
     .replace(/'Playfair Display'/g, `'${skin.headFont}'`)
     .replace(/'Source Sans 3'/g, `'${skin.bodyFont}'`);

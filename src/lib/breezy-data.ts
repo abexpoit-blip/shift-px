@@ -47,7 +47,7 @@ export const PRODUCTS: Product[] = [
       Battery: "300mAh / 14h playtime",
       Bluetooth: "5.3",
       Weight: "58g",
-      "Material": "Bamboo + memory foam",
+      Material: "Bamboo + memory foam",
       Warranty: "12 months",
     },
     inStock: true,
@@ -91,9 +91,9 @@ export const PRODUCTS: Product[] = [
     category: "Smart Home",
     shortDesc: "Pocket-size 1080p projector with auto-keystone and built-in speaker.",
     longDesc:
-      "Turn any wall into a 120\" screen in seconds. Native 1080p resolution, 8000 ANSI lumens, auto-keystone correction, and a 3-hour internal battery. WiFi 6 + Bluetooth 5.2 means Netflix, YouTube, and your phone connect instantly. The built-in 5W stereo speakers are loud enough for a small room — no extra gear needed.",
+      'Turn any wall into a 120" screen in seconds. Native 1080p resolution, 8000 ANSI lumens, auto-keystone correction, and a 3-hour internal battery. WiFi 6 + Bluetooth 5.2 means Netflix, YouTube, and your phone connect instantly. The built-in 5W stereo speakers are loud enough for a small room — no extra gear needed.',
     features: [
-      "Native 1080p, projects up to 120\"",
+      'Native 1080p, projects up to 120"',
       "8000 ANSI lumens — works in daylight",
       "Auto-keystone & auto-focus",
       "Built-in 3-hour battery",
@@ -175,7 +175,7 @@ export const PRODUCTS: Product[] = [
     category: "Sleep & Wellness",
     shortDesc: "Ultrasonic diffuser with 7-color ambient light & auto-off timer.",
     longDesc:
-      "Whisper-quiet ultrasonic diffuser holds 400ml of water — enough for 10 hours of continuous mist. Choose from 7 ambient light colors or turn the light off for pure sleep mode. Auto-shuts off when water runs out. Pairs beautifully with lavender, eucalyptus, or our signature \"Drift\" blend (sold separately).",
+      'Whisper-quiet ultrasonic diffuser holds 400ml of water — enough for 10 hours of continuous mist. Choose from 7 ambient light colors or turn the light off for pure sleep mode. Auto-shuts off when water runs out. Pairs beautifully with lavender, eucalyptus, or our signature "Drift" blend (sold separately).',
     features: [
       "400ml tank — 10 hours continuous mist",
       "Ultrasonic (whisper-quiet, no heat)",
@@ -339,7 +339,11 @@ export const ARTICLES: Article[] = [
     category: "Travel",
     emoji: "🛫",
     body: "",
-    relatedProducts: ["travel-pillow-noise-cancelling", "smart-sleep-headphones", "portable-mini-projector"],
+    relatedProducts: [
+      "travel-pillow-noise-cancelling",
+      "smart-sleep-headphones",
+      "portable-mini-projector",
+    ],
   },
   {
     slug: "best-sleep-apps-insomnia-2026",

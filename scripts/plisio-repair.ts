@@ -63,9 +63,11 @@ async function fetchPlisioOperation(txnId: string) {
   const res = await fetch(
     `https://api.plisio.net/api/v1/operations/${encodeURIComponent(txnId)}?api_key=${encodeURIComponent(apiKey)}`,
   );
-  const json = await res.json().catch(() => null) as any;
+  const json = (await res.json().catch(() => null)) as any;
   if (!res.ok || json?.status !== "success") {
-    throw new Error(`Plisio API failed for ${txnId}: HTTP ${res.status} ${JSON.stringify(json)?.slice(0, 300)}`);
+    throw new Error(
+      `Plisio API failed for ${txnId}: HTTP ${res.status} ${JSON.stringify(json)?.slice(0, 300)}`,
+    );
   }
   return { skipped: false as const, data: json.data ?? null };
 }
@@ -108,7 +110,10 @@ async function applyPackageToProfile(userId: string, pkg: PackageRow) {
         plan_expires_at: expiresAt,
       };
 
-  const { error } = await supabaseAdmin.from("profiles").update(update as any).eq("id", userId);
+  const { error } = await supabaseAdmin
+    .from("profiles")
+    .update(update as any)
+    .eq("id", userId);
   if (error) throw error;
 }
 
@@ -140,7 +145,10 @@ async function main() {
 
   let userIdsFromEmail: string[] = [];
   if (email) {
-    const { data, error } = await supabaseAdmin.from("profiles").select("id,email").ilike("email", email);
+    const { data, error } = await supabaseAdmin
+      .from("profiles")
+      .select("id,email")
+      .ilike("email", email);
     if (error) throw error;
     userIdsFromEmail = (data ?? []).map((p: any) => p.id);
     if (userIdsFromEmail.length === 0) {
@@ -151,14 +159,22 @@ async function main() {
 
   let query = supabaseAdmin
     .from("upgrade_requests")
-    .select("id,user_id,package_slug,amount,status,plisio_invoice_id,plisio_invoice_url,created_at");
+    .select(
+      "id,user_id,package_slug,amount,status,plisio_invoice_id,plisio_invoice_url,created_at",
+    );
 
   if (txn) query = query.eq("plisio_invoice_id", txn);
   else if (order) query = query.eq("id", order);
   else if (userIdsFromEmail.length > 0) query = query.in("user_id", userIdsFromEmail);
-  else query = query.gte("created_at", new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString());
+  else
+    query = query.gte(
+      "created_at",
+      new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString(),
+    );
 
-  const { data: requests, error } = await query.order("created_at", { ascending: false }).limit(100);
+  const { data: requests, error } = await query
+    .order("created_at", { ascending: false })
+    .limit(100);
   if (error) throw error;
 
   const rows = (requests ?? []) as UpgradeRequest[];
@@ -202,16 +218,22 @@ async function main() {
 
   console.table(output);
   if (plisioSkipped) {
-    console.log("Note: PLISIO_API_KEY is missing, so live Plisio status was skipped. Source .env first.");
+    console.log(
+      "Note: PLISIO_API_KEY is missing, so live Plisio status was skipped. Source .env first.",
+    );
   }
 
   if (!repair) {
-    console.log("Dry run only. Add --repair with --txn or --order to apply a package, but only if Plisio status is paid.");
+    console.log(
+      "Dry run only. Add --repair with --txn or --order to apply a package, but only if Plisio status is paid.",
+    );
     return;
   }
 
   if (rows.length !== 1) {
-    throw new Error(`Repair mode found ${rows.length} orders. Narrow it to exactly one order/txn first.`);
+    throw new Error(
+      `Repair mode found ${rows.length} orders. Narrow it to exactly one order/txn first.`,
+    );
   }
 
   const req = rows[0];

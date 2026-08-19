@@ -37,7 +37,14 @@ const PRESET_MEDIUM_RISK = [
   { code: "PH", name: "Philippines", botPct: "—" },
 ];
 
-export function CountryShieldDialog({ open, onOpenChange, linkId, linkTitle, initial, planSlug }: Props) {
+export function CountryShieldDialog({
+  open,
+  onOpenChange,
+  linkId,
+  linkTitle,
+  initial,
+  planSlug,
+}: Props) {
   const qc = useQueryClient();
   const updateFn = useServerFn(updateBlockedCountries);
   const [selected, setSelected] = useState<string[]>([]);
@@ -93,112 +100,147 @@ export function CountryShieldDialog({ open, onOpenChange, linkId, linkTitle, ini
           </DialogTitle>
         </DialogHeader>
 
-          <div className="space-y-5">
-            <p className="text-xs text-[#7D6452]">
-              Visitors from selected countries will see the safe article page instead of the offer.
-              Based on your last 7 days of traffic, these are the most bot-heavy countries.
-            </p>
+        <div className="space-y-5">
+          <p className="text-xs text-[#7D6452]">
+            Visitors from selected countries will see the safe article page instead of the offer.
+            Based on your last 7 days of traffic, these are the most bot-heavy countries.
+          </p>
 
-            {/* Presets */}
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => applyPreset("off")}
-                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-stone-100 text-stone-700 hover:bg-stone-200">
-                Off (Clear all)
-              </button>
-              <button onClick={() => applyPreset("smart")}
-                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
-                Smart (US + DK + IE + OM)
-              </button>
-              <button onClick={() => applyPreset("strict")}
-                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-100 text-rose-700 hover:bg-rose-200">
-                Strict (all listed below)
-              </button>
-            </div>
+          {/* Presets */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => applyPreset("off")}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-stone-100 text-stone-700 hover:bg-stone-200"
+            >
+              Off (Clear all)
+            </button>
+            <button
+              onClick={() => applyPreset("smart")}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+            >
+              Smart (US + DK + IE + OM)
+            </button>
+            <button
+              onClick={() => applyPreset("strict")}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-100 text-rose-700 hover:bg-rose-200"
+            >
+              Strict (all listed below)
+            </button>
+          </div>
 
-            {/* High risk */}
-            <div>
-              <h4 className="text-[10px] uppercase tracking-[0.18em] font-bold text-rose-600 mb-2">
-                🔴 High Risk (Recommended Block)
-              </h4>
-              <div className="grid grid-cols-2 gap-1.5">
-                {PRESET_HIGH_RISK.map((p) => (
-                  <CountryRow key={p.code} {...p} selected={selected.includes(p.code)} onToggle={() => toggle(p.code)} />
-                ))}
-              </div>
-            </div>
-
-            {/* Medium risk */}
-            <div>
-              <h4 className="text-[10px] uppercase tracking-[0.18em] font-bold text-amber-600 mb-2">
-                🟡 Medium Risk (Optional)
-              </h4>
-              <div className="grid grid-cols-2 gap-1.5">
-                {PRESET_MEDIUM_RISK.map((p) => (
-                  <CountryRow key={p.code} {...p} selected={selected.includes(p.code)} onToggle={() => toggle(p.code)} />
-                ))}
-              </div>
-            </div>
-
-            {/* Custom add */}
-            <div>
-              <h4 className="text-[10px] uppercase tracking-[0.18em] font-bold text-[#A38D7D] mb-2">
-                Add Custom Country (ISO-2)
-              </h4>
-              <div className="flex gap-2">
-                <input
-                  value={custom}
-                  onChange={(e) => setCustom(e.target.value.toUpperCase().slice(0, 2))}
-                  placeholder="e.g. CA"
-                  maxLength={2}
-                  className="flex-1 px-3 py-2 rounded-lg border border-[#FFEDD5] focus:border-[#FF7E5F] outline-none text-sm font-mono uppercase"
-                  onKeyDown={(e) => e.key === "Enter" && addCustom()}
+          {/* High risk */}
+          <div>
+            <h4 className="text-[10px] uppercase tracking-[0.18em] font-bold text-rose-600 mb-2">
+              🔴 High Risk (Recommended Block)
+            </h4>
+            <div className="grid grid-cols-2 gap-1.5">
+              {PRESET_HIGH_RISK.map((p) => (
+                <CountryRow
+                  key={p.code}
+                  {...p}
+                  selected={selected.includes(p.code)}
+                  onToggle={() => toggle(p.code)}
                 />
-                <button onClick={addCustom}
-                  className="px-4 py-2 rounded-lg bg-[#2D1B0D] text-white text-sm font-bold flex items-center gap-1 hover:bg-[#3D2B1D]">
-                  <Plus className="w-4 h-4" /> Add
-                </button>
-              </div>
-              {extras.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {extras.map((c) => (
-                    <span key={c} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-mono font-bold bg-[#FFEDD5] text-[#2D1B0D]">
-                      {c}
-                      <button onClick={() => toggle(c)} className="hover:text-rose-600">
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-between pt-4 border-t border-[#FFEDD5]">
-              <p className="text-xs text-[#7D6452]">
-                <b className="text-[#2D1B0D]">{selected.length}</b> {selected.length === 1 ? "country" : "countries"} will be blocked
-              </p>
-              <div className="flex gap-2">
-                <button onClick={() => onOpenChange(false)}
-                  className="px-4 py-2 rounded-lg border border-[#FFEDD5] text-[#7D6452] text-sm font-bold hover:bg-stone-50">
-                  Cancel
-                </button>
-                <button onClick={() => mut.mutate(selected)} disabled={mut.isPending}
-                  className="px-5 py-2 rounded-lg bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white text-sm font-bold shadow hover:shadow-md disabled:opacity-50">
-                  {mut.isPending ? "Saving..." : "Save Shield"}
-                </button>
-              </div>
+              ))}
             </div>
           </div>
 
+          {/* Medium risk */}
+          <div>
+            <h4 className="text-[10px] uppercase tracking-[0.18em] font-bold text-amber-600 mb-2">
+              🟡 Medium Risk (Optional)
+            </h4>
+            <div className="grid grid-cols-2 gap-1.5">
+              {PRESET_MEDIUM_RISK.map((p) => (
+                <CountryRow
+                  key={p.code}
+                  {...p}
+                  selected={selected.includes(p.code)}
+                  onToggle={() => toggle(p.code)}
+                />
+              ))}
+            </div>
+          </div>
 
+          {/* Custom add */}
+          <div>
+            <h4 className="text-[10px] uppercase tracking-[0.18em] font-bold text-[#A38D7D] mb-2">
+              Add Custom Country (ISO-2)
+            </h4>
+            <div className="flex gap-2">
+              <input
+                value={custom}
+                onChange={(e) => setCustom(e.target.value.toUpperCase().slice(0, 2))}
+                placeholder="e.g. CA"
+                maxLength={2}
+                className="flex-1 px-3 py-2 rounded-lg border border-[#FFEDD5] focus:border-[#FF7E5F] outline-none text-sm font-mono uppercase"
+                onKeyDown={(e) => e.key === "Enter" && addCustom()}
+              />
+              <button
+                onClick={addCustom}
+                className="px-4 py-2 rounded-lg bg-[#2D1B0D] text-white text-sm font-bold flex items-center gap-1 hover:bg-[#3D2B1D]"
+              >
+                <Plus className="w-4 h-4" /> Add
+              </button>
+            </div>
+            {extras.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {extras.map((c) => (
+                  <span
+                    key={c}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-mono font-bold bg-[#FFEDD5] text-[#2D1B0D]"
+                  >
+                    {c}
+                    <button onClick={() => toggle(c)} className="hover:text-rose-600">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between pt-4 border-t border-[#FFEDD5]">
+            <p className="text-xs text-[#7D6452]">
+              <b className="text-[#2D1B0D]">{selected.length}</b>{" "}
+              {selected.length === 1 ? "country" : "countries"} will be blocked
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => onOpenChange(false)}
+                className="px-4 py-2 rounded-lg border border-[#FFEDD5] text-[#7D6452] text-sm font-bold hover:bg-stone-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => mut.mutate(selected)}
+                disabled={mut.isPending}
+                className="px-5 py-2 rounded-lg bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white text-sm font-bold shadow hover:shadow-md disabled:opacity-50"
+              >
+                {mut.isPending ? "Saving..." : "Save Shield"}
+              </button>
+            </div>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
 
 function CountryRow({
-  code, name, botPct, selected, onToggle,
-}: { code: string; name: string; botPct: string; selected: boolean; onToggle: () => void }) {
+  code,
+  name,
+  botPct,
+  selected,
+  onToggle,
+}: {
+  code: string;
+  name: string;
+  botPct: string;
+  selected: boolean;
+  onToggle: () => void;
+}) {
   return (
     <button
       onClick={onToggle}
@@ -219,9 +261,7 @@ function CountryRow({
           <p className="text-xs font-bold text-[#2D1B0D] truncate">
             <span className="font-mono">{code}</span> — {name}
           </p>
-          {botPct !== "—" && (
-            <p className="text-[10px] text-[#A38D7D]">{botPct} bots</p>
-          )}
+          {botPct !== "—" && <p className="text-[10px] text-[#A38D7D]">{botPct} bots</p>}
         </div>
       </div>
     </button>

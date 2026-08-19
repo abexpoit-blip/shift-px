@@ -22,8 +22,6 @@ import { AdspxMark } from "@/components/AdspxLogo";
 import { makeRecentPayout } from "@/lib/publishers";
 import { PARTNER_LOGOS } from "@/components/BrandLogos";
 
-
-
 export function AdspxHome() {
   return (
     <div className="min-h-screen bg-background text-foreground relative">
@@ -32,11 +30,23 @@ export function AdspxHome() {
         {/* Warm cream base wash */}
         <div className="absolute inset-0 bg-[radial-gradient(1200px_700px_at_15%_-10%,hsl(28_90%_92%/0.55),transparent_60%),radial-gradient(1000px_600px_at_100%_10%,hsl(262_85%_92%/0.5),transparent_60%),radial-gradient(900px_600px_at_50%_110%,hsl(340_85%_93%/0.45),transparent_65%)]" />
         {/* Fine grain texture */}
-        <div className="absolute inset-0 opacity-[0.035] mix-blend-multiply" style={{ backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")" }} />
+        <div
+          className="absolute inset-0 opacity-[0.035] mix-blend-multiply"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>\")",
+          }}
+        />
         {/* Soft orbs */}
         <div className="orb orb-indigo fixed -top-32 -left-24 h-[30rem] w-[30rem] opacity-20" />
-        <div className="orb orb-pink fixed top-1/2 -right-32 h-[32rem] w-[32rem] opacity-[0.18]" style={{ animationDelay: "-8s" }} />
-        <div className="orb orb-indigo fixed -bottom-24 left-1/3 h-[26rem] w-[26rem] opacity-[0.12]" style={{ animationDelay: "-14s" }} />
+        <div
+          className="orb orb-pink fixed top-1/2 -right-32 h-[32rem] w-[32rem] opacity-[0.18]"
+          style={{ animationDelay: "-8s" }}
+        />
+        <div
+          className="orb orb-indigo fixed -bottom-24 left-1/3 h-[26rem] w-[26rem] opacity-[0.12]"
+          style={{ animationDelay: "-14s" }}
+        />
       </div>
 
       <SiteHeader />
@@ -54,7 +64,6 @@ export function AdspxHome() {
   );
 }
 
-
 /* ─────────────────────────────────────────────── HEADER */
 function SiteHeader() {
   return (
@@ -70,12 +79,24 @@ function SiteHeader() {
           </span>
         </Link>
         <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
-          <a href="#how" className="hover:text-foreground transition-colors">How it works</a>
-          <a href="#calculator" className="hover:text-foreground transition-colors">Calculator</a>
-          <a href="/statistics" className="hover:text-foreground transition-colors">Statistics</a>
-          <a href="/leaderboard" className="hover:text-foreground transition-colors">Leaderboard</a>
-          <a href="#payouts" className="hover:text-foreground transition-colors">Payouts</a>
-          <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
+          <a href="#how" className="hover:text-foreground transition-colors">
+            How it works
+          </a>
+          <a href="#calculator" className="hover:text-foreground transition-colors">
+            Calculator
+          </a>
+          <a href="/statistics" className="hover:text-foreground transition-colors">
+            Statistics
+          </a>
+          <a href="/leaderboard" className="hover:text-foreground transition-colors">
+            Leaderboard
+          </a>
+          <a href="#payouts" className="hover:text-foreground transition-colors">
+            Payouts
+          </a>
+          <a href="#faq" className="hover:text-foreground transition-colors">
+            FAQ
+          </a>
         </nav>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" asChild>
@@ -86,7 +107,6 @@ function SiteHeader() {
               Start earning <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
-
         </div>
       </div>
     </header>
@@ -102,23 +122,34 @@ function Hero() {
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="hero-smallgrid" width="20" height="20" patternUnits="userSpaceOnUse">
-              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="oklch(0.55 0.22 280)" strokeWidth="0.5" />
+              <path
+                d="M 20 0 L 0 0 0 20"
+                fill="none"
+                stroke="oklch(0.55 0.22 280)"
+                strokeWidth="0.5"
+              />
             </pattern>
             <pattern id="hero-grid" width="100" height="100" patternUnits="userSpaceOnUse">
               <rect width="100" height="100" fill="url(#hero-smallgrid)" />
-              <path d="M 100 0 L 0 0 0 100" fill="none" stroke="oklch(0.55 0.22 280)" strokeWidth="1" />
+              <path
+                d="M 100 0 L 0 0 0 100"
+                fill="none"
+                stroke="oklch(0.55 0.22 280)"
+                strokeWidth="1"
+              />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#hero-grid)" />
         </svg>
       </div>
 
-
-
       {/* Soft aurora ribbons — premium editorial accents */}
       <div aria-hidden className="bg-ribbon" style={{ top: "-60px", left: "-180px" }} />
-      <div aria-hidden className="bg-ribbon bg-ribbon-alt" style={{ top: "260px", right: "-220px" }} />
-
+      <div
+        aria-hidden
+        className="bg-ribbon bg-ribbon-alt"
+        style={{ top: "260px", right: "-220px" }}
+      />
 
       {/* Pixel-dot motif backgrounds */}
       <div
@@ -139,16 +170,31 @@ function Hero() {
       />
 
       {/* Twinkling pixel accent dots */}
-      <span aria-hidden className="pixel-dot indigo" style={{ top: "18%", left: "48%", animationDelay: "0s" }} />
-      <span aria-hidden className="pixel-dot" style={{ top: "62%", left: "8%", animationDelay: "1.2s" }} />
-      <span aria-hidden className="pixel-dot cyan" style={{ top: "30%", right: "12%", animationDelay: "2.1s" }} />
-      <span aria-hidden className="pixel-dot" style={{ top: "78%", right: "28%", animationDelay: "0.6s" }} />
+      <span
+        aria-hidden
+        className="pixel-dot indigo"
+        style={{ top: "18%", left: "48%", animationDelay: "0s" }}
+      />
+      <span
+        aria-hidden
+        className="pixel-dot"
+        style={{ top: "62%", left: "8%", animationDelay: "1.2s" }}
+      />
+      <span
+        aria-hidden
+        className="pixel-dot cyan"
+        style={{ top: "30%", right: "12%", animationDelay: "2.1s" }}
+      />
+      <span
+        aria-hidden
+        className="pixel-dot"
+        style={{ top: "78%", right: "28%", animationDelay: "0.6s" }}
+      />
 
       {/* Editorial meta tag */}
       <div aria-hidden className="hidden lg:block absolute top-10 right-6 z-10">
         <span className="meta-tag">ADSPX · 001 / 2026</span>
       </div>
-
 
       <div className="container mx-auto px-4 sm:px-6 pt-10 pb-14 md:pt-20 md:pb-20 relative">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
@@ -202,7 +248,6 @@ function Hero() {
                 <Check className="h-3.5 w-3.5 text-primary" /> Min $10 withdrawal
               </span>
             </div>
-
           </div>
 
           {/* RIGHT — Pixel-machine link mockup with neo-brutalist offset shadow */}
@@ -304,7 +349,11 @@ function Hero() {
               placeholder="Paste your long URL here…"
               className="h-12 text-base bg-transparent border-0 shadow-none focus-visible:ring-0 px-4 flex-1"
             />
-            <Button type="submit" size="lg" className="h-12 px-6 btn-premium rounded-xl font-semibold">
+            <Button
+              type="submit"
+              size="lg"
+              className="h-12 px-6 btn-premium rounded-xl font-semibold"
+            >
               Shorten & earn <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
@@ -313,7 +362,6 @@ function Hero() {
     </section>
   );
 }
-
 
 /* ─────────────────────────────────────────────── PAYOUT BAR */
 function PayoutBar() {
@@ -355,7 +403,10 @@ function HowItWorks() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
         {/* 01 — Shorten */}
         <div className="md:col-span-4 group relative overflow-hidden rounded-3xl bg-card border-2 border-border p-7 hover:border-primary/60 transition-colors">
-          <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-primary/10 group-hover:scale-150 transition-transform duration-500" aria-hidden />
+          <div
+            className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-primary/10 group-hover:scale-150 transition-transform duration-500"
+            aria-hidden
+          />
           <div className="relative z-10">
             <div className="w-12 h-12 rounded-xl bg-primary text-primary-foreground grid place-items-center font-black text-lg italic mb-6 shadow-lg shadow-primary/20">
               01
@@ -365,7 +416,8 @@ function HowItWorks() {
             </div>
             <h3 className="font-display text-2xl font-bold mb-2">Shorten any link</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Paste your URL — YouTube video, blog post, anything. Get a clean AdsPx short link in 2 seconds.
+              Paste your URL — YouTube video, blog post, anything. Get a clean AdsPx short link in 2
+              seconds.
             </p>
           </div>
         </div>
@@ -386,8 +438,8 @@ function HowItWorks() {
             </div>
             <h3 className="font-display text-2xl md:text-3xl font-bold mb-3">Share everywhere</h3>
             <p className="text-white/85 text-base md:text-lg max-w-xl leading-relaxed">
-              Drop it on Facebook, Telegram channels, Twitter, your blog. Every real human visit adds to your balance —
-              our shield filters out bots automatically.
+              Drop it on Facebook, Telegram channels, Twitter, your blog. Every real human visit
+              adds to your balance — our shield filters out bots automatically.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               {["Facebook", "Telegram", "YouTube", "Twitter", "Discord"].map((s) => (
@@ -411,8 +463,8 @@ function HowItWorks() {
               </div>
               <h3 className="font-display text-2xl md:text-3xl font-bold mb-3">Collect USDT</h3>
               <p className="text-background/70 leading-relaxed text-sm md:text-base">
-                Hit the <span className="text-background font-bold">$25 threshold</span> and cash out directly to your
-                wallet in USDT (TRC20 / BEP20). Processed within 24 hours.
+                Hit the <span className="text-background font-bold">$25 threshold</span> and cash
+                out directly to your wallet in USDT (TRC20 / BEP20). Processed within 24 hours.
               </p>
             </div>
             <div className="shrink-0 w-28 h-28 rounded-2xl bg-background/5 border border-background/10 grid place-items-center">
@@ -447,7 +499,9 @@ function HowItWorks() {
               />
             ))}
           </div>
-          <div className="mt-4 text-[11px] text-muted-foreground">Flat global rate · no hidden tiers</div>
+          <div className="mt-4 text-[11px] text-muted-foreground">
+            Flat global rate · no hidden tiers
+          </div>
         </div>
       </div>
     </section>
@@ -473,11 +527,16 @@ function EarningsCalculator() {
         <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">
           See what your daily traffic is <span className="text-gradient">worth</span>
         </h2>
-        <p className="text-muted-foreground text-sm">Move the slider to your daily visits — see live daily, monthly &amp; yearly revenue.</p>
+        <p className="text-muted-foreground text-sm">
+          Move the slider to your daily visits — see live daily, monthly &amp; yearly revenue.
+        </p>
       </div>
 
       <div className="max-w-3xl mx-auto rounded-3xl border border-primary/30 glass-deep p-5 sm:p-6 md:p-8 shadow-elegant">
-        <label htmlFor="clicks-range" className="block text-sm font-medium text-muted-foreground mb-3">
+        <label
+          htmlFor="clicks-range"
+          className="block text-sm font-medium text-muted-foreground mb-3"
+        >
           Daily visits you can send
         </label>
         <input
@@ -500,16 +559,15 @@ function EarningsCalculator() {
 
         <div className="mt-4 text-center">
           <div className="font-display text-3xl font-bold tracking-tight">
-            {daily.toLocaleString()} <span className="text-base font-normal text-muted-foreground">visits / day</span>
+            {daily.toLocaleString()}{" "}
+            <span className="text-base font-normal text-muted-foreground">visits / day</span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
           <div className="rounded-xl border border-border bg-background/40 p-5 text-center">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Daily</div>
-            <div className="font-display text-3xl font-bold mt-1">
-              ${dailyEarn.toFixed(2)}
-            </div>
+            <div className="font-display text-3xl font-bold mt-1">${dailyEarn.toFixed(2)}</div>
           </div>
           <div className="rounded-xl border border-primary/40 bg-primary/5 p-5 text-center">
             <div className="text-xs uppercase tracking-wider text-primary">Monthly</div>
@@ -519,17 +577,15 @@ function EarningsCalculator() {
           </div>
           <div className="rounded-xl border border-border bg-background/40 p-5 text-center">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Yearly</div>
-            <div className="font-display text-3xl font-bold mt-1">
-              ${yearlyEarn.toFixed(2)}
-            </div>
+            <div className="font-display text-3xl font-bold mt-1">${yearlyEarn.toFixed(2)}</div>
           </div>
         </div>
 
         <p className="text-xs text-center text-muted-foreground mt-6 leading-relaxed">
-          Flat rate: <strong className="text-foreground">$1 per 50,000 real visits</strong> · Minimum withdrawal:{" "}
-          <strong className="text-foreground">$10 USDT (TRC20 / BEP20)</strong> · Bot traffic auto-filtered.
+          Flat rate: <strong className="text-foreground">$1 per 50,000 real visits</strong> ·
+          Minimum withdrawal: <strong className="text-foreground">$10 USDT (TRC20 / BEP20)</strong>{" "}
+          · Bot traffic auto-filtered.
         </p>
-
       </div>
     </section>
   );
@@ -547,10 +603,13 @@ function Sponsors() {
           Promote <span className="text-gradient">Adsterra</span> &amp; other offers on Facebook
         </h2>
         <p className="text-muted-foreground leading-relaxed">
-          AdsPx is engineered specifically for promoting <strong className="text-foreground">Adsterra</strong>,
-          PropellerAds, Monetag and other ad-network links on <strong className="text-foreground">Facebook</strong>.
-          We negotiate bulk deals with these networks at scale, then pass <strong className="text-foreground">most of the revenue back to you</strong> —
-          that's how we can pay <strong className="text-foreground">$1 per 50,000 visits</strong> with zero hidden cuts.
+          AdsPx is engineered specifically for promoting{" "}
+          <strong className="text-foreground">Adsterra</strong>, PropellerAds, Monetag and other
+          ad-network links on <strong className="text-foreground">Facebook</strong>. We negotiate
+          bulk deals with these networks at scale, then pass{" "}
+          <strong className="text-foreground">most of the revenue back to you</strong> — that's how
+          we can pay <strong className="text-foreground">$1 per 50,000 visits</strong> with zero
+          hidden cuts.
         </p>
       </div>
 
@@ -572,7 +631,6 @@ function Sponsors() {
     </section>
   );
 }
-
 
 /* ─────────────────────────────────────────────── FEATURES */
 function FeatureGrid() {
@@ -653,7 +711,22 @@ function formatWhen(min: number): string {
 }
 
 // Weighted country picker — used for client-side updates only (random ok after mount).
-const OTHER_CCS: CC[] = ["us", "id", "ng", "br", "mx", "eg", "tr", "ph", "ma", "gb", "de", "sa", "ae", "ir"];
+const OTHER_CCS: CC[] = [
+  "us",
+  "id",
+  "ng",
+  "br",
+  "mx",
+  "eg",
+  "tr",
+  "ph",
+  "ma",
+  "gb",
+  "de",
+  "sa",
+  "ae",
+  "ir",
+];
 function pickCountry(): CC | undefined {
   const r = Math.random();
   if (r < 0.42) return "in";
@@ -665,14 +738,14 @@ function pickCountry(): CC | undefined {
 // Deterministic initial rows so SSR + client hydration match exactly.
 // Hardcoded (no Math.random) — makeRecentPayout is used only for client-side updates.
 const INITIAL_PAYOUTS: Payout[] = [
-  { user: "arjun.k***",   country: "in", amount: 42.50, method: "USDT TRC20", minutesAgo: 3 },
-  { user: "hassan.a***",  country: "pk", amount: 28.10, method: "USDT BEP20", minutesAgo: 11 },
-  { user: "rakib.h***",   country: "bd", amount: 55.00, method: "USDT TRC20", minutesAgo: 24 },
-  { user: "michael.b***", country: "us", amount: 47.20, method: "USDT TRC20", minutesAgo: 47 },
-  { user: "rahul.m***",   country: "in", amount: 18.75, method: "USDT BEP20", minutesAgo: 82 },
-  { user: "chinedu.o***", country: "ng", amount: 22.40, method: "USDT TRC20", minutesAgo: 130 },
-  { user: "bilal.k***",   country: "pk", amount: 34.90, method: "USDT BEP20", minutesAgo: 210 },
-  { user: "budi.s***",    country: "id", amount: 15.30, method: "USDT TRC20", minutesAgo: 340 },
+  { user: "arjun.k***", country: "in", amount: 42.5, method: "USDT TRC20", minutesAgo: 3 },
+  { user: "hassan.a***", country: "pk", amount: 28.1, method: "USDT BEP20", minutesAgo: 11 },
+  { user: "rakib.h***", country: "bd", amount: 55.0, method: "USDT TRC20", minutesAgo: 24 },
+  { user: "michael.b***", country: "us", amount: 47.2, method: "USDT TRC20", minutesAgo: 47 },
+  { user: "rahul.m***", country: "in", amount: 18.75, method: "USDT BEP20", minutesAgo: 82 },
+  { user: "chinedu.o***", country: "ng", amount: 22.4, method: "USDT TRC20", minutesAgo: 130 },
+  { user: "bilal.k***", country: "pk", amount: 34.9, method: "USDT BEP20", minutesAgo: 210 },
+  { user: "budi.s***", country: "id", amount: 15.3, method: "USDT TRC20", minutesAgo: 340 },
 ];
 function buildInitial(): Payout[] {
   return INITIAL_PAYOUTS;
@@ -706,10 +779,10 @@ function RecentPayouts() {
         <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight">
           Real publishers. <span className="text-gradient">Real withdrawals.</span>
         </h2>
-        <p className="text-muted-foreground text-sm">Publishers withdrawing from all around the world.</p>
+        <p className="text-muted-foreground text-sm">
+          Publishers withdrawing from all around the world.
+        </p>
       </div>
-
-
 
       <div className="max-w-3xl mx-auto rounded-2xl border border-border bg-card overflow-hidden shadow-card">
         <div className="hidden sm:grid grid-cols-[1fr_1fr_auto_auto] gap-4 px-5 py-3 border-b border-border/60 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
@@ -718,44 +791,68 @@ function RecentPayouts() {
           <div className="text-right">Amount</div>
           <div className="text-right">When</div>
         </div>
-        {visible.length === 0 ? (
-          // Skeleton rows — server renders these; client swaps in real payouts after mount.
-          Array.from({ length: 8 }).map((_, i) => (
-            <div key={`sk-${i}`} className="px-4 sm:px-5 py-3 border-b border-border/40 last:border-b-0">
-              <div className="h-4 rounded bg-muted/50 animate-pulse" />
-            </div>
-          ))
-        ) : (
-          visible.map((p, i) => (
-            <div key={`${p.user}-${i}`} className="px-4 sm:px-5 py-3 border-b border-border/40 last:border-b-0 text-sm">
-              {/* Mobile */}
-              <div className="flex items-center gap-2.5 sm:hidden">
-                <img src={`https://flagcdn.com/${p.country}.svg`} alt={p.country.toUpperCase()} loading="lazy" className="h-3.5 w-5 rounded-[2px] border border-border/60 object-cover shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <div className="font-mono text-xs truncate">{p.user}</div>
-                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground"><Bitcoin className="h-3 w-3" />{p.method} · {formatWhen(p.minutesAgo)}</div>
-                </div>
-                <div className="text-right font-display font-semibold text-success shrink-0">+${p.amount.toFixed(2)}</div>
+        {visible.length === 0
+          ? // Skeleton rows — server renders these; client swaps in real payouts after mount.
+            Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={`sk-${i}`}
+                className="px-4 sm:px-5 py-3 border-b border-border/40 last:border-b-0"
+              >
+                <div className="h-4 rounded bg-muted/50 animate-pulse" />
               </div>
-              {/* Desktop */}
-              <div className="hidden sm:grid grid-cols-[1fr_1fr_auto_auto] gap-4 items-center">
-                <div className="flex items-center gap-2.5">
-                  <img src={`https://flagcdn.com/${p.country}.svg`} alt={p.country.toUpperCase()} loading="lazy" className="h-3.5 w-5 rounded-[2px] border border-border/60 object-cover shrink-0" />
-                  <span className="font-mono">{p.user}</span>
+            ))
+          : visible.map((p, i) => (
+              <div
+                key={`${p.user}-${i}`}
+                className="px-4 sm:px-5 py-3 border-b border-border/40 last:border-b-0 text-sm"
+              >
+                {/* Mobile */}
+                <div className="flex items-center gap-2.5 sm:hidden">
+                  <img
+                    src={`https://flagcdn.com/${p.country}.svg`}
+                    alt={p.country.toUpperCase()}
+                    loading="lazy"
+                    className="h-3.5 w-5 rounded-[2px] border border-border/60 object-cover shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-mono text-xs truncate">{p.user}</div>
+                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <Bitcoin className="h-3 w-3" />
+                      {p.method} · {formatWhen(p.minutesAgo)}
+                    </div>
+                  </div>
+                  <div className="text-right font-display font-semibold text-success shrink-0">
+                    +${p.amount.toFixed(2)}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-muted-foreground"><Bitcoin className="h-3.5 w-3.5" />{p.method}</div>
-                <div className="text-right font-display font-semibold text-success">+${p.amount.toFixed(2)}</div>
-                <div className="text-right text-xs text-muted-foreground">{formatWhen(p.minutesAgo)}</div>
+                {/* Desktop */}
+                <div className="hidden sm:grid grid-cols-[1fr_1fr_auto_auto] gap-4 items-center">
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src={`https://flagcdn.com/${p.country}.svg`}
+                      alt={p.country.toUpperCase()}
+                      loading="lazy"
+                      className="h-3.5 w-5 rounded-[2px] border border-border/60 object-cover shrink-0"
+                    />
+                    <span className="font-mono">{p.user}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Bitcoin className="h-3.5 w-3.5" />
+                    {p.method}
+                  </div>
+                  <div className="text-right font-display font-semibold text-success">
+                    +${p.amount.toFixed(2)}
+                  </div>
+                  <div className="text-right text-xs text-muted-foreground">
+                    {formatWhen(p.minutesAgo)}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))
-        )}
+            ))}
       </div>
-
     </section>
   );
 }
-
 
 /* ─────────────────────────────────────────────── FAQ */
 function FaqStrip() {
@@ -813,9 +910,7 @@ function FaqStrip() {
               />
             </div>
             {open === i && (
-              <p className="text-sm text-muted-foreground leading-relaxed mt-3">
-                {f.a}
-              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-3">{f.a}</p>
             )}
           </button>
         ))}

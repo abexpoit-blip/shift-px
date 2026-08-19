@@ -84,7 +84,13 @@ function getReadyClient(): Redis | null {
   const c = getClient();
   if (!c) return null;
   if (c.status !== "ready") return null;
-  const stream = (c as unknown as { connector?: { stream?: NodeJS.WritableStream & { destroyed?: boolean; writableEnded?: boolean } } }).connector?.stream;
+  const stream = (
+    c as unknown as {
+      connector?: {
+        stream?: NodeJS.WritableStream & { destroyed?: boolean; writableEnded?: boolean };
+      };
+    }
+  ).connector?.stream;
   if (!stream || stream.destroyed || stream.writableEnded || !stream.writable) {
     dropClient();
     return null;

@@ -5,9 +5,7 @@ export const Route = createFileRoute("/blog")({
   // The leaf (/blog index or /blog/$slug) owns canonical + og:url so child
   // pages don't inherit a /blog canonical.
   head: () => ({
-    meta: [
-      { property: "og:type", content: "website" },
-    ],
+    meta: [{ property: "og:type", content: "website" }],
   }),
   component: () => <Outlet />,
 });

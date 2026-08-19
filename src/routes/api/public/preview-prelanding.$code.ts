@@ -17,7 +17,8 @@ import {
 
 function extractTags(html: string) {
   const out: Record<string, string> = {};
-  const metaRe = /<meta\s+[^>]*?(?:property|name)\s*=\s*["']([^"']+)["'][^>]*?content\s*=\s*["']([^"']*)["'][^>]*>/gi;
+  const metaRe =
+    /<meta\s+[^>]*?(?:property|name)\s*=\s*["']([^"']+)["'][^>]*?content\s*=\s*["']([^"']*)["'][^>]*>/gi;
   let m: RegExpExecArray | null;
   while ((m = metaRe.exec(html))) out[m[1]] = m[2];
   const titleMatch = /<title>([^<]*)<\/title>/i.exec(html);
@@ -40,14 +41,14 @@ export const Route = createFileRoute("/api/public/preview-prelanding/$code")({
         // Resolve origin for og:url/canonical. Default = public request origin
         // rebuilt from forwarded headers (request.url is the upstream localhost
         // URL behind nginx). hostOverride lets you simulate a different host.
-        const fwdHost = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+        const fwdHost =
+          request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
         const fwdProto = (request.headers.get("x-forwarded-proto") || "https").split(",")[0].trim();
         let origin = fwdHost ? `${fwdProto}://${fwdHost.split(",")[0].trim()}` : url.origin;
         if (hostOverride) {
           const proto = hostOverride.startsWith("localhost") ? "http" : "https";
           origin = `${proto}://${hostOverride.replace(/^https?:\/\//, "").replace(/\/+$/, "")}`;
         }
-
 
         // Look up the link's stored template (admin client — public endpoint,
         // returns only template name; no PII / no destination URL).
@@ -75,17 +76,20 @@ export const Route = createFileRoute("/api/public/preview-prelanding/$code")({
 
         if (format === "json") {
           const tags = extractTags(html);
-          return Response.json({
-            code,
-            template,
-            origin,
-            canonicalMatches: tags["og:url"] === `${origin}/${code}`,
-            tags,
-            sizeBytes: html.length,
-            html,
-          }, {
-            headers: { "cache-control": "no-store" },
-          });
+          return Response.json(
+            {
+              code,
+              template,
+              origin,
+              canonicalMatches: tags["og:url"] === `${origin}/${code}`,
+              tags,
+              sizeBytes: html.length,
+              html,
+            },
+            {
+              headers: { "cache-control": "no-store" },
+            },
+          );
         }
 
         return new Response(html, {
@@ -94,7 +98,6 @@ export const Route = createFileRoute("/api/public/preview-prelanding/$code")({
             "content-type": "text/html; charset=utf-8",
             "cache-control": "no-store",
             "x-robots-tag": "noindex, nofollow",
-
           },
         });
       },

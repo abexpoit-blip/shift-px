@@ -8,7 +8,11 @@ export const getCohortRetention = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const gate = await checkPaidAccess(context.supabase, context.userId);
     if (!gate.allowed) {
-      return { rows: [] as Array<{ day: string; size: number; d1: number; d7: number; d30: number }>, locked: true, plan: gate.plan };
+      return {
+        rows: [] as Array<{ day: string; size: number; d1: number; d7: number; d30: number }>,
+        locked: true,
+        plan: gate.plan,
+      };
     }
     const res = await loadCohortRetention(context);
     return { ...res, locked: false, plan: gate.plan };

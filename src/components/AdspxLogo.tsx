@@ -93,23 +93,13 @@ function MarkTile({ idPrefix }: { idPrefix: string }) {
 
       {/* Base rounded tile */}
       <rect width="40" height="40" rx="11" fill={`url(#${gid})`}>
-        <animate
-          attributeName="opacity"
-          values="0.96;1;0.96"
-          dur="3.6s"
-          repeatCount="indefinite"
-        />
+        <animate attributeName="opacity" values="0.96;1;0.96" dur="3.6s" repeatCount="indefinite" />
       </rect>
 
       {/* Sweeping sheen */}
       <g clipPath={`url(#${cid})`}>
         <rect x="-40" y="0" width="22" height="40" fill={`url(#${sid})`} transform="skewX(-18)">
-          <animate
-            attributeName="x"
-            values="-40;60"
-            dur="4.5s"
-            repeatCount="indefinite"
-          />
+          <animate attributeName="x" values="-40;60" dur="4.5s" repeatCount="indefinite" />
         </rect>
       </g>
 
@@ -145,13 +135,31 @@ function MarkTile({ idPrefix }: { idPrefix: string }) {
           <animate attributeName="opacity" values="0.2;1;0.2" dur="2.4s" repeatCount="indefinite" />
         </rect>
         <rect x="33.5" y="4.5" width="1.6" height="1.6" rx="0.3" fill="#fff" opacity="0.7">
-          <animate attributeName="opacity" values="1;0.15;1" dur="2.4s" begin="0.4s" repeatCount="indefinite" />
+          <animate
+            attributeName="opacity"
+            values="1;0.15;1"
+            dur="2.4s"
+            begin="0.4s"
+            repeatCount="indefinite"
+          />
         </rect>
         <rect x="33.5" y="33.5" width="2.2" height="2.2" rx="0.4" fill="#fff" opacity="0.85">
-          <animate attributeName="opacity" values="0.25;1;0.25" dur="2.4s" begin="0.8s" repeatCount="indefinite" />
+          <animate
+            attributeName="opacity"
+            values="0.25;1;0.25"
+            dur="2.4s"
+            begin="0.8s"
+            repeatCount="indefinite"
+          />
         </rect>
         <rect x="5" y="33.6" width="1.4" height="1.4" rx="0.3" fill="#fff" opacity="0.6">
-          <animate attributeName="opacity" values="1;0.2;1" dur="2.4s" begin="1.2s" repeatCount="indefinite" />
+          <animate
+            attributeName="opacity"
+            values="1;0.2;1"
+            dur="2.4s"
+            begin="1.2s"
+            repeatCount="indefinite"
+          />
         </rect>
       </g>
     </>
@@ -166,11 +174,7 @@ export function AdspxMark({ className, glow = true }: LogoMarkProps) {
       role="img"
       aria-label="AdsPx"
       className={`block h-8 w-8 shrink-0 ${className ?? ""}`}
-      style={
-        glow
-          ? { filter: "drop-shadow(0 8px 18px oklch(0.55 0.22 280 / 32%))" }
-          : undefined
-      }
+      style={glow ? { filter: "drop-shadow(0 8px 18px oklch(0.55 0.22 280 / 32%))" } : undefined}
     >
       <MarkTile idPrefix="adspx-mark" />
     </svg>

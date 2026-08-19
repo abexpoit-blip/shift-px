@@ -1,25 +1,25 @@
-const crypto = require('crypto');
+const crypto = require("crypto");
 
 function decodeJwt(token) {
-  const parts = token.split('.');
+  const parts = token.split(".");
   if (parts.length !== 3) return null;
-  return JSON.parse(Buffer.from(parts[1], 'base64').toString());
+  return JSON.parse(Buffer.from(parts[1], "base64").toString());
 }
 
 function verifyJwt(token, secret) {
-  const parts = token.split('.');
+  const parts = token.split(".");
   const header = parts[0];
   const payload = parts[1];
   const signature = parts[2];
-  
+
   const expectedSignature = crypto
-    .createHmac('sha256', secret)
+    .createHmac("sha256", secret)
     .update(`${header}.${payload}`)
-    .digest('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
-    
+    .digest("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
+
   return signature === expectedSignature;
 }
 

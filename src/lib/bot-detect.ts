@@ -16,6 +16,12 @@ export interface DetectInput {
   acceptEncoding: string;
   secChUa: string;
   ja3: string;
+  // Advanced: fetch metadata headers (missing on headless/curl tools)
+  secFetchSite: string;   // "cross-site" | "same-origin" | "none" | ""
+  secFetchMode: string;   // "navigate" | "no-cors" | "cors" | ""
+  secFetchDest: string;   // "document" | "empty" | ""
+  dnt: string;            // "1" | ""
+  connection: string;     // "keep-alive" | "close" | ""
 }
 
 export interface DetectSignals {
@@ -127,6 +133,52 @@ export function analyzeSignals(input: DetectInput): DetectSignals {
   // Accept-Language empty + datacenter ASN combo → strong bot
   if (!input.acceptLanguage && input.asn) {
     score += 10;
+  }
+
+  // ── Advanced: Fetch Metadata Headers ──────────────────────────────────────
+  // Real browser navigations (clicking a link) ALWAYS send:
+  //   Sec-Fetch-Site: cross-site  (navigating from FB to our domain)
+  //   Sec-Fetch-Mode: navigate
+  //   Sec-Fetch-Dest: document
+  // Headless Chrome, curl, Python requests, and FB's monitoring scanner all
+  // miss at least one of these. Adding these catches the spoofed-UA reviewer
+  // case even when the UA string is a perfect phone fingerprint copy.
+  //
+  // Score: 15 per missing header, max 35 so a single missing header alone
+  // is not enough to block — requires another weak signal to cross 80.
+  const claimsModernChrome = /chrome\/[1-9][0-9]/i.test(uaLow); // Chrome 10+
+  if (claimsModernChrome) {
+    // Modern Chrome ALWAYS sends Sec-Fetch-* on navigations. Missing = probe.
+    if (!input.secFetchSite) {
+      score += 15;
+      reasons.push("no-sec-fetch-site");
+    }
+    if (!input.secFetchMode) {
+      score += 15;
+      reasons.push("no-sec-fetch-mode");
+    }
+    // Sec-Fetch-Mode is set but claims non-navigation mode on a top-level request
+    if (input.secFetchMode && input.secFetchMode !== "navigate" && !input.referer) {
+      score += 10;
+      reasons.push("wrong-fetch-mode");
+    }
+  }
+
+  // DNT=1 + no sec-ch-ua: privacy users who strip tracking almost always
+  // still send sec-ch-ua (it's part of the UA Client Hints spec, not tracking).
+  // But scrapers that manually set DNT=1 to look privacy-conscious typically
+  // don't send sec-ch-ua (they just copy a UA string). Delta = 10 pts.
+  if (input.dnt === "1" && claimsChrome && !input.secChUa) {
+    score += 10;
+    reasons.push("dnt-no-ch-ua");
+  }
+
+  // HTTP/1.1 Connection header: real Chrome 100+ always uses HTTP/2 (no
+  // Connection header — it's forbidden in H2). A `connection: keep-alive`
+  // header on a claimed-modern-Chrome request = HTTP/1.1 downgrade = script.
+  if (claimsModernChrome && /keep-alive|close/i.test(input.connection)) {
+    score += 10;
+    reasons.push("h1-connection");
   }
 
   const isDirectHit = !input.referer;

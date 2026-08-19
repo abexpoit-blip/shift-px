@@ -56,18 +56,38 @@ async function dohQuery(name: string, type: "A" | "TXT" | "CNAME" | "NS"): Promi
 // Registrar / DNS provider hints from nameservers, for a tailored 1-click guide.
 function detectProvider(nameservers: string[]): { id: string; label: string; dashUrl: string } {
   const ns = nameservers.join(" ").toLowerCase();
-  if (ns.includes("cloudflare")) return { id: "cloudflare", label: "Cloudflare", dashUrl: "https://dash.cloudflare.com/" };
+  if (ns.includes("cloudflare"))
+    return { id: "cloudflare", label: "Cloudflare", dashUrl: "https://dash.cloudflare.com/" };
   if (ns.includes("registrar-servers.com") || ns.includes("namecheaphosting"))
-    return { id: "namecheap", label: "Namecheap", dashUrl: "https://ap.www.namecheap.com/domains/list/" };
+    return {
+      id: "namecheap",
+      label: "Namecheap",
+      dashUrl: "https://ap.www.namecheap.com/domains/list/",
+    };
   if (ns.includes("domaincontrol.com") || ns.includes("godaddy"))
     return { id: "godaddy", label: "GoDaddy", dashUrl: "https://dcc.godaddy.com/manage/dns" };
-  if (ns.includes("namesilo")) return { id: "namesilo", label: "Namesilo", dashUrl: "https://www.namesilo.com/account_domains.php" };
+  if (ns.includes("namesilo"))
+    return {
+      id: "namesilo",
+      label: "Namesilo",
+      dashUrl: "https://www.namesilo.com/account_domains.php",
+    };
   if (ns.includes("hostinger") || ns.includes("hostgator"))
     return { id: "hostinger", label: "Hostinger", dashUrl: "https://hpanel.hostinger.com/domains" };
-  if (ns.includes("dnsimple")) return { id: "dnsimple", label: "DNSimple", dashUrl: "https://dnsimple.com/" };
-  if (ns.includes("awsdns")) return { id: "route53", label: "AWS Route 53", dashUrl: "https://console.aws.amazon.com/route53/" };
+  if (ns.includes("dnsimple"))
+    return { id: "dnsimple", label: "DNSimple", dashUrl: "https://dnsimple.com/" };
+  if (ns.includes("awsdns"))
+    return {
+      id: "route53",
+      label: "AWS Route 53",
+      dashUrl: "https://console.aws.amazon.com/route53/",
+    };
   if (ns.includes("google") || ns.includes("googledomains"))
-    return { id: "google", label: "Google Domains", dashUrl: "https://domains.google.com/registrar" };
+    return {
+      id: "google",
+      label: "Google Domains",
+      dashUrl: "https://domains.google.com/registrar",
+    };
   return { id: "other", label: "Your DNS provider", dashUrl: "" };
 }
 
@@ -161,18 +181,20 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
     ]);
 
     const txtOk = txtAnswers.some((v) => v.includes(row.verification_token));
-    const cnameTarget = cnameAnswers.find((v) => v.toLowerCase().includes(CNAME_TARGET)) ?? cnameAnswers[0] ?? "";
+    const cnameTarget =
+      cnameAnswers.find((v) => v.toLowerCase().includes(CNAME_TARGET)) ?? cnameAnswers[0] ?? "";
     const cnameOk = !!cnameAnswers.find((v) => v.toLowerCase().includes(CNAME_TARGET));
 
     // Fallback: some registrars flatten subdomain CNAMEs into A records at edge.
     // If A record resolves to a Cloudflare/Adspx-fronted IP, treat as OK.
-    const aOk = aAnswers.length > 0 && cnameAnswers.length === 0
-      ? await (async () => {
-          // Look up A record of CNAME_TARGET; consider OK if they match.
-          const targetA = await dohQuery(CNAME_TARGET, "A");
-          return targetA.some((ip) => aAnswers.includes(ip));
-        })()
-      : false;
+    const aOk =
+      aAnswers.length > 0 && cnameAnswers.length === 0
+        ? await (async () => {
+            // Look up A record of CNAME_TARGET; consider OK if they match.
+            const targetA = await dohQuery(CNAME_TARGET, "A");
+            return targetA.some((ip) => aAnswers.includes(ip));
+          })()
+        : false;
 
     const pointsOk = cnameOk || aOk;
     const provider = detectProvider(nsAnswers);
@@ -188,7 +210,8 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
     if (!txtOk && !pointsOk) {
       return {
         ok: false,
-        message: "DNS records not detected yet. Add both records at your registrar and try again in 1–2 minutes.",
+        message:
+          "DNS records not detected yet. Add both records at your registrar and try again in 1–2 minutes.",
         ...base,
       };
     }
@@ -209,10 +232,18 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
 
     await supabase
       .from("custom_domains")
-      .update({ verified: true, verified_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .update({
+        verified: true,
+        verified_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", row.id);
 
-    return { ok: true, message: "Domain verified successfully! You can now use it for your links.", ...base };
+    return {
+      ok: true,
+      message: "Domain verified successfully! You can now use it for your links.",
+      ...base,
+    };
   });
 
 export const deleteCustomDomain = createServerFn({ method: "POST" })

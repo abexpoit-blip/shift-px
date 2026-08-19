@@ -37,7 +37,11 @@ export function campaignDiscountPct(): number {
  * Effective price for a package. Returns the base price unchanged when the
  * campaign is over or the package is not part of the promo.
  */
-export function campaignPriceFor(slug: string, basePrice: number, now: number = Date.now()): number {
+export function campaignPriceFor(
+  slug: string,
+  basePrice: number,
+  now: number = Date.now(),
+): number {
   const s = (slug || "").toLowerCase();
   const promoSlug = CAMPAIGN.slug;
   const matches = s === promoSlug || (promoSlug === "lifetime" && s === "unlimited");

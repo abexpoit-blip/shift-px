@@ -65,7 +65,9 @@ export const Route = createFileRoute("/shop/$slug")({
               "@type": "Offer",
               price: p.price,
               priceCurrency: "USD",
-              availability: p.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+              availability: p.inStock
+                ? "https://schema.org/InStock"
+                : "https://schema.org/OutOfStock",
               url: absoluteUrl(origin, `/shop/${params.slug}`),
               itemCondition: "https://schema.org/NewCondition",
             },
@@ -83,8 +85,12 @@ export const Route = createFileRoute("/shop/$slug")({
   notFoundComponent: () => (
     <BreezyLayout>
       <div className="max-w-2xl mx-auto px-6 py-32 text-center">
-        <h1 className="text-3xl mb-4" style={{ fontFamily: "'Instrument Serif', serif" }}>Product not found</h1>
-        <Link to="/shop" className="text-[#5A7A55] hover:underline">← Back to shop</Link>
+        <h1 className="text-3xl mb-4" style={{ fontFamily: "'Instrument Serif', serif" }}>
+          Product not found
+        </h1>
+        <Link to="/shop" className="text-[#5A7A55] hover:underline">
+          ← Back to shop
+        </Link>
       </div>
     </BreezyLayout>
   ),
@@ -93,8 +99,13 @@ export const Route = createFileRoute("/shop/$slug")({
 function ProductPage() {
   const { product } = Route.useLoaderData();
   const p = product as Product;
-  const related: Product[] = PRODUCTS.filter((x) => x.slug !== p.slug && x.category === p.category).slice(0, 3);
-  const fillerRelated: Product[] = related.length < 3 ? PRODUCTS.filter((x) => x.slug !== p.slug).slice(0, 3 - related.length) : [];
+  const related: Product[] = PRODUCTS.filter(
+    (x) => x.slug !== p.slug && x.category === p.category,
+  ).slice(0, 3);
+  const fillerRelated: Product[] =
+    related.length < 3
+      ? PRODUCTS.filter((x) => x.slug !== p.slug).slice(0, 3 - related.length)
+      : [];
   const recommended: Product[] = [...related, ...fillerRelated].slice(0, 3);
   const reviews = getReviews(p.slug);
   const cart = useCart();
@@ -115,9 +126,13 @@ function ProductPage() {
     <BreezyLayout>
       <div className="max-w-6xl mx-auto px-6 py-12">
         <nav className="text-xs text-[#9A9488] mb-8">
-          <Link to="/" className="hover:text-[#5A7A55]">Home</Link>
+          <Link to="/" className="hover:text-[#5A7A55]">
+            Home
+          </Link>
           <span className="mx-2">/</span>
-          <Link to="/shop" className="hover:text-[#5A7A55]">Shop</Link>
+          <Link to="/shop" className="hover:text-[#5A7A55]">
+            Shop
+          </Link>
           <span className="mx-2">/</span>
           <span className="text-[#5A554C]">{p.name}</span>
         </nav>
@@ -138,13 +153,20 @@ function ProductPage() {
           </div>
 
           <div>
-            <div className="text-xs uppercase tracking-wider text-[#7D9B76] font-semibold mb-2">{p.category}</div>
-            <h1 className="text-4xl md:text-5xl text-[#2A2A28] mb-4" style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}>
+            <div className="text-xs uppercase tracking-wider text-[#7D9B76] font-semibold mb-2">
+              {p.category}
+            </div>
+            <h1
+              className="text-4xl md:text-5xl text-[#2A2A28] mb-4"
+              style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
+            >
               {p.name}
             </h1>
             <div className="flex items-center gap-3 mb-6">
               <span className="text-[#E8A87C]">★★★★★</span>
-              <span className="text-sm text-[#7A7468]">{p.rating} ({p.reviews.toLocaleString()} reviews)</span>
+              <span className="text-sm text-[#7A7468]">
+                {p.rating} ({p.reviews.toLocaleString()} reviews)
+              </span>
             </div>
             <div className="flex items-baseline gap-3 mb-6">
               <span className="text-4xl font-semibold text-[#2A2A28]">${p.price}</span>
@@ -199,7 +221,10 @@ function ProductPage() {
         </div>
 
         <section className="mt-20 border-t border-[#E8E2D5] pt-12">
-          <h2 className="text-2xl mb-6" style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}>
+          <h2
+            className="text-2xl mb-6"
+            style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
+          >
             Specifications
           </h2>
           <dl className="grid sm:grid-cols-2 gap-x-12 gap-y-4">
@@ -215,13 +240,18 @@ function ProductPage() {
         {reviews.length > 0 && (
           <section className="mt-20 border-t border-[#E8E2D5] pt-12">
             <div className="flex items-baseline justify-between mb-8 flex-wrap gap-3">
-              <h2 className="text-2xl md:text-3xl" style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}>
+              <h2
+                className="text-2xl md:text-3xl"
+                style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
+              >
                 Customer reviews
               </h2>
               <div className="flex items-center gap-3 text-sm">
                 <span className="text-[#E8A87C] text-lg">★★★★★</span>
                 <span className="font-semibold text-[#2A2A28]">{p.rating}</span>
-                <span className="text-[#7A7468]">based on {p.reviews.toLocaleString()} reviews</span>
+                <span className="text-[#7A7468]">
+                  based on {p.reviews.toLocaleString()} reviews
+                </span>
               </div>
             </div>
             <div className="grid md:grid-cols-2 gap-6">
@@ -231,7 +261,11 @@ function ProductPage() {
                     <div>
                       <div className="font-semibold text-[#2A2A28]">{r.author}</div>
                       <div className="text-xs text-[#9A9488] flex items-center gap-2">
-                        {new Date(r.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        {new Date(r.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
                         {r.verified && (
                           <span className="text-[#5A7A55] flex items-center gap-1">
                             <span>✓</span> Verified purchase
@@ -239,7 +273,10 @@ function ProductPage() {
                         )}
                       </div>
                     </div>
-                    <span className="text-[#E8A87C] text-sm">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
+                    <span className="text-[#E8A87C] text-sm">
+                      {"★".repeat(r.rating)}
+                      {"☆".repeat(5 - r.rating)}
+                    </span>
                   </header>
                   <h3 className="font-semibold text-[#2A2A28] mb-2">{r.title}</h3>
                   <p className="text-sm text-[#5A554C] leading-relaxed">{r.body}</p>
@@ -250,7 +287,10 @@ function ProductPage() {
         )}
 
         <section className="mt-20">
-          <h2 className="text-2xl mb-6" style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}>
+          <h2
+            className="text-2xl mb-6"
+            style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
+          >
             You may also like
           </h2>
           <div className="grid sm:grid-cols-3 gap-6">

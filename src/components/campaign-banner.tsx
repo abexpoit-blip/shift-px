@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
 import { Crown, Sparkles, PartyPopper, Timer } from "lucide-react";
-import {
-  CAMPAIGN,
-  campaignDiscountPct,
-  campaignEndsAtMs,
-  isCampaignActive,
-} from "@/lib/campaign";
+import { CAMPAIGN, campaignDiscountPct, campaignEndsAtMs, isCampaignActive } from "@/lib/campaign";
 
 function useCountdown(target: number) {
   const [left, setLeft] = useState(() => Math.max(0, target - Date.now()));
@@ -29,7 +24,9 @@ function Unit({ value, label }: { value: number; label: string }) {
       <div className="min-w-[54px] rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 px-3 py-2 text-2xl sm:text-3xl font-extrabold tabular-nums text-white shadow-[0_8px_24px_-12px_rgba(0,0,0,0.4)]">
         {String(value).padStart(2, "0")}
       </div>
-      <span className="mt-1.5 text-[9px] font-bold uppercase tracking-widest text-white/75">{label}</span>
+      <span className="mt-1.5 text-[9px] font-bold uppercase tracking-widest text-white/75">
+        {label}
+      </span>
     </div>
   );
 }
@@ -68,14 +65,17 @@ export function CampaignBanner({ onClaim }: { onClaim?: () => void }) {
             <br />
             <span className="text-white/90">Lifetime for just </span>
             <span className="inline-flex items-baseline gap-2">
-              <span className="text-white/60 line-through text-2xl sm:text-4xl">${CAMPAIGN.originalPrice}</span>
+              <span className="text-white/60 line-through text-2xl sm:text-4xl">
+                ${CAMPAIGN.originalPrice}
+              </span>
               <span className="text-white">${CAMPAIGN.price}</span>
             </span>
           </h2>
 
           <p className="text-white/85 text-base max-w-xl">
-            {CAMPAIGN.subtitle}. Unlimited links, unlimited clicks, elite Bot Shield & priority support —
-            <strong className="font-extrabold"> save {campaignDiscountPct()}%</strong> for the next 7 days only.
+            {CAMPAIGN.subtitle}. Unlimited links, unlimited clicks, elite Bot Shield & priority
+            support —<strong className="font-extrabold"> save {campaignDiscountPct()}%</strong> for
+            the next 7 days only.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-1">

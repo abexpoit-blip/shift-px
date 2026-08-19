@@ -5,24 +5,29 @@
 // This helper avoids Node-only top-level imports so it stays safe when the file
 // is statically reachable from server function modules.
 
-async function requestOverIpv4(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+async function requestOverIpv4(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
   const [{ request: httpsRequest, Agent }, { URL: NodeURL }] = await Promise.all([
     import("node:https"),
     import("node:url"),
   ]);
 
-  const source = input instanceof Request
-    ? input.url
-    : input instanceof URL
-      ? input.toString()
-      : String(input);
+  const source =
+    input instanceof Request ? input.url : input instanceof URL ? input.toString() : String(input);
 
   const url = new NodeURL(source);
   const method = init.method ?? (input instanceof Request ? input.method : "GET");
   const headers = new Headers(input instanceof Request ? input.headers : init.headers);
   const body = init.body ?? (input instanceof Request ? input.body : undefined);
 
-  if (body && typeof body !== "string" && !(body instanceof Uint8Array) && !(body instanceof ArrayBuffer)) {
+  if (
+    body &&
+    typeof body !== "string" &&
+    !(body instanceof Uint8Array) &&
+    !(body instanceof ArrayBuffer)
+  ) {
     throw new Error("fetchIpv4 currently supports string and binary request bodies only");
   }
 
@@ -74,7 +79,6 @@ async function requestOverIpv4(input: RequestInfo | URL, init: RequestInit = {})
             }),
           );
         });
-
       },
     );
 
@@ -94,7 +98,6 @@ async function requestOverIpv4(input: RequestInfo | URL, init: RequestInit = {})
     if (bodyBuffer) req.write(bodyBuffer);
     req.end();
   });
-
 }
 
 export const fetchIpv4: typeof fetch = (async (input: any, init: any = {}) => {

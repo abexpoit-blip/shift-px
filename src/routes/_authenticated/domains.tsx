@@ -3,8 +3,20 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect, useRef } from "react";
 import {
-  Globe, Plus, Check, X, Copy, Trash2, ShieldCheck, AlertCircle, Crown, RefreshCw,
-  ExternalLink, HelpCircle, Sparkles, Loader2,
+  Globe,
+  Plus,
+  Check,
+  X,
+  Copy,
+  Trash2,
+  ShieldCheck,
+  AlertCircle,
+  Crown,
+  RefreshCw,
+  ExternalLink,
+  HelpCircle,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import {
   listCustomDomains,
@@ -52,7 +64,10 @@ function DomainsPage() {
     mutationFn: (domain: string) => addFn({ data: { domain } }),
     onSuccess: (res: any) => {
       setNewDomain("");
-      setActionMsg({ type: "ok", text: "Domain added! Now add the 2 DNS records below. We'll auto-check every 6 seconds." });
+      setActionMsg({
+        type: "ok",
+        text: "Domain added! Now add the 2 DNS records below. We'll auto-check every 6 seconds.",
+      });
       qc.invalidateQueries({ queryKey: ["custom-domains"] });
       setAutoPollId(res.id); // start auto-verify polling
     },
@@ -75,7 +90,9 @@ function DomainsPage() {
   });
 
   if (q.isLoading) {
-    return <div className="min-h-screen flex items-center justify-center text-[#7D6452]">Loading…</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center text-[#7D6452]">Loading…</div>
+    );
   }
 
   if (q.isError) {
@@ -84,7 +101,12 @@ function DomainsPage() {
         <div className="p-8 rounded-3xl bg-rose-50 border border-rose-200 text-rose-700">
           <h2 className="font-bold mb-2">Could not load domains</h2>
           <p className="text-sm">{(q.error as Error)?.message ?? "Unknown error"}</p>
-          <button onClick={() => q.refetch()} className="mt-4 px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-bold">Retry</button>
+          <button
+            onClick={() => q.refetch()}
+            className="mt-4 px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-bold"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -93,17 +115,22 @@ function DomainsPage() {
   const data = q.data;
   if (!data) return null;
 
-
   return (
     <div className="p-6 lg:p-10 space-y-8 max-w-[1200px] mx-auto">
       <header>
-        <p className="text-[10px] uppercase tracking-[0.3em] text-[#FF7E5F] font-bold mb-2">Branded Links</p>
-        <h1 className="text-3xl lg:text-4xl font-bold text-[#2D1B0D] tracking-tight" style={display}>
+        <p className="text-[10px] uppercase tracking-[0.3em] text-[#FF7E5F] font-bold mb-2">
+          Branded Links
+        </p>
+        <h1
+          className="text-3xl lg:text-4xl font-bold text-[#2D1B0D] tracking-tight"
+          style={display}
+        >
           Custom Domains
         </h1>
         <p className="text-[#5D4538] text-sm mt-2 max-w-2xl">
           Serve your smart links from your own domain. Add a subdomain like{" "}
-          <span className="font-mono text-[#2D1B0D]">go.yoursite.com</span>, add 2 DNS records — we handle the rest automatically.
+          <span className="font-mono text-[#2D1B0D]">go.yoursite.com</span>, add 2 DNS records — we
+          handle the rest automatically.
         </p>
       </header>
 
@@ -112,7 +139,10 @@ function DomainsPage() {
 
       {/* Add domain */}
       <section className="p-6 rounded-3xl bg-white/85 border border-white/90 backdrop-blur-2xl shadow-[0_8px_30px_rgba(255,126,95,0.08)]">
-        <h2 className="text-sm font-bold text-[#2D1B0D] uppercase tracking-wider mb-4" style={display}>
+        <h2
+          className="text-sm font-bold text-[#2D1B0D] uppercase tracking-wider mb-4"
+          style={display}
+        >
           <Sparkles className="inline w-4 h-4 mr-1.5 -mt-0.5 text-[#FF7E5F]" />
           Add a new domain
         </h2>
@@ -139,12 +169,18 @@ function DomainsPage() {
             disabled={!newDomain.trim() || add.isPending}
             className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white font-bold shadow-lg shadow-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] transition-transform"
           >
-            {add.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            {add.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
             {add.isPending ? "Adding…" : "Add domain"}
           </button>
         </form>
         <p className="mt-3 text-xs text-[#7D6452]">
-          Tip: use a <span className="font-semibold text-[#2D1B0D]">subdomain</span> like <span className="font-mono">go.</span> or <span className="font-mono">link.</span> — keeps your main site untouched.
+          Tip: use a <span className="font-semibold text-[#2D1B0D]">subdomain</span> like{" "}
+          <span className="font-mono">go.</span> or <span className="font-mono">link.</span> — keeps
+          your main site untouched.
         </p>
         {actionMsg && (
           <div
@@ -154,7 +190,11 @@ function DomainsPage() {
                 : "bg-rose-500/10 border border-rose-400/40 text-rose-700"
             }`}
           >
-            {actionMsg.type === "ok" ? <Check className="w-4 h-4 mt-0.5 shrink-0" /> : <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />}
+            {actionMsg.type === "ok" ? (
+              <Check className="w-4 h-4 mt-0.5 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            )}
             <span>{actionMsg.text}</span>
           </div>
         )}
@@ -165,7 +205,9 @@ function DomainsPage() {
         {data.domains.length === 0 ? (
           <div className="p-10 rounded-3xl bg-white/70 border border-dashed border-[#FFD9C4] text-center">
             <Globe className="w-10 h-10 text-[#FEB47B] mx-auto mb-3" />
-            <p className="text-[#5D4538]">No domains yet. Add your first one above to get started.</p>
+            <p className="text-[#5D4538]">
+              No domains yet. Add your first one above to get started.
+            </p>
           </div>
         ) : (
           data.domains.map((dom: any) => (
@@ -178,7 +220,8 @@ function DomainsPage() {
               onVerified={() => qc.invalidateQueries({ queryKey: ["custom-domains"] })}
               onManualVerify={() => verify.mutate(dom.id)}
               onDelete={() => {
-                if (confirm(`Delete ${dom.domain}? Links using this domain will stop working.`)) del.mutate(dom.id);
+                if (confirm(`Delete ${dom.domain}? Links using this domain will stop working.`))
+                  del.mutate(dom.id);
               }}
               manualVerifying={verify.isPending && verify.variables === dom.id}
             />
@@ -197,7 +240,9 @@ function QuickGuide() {
           <HelpCircle className="w-6 h-6 text-[#FF7E5F]" />
         </div>
         <div>
-          <p className="font-bold text-[#2D1B0D] text-lg" style={display}>How to add your domain</p>
+          <p className="font-bold text-[#2D1B0D] text-lg" style={display}>
+            How to add your domain
+          </p>
           <p className="text-sm text-[#7D6452] mt-0.5">Just 3 easy steps — takes 2 minutes</p>
         </div>
       </div>
@@ -205,40 +250,95 @@ function QuickGuide() {
       {/* MUST READ warning — which domains to buy / not to buy */}
       <div className="rounded-2xl border-2 border-red-400 bg-gradient-to-br from-red-50 to-orange-50 p-4">
         <div className="flex items-center gap-2 mb-3">
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-red-600 text-white text-xs font-bold uppercase tracking-wider animate-pulse">⚠ Must Read</span>
-          <p className="font-bold text-red-900 text-base" style={display}>Domain Buying Rules — Read Before You Buy</p>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-red-600 text-white text-xs font-bold uppercase tracking-wider animate-pulse">
+            ⚠ Must Read
+          </span>
+          <p className="font-bold text-red-900 text-base" style={display}>
+            Domain Buying Rules — Read Before You Buy
+          </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-3">
           {/* GOOD */}
           <div className="rounded-xl bg-white border border-green-300 p-4">
-            <p className="text-sm font-bold text-green-700 mb-2 uppercase tracking-wider">✅ Safe to Buy</p>
+            <p className="text-sm font-bold text-green-700 mb-2 uppercase tracking-wider">
+              ✅ Safe to Buy
+            </p>
             <ul className="text-sm text-[#2D1B0D] space-y-2 leading-relaxed">
-              <li>• <strong>Fresh new domain</strong> (never used before)</li>
-              <li>• <strong>Clean .com / .net / .org / .co</strong> extensions</li>
-              <li>• <strong>Brandable name</strong> (looks like a real business: <em>e.g. shopnex.com, kartly.co</em>)</li>
-              <li>• <strong>Short & easy to spell</strong> (6–14 letters)</li>
-              <li>• <strong>Buy from trusted registrars:</strong> Namecheap, Cloudflare, Namesilo, Porkbun</li>
+              <li>
+                • <strong>Fresh new domain</strong> (never used before)
+              </li>
+              <li>
+                • <strong>Clean .com / .net / .org / .co</strong> extensions
+              </li>
+              <li>
+                • <strong>Brandable name</strong> (looks like a real business:{" "}
+                <em>e.g. shopnex.com, kartly.co</em>)
+              </li>
+              <li>
+                • <strong>Short & easy to spell</strong> (6–14 letters)
+              </li>
+              <li>
+                • <strong>Buy from trusted registrars:</strong> Namecheap, Cloudflare, Namesilo,
+                Porkbun
+              </li>
             </ul>
           </div>
 
           {/* BAD */}
           <div className="rounded-xl bg-white border border-red-300 p-4">
-            <p className="text-sm font-bold text-red-700 mb-2 uppercase tracking-wider">❌ Never Buy</p>
+            <p className="text-sm font-bold text-red-700 mb-2 uppercase tracking-wider">
+              ❌ Never Buy
+            </p>
             <ul className="text-sm text-[#2D1B0D] space-y-2 leading-relaxed">
-              <li>• <strong>Expired / dropped domains</strong> — bad history, may be Meta/Google blacklisted</li>
-              <li>• <strong>Free TLDs:</strong> .tk .ml .ga .cf .gq .xyz .top .click .work .buzz (Facebook auto-flags)</li>
-              <li>• <strong>Copycat / brand names</strong> (amaz0n-shop.com, nikee-store.com — instant ban)</li>
-              <li>• <strong>Numbers/dashes</strong> in name (buy-now-cheap-24.com looks spammy)</li>
-              <li>• <strong>Auction / backorder domains</strong> from GoDaddy Auctions, Sedo (check history first)</li>
-              <li>• <strong>Adult / gambling / crypto</strong> keywords in name</li>
+              <li>
+                • <strong>Expired / dropped domains</strong> — bad history, may be Meta/Google
+                blacklisted
+              </li>
+              <li>
+                • <strong>Free TLDs:</strong> .tk .ml .ga .cf .gq .xyz .top .click .work .buzz
+                (Facebook auto-flags)
+              </li>
+              <li>
+                • <strong>Copycat / brand names</strong> (amaz0n-shop.com, nikee-store.com — instant
+                ban)
+              </li>
+              <li>
+                • <strong>Numbers/dashes</strong> in name (buy-now-cheap-24.com looks spammy)
+              </li>
+              <li>
+                • <strong>Auction / backorder domains</strong> from GoDaddy Auctions, Sedo (check
+                history first)
+              </li>
+              <li>
+                • <strong>Adult / gambling / crypto</strong> keywords in name
+              </li>
             </ul>
           </div>
         </div>
 
         <div className="mt-3 rounded-lg bg-yellow-100 border border-yellow-300 p-3">
           <p className="text-sm text-yellow-900 leading-relaxed">
-            <strong>💡 Pro tip:</strong> Before buying, check the domain on <a href="https://www.facebook.com/debug/" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Facebook Debugger</a> and <a href="https://transparencyreport.google.com/safe-browsing/search" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Google Safe Browsing</a>. If either shows a warning — <strong>do not buy</strong>. Also search the domain on Google — if old spam pages show up, skip it.
+            <strong>💡 Pro tip:</strong> Before buying, check the domain on{" "}
+            <a
+              href="https://www.facebook.com/debug/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline font-semibold"
+            >
+              Facebook Debugger
+            </a>{" "}
+            and{" "}
+            <a
+              href="https://transparencyreport.google.com/safe-browsing/search"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline font-semibold"
+            >
+              Google Safe Browsing
+            </a>
+            . If either shows a warning — <strong>do not buy</strong>. Also search the domain on
+            Google — if old spam pages show up, skip it.
           </p>
         </div>
       </div>
@@ -283,8 +383,12 @@ function GuideStep({ n, title, body }: { n: number; title: string; body: string 
   return (
     <div className="p-4 rounded-2xl bg-white border border-[#FFEDD5]">
       <div className="flex items-center gap-2 mb-2">
-        <span className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF7E5F] to-[#FEB47B] text-white text-base font-bold flex items-center justify-center">{n}</span>
-        <p className="font-bold text-[#2D1B0D] text-base" style={display}>{title}</p>
+        <span className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF7E5F] to-[#FEB47B] text-white text-base font-bold flex items-center justify-center">
+          {n}
+        </span>
+        <p className="font-bold text-[#2D1B0D] text-base" style={display}>
+          {title}
+        </p>
       </div>
       <p className="text-sm text-[#5D4538] leading-relaxed">{body}</p>
     </div>
@@ -311,7 +415,12 @@ function DomainCard({
   manualVerifying: boolean;
 }) {
   const [open, setOpen] = useState(!dom.verified);
-  const [status, setStatus] = useState<{ txtOk: boolean; cnameOk: boolean; provider?: any; message?: string } | null>(null);
+  const [status, setStatus] = useState<{
+    txtOk: boolean;
+    cnameOk: boolean;
+    provider?: any;
+    message?: string;
+  } | null>(null);
   const [polling, setPolling] = useState(false);
   const attemptsRef = useRef(0);
 
@@ -328,14 +437,21 @@ function DomainCard({
       try {
         const res = await verifyFn({ data: { id: dom.id } });
         if (cancelled) return;
-        setStatus({ txtOk: res.txtOk, cnameOk: res.cnameOk, provider: res.provider, message: res.message });
+        setStatus({
+          txtOk: res.txtOk,
+          cnameOk: res.cnameOk,
+          provider: res.provider,
+          message: res.message,
+        });
         if (res.ok) {
           setPolling(false);
           onVerified();
           onStopPoll();
           return;
         }
-      } catch { /* ignore transient */ }
+      } catch {
+        /* ignore transient */
+      }
       if (attemptsRef.current >= 20) {
         setPolling(false);
         onStopPoll();
@@ -344,15 +460,26 @@ function DomainCard({
       setTimeout(tick, 6000);
     };
     const t = setTimeout(tick, 3000); // first check after 3s
-    return () => { cancelled = true; clearTimeout(t); setPolling(false); };
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+      setPolling(false);
+    };
   }, [autoPoll, dom.id, dom.verified, verifyFn, onVerified, onStopPoll]);
 
   const runManual = async () => {
     onManualVerify();
     try {
       const res = await verifyFn({ data: { id: dom.id } });
-      setStatus({ txtOk: res.txtOk, cnameOk: res.cnameOk, provider: res.provider, message: res.message });
-    } catch { /* handled by parent */ }
+      setStatus({
+        txtOk: res.txtOk,
+        cnameOk: res.cnameOk,
+        provider: res.provider,
+        message: res.message,
+      });
+    } catch {
+      /* handled by parent */
+    }
   };
 
   const cnameName = dom.domain;
@@ -370,7 +497,9 @@ function DomainCard({
           <Globe className="w-5 h-5 text-[#FF7E5F]" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-lg font-bold text-[#2D1B0D] font-mono truncate" style={display}>{dom.domain}</p>
+          <p className="text-lg font-bold text-[#2D1B0D] font-mono truncate" style={display}>
+            {dom.domain}
+          </p>
           <p className="text-xs text-[#7D6452] mt-0.5">
             Added {new Date(dom.created_at).toLocaleDateString()}
             {dom.verified_at && <> · Verified {new Date(dom.verified_at).toLocaleDateString()}</>}
@@ -418,7 +547,9 @@ function DomainCard({
 
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-xs uppercase tracking-[0.2em] text-[#7D6452] font-bold">DNS Records (add at your registrar)</h4>
+              <h4 className="text-xs uppercase tracking-[0.2em] text-[#7D6452] font-bold">
+                DNS Records (add at your registrar)
+              </h4>
               <button
                 onClick={copyAll}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2D1B0D] text-white text-xs font-bold hover:bg-[#3D2818] transition"
@@ -428,7 +559,12 @@ function DomainCard({
             </div>
             <div className="space-y-3">
               <DnsRow type="CNAME" name={cnameName} value={CNAME_TARGET} live={status?.cnameOk} />
-              <DnsRow type="TXT" name={txtName} value={dom.verification_token} live={status?.txtOk} />
+              <DnsRow
+                type="TXT"
+                name={txtName}
+                value={dom.verification_token}
+                live={status?.txtOk}
+              />
             </div>
           </div>
 
@@ -439,7 +575,9 @@ function DomainCard({
                 <p className="text-sm font-bold text-blue-900" style={display}>
                   Looks like your DNS is on {status.provider.label}
                 </p>
-                <p className="text-xs text-blue-800 mt-0.5">Open the DNS panel directly and paste the records above.</p>
+                <p className="text-xs text-blue-800 mt-0.5">
+                  Open the DNS panel directly and paste the records above.
+                </p>
               </div>
               <a
                 href={status.provider.dashUrl}
@@ -454,7 +592,10 @@ function DomainCard({
 
           <div className="p-4 rounded-2xl bg-[#FFF5EC] border border-[#FFEDD5]">
             <p className="text-xs text-[#5D4538] leading-relaxed">
-              <strong className="text-[#2D1B0D]">How it works:</strong> Add the CNAME record (points your domain to <span className="font-mono">{CNAME_TARGET}</span>) and the TXT record (proves you own the domain). Use the Copy buttons — no typing needed. DNS usually updates in 1–3 minutes and we verify automatically.
+              <strong className="text-[#2D1B0D]">How it works:</strong> Add the CNAME record (points
+              your domain to <span className="font-mono">{CNAME_TARGET}</span>) and the TXT record
+              (proves you own the domain). Use the Copy buttons — no typing needed. DNS usually
+              updates in 1–3 minutes and we verify automatically.
             </p>
           </div>
 
@@ -464,11 +605,15 @@ function DomainCard({
               disabled={manualVerifying || polling}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2D1B0D] text-white text-sm font-bold hover:bg-[#3D2818] disabled:opacity-50 transition"
             >
-              <RefreshCw className={`w-4 h-4 ${manualVerifying || polling ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${manualVerifying || polling ? "animate-spin" : ""}`}
+              />
               {manualVerifying ? "Checking DNS…" : dom.verified ? "Re-check" : "Check now"}
             </button>
             {status?.message && !dom.verified && (
-              <span className={`text-xs ${status.txtOk && status.cnameOk ? "text-emerald-700" : "text-amber-700"}`}>
+              <span
+                className={`text-xs ${status.txtOk && status.cnameOk ? "text-emerald-700" : "text-amber-700"}`}
+              >
                 {status.message}
               </span>
             )}
@@ -481,20 +626,36 @@ function DomainCard({
 
 function StatusPill({ label, ok }: { label: string; ok: boolean }) {
   return (
-    <div className={`flex items-center gap-2 p-3 rounded-xl border ${
-      ok ? "bg-emerald-50 border-emerald-200" : "bg-white border-[#FFEDD5]"
-    }`}>
-      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-        ok ? "bg-emerald-500 text-white" : "bg-[#FFEDD5] text-[#7D6452]"
-      }`}>
+    <div
+      className={`flex items-center gap-2 p-3 rounded-xl border ${
+        ok ? "bg-emerald-50 border-emerald-200" : "bg-white border-[#FFEDD5]"
+      }`}
+    >
+      <div
+        className={`w-6 h-6 rounded-full flex items-center justify-center ${
+          ok ? "bg-emerald-500 text-white" : "bg-[#FFEDD5] text-[#7D6452]"
+        }`}
+      >
         {ok ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
       </div>
-      <span className={`text-xs font-bold ${ok ? "text-emerald-800" : "text-[#7D6452]"}`}>{label}</span>
+      <span className={`text-xs font-bold ${ok ? "text-emerald-800" : "text-[#7D6452]"}`}>
+        {label}
+      </span>
     </div>
   );
 }
 
-function DnsRow({ type, name, value, live }: { type: string; name: string; value: string; live?: boolean }) {
+function DnsRow({
+  type,
+  name,
+  value,
+  live,
+}: {
+  type: string;
+  name: string;
+  value: string;
+  live?: boolean;
+}) {
   const [copied, setCopied] = useState<string | null>(null);
   const copy = (key: string, text: string) => {
     navigator.clipboard.writeText(text);
@@ -502,25 +663,47 @@ function DnsRow({ type, name, value, live }: { type: string; name: string; value
     setTimeout(() => setCopied(null), 1500);
   };
   return (
-    <div className={`grid grid-cols-12 gap-2 items-center p-3 rounded-xl bg-white border text-xs ${
-      live === true ? "border-emerald-300 bg-emerald-50/40" : "border-[#FFEDD5]"
-    }`}>
+    <div
+      className={`grid grid-cols-12 gap-2 items-center p-3 rounded-xl bg-white border text-xs ${
+        live === true ? "border-emerald-300 bg-emerald-50/40" : "border-[#FFEDD5]"
+      }`}
+    >
       <span className="col-span-2 inline-flex items-center justify-center px-2 py-1 rounded-md bg-[#FF7E5F]/15 text-[#FF7E5F] font-bold font-mono">
         {type}
         {live === true && <Check className="w-3 h-3 ml-1 text-emerald-600" />}
       </span>
       <div className="col-span-5 min-w-0 flex items-center gap-2">
         <span className="text-[10px] uppercase text-[#7D6452] shrink-0">Name</span>
-        <code className="text-[#2D1B0D] font-mono truncate" title={name}>{name}</code>
-        <button onClick={() => copy(`n-${name}`, name)} className="ml-auto p-1 text-[#7D6452] hover:text-[#FF7E5F]" title="Copy">
-          {copied === `n-${name}` ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+        <code className="text-[#2D1B0D] font-mono truncate" title={name}>
+          {name}
+        </code>
+        <button
+          onClick={() => copy(`n-${name}`, name)}
+          className="ml-auto p-1 text-[#7D6452] hover:text-[#FF7E5F]"
+          title="Copy"
+        >
+          {copied === `n-${name}` ? (
+            <Check className="w-3.5 h-3.5 text-emerald-600" />
+          ) : (
+            <Copy className="w-3.5 h-3.5" />
+          )}
         </button>
       </div>
       <div className="col-span-5 min-w-0 flex items-center gap-2">
         <span className="text-[10px] uppercase text-[#7D6452] shrink-0">Value</span>
-        <code className="text-[#2D1B0D] font-mono truncate" title={value}>{value}</code>
-        <button onClick={() => copy(`v-${value}`, value)} className="ml-auto p-1 text-[#7D6452] hover:text-[#FF7E5F]" title="Copy">
-          {copied === `v-${value}` ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+        <code className="text-[#2D1B0D] font-mono truncate" title={value}>
+          {value}
+        </code>
+        <button
+          onClick={() => copy(`v-${value}`, value)}
+          className="ml-auto p-1 text-[#7D6452] hover:text-[#FF7E5F]"
+          title="Copy"
+        >
+          {copied === `v-${value}` ? (
+            <Check className="w-3.5 h-3.5 text-emerald-600" />
+          ) : (
+            <Copy className="w-3.5 h-3.5" />
+          )}
         </button>
       </div>
     </div>

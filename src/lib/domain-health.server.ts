@@ -12,7 +12,7 @@ export type DomainHealthResult = {
   domain: string;
   status: "healthy" | "warning" | "critical";
   ssl_valid: boolean | null;
-  ssl_expires_at: string | null;     // ISO
+  ssl_expires_at: string | null; // ISO
   ssl_days_remaining: number | null;
   ssl_issuer: string | null;
   dns_ok: boolean;
@@ -30,8 +30,13 @@ const TIMEOUT_MS = 8000;
 function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error(`${label} timeout`)), ms);
-    p.then((v) => { clearTimeout(t); resolve(v); })
-     .catch((e) => { clearTimeout(t); reject(e); });
+    p.then((v) => {
+      clearTimeout(t);
+      resolve(v);
+    }).catch((e) => {
+      clearTimeout(t);
+      reject(e);
+    });
   });
 }
 
@@ -39,7 +44,11 @@ function normalizeDomain(input: string): string {
   let d = (input || "").trim().toLowerCase();
   if (!d) return d;
   // strip protocol & path
-  d = d.replace(/^https?:\/\//, "").split("/")[0].split("?")[0].split("#")[0];
+  d = d
+    .replace(/^https?:\/\//, "")
+    .split("/")[0]
+    .split("?")[0]
+    .split("#")[0];
   // strip port
   d = d.split(":")[0];
   return d;
@@ -50,7 +59,9 @@ export function extractDomainFromUrl(url: string | null | undefined): string | n
   try {
     const u = new URL(url.startsWith("http") ? url : `https://${url}`);
     return u.hostname.toLowerCase();
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 async function checkDns(domain: string) {
@@ -89,7 +100,9 @@ async function checkHttp(domain: string) {
           signal: ctrl.signal,
           headers: { "user-agent": "Mozilla/5.0 (compatible; AdspxDomainHealth/1.0)" },
         });
-      } finally { clearTimeout(t); }
+      } finally {
+        clearTimeout(t);
+      }
       lastStatus = res.status;
       lastUrl = url;
       if (res.status >= 300 && res.status < 400) {
@@ -103,7 +116,12 @@ async function checkHttp(domain: string) {
     }
     return { status: lastStatus, final_url: lastUrl, redirects, error: null as string | null };
   } catch (e: any) {
-    return { status: lastStatus, final_url: lastUrl, redirects, error: e?.message || "http failed" };
+    return {
+      status: lastStatus,
+      final_url: lastUrl,
+      redirects,
+      error: e?.message || "http failed",
+    };
   }
 }
 
@@ -117,46 +135,78 @@ type SslInfo = {
 
 function checkSsl(domain: string): Promise<SslInfo> {
   return new Promise((resolve) => {
-    let socket: tls.TLSSocket;
-    const onConnect = () => {
-      try {
-        const cert = socket.getPeerCertificate(true);
-        if (!cert || !cert.valid_to) {
+    const socket: tls.TLSSocket = tls.connect(
+      {
+        host: domain,
+        port: 443,
+        servername: domain,
+        timeout: TIMEOUT_MS,
+        rejectUnauthorized: false,
+      },
+      () => {
+        try {
+          const cert = socket.getPeerCertificate(true);
+          if (!cert || !cert.valid_to) {
+            socket.end();
+            return resolve({
+              valid: null,
+              expires_at: null,
+              days_remaining: null,
+              issuer: null,
+              error: "no cert",
+            });
+          }
+          const expires = new Date(cert.valid_to);
+          const days = Math.floor((expires.getTime() - Date.now()) / 86_400_000);
+          const issuerObj = cert.issuer as { O?: string; CN?: string } | undefined;
+          const issuer = issuerObj?.O || issuerObj?.CN || null;
+          const sockAny = socket as unknown as {
+            authorized?: boolean;
+            authorizationError?: string;
+          };
+          const authorized = sockAny.authorized === true;
           socket.end();
-          return resolve({ valid: null, expires_at: null, days_remaining: null, issuer: null, error: "no cert" });
+          resolve({
+            valid: authorized && days > 0,
+            expires_at: expires.toISOString(),
+            days_remaining: days,
+            issuer: typeof issuer === "string" ? issuer : null,
+            error: authorized ? null : sockAny.authorizationError || "untrusted",
+          });
+        } catch (e: any) {
+          try {
+            socket.destroy();
+          } catch {}
+          resolve({
+            valid: false,
+            expires_at: null,
+            days_remaining: null,
+            issuer: null,
+            error: e?.message || "ssl read failed",
+          });
         }
-        const expires = new Date(cert.valid_to);
-        const days = Math.floor((expires.getTime() - Date.now()) / 86_400_000);
-        const issuerObj = cert.issuer as { O?: string; CN?: string } | undefined;
-        const issuer = issuerObj?.O || issuerObj?.CN || null;
-        const sockAny = socket as unknown as { authorized?: boolean; authorizationError?: string };
-        const authorized = sockAny.authorized === true;
-        socket.end();
-        resolve({
-          valid: authorized && days > 0,
-          expires_at: expires.toISOString(),
-          days_remaining: days,
-          issuer: typeof issuer === "string" ? issuer : null,
-          error: authorized ? null : (sockAny.authorizationError || "untrusted"),
-        });
-      } catch (e: any) {
-        try { socket.destroy(); } catch {}
-        resolve({ valid: false, expires_at: null, days_remaining: null, issuer: null, error: e?.message || "ssl read failed" });
-      }
-    };
-    socket = tls.connect({
-      host: domain,
-      port: 443,
-      servername: domain,
-      timeout: TIMEOUT_MS,
-      rejectUnauthorized: false,
-    }, onConnect);
+      },
+    );
     socket.on("timeout", () => {
-      try { socket.destroy(); } catch {}
-      resolve({ valid: null, expires_at: null, days_remaining: null, issuer: null, error: "ssl timeout" });
+      try {
+        socket.destroy();
+      } catch {}
+      resolve({
+        valid: null,
+        expires_at: null,
+        days_remaining: null,
+        issuer: null,
+        error: "ssl timeout",
+      });
     });
     socket.on("error", (e: any) => {
-      resolve({ valid: false, expires_at: null, days_remaining: null, issuer: null, error: e?.message || "ssl error" });
+      resolve({
+        valid: false,
+        expires_at: null,
+        days_remaining: null,
+        issuer: null,
+        error: e?.message || "ssl error",
+      });
     });
   });
 }
@@ -171,16 +221,18 @@ const DNSBLS = [
 async function checkBlacklists(domain: string) {
   const apex = domain.split(".").slice(-2).join(".");
   const hit: string[] = [];
-  await Promise.all(DNSBLS.map(async ({ name, zone }) => {
-    try {
-      const addrs = await withTimeout(dns.resolve4(`${apex}.${zone}`), 4000, `dnsbl-${name}`);
-      // Spamhaus returns 127.255.255.252/254/255 for query errors — ignore those
-      const real = addrs.filter((a) => !/^127\.255\.255\./.test(a));
-      if (real.length > 0) hit.push(name);
-    } catch {
-      // NXDOMAIN = clean
-    }
-  }));
+  await Promise.all(
+    DNSBLS.map(async ({ name, zone }) => {
+      try {
+        const addrs = await withTimeout(dns.resolve4(`${apex}.${zone}`), 4000, `dnsbl-${name}`);
+        // Spamhaus returns 127.255.255.252/254/255 for query errors — ignore those
+        const real = addrs.filter((a) => !/^127\.255\.255\./.test(a));
+        if (real.length > 0) hit.push(name);
+      } catch {
+        // NXDOMAIN = clean
+      }
+    }),
+  );
   return hit;
 }
 
@@ -192,9 +244,16 @@ export async function runDomainHealthCheck(rawDomain: string): Promise<DomainHea
     return {
       domain: domain || rawDomain,
       status: "critical",
-      ssl_valid: null, ssl_expires_at: null, ssl_days_remaining: null, ssl_issuer: null,
-      dns_ok: false, http_status: null, http_final_url: null, redirect_count: null,
-      blacklisted: false, blacklist_sources: [],
+      ssl_valid: null,
+      ssl_expires_at: null,
+      ssl_days_remaining: null,
+      ssl_issuer: null,
+      dns_ok: false,
+      http_status: null,
+      http_final_url: null,
+      redirect_count: null,
+      blacklisted: false,
+      blacklist_sources: [],
       error_message: "invalid domain",
       raw: { input: rawDomain },
     };
@@ -207,9 +266,22 @@ export async function runDomainHealthCheck(rawDomain: string): Promise<DomainHea
     checkBlacklists(domain),
   ]);
 
-  const dnsRes = dnsR.status === "fulfilled" ? dnsR.value : { ok: false, addrs: [], error: String(dnsR.reason) };
-  const httpRes = httpR.status === "fulfilled" ? httpR.value : { status: null, final_url: null, redirects: null, error: String(httpR.reason) };
-  const sslRes = sslR.status === "fulfilled" ? sslR.value : { valid: false, expires_at: null, days_remaining: null, issuer: null, error: String(sslR.reason) };
+  const dnsRes =
+    dnsR.status === "fulfilled" ? dnsR.value : { ok: false, addrs: [], error: String(dnsR.reason) };
+  const httpRes =
+    httpR.status === "fulfilled"
+      ? httpR.value
+      : { status: null, final_url: null, redirects: null, error: String(httpR.reason) };
+  const sslRes =
+    sslR.status === "fulfilled"
+      ? sslR.value
+      : {
+          valid: false,
+          expires_at: null,
+          days_remaining: null,
+          issuer: null,
+          error: String(sslR.reason),
+        };
   const blRes = blR.status === "fulfilled" ? blR.value : [];
 
   if ((dnsRes as any).error) errors.push(`dns:${(dnsRes as any).error}`);
@@ -223,7 +295,7 @@ export async function runDomainHealthCheck(rawDomain: string): Promise<DomainHea
   else if (sslRes.valid === false) status = "critical";
   else if (httpRes.status && httpRes.status >= 500) status = "critical";
   else if ((sslRes.days_remaining ?? 999) <= 14) status = "warning";
-  else if (httpRes.status && (httpRes.status >= 400 && httpRes.status < 500)) status = "warning";
+  else if (httpRes.status && httpRes.status >= 400 && httpRes.status < 500) status = "warning";
   else if ((httpRes.redirects ?? 0) >= 4) status = "warning";
 
   return {

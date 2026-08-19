@@ -32,42 +32,42 @@ const REGISTRY: Record<string, Brand> = {
     tagline: "Modern wellness tech for calm, focused living.",
     email: "hello@tekuc.com",
     city: "Austin, TX",
-      host: "tekuc.com",
+    host: "tekuc.com",
   },
   "breezysocial.com": {
     name: "BreezySocial",
     tagline: "Smart gadgets for calm, modern living.",
     email: "hello@breezysocial.com",
     city: "San Francisco, CA",
-      host: "breezysocial.com",
+    host: "breezysocial.com",
   },
   "skypq.com": {
     name: "Skypq",
     tagline: "Everyday essentials, thoughtfully made.",
     email: "hello@skypq.com",
     city: "Denver, CO",
-      host: "skypq.com",
+    host: "skypq.com",
   },
   "mefok.com": {
     name: "Mefok",
     tagline: "Simple home gear for better daily routines.",
     email: "hello@mefok.com",
     city: "Portland, OR",
-      host: "mefok.com",
+    host: "mefok.com",
   },
   "adswapx.com": {
     name: "Adswapx",
     tagline: "Everyday finds, simply delivered.",
     email: "hello@adswapx.com",
     city: "Chicago, IL",
-      host: "adswapx.com",
+    host: "adswapx.com",
   },
   "adspx.com": {
     name: "Adspx",
     tagline: "Sleep-first gear engineered for real rest.",
     email: "hello@adspx.com",
     city: "Seattle, WA",
-      host: "adspx.com",
+    host: "adspx.com",
   },
 };
 
@@ -78,7 +78,10 @@ function hostOf(origin: string): string {
   try {
     return new URL(origin).host.replace(/^www\./, "").toLowerCase();
   } catch {
-    return origin.replace(/^https?:\/\//i, "").replace(/^www\./, "").toLowerCase();
+    return origin
+      .replace(/^https?:\/\//i, "")
+      .replace(/^www\./, "")
+      .toLowerCase();
   }
 }
 

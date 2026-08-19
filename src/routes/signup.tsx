@@ -34,7 +34,11 @@ function SignupPage() {
     // Signup protection gate (Gmail-only / disposable blocklist / IP cap)
     try {
       const check = await preCheck({ data: { email: normalizedEmail } });
-      if (!check.ok) { setLoading(false); toast.error(check.error); return; }
+      if (!check.ok) {
+        setLoading(false);
+        toast.error(check.error);
+        return;
+      }
     } catch (err: any) {
       setLoading(false);
       toast.error(err?.message || "Signup check failed. Please try again.");
@@ -42,21 +46,29 @@ function SignupPage() {
     }
 
     const { error } = await supabase.auth.signUp({
-      email: normalizedEmail, password,
+      email: normalizedEmail,
+      password,
       options: {
         emailRedirectTo: `${window.location.origin}/dashboard`,
         data: { full_name: fullName.trim(), telegram: tg },
       },
     });
-    if (error) { setLoading(false); toast.error(error.message); return; }
+    if (error) {
+      setLoading(false);
+      toast.error(error.message);
+      return;
+    }
     // On self-hosted Supabase with auto-confirm disabled, we might need to inform the user.
     // However, if the user says "at least they can login", we assume they might have auto-confirm on or we can try auto-login.
-    const { error: signInErr } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+    const { error: signInErr } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
     setLoading(false);
-    if (signInErr) { 
-      toast.success("Account created! Please check your email to confirm (or contact admin)."); 
-      navigate({ to: "/login" }); 
-      return; 
+    if (signInErr) {
+      toast.success("Account created! Please check your email to confirm (or contact admin).");
+      navigate({ to: "/login" });
+      return;
     }
     await router.invalidate();
     navigate({ to: "/dashboard", replace: true });
@@ -129,7 +141,11 @@ function SignupPage() {
                 At least 6 characters. Avoid common passwords.
               </p>
             </div>
-            <Button type="submit" className="w-full bg-primary-gradient shadow-glow" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full bg-primary-gradient shadow-glow"
+              disabled={loading}
+            >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
             </Button>
           </form>

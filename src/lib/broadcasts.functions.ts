@@ -115,13 +115,15 @@ export const adminListBroadcasts = createServerFn({ method: "GET" })
 export const adminCreateBroadcast = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({
-      title: z.string().trim().min(1).max(200),
-      body: z.string().trim().min(1).max(2000),
-      icon: z.string().trim().min(1).max(64).default("sparkles"),
-      tone: z.enum(["info", "success", "warning", "premium"]).default("premium"),
-      expires_at: z.string().datetime().nullable().optional(),
-    }).parse(d),
+    z
+      .object({
+        title: z.string().trim().min(1).max(200),
+        body: z.string().trim().min(1).max(2000),
+        icon: z.string().trim().min(1).max(64).default("sparkles"),
+        tone: z.enum(["info", "success", "warning", "premium"]).default("premium"),
+        expires_at: z.string().datetime().nullable().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const supabaseAdmin = await assertAdmin(context.userId);
@@ -145,9 +147,7 @@ export const adminCreateBroadcast = createServerFn({ method: "POST" })
 // ----- Admin: toggle is_active -----
 export const adminToggleBroadcast = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
-    z.object({ id: z.string().uuid(), is_active: z.boolean() }).parse(d),
-  )
+  .inputValidator((d) => z.object({ id: z.string().uuid(), is_active: z.boolean() }).parse(d))
   .handler(async ({ data, context }) => {
     const supabaseAdmin = await assertAdmin(context.userId);
     const { error } = await supabaseAdmin
@@ -164,10 +164,7 @@ export const adminDeleteBroadcast = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const supabaseAdmin = await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin
-      .from("broadcasts")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await supabaseAdmin.from("broadcasts").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

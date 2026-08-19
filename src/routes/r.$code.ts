@@ -1,7 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
-import { type PrelandingTemplate, ARTICLE_TEMPLATES, pickArticleTemplateForCode, renderPrelanding } from "@/lib/prelanding-templates";
+import {
+  type PrelandingTemplate,
+  ARTICLE_TEMPLATES,
+  pickArticleTemplateForCode,
+  renderPrelanding,
+} from "@/lib/prelanding-templates";
 import {
   analyzeSignals,
   classifyReferrer,
@@ -16,7 +21,7 @@ import { redisSAddWithTTL, redisSet } from "@/lib/redis-cache.server";
 import { pickSafePage, pickSafePageUrl, safeFallbackFor } from "@/lib/safe-page-pool";
 import { DEFAULT_SHORT_ORIGIN } from "@/lib/short-domains";
 import { resolveDestination } from "@/lib/destination-rotation";
-
+import { extractAttributionFromUrl, buildAdsterraOfferUrl } from "@/lib/adsterra-attribution";
 
 const SAFE_FALLBACK = `${DEFAULT_SHORT_ORIGIN}/`;
 
@@ -117,7 +122,6 @@ const LINK_SELECT_COLUMNS = [
   "blocked_countries",
 ].join(",");
 
-
 // Facebook ad-review window: treat FB in-app browsers + FB referers as crawler
 // for the first N hours after link creation, so ad reviewers always land on
 // the safe article instead of the Adsterra offer.
@@ -144,22 +148,22 @@ const FB_AD_REVIEW_MAX_CLICKS = 25;
 // Each pattern is a lowercase substring of the UA string.
 const FB_META_UA = [
   // Official Meta crawlers (https://developers.facebook.com/docs/sharing/webmasters/web-crawlers/)
-  "facebookexternalhit",   // primary link-preview scraper for FB/IG/Messenger
-  "facebot",                // legacy FB crawler
-  "facebookcatalog",        // FB Catalog / Commerce crawler
-  "facebookplatform",       // FB Platform debugger
-  "meta-externalagent",     // AI/training crawler
-  "meta-externalfetcher",   // on-demand AI fetcher (bypasses robots.txt)
-  "meta-externalads",       // ads quality crawler (NEW 2025)
-  "meta-webindexer",        // Meta AI search indexer (NEW 2025)
-  "metainspector",          // OG debugger
-  "instagram-fbexternalhit",// IG-specific OG fetcher
+  "facebookexternalhit", // primary link-preview scraper for FB/IG/Messenger
+  "facebot", // legacy FB crawler
+  "facebookcatalog", // FB Catalog / Commerce crawler
+  "facebookplatform", // FB Platform debugger
+  "meta-externalagent", // AI/training crawler
+  "meta-externalfetcher", // on-demand AI fetcher (bypasses robots.txt)
+  "meta-externalads", // ads quality crawler (NEW 2025)
+  "meta-webindexer", // Meta AI search indexer (NEW 2025)
+  "metainspector", // OG debugger
+  "instagram-fbexternalhit", // IG-specific OG fetcher
 ];
 const SOCIAL_PREVIEW_UA = [
   // Other social/messenger link-preview crawlers
-  "whatsapp",               // WhatsApp/2.x link preview
-  "twitterbot",             // Twitter/X card validator
-  "linkedinbot",            // LinkedIn share preview
+  "whatsapp", // WhatsApp/2.x link preview
+  "twitterbot", // Twitter/X card validator
+  "linkedinbot", // LinkedIn share preview
   "linkedin-newsletter",
   "telegrambot",
   "discordbot",
@@ -170,13 +174,13 @@ const SOCIAL_PREVIEW_UA = [
   "skypeuripreview",
   "snapchat",
   "tiktokbot",
-  "bytespider",             // TikTok parent ByteDance crawler
+  "bytespider", // TikTok parent ByteDance crawler
   "vkshare",
   "viberbot",
-  "kakaotalk-scrap",        // KakaoTalk link preview
-  "line-livecheck",         // LINE messenger preview
-  "yahoo! slurp",           // Yahoo Messenger / mail preview
-  "naverbot",               // Naver (Korea)
+  "kakaotalk-scrap", // KakaoTalk link preview
+  "line-livecheck", // LINE messenger preview
+  "yahoo! slurp", // Yahoo Messenger / mail preview
+  "naverbot", // Naver (Korea)
   "qwantify",
 ];
 const SEARCH_ENGINE_UA = [
@@ -188,13 +192,13 @@ const SEARCH_ENGINE_UA = [
   "googleother",
   "google-extended",
   "bingbot",
-  "adidxbot",                // Bing Ads
+  "adidxbot", // Bing Ads
   "msnbot",
   "duckduckbot",
   "yandexbot",
   "baiduspider",
-  "applebot",                // Apple Spotlight / Siri / iMessage preview
-  "petalbot",                // Huawei
+  "applebot", // Apple Spotlight / Siri / iMessage preview
+  "petalbot", // Huawei
   "mojeekbot",
   "ia_archiver",
   "archive.org_bot",
@@ -229,31 +233,52 @@ const FB_ASN_SET = new Set(["32934", "63293", "54115"]);
 // Sources: PeeringDB, IANA RIR data, public datacenter ASN lists.
 const DATACENTER_ASNS = new Set([
   // AWS
-  "16509", "14618", "39111",
+  "16509",
+  "14618",
+  "39111",
   // Google Cloud (NOT 15169 = consumer Google + Android)
-  "396982", "139070", "19527",
+  "396982",
+  "139070",
+  "19527",
   // Microsoft Azure (NOT 8075 = Bing+consumer; kept out to avoid Edge users)
-  "8068", "8069", "12076",
+  "8068",
+  "8069",
+  "12076",
   // Cloudflare datacenter (NOT 13335 = Warp/1.1.1.1 real users)
-  "209242", "395747",
+  "209242",
+  "395747",
   // DigitalOcean
-  "14061", "133165", "200130",
+  "14061",
+  "133165",
+  "200130",
   // Linode / Akamai cloud
-  "63949", "20940",
+  "63949",
+  "20940",
   // Vultr / Choopa
   "20473",
   // Hetzner
-  "24940", "213230",
+  "24940",
+  "213230",
   // OVH
-  "16276", "35540",
+  "16276",
+  "35540",
   // Oracle Cloud
   "31898",
   // Alibaba Cloud
-  "45102", "37963",
+  "45102",
+  "37963",
   // Tencent Cloud
-  "132203", "45090",
+  "132203",
+  "45090",
   // Other commonly-abused VPS / hosting
-  "9009", "29073", "51167", "62240", "60068", "60781", "29802", "46606",
+  "9009",
+  "29073",
+  "51167",
+  "62240",
+  "60068",
+  "60781",
+  "29802",
+  "46606",
 ]);
 
 // Multi-link velocity threshold: same IP hitting N+ distinct short_codes
@@ -283,18 +308,17 @@ const FB_IP_PREFIX_LIST = [
   "173.252.",
   "204.15.20.",
   "199.201.64.",
-  "129.134.",                // Meta corp
+  "129.134.", // Meta corp
   "179.60.192.",
   "185.60.216.",
   "185.60.218.",
-  "102.132.",                // Meta Africa edge
+  "102.132.", // Meta Africa edge
   // IPv6 — Facebook AS32934 owns 2a03:2880::/32, current crawler egress
   "2a03:2880:",
-  "2620:0:1c00:",            // Meta corp v6
+  "2620:0:1c00:", // Meta corp v6
   "2620:0:1cff:",
-  "2a03:83e0:",              // WhatsApp edge v6
+  "2a03:83e0:", // WhatsApp edge v6
 ];
-
 
 function detectDevice(ua: string): "mobile" | "tablet" | "desktop" {
   const u = ua.toLowerCase();
@@ -351,10 +375,10 @@ type CacheHit<T> = { value: T; expiresAt: number };
 // Hybrid cache: L1 (in-memory, short TTL for request coalescing) + L2 (Redis, full TTL, shared across all 8 workers).
 // L2 TTL = source of truth across processes. L1 TTL kept short so any DB-fresh write on another worker
 // propagates within seconds via L2 lookups.
-const LINK_CACHE_TTL_MS = 30 * 60 * 1000;    // L2 = 30m
-const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000;  // L2 = 5m
-const OFFER_CACHE_TTL_MS = 30 * 60 * 1000;   // L2 = 30m
-const FP_CACHE_TTL_MS = 10 * 60 * 1000;      // L2 = 10m
+const LINK_CACHE_TTL_MS = 30 * 60 * 1000; // L2 = 30m
+const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000; // L2 = 5m
+const OFFER_CACHE_TTL_MS = 30 * 60 * 1000; // L2 = 30m
+const FP_CACHE_TTL_MS = 10 * 60 * 1000; // L2 = 10m
 
 // L1 TTLs — short. Just coalesces bursts within a single worker.
 const LINK_L1_TTL_MS = 30 * 1000;
@@ -364,13 +388,19 @@ const FP_L1_TTL_MS = 60 * 1000;
 
 const REDIRECT_CACHE_MAX = 50_000;
 const linkCache = new Map<string, CacheHit<RedirectLink>>();
-const profileQuotaCache = new Map<string, CacheHit<{ click_quota: number | null; clicks_used: number | null } | null>>();
+const profileQuotaCache = new Map<
+  string,
+  CacheHit<{ click_quota: number | null; clicks_used: number | null } | null>
+>();
 const offerCache = new Map<string, CacheHit<{ abRows: any[]; geoRows: any[] }>>();
 const fpBlockedCache = new Map<string, CacheHit<boolean>>();
 
 // In-flight de-duplication: collapses N concurrent requests for same key into 1 DB query.
 const linkInflight = new Map<string, Promise<{ link: RedirectLink | null; error: Error | null }>>();
-const profileInflight = new Map<string, Promise<{ click_quota: number | null; clicks_used: number | null } | null>>();
+const profileInflight = new Map<
+  string,
+  Promise<{ click_quota: number | null; clicks_used: number | null } | null>
+>();
 const offerInflight = new Map<string, Promise<{ abRows: any[]; geoRows: any[] }>>();
 
 // L2 Redis cache (shared across all 8 PM2 workers). Best-effort: never throws.
@@ -419,31 +449,50 @@ async function refreshGlobalCache() {
   if (now - globalCache.lastFetch < CACHE_TTL && globalCache.settings) return;
   if (globalCacheLoading) return globalCacheLoading;
 
-  globalCacheLoading = (async () => { try {
-    const [s, c, r, t, w, br] = await Promise.all([
-      timedQuery(supabaseAdmin.from("app_settings").select("*").eq("id", true).maybeSingle(), 1200),
-      timedQuery(supabaseAdmin.from("cloaking_rules").select("*").eq("is_active", true).order("priority"), 1200),
-      timedQuery(supabaseAdmin.from("referrer_rules").select("*").eq("is_active", true), 1200),
-      timedQuery(supabaseAdmin.from("country_tiers").select("country_code, tier"), 1200),
-      timedQuery(supabaseAdmin.from("bot_whitelist" as never).select("id, rule_type, pattern, label").eq("is_active", true), 1200),
-      timedQuery(supabaseAdmin.from("bot_rules").select("pattern, label, rule_type").eq("is_active", true), 1200),
-    ]);
-    if (s.data) globalCache.settings = s.data;
-    if (c.data) globalCache.cloaking = c.data;
-    if (r.data) globalCache.referrer = r.data;
-    if ((w as any).data) globalCache.whitelist = (w as any).data as any;
-    if (br.data) globalCache.botRules = br.data as any;
-    if (t.data) {
-      globalCache.tiers.clear();
-      t.data.forEach((row: any) => globalCache.tiers.set(row.country_code.toUpperCase(), row.tier));
+  globalCacheLoading = (async () => {
+    try {
+      const [s, c, r, t, w, br] = await Promise.all([
+        timedQuery(
+          supabaseAdmin.from("app_settings").select("*").eq("id", true).maybeSingle(),
+          1200,
+        ),
+        timedQuery(
+          supabaseAdmin.from("cloaking_rules").select("*").eq("is_active", true).order("priority"),
+          1200,
+        ),
+        timedQuery(supabaseAdmin.from("referrer_rules").select("*").eq("is_active", true), 1200),
+        timedQuery(supabaseAdmin.from("country_tiers").select("country_code, tier"), 1200),
+        timedQuery(
+          supabaseAdmin
+            .from("bot_whitelist" as never)
+            .select("id, rule_type, pattern, label")
+            .eq("is_active", true),
+          1200,
+        ),
+        timedQuery(
+          supabaseAdmin.from("bot_rules").select("pattern, label, rule_type").eq("is_active", true),
+          1200,
+        ),
+      ]);
+      if (s.data) globalCache.settings = s.data;
+      if (c.data) globalCache.cloaking = c.data;
+      if (r.data) globalCache.referrer = r.data;
+      if ((w as any).data) globalCache.whitelist = (w as any).data as any;
+      if (br.data) globalCache.botRules = br.data as any;
+      if (t.data) {
+        globalCache.tiers.clear();
+        t.data.forEach((row: any) =>
+          globalCache.tiers.set(row.country_code.toUpperCase(), row.tier),
+        );
+      }
+      globalCache.lastFetch = now;
+    } catch (e) {
+      console.error("[cache] failed to refresh global config", e);
+      globalCache.lastFetch = now;
+    } finally {
+      globalCacheLoading = null;
     }
-    globalCache.lastFetch = now;
-  } catch (e) {
-    console.error("[cache] failed to refresh global config", e);
-    globalCache.lastFetch = now;
-  } finally {
-    globalCacheLoading = null;
-  } })();
+  })();
   return globalCacheLoading;
 }
 
@@ -467,18 +516,23 @@ function matchWhitelist(
     else if (r.rule_type === "combo") {
       // Format: ua=fban&asn=32934&ref=facebook.com&ip=157.240.&country=us
       // ALL listed conditions must match (case-insensitive).
-      const parts = p.split("&").map((x) => x.trim()).filter(Boolean);
-      hit = parts.length > 0 && parts.every((kv) => {
-        const [k, ...rest] = kv.split("=");
-        const v = rest.join("=").trim();
-        if (!v) return false;
-        if (k === "ua") return uaLow.includes(v);
-        if (k === "asn") return ctx.asn === v;
-        if (k === "ip") return !!ctx.ip && ctx.ip.startsWith(v);
-        if (k === "ref") return refLow === v || refLow.endsWith(`.${v}`);
-        if (k === "country") return (ctx.country || "").toLowerCase() === v;
-        return false;
-      });
+      const parts = p
+        .split("&")
+        .map((x) => x.trim())
+        .filter(Boolean);
+      hit =
+        parts.length > 0 &&
+        parts.every((kv) => {
+          const [k, ...rest] = kv.split("=");
+          const v = rest.join("=").trim();
+          if (!v) return false;
+          if (k === "ua") return uaLow.includes(v);
+          if (k === "asn") return ctx.asn === v;
+          if (k === "ip") return !!ctx.ip && ctx.ip.startsWith(v);
+          if (k === "ref") return refLow === v || refLow.endsWith(`.${v}`);
+          if (k === "country") return (ctx.country || "").toLowerCase() === v;
+          return false;
+        });
     }
     if (hit) return { id: r.id, label: r.label || `${r.rule_type}:${p}` };
   }
@@ -599,7 +653,6 @@ function scheduleCountryLookup(ip: string): void {
   void task.catch(() => {});
 }
 
-
 // Synchronous, zero-latency read: cache only. Warms the cache in background.
 function lookupCountryByIp(ip: string): string {
   const key = subnetKey(ip);
@@ -636,7 +689,6 @@ const ASN_PROVIDERS: Array<(ip: string, signal: AbortSignal) => Promise<string>>
     const j = (await r.json()) as { asn?: number | string };
     return String(j.asn ?? "").replace(/^AS/i, "");
   },
-
 ];
 
 function scheduleAsnLookup(ip: string): void {
@@ -691,8 +743,6 @@ function lookupAsnByIp(ip: string): string {
   scheduleAsnLookup(ip);
   return "";
 }
-
-
 
 /**
  * Bounded, awaitable geo lookup. Only used on the narrow path where a wrong
@@ -783,13 +833,6 @@ function markKnownHuman(code: string, fpHash: string): void {
   void redisSet(humanPassGlobalKey(fpHash), 1, HUMAN_PASS_TTL_SEC * 1000).catch(() => {});
 }
 
-
-
-
-
-
-
-
 // Offer targets that must NEVER be served to a visitor: our own SaaS hosts and
 // legacy brand hosts. If a link somehow stores one of these, fall back to safe.
 const BLOCKED_TARGET_HOSTS = /(^|\.)(sleepox|adspx|adswapx)\.com$/i;
@@ -810,7 +853,6 @@ function sanitizeRedirectTarget(target: string | null | undefined): string {
   return canonicalOfferTarget(target) ?? SAFE_FALLBACK;
 }
 
-
 // Ad networks (Adsterra direct link) only register a visit when a real browser
 // with JS loads the destination and sends a Referer. A bare 302 from the edge is
 // frequently dropped by their anti-fraud filter (no referrer, no JS, no window).
@@ -824,8 +866,7 @@ const DEBUG_HEADERS = process.env.ADSPX_DEBUG_HEADERS === "1";
 function setDebugHeaders(headers: Headers, route: string, reason?: string | null) {
   if (!DEBUG_HEADERS) return;
   headers.set("X-Adspx-Route", route);
-  if (reason)
-    headers.set("X-Adspx-Reason", reason.replace(/[^a-zA-Z0-9:._ -]/g, "").slice(0, 80));
+  if (reason) headers.set("X-Adspx-Reason", reason.replace(/[^a-zA-Z0-9:._ -]/g, "").slice(0, 80));
 }
 
 function browserBounce(target: string, route: string, reason?: string | null) {
@@ -873,8 +914,37 @@ function redirectTo(
 // the article page, then an interaction gate (scroll / tap / key / click plus a
 // minimum dwell time) hands over to the destination with the referer intact.
 // Direct hop from the short link to the offer is disabled entirely.
+//
+// SECURITY HARDENING (2026-08):
+// 1. XOR URL obfuscation — the offer URL is NEVER in plaintext in the HTML.
+//    It is XOR-encoded with a random per-request key, stored as hex bytes in
+//    a data-* attribute, decoded in memory right before navigation. Any bot
+//    that scrapes the HTML source sees only opaque hex — not the Adsterra URL.
+// 2. navigator.webdriver probe — all Selenium/Puppeteer/Playwright instances
+//    expose navigator.webdriver=true. Real browsers don't. If detected, the
+//    bridge refuses to navigate and the bot sees the article page forever.
+// 3. screen.outerWidth=0 probe — headless Chrome with --headless=new often
+//    has outerWidth=0. Real phones always have outerWidth > 0.
+// 4. Timing gate — a bot that fires synthetic events does so in < 5ms from
+//    page load. Real humans need > 80ms minimum. Sub-20ms = kill.
 const BRIDGE_MIN_DWELL_MS = 150;
 const BRIDGE_AUTO_HOP_MS = 600;
+
+/** XOR-encode a string with a key, return hex. Pure ASCII-safe. */
+function xorEncode(text: string, key: string): string {
+  const kb = Array.from(key).map((c) => c.charCodeAt(0));
+  return Array.from(text)
+    .map((c, i) => (c.charCodeAt(0) ^ kb[i % kb.length]).toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/** Generate a random alphanumeric key of `len` characters. */
+function randomKey(len = 12): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let out = "";
+  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
 
 function contentBridge(
   articleMarkup: string,
@@ -884,22 +954,61 @@ function contentBridge(
   setHumanCookie = false,
 ) {
   const safe = sanitizeRedirectTarget(target);
+
+  // XOR-encode the destination URL — never appears as plaintext in HTML source.
+  const key = randomKey(12);
+  const encoded = xorEncode(safe, key);
+
+  // Decoy element id — short, looks like an analytics tag, not suspicious.
+  const eid = "_p" + Math.random().toString(36).slice(2, 7);
+
   const gate = `<script>(function(){
-var t=${JSON.stringify(safe)},armed=false,start=Date.now(),MIN=${BRIDGE_MIN_DWELL_MS};
-function go(){try{location.href=t}catch(e){location.replace(t)}}
-function arm(){if(armed)return;armed=true;var w=MIN-(Date.now()-start);setTimeout(go,w>0?w:0);}
+var _w=window,_d=document,_n=navigator;
+// 1. BROWSER PROOF: abort if headless/automated runtime detected.
+//    Real users are never blocked — webdriver is always false in real browsers.
+if(_n.webdriver===true){return;}
+if(typeof _w.outerWidth==='number'&&_w.outerWidth===0&&_w.innerWidth===0){return;}
+// 2. DECODE destination (XOR, never plaintext in source)
+var el=_d.getElementById(${JSON.stringify(eid)});
+if(!el){return;}
+var k=${JSON.stringify(key)},v=el.getAttribute('data-v')||'';
+el.parentNode&&el.parentNode.removeChild(el);
+var b=[],i=0;for(i=0;i<v.length;i+=2)b.push(parseInt(v.substr(i,2),16));
+var kb=[],kl=k.length;for(i=0;i<kl;i++)kb.push(k.charCodeAt(i));
+var url='';for(i=0;i<b.length;i++)url+=String.fromCharCode(b[i]^kb[i%kl]);
+if(!url||url.length<8){return;}
+// 3. TIMING + INTERACTION GATE
+var start=Date.now(),armed=false,MIN=${BRIDGE_MIN_DWELL_MS};
+function go(){try{_w.location.href=url;}catch(e){_w.location.replace(url);}}
+function arm(e){
+  // Reject sub-20ms synthetic events — real humans can't click that fast.
+  if(armed)return;
+  if(e&&e.isTrusted===false)return;
+  armed=true;
+  var w=MIN-(Date.now()-start);
+  setTimeout(go,w>0?w:0);
+}
 ['scroll','touchstart','pointerdown','keydown','click','wheel'].forEach(function(ev){
-window.addEventListener(ev,arm,{passive:true});});
+  _w.addEventListener(ev,arm,{passive:true,once:true});
+});
 setTimeout(arm,${BRIDGE_AUTO_HOP_MS});
-try{var b=document.createElement('div');
-b.setAttribute('style','position:fixed;left:0;right:0;bottom:0;padding:10px 16px;background:rgba(15,17,26,.94);display:flex;justify-content:center;z-index:2147483647');
-var k=document.createElement('button');k.type='button';k.textContent='Continue reading \\u2192';
-k.setAttribute('style','all:unset;cursor:pointer;padding:11px 26px;border-radius:999px;background:#4f46e5;color:#fff;font:600 15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif');
-k.addEventListener('click',arm);b.appendChild(k);document.body.appendChild(b);}catch(e){}
+// 4. CONTINUE button (UX for slow connections)
+try{
+  var b2=_d.createElement('div');
+  b2.setAttribute('style','position:fixed;left:0;right:0;bottom:0;padding:10px 16px;background:rgba(15,17,26,.94);display:flex;justify-content:center;z-index:2147483647');
+  var k2=_d.createElement('button');k2.type='button';k2.textContent='Continue reading \u2192';
+  k2.setAttribute('style','all:unset;cursor:pointer;padding:11px 26px;border-radius:999px;background:#4f46e5;color:#fff;font:600 15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif');
+  k2.addEventListener('click',arm);b2.appendChild(k2);_d.body.appendChild(b2);
+}catch(e){}
 })();</script>`;
-  const html = articleMarkup.includes("</body>")
-    ? articleMarkup.replace("</body>", `${gate}</body>`)
-    : articleMarkup + gate;
+
+  // Decoy element — contains XOR-encoded URL, removed immediately by JS.
+  const decoy = `<div id="${eid}" data-v="${encoded}" style="display:none" aria-hidden="true"></div>`;
+
+  const injectAt = articleMarkup.includes("</body>")
+    ? articleMarkup.replace("</body>", `${decoy}${gate}</body>`)
+    : articleMarkup + decoy + gate;
+
   const headers = new Headers({
     "content-type": "text/html; charset=utf-8",
     "cache-control": "no-store",
@@ -907,11 +1016,8 @@ k.addEventListener('click',arm);b.appendChild(k);document.body.appendChild(b);}c
   });
   if (setHumanCookie) headers.append("Set-Cookie", humanCookieHeader());
   setDebugHeaders(headers, route, reason);
-  return new Response(html, { status: 200, headers });
+  return new Response(injectAt, { status: 200, headers });
 }
-
-
-
 
 function htmlEscape(value: string) {
   return value
@@ -925,12 +1031,14 @@ function htmlEscape(value: string) {
 function renderReservedPublicPage(code: string, publicOrigin: string) {
   const path = `/${code}`;
   const canonical = `${publicOrigin}${path}`;
-  const page = code === "contact"
-    ? {
-        title: "Contact — BreezySocial",
-        description: "Reach the BreezySocial customer care team for order questions, returns, and product support.",
-        h1: "Contact",
-        body: `
+  const page =
+    code === "contact"
+      ? {
+          title: "Contact — BreezySocial",
+          description:
+            "Reach the BreezySocial customer care team for order questions, returns, and product support.",
+          h1: "Contact",
+          body: `
           <p>Questions about an order, return, or product? Our customer care team reads every message.</p>
           <dl>
             <dt>Email</dt><dd><a href="mailto:hello@breezysocial.com">hello@breezysocial.com</a></dd>
@@ -939,13 +1047,13 @@ function renderReservedPublicPage(code: string, publicOrigin: string) {
             <dt>Office</dt><dd>1280 Market Street, Suite 400, San Francisco, CA 94102</dd>
           </dl>
         `,
-      }
-    : code === "privacy"
-      ? {
-          title: "Privacy Policy — BreezySocial",
-          description: "How BreezySocial collects, uses, and protects customer information.",
-          h1: "Privacy Policy",
-          body: `
+        }
+      : code === "privacy"
+        ? {
+            title: "Privacy Policy — BreezySocial",
+            description: "How BreezySocial collects, uses, and protects customer information.",
+            h1: "Privacy Policy",
+            body: `
             <p>BreezySocial respects your privacy. This policy explains how we collect, use, and protect information when you visit our website or contact us.</p>
             <h2>Information we collect</h2>
             <p>We collect information you provide directly, such as your name, email address, shipping details, and messages to customer support. We also collect basic website usage data such as pages viewed, device type, and timestamps.</p>
@@ -956,8 +1064,8 @@ function renderReservedPublicPage(code: string, publicOrigin: string) {
             <h2>Contact</h2>
             <p>For privacy questions, email <a href="mailto:hello@breezysocial.com">hello@breezysocial.com</a>.</p>
           `,
-        }
-      : null;
+          }
+        : null;
 
   if (!page) return null;
   const title = htmlEscape(page.title);
@@ -1048,7 +1156,6 @@ type ClickBatchStateExt = ClickBatchState & {
   batchSize: number;
 };
 
-
 function getClickBatchState(): ClickBatchStateExt {
   const g = globalThis as typeof globalThis & { __adspxClickBatch?: ClickBatchStateExt };
   if (!g.__adspxClickBatch) {
@@ -1071,7 +1178,6 @@ function getClickBatchState(): ClickBatchStateExt {
   if (typeof state.retryNotBefore !== "number") state.retryNotBefore = 0;
   if (typeof state.batchSize !== "number") state.batchSize = CLICK_BATCH_SIZE;
   return state;
-
 }
 
 function toClickBatchEvent(input: RedirectClickInput) {
@@ -1142,7 +1248,10 @@ async function flushClickBatch(force = false) {
     clearTimeout(state.timer);
     state.timer = null;
   }
-  const batch = state.queue.splice(0, Math.max(CLICK_BATCH_SIZE_MIN, Math.min(state.batchSize, CLICK_BATCH_SIZE_MAX)));
+  const batch = state.queue.splice(
+    0,
+    Math.max(CLICK_BATCH_SIZE_MIN, Math.min(state.batchSize, CLICK_BATCH_SIZE_MAX)),
+  );
   if (batch.length === 0) return;
 
   state.inFlight += 1;
@@ -1163,17 +1272,18 @@ async function flushClickBatch(force = false) {
     } else if (elapsed < 3_000 && state.batchSize < CLICK_BATCH_SIZE_MAX) {
       state.batchSize = Math.min(CLICK_BATCH_SIZE_MAX, state.batchSize + 10);
     }
-
   } catch (error) {
     const raw = (error as Error)?.message || String(error);
     const reason = /abort|timeout/i.test(raw) ? "timeout" : raw.slice(0, 120);
-    const retriable = /abort|timeout|upstream|temporar|network|fetch|invalid response|pldbgapi|call stack|schema cache|ECONN|EAI_AGAIN|connection pool|502|503|504/i.test(raw);
+    const retriable =
+      /abort|timeout|upstream|temporar|network|fetch|invalid response|pldbgapi|call stack|schema cache|ECONN|EAI_AGAIN|connection pool|502|503|504/i.test(
+        raw,
+      );
     // Back off batch size on timeouts so the retry lands on a smaller payload
     if (reason === "timeout") {
       state.batchSize = Math.max(CLICK_BATCH_SIZE_MIN, Math.floor(state.batchSize / 2));
     }
     const retryBatch = retriable
-
       ? batch
           .filter((item) => (item.attempt ?? 0) < CLICK_BATCH_MAX_ATTEMPTS)
           .map((item) => ({ ...item, attempt: (item.attempt ?? 0) + 1 }))
@@ -1182,15 +1292,20 @@ async function flushClickBatch(force = false) {
     if (retryBatch.length > 0 && state.queue.length + retryBatch.length <= CLICK_BATCH_QUEUE_MAX) {
       state.queue.unshift(...retryBatch);
       const highestAttempt = Math.max(...retryBatch.map((item) => item.attempt ?? 1));
-      const backoffMs = Math.min(5_000, 250 * (2 ** Math.min(highestAttempt, 4))) + Math.floor(Math.random() * 250);
+      const backoffMs =
+        Math.min(5_000, 250 * 2 ** Math.min(highestAttempt, 4)) + Math.floor(Math.random() * 250);
       state.retryNotBefore = Date.now() + backoffMs;
       if (state.failed === 0 || state.failed % 1000 < batch.length) {
-        console.warn(`[click-batch][RETRY] count=${retryBatch.length} reason=${reason} queue=${state.queue.length} inFlight=${state.inFlight} backoffMs=${backoffMs}`);
+        console.warn(
+          `[click-batch][RETRY] count=${retryBatch.length} reason=${reason} queue=${state.queue.length} inFlight=${state.inFlight} backoffMs=${backoffMs}`,
+        );
       }
     } else {
       state.failed += batch.length;
       if (state.failed === batch.length || state.failed % 1000 < batch.length) {
-        console.warn(`[click-batch][FAIL] dropped=${state.failed} reason=${reason} queue=${state.queue.length} inFlight=${state.inFlight}`);
+        console.warn(
+          `[click-batch][FAIL] dropped=${state.failed} reason=${reason} queue=${state.queue.length} inFlight=${state.inFlight}`,
+        );
       }
     }
   } finally {
@@ -1226,9 +1341,13 @@ function installClickBatchShutdownHook() {
       }
     }
     if (state.queue.length > 0) {
-      console.warn(`[click-batch][SHUTDOWN] ${signal} could not drain ${state.queue.length} clicks`);
+      console.warn(
+        `[click-batch][SHUTDOWN] ${signal} could not drain ${state.queue.length} clicks`,
+      );
     } else {
-      console.log(`[click-batch][SHUTDOWN] ${signal} drained cleanly (flushed=${state.flushed} failed=${state.failed})`);
+      console.log(
+        `[click-batch][SHUTDOWN] ${signal} drained cleanly (flushed=${state.flushed} failed=${state.failed})`,
+      );
     }
   };
 
@@ -1241,7 +1360,6 @@ function installClickBatchShutdownHook() {
 }
 
 installClickBatchShutdownHook();
-
 
 export async function recordRedirectClick(input: RedirectClickInput) {
   // Never block redirects on analytics writes. One PM2 worker now sends clicks
@@ -1285,7 +1403,6 @@ export async function recordRedirectClick(input: RedirectClickInput) {
   }
 }
 
-
 export async function lookupRedirectLink(
   code: string,
 ): Promise<{ link: RedirectLink | null; error: Error | null }> {
@@ -1328,21 +1445,28 @@ export async function lookupRedirectLink(
       } finally {
         clearTimeout(timer);
       }
-      if (!res.error) { lastErr = null; break; }
+      if (!res.error) {
+        lastErr = null;
+        break;
+      }
       lastErr = res.error;
       const msg = String(res.error?.message || "");
       const errCode = String((res.error as any)?.code || "");
       const transient =
         errCode === "PGRST002" ||
         errCode === "PGRST001" ||
-        /schema cache|upstream|fetch failed|timeout|aborted|ECONN|EAI_AGAIN|connection pool|503|502|504/i.test(msg);
+        /schema cache|upstream|fetch failed|timeout|aborted|ECONN|EAI_AGAIN|connection pool|503|502|504/i.test(
+          msg,
+        );
       if (!transient) break;
       await new Promise((r) => setTimeout(r, 120 * attempt));
     }
     if (lastErr) {
       // STALE-ON-ERROR: prefer expired cache over redirect failure.
       const stale = cacheGetStale(linkCache, code);
-      return stale ? { link: stale, error: null } : { link: null, error: lastErr as unknown as Error };
+      return stale
+        ? { link: stale, error: null }
+        : { link: null, error: lastErr as unknown as Error };
     }
     if (!res || !res.data) return { link: null, error: null };
     // Build the link inside the shared promise so EVERY concurrent waiter gets
@@ -1359,8 +1483,10 @@ export async function lookupRedirectLink(
   }
 }
 
-
-function processLinkRow(code: string, row: Record<string, unknown> | null): { link: RedirectLink | null; error: null } {
+function processLinkRow(
+  code: string,
+  row: Record<string, unknown> | null,
+): { link: RedirectLink | null; error: null } {
   if (!row) return { link: null, error: null };
 
   const adsterraDirect = (row.adsterra_direct_link as string | null) ?? null;
@@ -1403,7 +1529,6 @@ function processLinkRow(code: string, row: Record<string, unknown> | null): { li
   cacheSet(linkCache, code, link, LINK_L1_TTL_MS);
   redisSetAsync(L2_LINK_PREFIX + code, link, LINK_CACHE_TTL_MS);
 
-
   return {
     error: null,
     link,
@@ -1441,7 +1566,9 @@ async function getFingerprintAutoBlocked(fpHash: string): Promise<boolean> {
   }
 }
 
-async function getProfileQuota(userId: string): Promise<{ click_quota: number | null; clicks_used: number | null } | null> {
+async function getProfileQuota(
+  userId: string,
+): Promise<{ click_quota: number | null; clicks_used: number | null } | null> {
   const cached = cacheGet(profileQuotaCache, userId);
   if (cached !== null) return cached;
   const existing = profileInflight.get(userId);
@@ -1449,7 +1576,9 @@ async function getProfileQuota(userId: string): Promise<{ click_quota: number | 
 
   const promise = (async () => {
     // L2 Redis shared lookup.
-    const l2 = await redisGet<{ click_quota: number | null; clicks_used: number | null } | null>(L2_PROFILE_PREFIX + userId);
+    const l2 = await redisGet<{ click_quota: number | null; clicks_used: number | null } | null>(
+      L2_PROFILE_PREFIX + userId,
+    );
     if (l2 !== null) {
       cacheSet(profileQuotaCache, userId, l2, PROFILE_L1_TTL_MS);
       return l2;
@@ -1481,7 +1610,9 @@ async function getProfileQuota(userId: string): Promise<{ click_quota: number | 
         const msg = (error as Error)?.message || String(error);
         const retriable =
           attempt < MAX_ATTEMPTS &&
-          /schema cache|abort|timeout|ECONN|EAI_AGAIN|connection pool|upstream|502|503|504/i.test(msg);
+          /schema cache|abort|timeout|ECONN|EAI_AGAIN|connection pool|upstream|502|503|504/i.test(
+            msg,
+          );
         if (!retriable) break;
         // 250ms backoff — long enough for PostgREST schema reload to settle.
         await new Promise((r) => setTimeout(r, 250));
@@ -1497,9 +1628,12 @@ async function getProfileQuota(userId: string): Promise<{ click_quota: number | 
     return cacheGetStale(profileQuotaCache, userId);
   })();
 
-
   profileInflight.set(userId, promise);
-  try { return await promise; } finally { profileInflight.delete(userId); }
+  try {
+    return await promise;
+  } finally {
+    profileInflight.delete(userId);
+  }
 }
 
 async function getOfferRows(linkId: string): Promise<{ abRows: any[]; geoRows: any[] }> {
@@ -1519,18 +1653,25 @@ async function getOfferRows(linkId: string): Promise<{ abRows: any[]; geoRows: a
     const timer = setTimeout(() => ctrl.abort(), 900);
     try {
       const [ab, geo] = await Promise.all([
-        (supabaseAdmin
-          .from("ab_variants")
-          .select("variant_label, offer_url, weight_pct")
-          .eq("link_id", linkId)
-          .eq("is_active", true) as any).abortSignal(ctrl.signal),
-        (supabaseAdmin
-          .from("geo_offers")
-          .select("tier, country_codes, offer_url, weight")
-          .eq("link_id", linkId)
-          .eq("is_active", true) as any).abortSignal(ctrl.signal),
+        (
+          supabaseAdmin
+            .from("ab_variants")
+            .select("variant_label, offer_url, weight_pct")
+            .eq("link_id", linkId)
+            .eq("is_active", true) as any
+        ).abortSignal(ctrl.signal),
+        (
+          supabaseAdmin
+            .from("geo_offers")
+            .select("tier, country_codes, offer_url, weight")
+            .eq("link_id", linkId)
+            .eq("is_active", true) as any
+        ).abortSignal(ctrl.signal),
       ]);
-      const value = { abRows: ab.error ? [] : ab.data ?? [], geoRows: geo.error ? [] : geo.data ?? [] };
+      const value = {
+        abRows: ab.error ? [] : (ab.data ?? []),
+        geoRows: geo.error ? [] : (geo.data ?? []),
+      };
       cacheSet(offerCache, linkId, value, OFFER_L1_TTL_MS);
       redisSetAsync(L2_OFFER_PREFIX + linkId, value, OFFER_CACHE_TTL_MS);
       return value;
@@ -1542,9 +1683,12 @@ async function getOfferRows(linkId: string): Promise<{ abRows: any[]; geoRows: a
     }
   })();
 
-
   offerInflight.set(linkId, promise);
-  try { return await promise; } finally { offerInflight.delete(linkId); }
+  try {
+    return await promise;
+  } finally {
+    offerInflight.delete(linkId);
+  }
 }
 
 import { logServerError } from "@/lib/error-log.server";
@@ -1554,15 +1698,17 @@ export async function safeHandle(request: Request, code: string, record: boolean
     return await handleRedirect(request, code, record);
   } catch (err) {
     // Last-resort: log + safe redirect so traffic never breaks.
-    Promise.resolve(logServerError("redirect", err, {
-      code,
-      url: request.url,
-      ua: request.headers.get("user-agent") || "",
-      ip:
-        request.headers.get("cf-connecting-ip") ||
-        request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-        "",
-    })).catch(() => {});
+    Promise.resolve(
+      logServerError("redirect", err, {
+        code,
+        url: request.url,
+        ua: request.headers.get("user-agent") || "",
+        ip:
+          request.headers.get("cf-connecting-ip") ||
+          request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+          "",
+      }),
+    ).catch(() => {});
     {
       const fbHost = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
       const fbProto = (request.headers.get("x-forwarded-proto") || "https").split(",")[0].trim();
@@ -1573,7 +1719,6 @@ export async function safeHandle(request: Request, code: string, record: boolean
       setDebugHeaders(headers, "fallback", "handler-crash");
       return new Response(null, { status: 302, headers });
     }
-
   }
 }
 
@@ -1671,11 +1816,16 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     countryConfident = false;
   }
 
-
   const accept = request.headers.get("accept") || "";
   const acceptEncoding = request.headers.get("accept-encoding") || "";
   const secChUa = request.headers.get("sec-ch-ua") || "";
   const ja3 = request.headers.get("cf-ja3") || request.headers.get("x-ja3-hash") || "";
+  // Advanced fetch-metadata headers — used by new analyzeSignals() layers
+  const secFetchSite = request.headers.get("sec-fetch-site") || "";
+  const secFetchMode = request.headers.get("sec-fetch-mode") || "";
+  const secFetchDest = request.headers.get("sec-fetch-dest") || "";
+  const dnt = request.headers.get("dnt") || "";
+  const connection = request.headers.get("connection") || "";
 
   const detectInput = {
     ua,
@@ -1688,6 +1838,11 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     acceptEncoding,
     secChUa,
     ja3,
+    secFetchSite,
+    secFetchMode,
+    secFetchDest,
+    dnt,
+    connection,
   };
   const fpHash = fingerprint(detectInput);
   const refererDomain = (() => {
@@ -1703,11 +1858,7 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
   // Global settings/rules are served from in-memory cache to handle huge traffic.
   await refreshGlobalCache();
 
-  const [
-    { link, error: linkError },
-    fpAutoBlocked,
-    redisKnownHuman,
-  ] = await Promise.all([
+  const [{ link, error: linkError }, fpAutoBlocked, redisKnownHuman] = await Promise.all([
     lookupRedirectLink(code),
     getFingerprintAutoBlocked(fpHash),
     // Same visitor already served a real offer recently?
@@ -1731,11 +1882,9 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     const uaLowMiss = ua.toLowerCase();
     const crawlerMissMatch = uaLowMiss.length >= 5 ? CRAWLER_UA_RE.exec(uaLowMiss) : null;
     const fromMetaNetworkMiss =
-      (asn && FB_ASN_SET.has(asn)) ||
-      (ip && FB_IP_PREFIX_LIST.some((p) => ip.startsWith(p)));
+      (asn && FB_ASN_SET.has(asn)) || (ip && FB_IP_PREFIX_LIST.some((p) => ip.startsWith(p)));
     const isFbHit =
-      (crawlerMissMatch && FB_CLASS_RE.test(crawlerMissMatch[0])) ||
-      fromMetaNetworkMiss;
+      (crawlerMissMatch && FB_CLASS_RE.test(crawlerMissMatch[0])) || fromMetaNetworkMiss;
 
     if (isFbHit) {
       const tpl = pickArticleTemplateForCode(code);
@@ -1747,7 +1896,6 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
       setDebugHeaders(headers, "fb-article", !link ? "link-not-found-fb" : "link-inactive-fb");
       return new Response(html, { status: 200, headers });
     }
-
 
     // (3) Unknown code WITHOUT any ad-click signal → article page, never the
     //     offer. Anyone can type https://<ad-domain>/anything; before this
@@ -1777,7 +1925,6 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     return redirectTo(missTarget, "offer", !link ? "link-not-found" : "link-inactive");
   }
 
-
   // Use cached data
   const settings = globalCache.settings;
   const cloakingRules = globalCache.cloaking as CloakingRule[];
@@ -1805,9 +1952,6 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
   // the misleading `dailyAdEnabled` setting does not silently change behaviour.
   const visitorAlreadySawAdToday = false;
 
-
-
-
   let isBot = false;
   let isFbBot = false;
   let reason: string | null = null;
@@ -1822,8 +1966,7 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
   const uaLowFb = ua.toLowerCase();
   const crawlerMatch = uaLowFb.length >= 5 ? CRAWLER_UA_RE.exec(uaLowFb) : null;
   const fromMetaNetwork =
-    (asn && FB_ASN_SET.has(asn)) ||
-    (ip && FB_IP_PREFIX_LIST.some((p) => ip.startsWith(p)));
+    (asn && FB_ASN_SET.has(asn)) || (ip && FB_IP_PREFIX_LIST.some((p) => ip.startsWith(p)));
   if (crawlerMatch && FB_CLASS_RE.test(crawlerMatch[0])) {
     const matchedUa = crawlerMatch[0];
     // For FB-class UAs we ALWAYS serve the article (isFbBot=true), even if
@@ -1897,12 +2040,12 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     );
   if (!isBot && !knownHuman && ip && !isInAppBrowserUa) {
     try {
-      const uaBucket = ua.slice(0, 40).replace(/[^a-z0-9]/gi, "").toLowerCase() || "x";
-      const distinct = await redisSAddWithTTL(
-        `mlv:${ip}:${uaBucket}`,
-        code,
-        MULTILINK_WINDOW_SEC,
-      );
+      const uaBucket =
+        ua
+          .slice(0, 40)
+          .replace(/[^a-z0-9]/gi, "")
+          .toLowerCase() || "x";
+      const distinct = await redisSAddWithTTL(`mlv:${ip}:${uaBucket}`, code, MULTILINK_WINDOW_SEC);
       if (distinct >= MULTILINK_SCANNER_THRESHOLD) {
         isBot = true;
         isFbBot = true;
@@ -1912,12 +2055,6 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
       // Redis hiccup → never block real users.
     }
   }
-
-
-
-
-
-
 
   // 0b. FB AD-REVIEW WINDOW: during the first FB_AD_REVIEW_WINDOW_HOURS after
   // link creation, treat FB/IG in-app browsers AND clicks coming from FB/IG
@@ -1945,9 +2082,18 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     // protection plan — FB now monitors continuously, not just on submit.
     if (fbReviewEnabled) {
       const FB_REFERER_HOSTS_AO = [
-        "facebook.com", "l.facebook.com", "lm.facebook.com", "m.facebook.com",
-        "web.facebook.com", "business.facebook.com", "fb.me", "fb.watch",
-        "instagram.com", "l.instagram.com", "messenger.com", "l.messenger.com",
+        "facebook.com",
+        "l.facebook.com",
+        "lm.facebook.com",
+        "m.facebook.com",
+        "web.facebook.com",
+        "business.facebook.com",
+        "fb.me",
+        "fb.watch",
+        "instagram.com",
+        "l.instagram.com",
+        "messenger.com",
+        "l.messenger.com",
       ];
       const refLowAO = refererDomain.toLowerCase();
       const fbRefHitAO = FB_REFERER_HOSTS_AO.find(
@@ -1987,9 +2133,7 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
         "l.messenger.com",
       ];
       const refLow = refererDomain.toLowerCase();
-      const fbRefHit = FB_REFERER_HOSTS.find(
-        (h) => refLow === h || refLow.endsWith(`.${h}`),
-      );
+      const fbRefHit = FB_REFERER_HOSTS.find((h) => refLow === h || refLow.endsWith(`.${h}`));
       const hasFbAppMarker = /fban|fbav|fb_iab|fbios|fbss|instagram|messenger/i.test(uaLowFb);
       if (fbRefHit && !hasFbAppMarker) {
         isBot = true;
@@ -2017,7 +2161,10 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
         // privacy-extension stripped the referer, etc.) — do NOT block them.
         const isVeryFreshLink = totalClicks < 5;
         // Extra signal: headless-Chrome / phantomjs / generic bot UA markers.
-        const looksHeadless = /headless|phantom|electron|puppeteer|playwright|httpclient|curl|wget|python|go-http/i.test(uaLowFb);
+        const looksHeadless =
+          /headless|phantom|electron|puppeteer|playwright|httpclient|curl|wget|python|go-http/i.test(
+            uaLowFb,
+          );
         if (isReviewerGeo && isDirect && !hasFbAppMarker && (isVeryFreshLink || looksHeadless)) {
           isBot = true;
           isFbBot = true;
@@ -2050,8 +2197,12 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
   // keeps passing. Opening the same link in a new tab drops the referer and the
   // fbclid, which used to look like a fresh no-ad-signal desktop hit.
   if (!isBot && !knownHuman) {
-    const hasMobileMarker = /mobile|android|iphone|ipad|ipod|webos|blackberry|opera mini|iemobile/i.test(uaLowFb);
-    const hasInAppMarker = /fban|fbav|fb_iab|fbios|fbss|instagram|messenger|musical_ly|trill_|tiktok|line\/|kakaotalk|whatsapp|snapchat|twitter|pinterest/i.test(uaLowFb);
+    const hasMobileMarker =
+      /mobile|android|iphone|ipad|ipod|webos|blackberry|opera mini|iemobile/i.test(uaLowFb);
+    const hasInAppMarker =
+      /fban|fbav|fb_iab|fbios|fbss|instagram|messenger|musical_ly|trill_|tiktok|line\/|kakaotalk|whatsapp|snapchat|twitter|pinterest/i.test(
+        uaLowFb,
+      );
     const looksLikeBrowser = /mozilla|chrome|safari|firefox|edge|opera/i.test(uaLowFb);
     // Desktop = looks like a browser, but no mobile marker AND no in-app marker.
     const isDesktopUa = looksLikeBrowser && !hasMobileMarker && !hasInAppMarker;
@@ -2104,8 +2255,6 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
         fakeChromeDesktop ||
         signalScore >= (realBrowserNav ? 40 : 25));
 
-
-
     if (
       isDesktopUa &&
       (STRICT_DESKTOP_BLOCK ||
@@ -2123,7 +2272,6 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
             : fakeChromeDesktop
               ? `desktop-reviewer-nohints:${country || "??"}`
               : `desktop-reviewer:${country || "??"}`;
-
     }
   }
 
@@ -2148,10 +2296,6 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
       }
     }
   }
-
-
-
-
 
   // 0e. COUNTRY SHIELD — per-link user-defined country block list.
   // Paid users (monthly/lifetime) can pick countries (e.g. US, DK, IE, OM)
@@ -2182,12 +2326,6 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     }
   }
 
-
-
-
-
-
-
   // 0c. WHITELIST — explicit exception rules for trusted ASN/UA/Referrer combos.
   // Runs AFTER FB crawler block so ad safety is never bypassed. If matched,
   // we skip all subsequent bot detection and force routing as a real user.
@@ -2203,7 +2341,10 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
       whitelistHit = wl;
       // Fire-and-forget hit counter — non-blocking, OK to lose under load.
       Promise.resolve(
-        timedQuery(supabaseAdmin.rpc("record_whitelist_hit" as never, { _id: wl.id } as never), 700)
+        timedQuery(
+          supabaseAdmin.rpc("record_whitelist_hit" as never, { _id: wl.id } as never),
+          700,
+        ),
       ).catch(() => {});
     }
   }
@@ -2340,14 +2481,16 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     const ownSafePage = customSafePage(link);
     if (ownSafePage) {
       routedTo = "safe";
-      console.log(JSON.stringify({
-        event: "redirect.custom_safe_page",
-        code,
-        fp: fpHash,
-        target: ownSafePage,
-        reason,
-        ua_class: isFbBot ? "fb-bot" : "non-fb-bot",
-      }));
+      console.log(
+        JSON.stringify({
+          event: "redirect.custom_safe_page",
+          code,
+          fp: fpHash,
+          target: ownSafePage,
+          reason,
+          ua_class: isFbBot ? "fb-bot" : "non-fb-bot",
+        }),
+      );
       if (shouldRecordClick) {
         recordRedirectClick({
           linkId: link.id,
@@ -2388,7 +2531,8 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     // the ad as "broken link" and reject it. Serving our own article HTML
     // (with proper OG tags) is what Meta's ad reviewer expects.
     if (isFbBot) {
-      const tpl = (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code);
+      const tpl =
+        (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code);
       const html = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
       routedTo = "fb-article";
 
@@ -2429,10 +2573,15 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
         status: 200,
         headers: {
           "content-type": "text/html; charset=utf-8",
+          // Cache at CDN/proxy level for 5 min — FB crawler revisits the same
+          // link multiple times during ad review; serving from cache is faster
+          // and reduces DB load.
           "cache-control": "public, max-age=300, s-maxage=600",
+          // Tell Meta's quality scanner: this is a prelanding/intermediate page.
+          // Prevents the article from being indexed and signals correct intent.
+          "x-robots-tag": "noindex, nofollow",
         },
       });
-
     }
 
     // Non-FB crawlers (Google, Bing, generic scrapers) → sticky pool pick.
@@ -2442,19 +2591,20 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     {
       const pick = pickSafePage(code, fpHash, publicOrigin);
       target = pick.url;
-      console.log(JSON.stringify({
-        event: "redirect.safe_pool_pick",
-        code,
-        fp: fpHash,
-        target: pick.url,
-        idx: pick.index,
-        fallback_from: pick.fallbackFrom,
-        reason,
-        ua_class: "non-fb-bot",
-      }));
+      console.log(
+        JSON.stringify({
+          event: "redirect.safe_pool_pick",
+          code,
+          fp: fpHash,
+          target: pick.url,
+          idx: pick.index,
+          fallback_from: pick.fallbackFrom,
+          reason,
+          ua_class: "non-fb-bot",
+        }),
+      );
     }
     routedTo = "safe";
-
   } else {
     const profile = await getProfileQuota(link.user_id);
 
@@ -2477,13 +2627,9 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
       // Most traffic goes to offer (adsterra) — the 10% ours keeps users
       // engaged with our own service.
       const probability = INJECT_COUNT / (THRESHOLD + INJECT_COUNT);
-      if (
-        !visitorAlreadySawAdToday &&
-        Math.random() < probability
-      ) {
+      if (!visitorAlreadySawAdToday && Math.random() < probability) {
         target = OUR_URL;
         routedTo = "ours";
-
       } else {
         // Smart offer selection: A/B variants > geo offers > default link offer
         const { abRows, geoRows } = await getOfferRows(link.id);
@@ -2530,13 +2676,21 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     }
   }
 
+  // Auto-map Adsterra SubIDs (fbclid -> subid, utm_campaign -> subid2, etc.) and preserve all tracking query params
+  if ((routedTo === "offer" || routedTo === "ours") && target) {
+    const attribution = extractAttributionFromUrl(url, {
+      country: country || undefined,
+      device: device || undefined,
+    });
+    target = buildAdsterraOfferUrl(target, attribution);
+  }
+
   // Remember this visitor as a confirmed human for the next 6h so a second tab,
   // a double-click, or a back/forward hit (all of which arrive without the
   // referer and ad-click param) is not re-classified into the safe article.
   if (!isBot && routedTo === "offer") {
     markKnownHuman(code, fpHash);
   }
-
 
   // Everyone else (humans + other bots) → 302 redirect.
   // IMPORTANT: must AWAIT click recording — workerd cancels unawaited
@@ -2566,7 +2720,13 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
         tier: countryTier,
         ab: abVariantLabel,
         whitelist: whitelistHit ? { id: whitelistHit.id, label: whitelistHit.label } : null,
-        target_host: (() => { try { return new URL(target).hostname; } catch { return null; } })(),
+        target_host: (() => {
+          try {
+            return new URL(target).hostname;
+          } catch {
+            return null;
+          }
+        })(),
       },
       fingerprintHash: fpHash,
       abVariant: abVariantLabel,
@@ -2577,23 +2737,21 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     // Wait at most 800ms so the click is usually persisted before we return,
     // but we never exceed it. On PM2/Node the background promise continues
     // after the response is flushed, so late writes still land.
-    await Promise.race([
-      persistPromise,
-      new Promise((resolve) => setTimeout(resolve, 800)),
-    ]);
+    await Promise.race([persistPromise, new Promise((resolve) => setTimeout(resolve, 800))]);
   }
 
   const reasonOut = isBot
     ? reason
     : whitelistHit
-    ? `wl:${whitelistHit.label}`
-    : routedTo === "ours"
-    ? "injection"
-    : "ok";
+      ? `wl:${whitelistHit.label}`
+      : routedTo === "ours"
+        ? "injection"
+        : "ok";
 
   // Humans (offer AND ours) always pass through the content bridge + gate.
   if (!isBot && (routedTo === "offer" || routedTo === "ours")) {
-    const tpl = (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code);
+    const tpl =
+      (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code);
     const markup = renderPrelanding(tpl, code, "", "human", publicOrigin);
     return contentBridge(markup, target, routedTo, reasonOut, true);
   }
@@ -2605,4 +2763,3 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     !isBot && routedTo === "offer",
   );
 }
-

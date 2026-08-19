@@ -33,7 +33,9 @@ function decodeJwtPayload(value) {
   const parts = value.split(".");
   if (parts.length !== 3) return null;
   try {
-    return JSON.parse(Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64url").toString("utf8"));
+    return JSON.parse(
+      Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64url").toString("utf8"),
+    );
   } catch {
     return null;
   }
@@ -45,15 +47,20 @@ for (const name of ["SUPABASE_URL", "VITE_SUPABASE_URL"]) {
   else if (!/^https?:\/\//.test(v)) errors.push(`${name} must be an http(s) URL, got ${v}`);
 }
 
-const isLoopback = (v) => /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/i.test((v || "").replace(/\/+$/, ""));
+const isLoopback = (v) =>
+  /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/i.test((v || "").replace(/\/+$/, ""));
 
 if (env.SUPABASE_URL && env.VITE_SUPABASE_URL && env.SUPABASE_URL !== env.VITE_SUPABASE_URL) {
   // Self-hosted setups may talk to the local API gateway server-side while the
   // browser uses the public hostname. That's valid; anything else is a mismatch.
   if (isLoopback(env.SUPABASE_URL)) {
-    warnings.push(`SUPABASE_URL is a local gateway (${env.SUPABASE_URL}); browser uses ${env.VITE_SUPABASE_URL}`);
+    warnings.push(
+      `SUPABASE_URL is a local gateway (${env.SUPABASE_URL}); browser uses ${env.VITE_SUPABASE_URL}`,
+    );
   } else {
-    errors.push("SUPABASE_URL and VITE_SUPABASE_URL must be identical (or SUPABASE_URL must be a loopback gateway)");
+    errors.push(
+      "SUPABASE_URL and VITE_SUPABASE_URL must be identical (or SUPABASE_URL must be a loopback gateway)",
+    );
   }
 }
 
@@ -62,7 +69,9 @@ for (const name of ["VITE_SUPABASE_PUBLISHABLE_KEY"]) {
 }
 
 if (!env.SUPABASE_SERVICE_ROLE_KEY && !env.SUPABASE_SECRET_KEY) {
-  warnings.push("SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY is missing; /r/* redirects need a server-side database key at runtime");
+  warnings.push(
+    "SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY is missing; /r/* redirects need a server-side database key at runtime",
+  );
 }
 
 const serverKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY || "";
@@ -70,16 +79,22 @@ if (serverKey) {
   const isLegacyJwt = serverKey.split(".").length === 3;
   const isNewSecretKey = serverKey.startsWith("sb_secret_");
   if (!isLegacyJwt && !isNewSecretKey) {
-    warnings.push("SUPABASE_SERVICE_ROLE_KEY should be a legacy service_role JWT or a new sb_secret_ key");
+    warnings.push(
+      "SUPABASE_SERVICE_ROLE_KEY should be a legacy service_role JWT or a new sb_secret_ key",
+    );
   }
   if (isSelfHosted && isNewSecretKey) {
-    errors.push("Self-hosted Supabase requires SUPABASE_SERVICE_ROLE_KEY to be a legacy JWT with role=service_role, not an sb_secret_ key");
+    errors.push(
+      "Self-hosted Supabase requires SUPABASE_SERVICE_ROLE_KEY to be a legacy JWT with role=service_role, not an sb_secret_ key",
+    );
   }
   if (isLegacyJwt) {
     const payload = decodeJwtPayload(serverKey);
     if (!payload) errors.push("SUPABASE_SERVICE_ROLE_KEY is not a readable JWT");
     else if (payload.role !== "service_role") {
-      errors.push(`SUPABASE_SERVICE_ROLE_KEY must have role=service_role, got role=${payload.role || "missing"}`);
+      errors.push(
+        `SUPABASE_SERVICE_ROLE_KEY must have role=service_role, got role=${payload.role || "missing"}`,
+      );
     }
   }
 }

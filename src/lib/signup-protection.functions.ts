@@ -40,7 +40,9 @@ export const preSignupCheck = createServerFn({ method: "POST" })
 
     const { data: settings } = await supabaseAdmin
       .from("app_settings")
-      .select("signup_protection_enabled, signup_gmail_only, signup_blocklist_enabled, signup_ip_max_per_day")
+      .select(
+        "signup_protection_enabled, signup_gmail_only, signup_blocklist_enabled, signup_ip_max_per_day",
+      )
       .eq("id", true)
       .maybeSingle();
 
@@ -53,7 +55,10 @@ export const preSignupCheck = createServerFn({ method: "POST" })
     // 1. Gmail-only
     if (settings.signup_gmail_only && !GMAIL_DOMAINS.has(domain)) {
       await log(false, "not_gmail");
-      return { ok: false as const, error: "Only Gmail addresses (@gmail.com) are accepted at this time." };
+      return {
+        ok: false as const,
+        error: "Only Gmail addresses (@gmail.com) are accepted at this time.",
+      };
     }
 
     // 2. Disposable blocklist
@@ -65,13 +70,15 @@ export const preSignupCheck = createServerFn({ method: "POST" })
         .maybeSingle();
       if (blocked) {
         await log(false, "disposable_domain");
-        return { ok: false as const, error: "Disposable / temporary email addresses are not allowed." };
+        return {
+          ok: false as const,
+          error: "Disposable / temporary email addresses are not allowed.",
+        };
       }
     }
 
     // 3. Per-IP daily cap — DISABLED (unlimited accounts per IP by request).
     //    Attempts are still logged for visibility, but never blocked.
-
 
     await log(true, null);
     return { ok: true as const };

@@ -4,11 +4,16 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import {
-  LifeBuoy, Send, Clock, CheckCircle2, XCircle, MessageCircle, ArrowLeft, Sparkles,
+  LifeBuoy,
+  Send,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  MessageCircle,
+  ArrowLeft,
+  Sparkles,
 } from "lucide-react";
-import {
-  createSupportTicket, listMyTickets, getSupportStatus,
-} from "@/lib/support.functions";
+import { createSupportTicket, listMyTickets, getSupportStatus } from "@/lib/support.functions";
 
 export const Route = createFileRoute("/_authenticated/support")({
   head: () => ({ meta: [{ title: "Support — Adspx" }] }),
@@ -31,7 +36,11 @@ function SupportPage() {
   const list = useServerFn(listMyTickets);
   const create = useServerFn(createSupportTicket);
 
-  const statusQ = useQuery({ queryKey: ["support-status"], queryFn: () => status(), staleTime: 60_000 });
+  const statusQ = useQuery({
+    queryKey: ["support-status"],
+    queryFn: () => status(),
+    staleTime: 60_000,
+  });
   const ticketsQ = useQuery({ queryKey: ["my-tickets"], queryFn: () => list(), staleTime: 30_000 });
 
   const [subject, setSubject] = useState("");
@@ -67,7 +76,10 @@ function SupportPage() {
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Top bar */}
         <div className="rounded-2xl glass-card px-5 py-3 flex items-center gap-3">
-          <Link to="/dashboard" className="w-9 h-9 rounded-xl bg-[var(--muted)] border border-[var(--border)] flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--primary)]">
+          <Link
+            to="/dashboard"
+            className="w-9 h-9 rounded-xl bg-[var(--muted)] border border-[var(--border)] flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--primary)]"
+          >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div className="flex items-center gap-2.5">
@@ -75,8 +87,12 @@ function SupportPage() {
               <LifeBuoy className="w-4.5 h-4.5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-lg font-extrabold text-[var(--foreground)] leading-tight">Support</h1>
-              <p className="text-[11px] text-[var(--muted-foreground)]">Get help from the Adspx team</p>
+              <h1 className="text-lg font-extrabold text-[var(--foreground)] leading-tight">
+                Support
+              </h1>
+              <p className="text-[11px] text-[var(--muted-foreground)]">
+                Get help from the Adspx team
+              </p>
             </div>
           </div>
         </div>
@@ -85,8 +101,12 @@ function SupportPage() {
           <div className="rounded-2xl glass-card p-5 flex items-start gap-3">
             <XCircle className="w-5 h-5 text-foreground mt-0.5 shrink-0" />
             <div>
-              <div className="font-bold text-foreground text-sm">Support is temporarily disabled</div>
-              <div className="text-xs text-foreground mt-1">Our team has paused new tickets. Please check back later.</div>
+              <div className="font-bold text-foreground text-sm">
+                Support is temporarily disabled
+              </div>
+              <div className="text-xs text-foreground mt-1">
+                Our team has paused new tickets. Please check back later.
+              </div>
             </div>
           </div>
         )}
@@ -100,11 +120,15 @@ function SupportPage() {
                   <Sparkles className="w-4 h-4 text-[var(--primary)]" />
                   <h2 className="text-sm font-extrabold">Send a message</h2>
                 </div>
-                <p className="text-[10.5px] text-[var(--muted-foreground)] mt-1">We typically reply within 24 hours.</p>
+                <p className="text-[10.5px] text-[var(--muted-foreground)] mt-1">
+                  We typically reply within 24 hours.
+                </p>
               </div>
               <form onSubmit={submit} className="p-5 space-y-4">
                 <div>
-                  <label className="text-[11px] font-bold text-[var(--muted-foreground)] uppercase tracking-wide">Subject</label>
+                  <label className="text-[11px] font-bold text-[var(--muted-foreground)] uppercase tracking-wide">
+                    Subject
+                  </label>
                   <input
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
@@ -116,8 +140,12 @@ function SupportPage() {
                 </div>
                 <div>
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-bold text-[var(--muted-foreground)] uppercase tracking-wide">Message</label>
-                    <span className="text-[10px] text-[var(--muted-foreground)]">{message.length}/4000</span>
+                    <label className="text-[11px] font-bold text-[var(--muted-foreground)] uppercase tracking-wide">
+                      Message
+                    </label>
+                    <span className="text-[10px] text-[var(--muted-foreground)]">
+                      {message.length}/4000
+                    </span>
                   </div>
                   <textarea
                     value={message}
@@ -148,12 +176,16 @@ function SupportPage() {
                   <MessageCircle className="w-4 h-4 text-[var(--primary)]" />
                   <h2 className="text-sm font-extrabold">My tickets</h2>
                 </div>
-                <span className="text-[10px] text-[var(--muted-foreground)]">{tickets.length} total</span>
+                <span className="text-[10px] text-[var(--muted-foreground)]">
+                  {tickets.length} total
+                </span>
               </div>
 
               <div className="divide-y divide-[var(--border)]/70 max-h-[640px] overflow-y-auto">
                 {ticketsQ.isLoading && (
-                  <div className="p-8 text-center text-xs text-[var(--muted-foreground)]">Loading…</div>
+                  <div className="p-8 text-center text-xs text-[var(--muted-foreground)]">
+                    Loading…
+                  </div>
                 )}
                 {!ticketsQ.isLoading && tickets.length === 0 && (
                   <div className="p-10 text-center">
@@ -161,7 +193,9 @@ function SupportPage() {
                       <MessageCircle className="w-6 h-6 text-[var(--muted-foreground)]" />
                     </div>
                     <div className="text-sm font-bold">No tickets yet</div>
-                    <div className="text-[11px] text-[var(--muted-foreground)] mt-1">Your messages will appear here.</div>
+                    <div className="text-[11px] text-[var(--muted-foreground)] mt-1">
+                      Your messages will appear here.
+                    </div>
                   </div>
                 )}
                 {tickets.map((t) => (
@@ -169,29 +203,49 @@ function SupportPage() {
                     <summary className="px-5 py-4 cursor-pointer hover:bg-[var(--muted)]/70 list-none flex items-start gap-3">
                       <StatusBadge status={t.status} />
                       <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-bold text-[var(--foreground)] truncate">{t.subject}</div>
-                        <div className="text-[11px] text-[var(--muted-foreground)] line-clamp-1 mt-0.5">{t.message}</div>
-                        <div className="text-[10px] text-[var(--muted-foreground)] mt-1">{timeAgo(t.created_at)}</div>
+                        <div className="text-[13px] font-bold text-[var(--foreground)] truncate">
+                          {t.subject}
+                        </div>
+                        <div className="text-[11px] text-[var(--muted-foreground)] line-clamp-1 mt-0.5">
+                          {t.message}
+                        </div>
+                        <div className="text-[10px] text-[var(--muted-foreground)] mt-1">
+                          {timeAgo(t.created_at)}
+                        </div>
                       </div>
                     </summary>
                     <div className="px-5 pb-5 pt-1 space-y-3">
                       <div className="rounded-xl bg-muted/60 border border-border p-3.5">
-                        <div className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-wide mb-1.5">Your message</div>
-                        <div className="text-[12.5px] text-[var(--foreground)] whitespace-pre-wrap leading-relaxed">{t.message}</div>
+                        <div className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-wide mb-1.5">
+                          Your message
+                        </div>
+                        <div className="text-[12.5px] text-[var(--foreground)] whitespace-pre-wrap leading-relaxed">
+                          {t.message}
+                        </div>
                       </div>
                       {t.admin_reply ? (
                         <div className="rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/30 p-3.5">
                           <div className="flex items-center gap-1.5 mb-1.5">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Adspx team reply</span>
-                            {t.replied_at && <span className="text-[10px] text-emerald-600/70 ml-auto">{timeAgo(t.replied_at)}</span>}
+                            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">
+                              Adspx team reply
+                            </span>
+                            {t.replied_at && (
+                              <span className="text-[10px] text-emerald-600/70 ml-auto">
+                                {timeAgo(t.replied_at)}
+                              </span>
+                            )}
                           </div>
-                          <div className="text-[12.5px] text-[var(--foreground)] whitespace-pre-wrap leading-relaxed">{t.admin_reply}</div>
+                          <div className="text-[12.5px] text-[var(--foreground)] whitespace-pre-wrap leading-relaxed">
+                            {t.admin_reply}
+                          </div>
                         </div>
                       ) : (
                         <div className="rounded-xl bg-muted/60 border border-border/70 p-3 flex items-center gap-2">
                           <Clock className="w-3.5 h-3.5 text-foreground" />
-                          <span className="text-[11px] text-foreground font-medium">Awaiting reply from our team…</span>
+                          <span className="text-[11px] text-foreground font-medium">
+                            Awaiting reply from our team…
+                          </span>
                         </div>
                       )}
                     </div>

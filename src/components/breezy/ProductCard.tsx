@@ -23,7 +23,9 @@ export function ProductCard({ product }: { product: Product }) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <span className="text-7xl group-hover:scale-105 transition-transform">{product.emoji}</span>
+          <span className="text-7xl group-hover:scale-105 transition-transform">
+            {product.emoji}
+          </span>
         )}
       </div>
       <div className="p-5">

@@ -54,7 +54,8 @@ export function LeakMonitorTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const rows = ((list.data as { findings?: FindingRow[] } | undefined)?.findings ?? []) as FindingRow[];
+  const rows = ((list.data as { findings?: FindingRow[] } | undefined)?.findings ??
+    []) as FindingRow[];
 
   // Latest sweep only: group by check+domain, keep newest.
   const latest = useMemo(() => {
@@ -63,7 +64,9 @@ export function LeakMonitorTab() {
       const key = `${r.context?.check ?? r.message}|${r.context?.domain ?? ""}`;
       if (!seen.has(key)) seen.set(key, r);
     }
-    return [...seen.values()].sort((a, b) => (a.level === "error" ? -1 : 1) - (b.level === "error" ? -1 : 1));
+    return [...seen.values()].sort(
+      (a, b) => (a.level === "error" ? -1 : 1) - (b.level === "error" ? -1 : 1),
+    );
   }, [rows]);
 
   const critical = latest.filter((r) => r.level === "error").length;
@@ -79,7 +82,8 @@ export function LeakMonitorTab() {
           <div>
             <h2 className="text-xl font-bold text-[#2D1B0D]">Smart Brain — Leak Monitor</h2>
             <p className="text-sm text-[#7A5C45]">
-              Probes every ad domain as Facebook, Meta and a human reviewer would. Read-only — never affects live traffic.
+              Probes every ad domain as Facebook, Meta and a human reviewer would. Read-only — never
+              affects live traffic.
             </p>
           </div>
         </div>
@@ -104,7 +108,8 @@ export function LeakMonitorTab() {
         <p className="text-sm text-[#7A5C45]">Loading…</p>
       ) : latest.length === 0 ? (
         <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800 text-sm">
-          <CheckCircle2 className="w-4 h-4" /> No leaks recorded. Run a scan to verify the current state.
+          <CheckCircle2 className="w-4 h-4" /> No leaks recorded. Run a scan to verify the current
+          state.
         </div>
       ) : (
         <div className="space-y-3">
@@ -117,20 +122,28 @@ export function LeakMonitorTab() {
                 className={`rounded-2xl border p-4 ${bad ? "border-rose-200 bg-rose-50/70" : "border-amber-200 bg-amber-50/70"}`}
               >
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className={`w-4 h-4 mt-0.5 ${bad ? "text-rose-600" : "text-amber-600"}`} />
+                  <AlertTriangle
+                    className={`w-4 h-4 mt-0.5 ${bad ? "text-rose-600" : "text-amber-600"}`}
+                  />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${bad ? "bg-rose-600 text-white" : "bg-amber-500 text-white"}`}>
+                      <span
+                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${bad ? "bg-rose-600 text-white" : "bg-amber-500 text-white"}`}
+                      >
                         {bad ? "critical" : "warning"}
                       </span>
                       <span className="text-xs font-semibold text-[#2D1B0D]">{ctx.domain}</span>
                       <span className="text-[11px] text-[#7A5C45] font-mono">{ctx.check}</span>
-                      <span className="text-[11px] text-[#9b8271]">{new Date(r.created_at).toLocaleString()}</span>
+                      <span className="text-[11px] text-[#9b8271]">
+                        {new Date(r.created_at).toLocaleString()}
+                      </span>
                     </div>
                     <p className="mt-1 text-sm font-medium text-[#2D1B0D] break-words">
                       {r.message.replace(/^\[[^\]]+\]\s*/, "")}
                     </p>
-                    {ctx.url && <p className="text-xs text-[#7A5C45] break-all font-mono">{ctx.url}</p>}
+                    {ctx.url && (
+                      <p className="text-xs text-[#7A5C45] break-all font-mono">{ctx.url}</p>
+                    )}
                     {ctx.evidence && (
                       <p className="mt-1 text-xs text-[#7A5C45] break-all">
                         <span className="font-semibold">Evidence:</span> {ctx.evidence}
@@ -164,7 +177,15 @@ export function LeakMonitorTab() {
   );
 }
 
-function StatBox({ label, value, tone }: { label: string; value: number; tone: "good" | "bad" | "warn" | "neutral" }) {
+function StatBox({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "good" | "bad" | "warn" | "neutral";
+}) {
   const cls =
     tone === "bad"
       ? "border-rose-200 bg-rose-50 text-rose-700"

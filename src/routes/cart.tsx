@@ -7,7 +7,10 @@ export const Route = createFileRoute("/cart")({
   head: () => ({
     meta: [
       { title: "Your Cart" },
-      { name: "description", content: "Review your selected items and proceed to secure checkout." },
+      {
+        name: "description",
+        content: "Review your selected items and proceed to secure checkout.",
+      },
       { name: "robots", content: "noindex,follow" },
     ],
   }),
@@ -83,13 +86,17 @@ function CartPage() {
                           aria-label="Decrease quantity"
                           onClick={() => setQty(item.slug, item.qty - 1)}
                           className="w-8 h-8 rounded-full hover:bg-[#F2EDE3] text-[#5A554C]"
-                        >−</button>
+                        >
+                          −
+                        </button>
                         <span className="w-6 text-center text-sm font-medium">{item.qty}</span>
                         <button
                           aria-label="Increase quantity"
                           onClick={() => setQty(item.slug, item.qty + 1)}
                           className="w-8 h-8 rounded-full hover:bg-[#F2EDE3] text-[#5A554C]"
-                        >+</button>
+                        >
+                          +
+                        </button>
                       </div>
                       <div className="flex items-center gap-4">
                         <span className="font-semibold text-[#2A2A28]">
@@ -107,10 +114,7 @@ function CartPage() {
                 </div>
               );
             })}
-            <Link
-              to="/shop"
-              className="inline-block mt-4 text-sm text-[#5A7A55] hover:underline"
-            >
+            <Link to="/shop" className="inline-block mt-4 text-sm text-[#5A7A55] hover:underline">
               ← Continue shopping
             </Link>
           </div>
@@ -129,7 +133,9 @@ function CartPage() {
               </div>
               <div className="flex justify-between">
                 <dt className="text-[#7A7468]">Shipping</dt>
-                <dd className="font-medium">{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</dd>
+                <dd className="font-medium">
+                  {shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}
+                </dd>
               </div>
               {shipping > 0 && (
                 <p className="text-xs text-[#9A9488] italic">

@@ -13,11 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   CommandDialog,
   CommandEmpty,
@@ -97,25 +93,24 @@ export function TopBar({
         supabase.from("broadcast_reads").select("broadcast_id").eq("user_id", uid),
       ]);
       setMessages(
-        ((msgRes.data as { id: string; title: string; body: string | null; created_at: string }[] | null) ?? []).map(
-          (b) => ({
-            id: b.id,
-            subject: b.title,
-            body: b.body,
-            is_broadcast: true,
-            recipient_id: null,
-            created_at: b.created_at,
-          }),
-        ),
+        (
+          (msgRes.data as
+            | { id: string; title: string; body: string | null; created_at: string }[]
+            | null) ?? []
+        ).map((b) => ({
+          id: b.id,
+          subject: b.title,
+          body: b.body,
+          is_broadcast: true,
+          recipient_id: null,
+          created_at: b.created_at,
+        })),
       );
       setReadIds(
         new Set(
-          ((readRes.data as { broadcast_id: string }[] | null) ?? []).map(
-            (r) => r.broadcast_id,
-          ),
+          ((readRes.data as { broadcast_id: string }[] | null) ?? []).map((r) => r.broadcast_id),
         ),
       );
-
     })();
   }, []);
 
@@ -140,9 +135,9 @@ export function TopBar({
     if (!userId) return;
     const ids = messages.filter((m) => !readIds.has(m.id)).map((m) => m.id);
     if (ids.length === 0) return;
-    const { error } = await supabase.from("broadcast_reads").upsert(
-      ids.map((id) => ({ broadcast_id: id, user_id: userId })),
-    );
+    const { error } = await supabase
+      .from("broadcast_reads")
+      .upsert(ids.map((id) => ({ broadcast_id: id, user_id: userId })));
     if (!error) setReadIds(new Set([...readIds, ...ids]));
   }
 
@@ -200,12 +195,7 @@ export function TopBar({
         <div className="flex items-center gap-1">
           <Popover>
             <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative"
-                aria-label="Notifications"
-              >
+              <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
                 <Bell className="h-4 w-4" />
                 {unread > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center px-1">
@@ -255,9 +245,7 @@ export function TopBar({
                               {m.subject}
                             </div>
                             {m.body && (
-                              <div className="text-xs text-muted-foreground truncate">
-                                {m.body}
-                              </div>
+                              <div className="text-xs text-muted-foreground truncate">{m.body}</div>
                             )}
                             <div className="text-[10px] text-muted-foreground mt-0.5">
                               {new Date(m.created_at).toLocaleString()}
@@ -270,7 +258,8 @@ export function TopBar({
                 )}
               </div>
               <div className="border-t p-2">
-                <a href="/notices"
+                <a
+                  href="/notices"
                   className="block text-center text-xs text-primary hover:underline py-1"
                 >
                   View all messages
@@ -294,12 +283,8 @@ export function TopBar({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
-                <div className="text-sm font-medium truncate">
-                  {fullName || "Account"}
-                </div>
-                <div className="text-xs text-muted-foreground truncate font-normal">
-                  {email}
-                </div>
+                <div className="text-sm font-medium truncate">{fullName || "Account"}</div>
+                <div className="text-xs text-muted-foreground truncate font-normal">{email}</div>
                 {isAdmin && (
                   <Badge variant="secondary" className="mt-1 text-[10px]">
                     <Shield className="h-2.5 w-2.5 mr-1" /> Admin
@@ -330,7 +315,10 @@ export function TopBar({
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
+              <DropdownMenuItem
+                onClick={signOut}
+                className="text-destructive focus:text-destructive"
+              >
                 <LogOut className="h-4 w-4 mr-2" /> Sign out
               </DropdownMenuItem>
             </DropdownMenuContent>

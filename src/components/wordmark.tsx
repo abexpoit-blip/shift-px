@@ -5,10 +5,13 @@ type WordmarkProps = {
   chip?: boolean;
 };
 
-const SIZE: Record<NonNullable<WordmarkProps["size"]>, { text: string; dot: string; mark: string; pad: string }> = {
-  sm: { text: "text-sm",  dot: "w-5 h-5",  mark: "w-2 h-2",   pad: "px-2.5 py-1" },
-  md: { text: "text-lg",  dot: "w-7 h-7",  mark: "w-2.5 h-2.5", pad: "px-3 py-1.5" },
-  lg: { text: "text-2xl", dot: "w-9 h-9",  mark: "w-3 h-3",   pad: "px-4 py-2" },
+const SIZE: Record<
+  NonNullable<WordmarkProps["size"]>,
+  { text: string; dot: string; mark: string; pad: string }
+> = {
+  sm: { text: "text-sm", dot: "w-5 h-5", mark: "w-2 h-2", pad: "px-2.5 py-1" },
+  md: { text: "text-lg", dot: "w-7 h-7", mark: "w-2.5 h-2.5", pad: "px-3 py-1.5" },
+  lg: { text: "text-2xl", dot: "w-9 h-9", mark: "w-3 h-3", pad: "px-4 py-2" },
   xl: { text: "text-4xl sm:text-5xl", dot: "w-12 h-12", mark: "w-4 h-4", pad: "px-5 py-2.5" },
 };
 
@@ -23,7 +26,9 @@ export function Wordmark({ className = "", size = "md", chip = false }: Wordmark
   const s = SIZE[size];
 
   const inner = (
-    <span className={`inline-flex items-center gap-2.5 font-extrabold tracking-[0.14em] uppercase ${s.text} ${className}`}>
+    <span
+      className={`inline-flex items-center gap-2.5 font-extrabold tracking-[0.14em] uppercase ${s.text} ${className}`}
+    >
       {/* Glass gem */}
       <span
         aria-hidden
@@ -33,7 +38,9 @@ export function Wordmark({ className = "", size = "md", chip = false }: Wordmark
           {/* glossy highlight */}
           <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent" />
           {/* core dot */}
-          <span className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${s.mark} rounded-full bg-gradient-to-br from-[#7DD3FC] to-[#6366F1] shadow-[0_0_8px_rgba(56,189,248,0.9)]`} />
+          <span
+            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${s.mark} rounded-full bg-gradient-to-br from-[#7DD3FC] to-[#6366F1] shadow-[0_0_8px_rgba(56,189,248,0.9)]`}
+          />
         </span>
       </span>
 

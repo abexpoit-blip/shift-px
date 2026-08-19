@@ -12,7 +12,8 @@ export const Route = createFileRoute("/size-guide")({
       origin,
       path: "/size-guide",
       title: "Size Guide — BreezySocial Wearables",
-      description: "Find your perfect fit. Detailed sizing charts and measurement tips for BreezySocial headphones, blue-light glasses, posture corrector, and travel gear.",
+      description:
+        "Find your perfect fit. Detailed sizing charts and measurement tips for BreezySocial headphones, blue-light glasses, posture corrector, and travel gear.",
       imageAlt: "BreezySocial wearable gear size guide",
       type: "website",
     });
@@ -27,7 +28,9 @@ function SizeGuidePage() {
     <BreezyLayout>
       <section className="bg-[#F2EDE3]">
         <div className="max-w-4xl mx-auto px-6 py-20 text-center">
-          <div className="text-xs uppercase tracking-[0.2em] text-[#7D9B76] font-semibold mb-3">Fit & sizing</div>
+          <div className="text-xs uppercase tracking-[0.2em] text-[#7D9B76] font-semibold mb-3">
+            Fit & sizing
+          </div>
           <h1
             className="text-5xl md:text-6xl text-[#2A2A28] mb-4"
             style={{ fontFamily: "'Instrument Serif', serif", fontWeight: 400 }}
@@ -35,7 +38,8 @@ function SizeGuidePage() {
             Size guide
           </h1>
           <p className="text-[#5A554C] max-w-xl mx-auto">
-            Our products are designed to fit most adult heads, wrists, and torsos — but here's the detail if you'd like to measure first.
+            Our products are designed to fit most adult heads, wrists, and torsos — but here's the
+            detail if you'd like to measure first.
           </p>
         </div>
       </section>
@@ -45,9 +49,9 @@ function SizeGuidePage() {
           title="Smart Sleep Headphones — Headband"
           intro="Measure around the widest part of your head, just above the ears."
           rows={[
-            ["Small", "20\" – 22\" / 51 – 56 cm"],
-            ["Medium (Default)", "22\" – 24\" / 56 – 61 cm"],
-            ["Large", "24\" – 26\" / 61 – 66 cm"],
+            ["Small", '20" – 22" / 51 – 56 cm'],
+            ["Medium (Default)", '22" – 24" / 56 – 61 cm'],
+            ["Large", '24" – 26" / 61 – 66 cm'],
           ]}
           tip="Headband uses a stretch fabric — most adults are happy with the default Medium. Pick Small only if you typically wear youth-sized hats."
         />
@@ -69,11 +73,11 @@ function SizeGuidePage() {
           title="Smart Posture Corrector"
           intro="Measure around the fullest part of your chest, under the armpits."
           rows={[
-            ["XS", "28\" – 32\" / 71 – 81 cm"],
-            ["S", "32\" – 36\" / 81 – 91 cm"],
-            ["M (Default)", "36\" – 42\" / 91 – 107 cm"],
-            ["L", "42\" – 48\" / 107 – 122 cm"],
-            ["XL", "48\" – 54\" / 122 – 137 cm"],
+            ["XS", '28" – 32" / 71 – 81 cm'],
+            ["S", '32" – 36" / 81 – 91 cm'],
+            ["M (Default)", '36" – 42" / 91 – 107 cm'],
+            ["L", '42" – 48" / 107 – 122 cm'],
+            ["XL", '48" – 54" / 122 – 137 cm'],
           ]}
           tip="Choose snug — the strap should sit firmly without restricting breathing. Between sizes? Size down."
         />
@@ -82,9 +86,9 @@ function SizeGuidePage() {
           title="Travel Pillow — Noise Cancelling"
           intro="One size, designed for adult necks."
           rows={[
-            ["Inner circumference", "12\" – 18\" / 30 – 46 cm"],
-            ["Memory foam thickness", "1.6\" / 4 cm"],
-            ["Outer length", "13\" / 33 cm"],
+            ["Inner circumference", '12" – 18" / 30 – 46 cm'],
+            ["Memory foam thickness", '1.6" / 4 cm'],
+            ["Outer length", '13" / 33 cm'],
           ]}
           tip="The Velcro closure adjusts from kid-teen to large adult necks. Memory foam softens slightly with body heat over the first 10 minutes of wear."
         />
@@ -97,17 +101,31 @@ function SizeGuidePage() {
             Still unsure?
           </h3>
           <p className="text-sm text-[#5A554C] mb-4">
-            Email <a href={`mailto:${brand.email}`} className="text-[#5A7A55] underline">{brand.email}</a> with your measurements and we'll recommend a size within a few hours.
+            Email{" "}
+            <a href={`mailto:${brand.email}`} className="text-[#5A7A55] underline">
+              {brand.email}
+            </a>{" "}
+            with your measurements and we'll recommend a size within a few hours.
           </p>
-          <p className="text-xs text-[#9A9488]">Free exchanges within 30 days if the fit isn't right.</p>
+          <p className="text-xs text-[#9A9488]">
+            Free exchanges within 30 days if the fit isn't right.
+          </p>
         </div>
       </div>
     </BreezyLayout>
   );
 }
 
-function Guide({ title, intro, rows, tip }: {
-  title: string; intro: string; rows: Array<[string, string]>; tip: string;
+function Guide({
+  title,
+  intro,
+  rows,
+  tip,
+}: {
+  title: string;
+  intro: string;
+  rows: Array<[string, string]>;
+  tip: string;
 }) {
   return (
     <section>

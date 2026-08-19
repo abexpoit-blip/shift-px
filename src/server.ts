@@ -26,7 +26,6 @@ if (typeof process !== "undefined" && typeof process.on === "function") {
 import { isSaasOnlyPath, isAdspxSaasHost } from "./lib/site-hosts";
 
 type ServerEntry = {
-
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
@@ -51,11 +50,9 @@ function restoreSaasRoute(request: Request): Request {
   const url = new URL(request.url);
   if (!url.pathname.toLowerCase().startsWith("/r/")) return request;
 
-  const host = (
-    request.headers.get("x-forwarded-host") ||
-    request.headers.get("host") ||
-    ""
-  ).split(",")[0].trim();
+  const host = (request.headers.get("x-forwarded-host") || request.headers.get("host") || "")
+    .split(",")[0]
+    .trim();
   const restoredPath = url.pathname.slice(2) || "/";
 
   if (!isAdspxSaasHost(host) || !isSaasOnlyPath(restoredPath)) return request;
@@ -131,8 +128,7 @@ function applySecurityHeaders(request: Request, response: Response): Response {
     // Authenticated / product HTML is per-user: never let it sit in any cache.
     const p = url.pathname.toLowerCase();
     const isAppHtml =
-      p === "/" ||
-      SAAS_HTML_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix + "/"));
+      p === "/" || SAAS_HTML_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix + "/"));
     if (isAppHtml && !isRedirectRoute) {
       headers.set("cache-control", "private, no-store, must-revalidate");
     } else if (!headers.has("cache-control")) {
@@ -140,8 +136,8 @@ function applySecurityHeaders(request: Request, response: Response): Response {
     }
   }
 
-
-  const nullBodyStatus = response.status === 204 || response.status === 205 || response.status === 304;
+  const nullBodyStatus =
+    response.status === 204 || response.status === 205 || response.status === 304;
 
   return new Response(nullBodyStatus ? null : response.body, {
     status: response.status,

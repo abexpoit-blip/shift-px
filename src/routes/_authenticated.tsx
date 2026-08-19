@@ -14,7 +14,10 @@ export const Route = createFileRoute("/_authenticated")({
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap",
+      },
     ],
   }),
   // Auth check is client-only — SSR has no localStorage so getSession() would
@@ -57,11 +60,17 @@ function AuthenticatedLayout() {
       navigate({ to: "/login" });
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session) => {
       const u = session?.user ?? null;
       if (u) setUser(u);
-      if (event === "SIGNED_OUT") { void bounceIfReallySignedOut(); return; }
-      if (authCheckedRef.current && !u && event !== "INITIAL_SESSION") void bounceIfReallySignedOut();
+      if (event === "SIGNED_OUT") {
+        void bounceIfReallySignedOut();
+        return;
+      }
+      if (authCheckedRef.current && !u && event !== "INITIAL_SESSION")
+        void bounceIfReallySignedOut();
     });
 
     // Watchdog: a stalled token refresh can leave getSession() pending
@@ -70,15 +79,21 @@ function AuthenticatedLayout() {
       if (!authCheckedRef.current) finishInitialAuthCheck(null);
     }, 8000);
 
-    supabase.auth.getSession().then(({ data }) => {
-      finishInitialAuthCheck(data.session?.user ?? null);
-    }).catch(() => {
-      finishInitialAuthCheck(null);
-    });
-    return () => { mounted = false; clearTimeout(authWatchdog); subscription.unsubscribe(); };
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        finishInitialAuthCheck(data.session?.user ?? null);
+      })
+      .catch(() => {
+        finishInitialAuthCheck(null);
+      });
+    return () => {
+      mounted = false;
+      clearTimeout(authWatchdog);
+      subscription.unsubscribe();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
 
   useEffect(() => {
     if (!user) return;
@@ -87,12 +102,19 @@ function AuthenticatedLayout() {
 
     // Fail-open: never let a slow/failing profile lookup trap the user on
     // "Loading…". Worst case we render the dashboard without the ban check.
-    const watchdog = setTimeout(() => { if (!cancelled) setBanChecked(true); }, 5000);
+    const watchdog = setTimeout(() => {
+      if (!cancelled) setBanChecked(true);
+    }, 5000);
 
     (async () => {
       try {
         const [roleRes, profRes] = await Promise.all([
-          supabase.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle(),
+          supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", uid)
+            .eq("role", "admin")
+            .maybeSingle(),
           supabase.from("profiles").select("is_banned").eq("id", uid).maybeSingle(),
         ]);
         if (cancelled) return;
@@ -104,24 +126,30 @@ function AuthenticatedLayout() {
         if (!cancelled) setBanChecked(true);
       }
       // Non-blocking: last-login tracking must never gate the UI.
-      void supabase.from("profiles").update({ last_login_at: new Date().toISOString() }).eq("id", uid);
+      void supabase
+        .from("profiles")
+        .update({ last_login_at: new Date().toISOString() })
+        .eq("id", uid);
     })();
 
-    return () => { cancelled = true; clearTimeout(watchdog); };
+    return () => {
+      cancelled = true;
+      clearTimeout(watchdog);
+    };
   }, [user]);
-
 
   useEffect(() => {
     const t = setTimeout(async () => {
       try {
         const res = await dailyFn();
         if (res?.url) window.open(res.url, "_blank", "noopener,noreferrer");
-      } catch { /* silent */ }
+      } catch {
+        /* silent */
+      }
     }, 1500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -154,13 +182,17 @@ function AuthenticatedLayout() {
           </div>
           <h1 className="text-2xl font-bold text-[#2D1B0D] mb-3">Account Suspended</h1>
           <p className="text-sm text-[#7D6452] leading-relaxed mb-2">
-            Your account has been <span className="font-semibold text-red-600">banned</span> by an administrator.
+            Your account has been <span className="font-semibold text-red-600">banned</span> by an
+            administrator.
           </p>
           <p className="text-sm text-[#7D6452] leading-relaxed mb-6">
-            You cannot access the dashboard, create, edit, or delete links. If you believe this is a mistake, please contact support.
+            You cannot access the dashboard, create, edit, or delete links. If you believe this is a
+            mistake, please contact support.
           </p>
           <div className="bg-[#FFF4ED] border border-[#FFE4D2] rounded-2xl p-4 mb-6 text-left">
-            <p className="text-xs text-[#A38D7D] uppercase tracking-wider font-bold mb-1">Signed in as</p>
+            <p className="text-xs text-[#A38D7D] uppercase tracking-wider font-bold mb-1">
+              Signed in as
+            </p>
             <p className="text-sm font-semibold text-[#2D1B0D] truncate">{user.email}</p>
           </div>
           <button

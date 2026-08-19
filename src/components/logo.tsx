@@ -29,10 +29,7 @@ export function Logo({
           <stop offset="1" stopColor="#3b82f6" />
         </linearGradient>
       </defs>
-      <path
-        d="M32 3 L57 11 V31 C57 45 46 56 32 61 C18 56 7 45 7 31 V11 Z"
-        fill="url(#ls-logo-g)"
-      />
+      <path d="M32 3 L57 11 V31 C57 45 46 56 32 61 C18 56 7 45 7 31 V11 Z" fill="url(#ls-logo-g)" />
       <g
         stroke="#ffffff"
         strokeWidth="4.2"

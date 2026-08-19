@@ -4,7 +4,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 function normDomain(input: string): string {
   let d = (input || "").trim().toLowerCase();
-  d = d.replace(/^https?:\/\//, "").split("/")[0].split("?")[0].split("#")[0].split(":")[0];
+  d = d
+    .replace(/^https?:\/\//, "")
+    .split("/")[0]
+    .split("?")[0]
+    .split("#")[0]
+    .split(":")[0];
   return d;
 }
 

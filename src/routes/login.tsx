@@ -27,7 +27,10 @@ function LoginPage() {
       const result = await Promise.race([
         supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password }),
         new Promise<never>((_, reject) => {
-          window.setTimeout(() => reject(new Error("The login server took too long to respond. Please try again.")), 20_000);
+          window.setTimeout(
+            () => reject(new Error("The login server took too long to respond. Please try again.")),
+            20_000,
+          );
         }),
       ]);
       if (result.error || !result.data.session) {
@@ -36,7 +39,9 @@ function LoginPage() {
       }
 
       // Session is in localStorage. Try SPA nav; hard-redirect as a guaranteed fallback.
-      const fallback = window.setTimeout(() => { window.location.replace("/dashboard"); }, 1200);
+      const fallback = window.setTimeout(() => {
+        window.location.replace("/dashboard");
+      }, 1200);
       try {
         await navigate({ to: "/dashboard", replace: true });
         window.clearTimeout(fallback);
@@ -50,8 +55,6 @@ function LoginPage() {
       setLoading(false);
     }
   };
-
-
 
   return (
     <div className="min-h-screen grid place-items-center bg-background px-6">
@@ -94,7 +97,11 @@ function LoginPage() {
                 className="mt-1.5"
               />
             </div>
-            <Button type="submit" className="w-full bg-primary-gradient shadow-glow" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full bg-primary-gradient shadow-glow"
+              disabled={loading}
+            >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
             </Button>
           </form>

@@ -51,10 +51,12 @@ export const toggleSupport = createServerFn({ method: "POST" })
 export const createSupportTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({
-      subject: z.string().trim().min(1).max(200),
-      message: z.string().trim().min(1).max(4000),
-    }).parse(d),
+    z
+      .object({
+        subject: z.string().trim().min(1).max(200),
+        message: z.string().trim().min(1).max(4000),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const supabaseAdmin = await getSupabaseAdmin();
@@ -118,10 +120,13 @@ export const listMyTickets = createServerFn({ method: "GET" })
 export const adminListTickets = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({
-      status: z.enum(["all", "open", "replied", "closed"]).default("all"),
-      limit: z.number().int().min(1).max(200).default(100),
-    }).partial().parse(d ?? {}),
+    z
+      .object({
+        status: z.enum(["all", "open", "replied", "closed"]).default("all"),
+        limit: z.number().int().min(1).max(200).default(100),
+      })
+      .partial()
+      .parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
     const supabaseAdmin = await assertAdmin(context.userId);
@@ -136,7 +141,7 @@ export const adminListTickets = createServerFn({ method: "GET" })
 
     // Fetch user emails in one go
     const userIds = Array.from(new Set((tickets ?? []).map((t: any) => t.user_id)));
-    let profileMap: Record<string, { email: string | null; full_name: string | null }> = {};
+    const profileMap: Record<string, { email: string | null; full_name: string | null }> = {};
     if (userIds.length) {
       const { data: profs } = await supabaseAdmin
         .from("profiles")
@@ -158,10 +163,12 @@ export const adminListTickets = createServerFn({ method: "GET" })
 export const adminReplyTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({
-      ticket_id: z.string().uuid(),
-      reply: z.string().trim().min(1).max(4000),
-    }).parse(d),
+    z
+      .object({
+        ticket_id: z.string().uuid(),
+        reply: z.string().trim().min(1).max(4000),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const supabaseAdmin = await assertAdmin(context.userId);
@@ -198,10 +205,7 @@ export const adminDeleteTicket = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ ticket_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const supabaseAdmin = await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin
-      .from("support_tickets")
-      .delete()
-      .eq("id", data.ticket_id);
+    const { error } = await supabaseAdmin.from("support_tickets").delete().eq("id", data.ticket_id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

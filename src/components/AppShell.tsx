@@ -48,7 +48,8 @@ function BalanceWidget({ balance }: { balance: number }) {
 
   if (collapsed) {
     return (
-      <a href="/withdraw"
+      <a
+        href="/withdraw"
         title={`Available: ${formatted}`}
         className="mx-auto my-2 flex h-9 w-9 items-center justify-center rounded-xl text-primary
           bg-gradient-to-b from-white to-slate-100
@@ -62,17 +63,15 @@ function BalanceWidget({ balance }: { balance: number }) {
     );
   }
 
-
   return (
     <div className="mx-2 my-2 rounded-lg border bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-3">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Wallet className="h-3.5 w-3.5" />
         <span>Available balance</span>
       </div>
-      <div className="mt-1 text-lg font-bold tracking-tight tabular-nums">
-        {formatted}
-      </div>
-      <a href="/withdraw"
+      <div className="mt-1 text-lg font-bold tracking-tight tabular-nums">{formatted}</div>
+      <a
+        href="/withdraw"
         className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-md bg-primary text-primary-foreground text-xs font-medium py-1.5 hover:opacity-90 transition"
       >
         Withdraw <ArrowRight className="h-3 w-3" />
@@ -81,17 +80,14 @@ function BalanceWidget({ balance }: { balance: number }) {
   );
 }
 
-function AppSidebar({
-  isAdmin,
-  balance,
-}: {
-  isAdmin: boolean;
-  balance: number;
-}) {
+function AppSidebar({ isAdmin, balance }: { isAdmin: boolean; balance: number }) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const pathname = useRouterState({ select: (r) => r.location.pathname });
-  const search = useRouterState({ select: (r) => r.location.search }) as unknown as Record<string, string>;
+  const search = useRouterState({ select: (r) => r.location.search }) as unknown as Record<
+    string,
+    string
+  >;
 
   const groups: NavGroup[] = [
     {
@@ -101,14 +97,11 @@ function AppSidebar({
         { title: "Links", to: "/links", icon: LinkIcon },
         { title: "Statistics", to: "/statistics", icon: BarChart3 },
         { title: "Leaderboard", to: "/leaderboard", icon: Trophy },
-        
       ],
     },
     {
       label: "Earnings",
-      items: [
-        { title: "Withdraw", to: "/withdraw", icon: Wallet },
-      ],
+      items: [{ title: "Withdraw", to: "/withdraw", icon: Wallet }],
     },
     {
       label: "Communication",
@@ -122,15 +115,9 @@ function AppSidebar({
   if (isAdmin) {
     groups.push({
       label: "Control Center",
-      items: [
-        { title: "Control Panel", to: "/control-panel", icon: Shield },
-        
-      ],
+      items: [{ title: "Control Panel", to: "/control-panel", icon: Shield }],
     });
   }
-
-
-
 
   const isActive = (item: NavChild) => {
     if (pathname !== item.to) return false;
@@ -138,15 +125,18 @@ function AppSidebar({
     return Object.entries(item.search).every(([k, v]) => search?.[k] === v);
   };
 
-  const anyChildActive = (children?: NavChild[]) =>
-    !!children?.some((c) => isActive(c));
+  const anyChildActive = (children?: NavChild[]) => !!children?.some((c) => isActive(c));
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b">
         <Link
           to="/dashboard"
-          className={collapsed ? "flex items-center justify-center px-2 py-2" : "flex items-center gap-2 px-2 py-2"}
+          className={
+            collapsed
+              ? "flex items-center justify-center px-2 py-2"
+              : "flex items-center gap-2 px-2 py-2"
+          }
           aria-label="AdsPx home"
         >
           <AdspxMark className={collapsed ? "h-7 w-7" : "h-8 w-8 shrink-0"} glow />
@@ -159,8 +149,6 @@ function AppSidebar({
       </SidebarHeader>
 
       <SidebarContent>
-
-
         {groups.map((group) => (
           <SidebarGroup key={group.label}>
             {!collapsed && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
@@ -202,8 +190,6 @@ function AppSidebar({
                           {!collapsed && <span className="font-medium truncate">{item.title}</span>}
                         </Link>
                       </SidebarMenuButton>
-
-
 
                       {item.children && !collapsed && (
                         <SidebarMenuSub>
@@ -260,9 +246,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       ]);
       return {
         hasUser: true,
-        isAdmin: !!rolesRes.data?.some(
-          (r: any) => r.role === "admin" || r.role === "super_admin",
-        ),
+        isAdmin: !!rolesRes.data?.some((r: any) => r.role === "admin" || r.role === "super_admin"),
         email: user.email ?? "",
         fullName: (profileRes.data as any)?.full_name ?? "",
         balance: Number((profileRes.data as any)?.balance_available ?? 0),
@@ -287,4 +271,3 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 export default AppShell;
-

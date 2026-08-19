@@ -9,30 +9,37 @@ import { useEffect, useState, useCallback } from "react";
 export const FLAGGED_SHORT_DOMAINS: readonly string[] = ["tekuc.com"];
 
 export function isFlaggedShortDomain(host: string): boolean {
-  const h = (host || "").toLowerCase().split(":")[0].replace(/^www\./, "").trim();
+  const h = (host || "")
+    .toLowerCase()
+    .split(":")[0]
+    .replace(/^www\./, "")
+    .trim();
   return FLAGGED_SHORT_DOMAINS.includes(h);
 }
 
 export const SHORT_DOMAINS = [
-  { host: "adswapx.com", label: "adswapx.com" },
+  { host: "adswapx.com", label: "adswapx.com (Primary)" },
+  { host: "linkfly.link", label: "linkfly.link (Short 1)" },
+  { host: "pxclick.me", label: "pxclick.me (Short 2)" },
+  { host: "urlshift.co", label: "urlshift.co (Short 3)" },
 ] as const;
 
-export type ShortDomainHost = (typeof SHORT_DOMAINS)[number]["host"];
+export type ShortDomainHost = string;
 
 /**
  * Default shortener host. Safe pages / articles are ALWAYS served from a
- * shortener domain — never from the SaaS main domain. Add a new shortener
- * domain to SHORT_DOMAINS and the whole safe-page system picks it up
+ * shortener domain — never from the SaaS main domain. Add new shortener
+ * domains to SHORT_DOMAINS and the whole safe-page system picks it up
  * automatically (visitors always stay on the domain they arrived on).
  */
 export const DEFAULT_SHORT_HOST = "adswapx.com";
 export const DEFAULT_SHORT_ORIGIN = `https://${DEFAULT_SHORT_HOST}`;
 
 const STORAGE_KEY = "adspx.shortDomain";
-const DEFAULT_HOST: ShortDomainHost = "adswapx.com";
+const DEFAULT_HOST = "adswapx.com";
 
-function isValidHost(h: string | null): h is ShortDomainHost {
-  return !!h && !isFlaggedShortDomain(h) && SHORT_DOMAINS.some((d) => d.host === h);
+function isValidHost(h: string | null): h is string {
+  return typeof h === "string" && h.length > 0 && !isFlaggedShortDomain(h);
 }
 
 /**

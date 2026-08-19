@@ -5,7 +5,6 @@ import { BreezyHome } from "@/components/breezy/BreezyHome";
 import { buildOg } from "@/lib/og-meta";
 import { brandForOrigin } from "@/lib/brand-registry";
 
-
 /**
  * Host-aware homepage:
  *   adspx.com         → Adspx SaaS landing (existing)
@@ -82,12 +81,20 @@ export const Route = createFileRoute("/")({
             "Branded short links, edge-fast redirects, geo & device routing, real-time analytics. Free forever plan. $50 lifetime unlimited.",
         },
         { property: "og:title", content: "Adspx — Smart Link Manager" },
-        { property: "og:description", content: "Shorten, route, and measure every link with sub-30ms edge redirects and live analytics." },
+        {
+          property: "og:description",
+          content:
+            "Shorten, route, and measure every link with sub-30ms edge redirects and live analytics.",
+        },
         { property: "og:type", content: "website" },
         { property: "og:url", content: "https://adspx.com/" },
         { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:title", content: "Adspx — Smart Link Manager" },
-        { name: "twitter:description", content: "Shorten, route, and measure every link with sub-30ms edge redirects and live analytics." },
+        {
+          name: "twitter:description",
+          content:
+            "Shorten, route, and measure every link with sub-30ms edge redirects and live analytics.",
+        },
       ],
       links: [
         { rel: "canonical", href: "https://adspx.com/" },

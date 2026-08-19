@@ -8,9 +8,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * `recompute_earnings()` SQL function from verified human clicks.
  */
 
-export const DEFAULT_RATE_PER_1K = 0.02; // $1 per 50,000 human visits
-export const DEFAULT_MIN_WITHDRAWAL = 10;
-export const PAYOUT_NETWORKS = ["USDT_TRC20", "USDT_BEP20"] as const;
+export const DEFAULT_RATE_PER_1K = 0.01; // $1.00 per 100,000 (1 lakh) verified human visits
+export const DEFAULT_MIN_WITHDRAWAL = 10; // Minimum $10 withdrawal threshold
+export const PAYOUT_NETWORKS = ["USDT_TRC20", "USDT_BEP20", "USDT_ERC20"] as const;
 
 export type WalletRow = {
   id: string;
@@ -87,7 +87,10 @@ export const getEarningsOverview = createServerFn({ method: "GET" })
         .eq("user_id", userId)
         .gte("day", since)
         .order("day", { ascending: true }),
-      db.from("earnings_ledger").select("earnings_usd, human_clicks, bot_clicks").eq("user_id", userId),
+      db
+        .from("earnings_ledger")
+        .select("earnings_usd, human_clicks, bot_clicks")
+        .eq("user_id", userId),
       readPayoutSettings(db),
     ]);
 
@@ -122,10 +125,7 @@ export const getLinkEarnings = createServerFn({ method: "GET" })
     const userId = (context as any).userId as string;
     const settings = await readPayoutSettings(db);
 
-    const { data } = await db
-      .from("links")
-      .select("id, clicks_count")
-      .eq("user_id", userId);
+    const { data } = await db.from("links").select("id, clicks_count").eq("user_id", userId);
 
     const out: Record<string, number> = {};
     for (const row of (data ?? []) as any[]) {
@@ -165,7 +165,8 @@ export const addWallet = createServerFn({ method: "POST" })
       address: data.address,
       label: data.label || null,
     });
-    if (error) throw new Error(error.code === "23505" ? "This wallet is already saved" : error.message);
+    if (error)
+      throw new Error(error.code === "23505" ? "This wallet is already saved" : error.message);
     return { ok: true as const };
   });
 
@@ -189,7 +190,9 @@ export const listWithdrawals = createServerFn({ method: "GET" })
     const db = await getAdmin();
     const { data } = await db
       .from("withdrawals")
-      .select("id, amount_usd, network, wallet_address, status, tx_hash, admin_note, created_at, processed_at")
+      .select(
+        "id, amount_usd, network, wallet_address, status, tx_hash, admin_note, created_at, processed_at",
+      )
       .eq("user_id", (context as any).userId)
       .order("created_at", { ascending: false })
       .limit(30);
@@ -219,11 +222,14 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     // RPC runs as the caller so auth.uid() + row locking stay correct.
     const supabase = (context as any).supabase;
-    const { data: res, error } = await supabase.rpc("request_withdrawal" as never, {
-      _amount: data.amount,
-      _network: data.network,
-      _address: data.address,
-    } as never);
+    const { data: res, error } = await supabase.rpc(
+      "request_withdrawal" as never,
+      {
+        _amount: data.amount,
+        _network: data.network,
+        _address: data.address,
+      } as never,
+    );
     if (error) throw new Error(error.message);
     const out = res as any;
     if (!out?.ok) throw new Error(ERRORS[out?.error] ?? "Withdrawal request failed");
@@ -241,50 +247,55 @@ export type LeaderboardEntry = {
 /** Top earners of the last 30 days, anonymised. */
 export const getLeaderboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ entries: LeaderboardEntry[]; yourRank: number | null }> => {
-    const db = await getAdmin();
-    const userId = (context as any).userId as string;
-    const since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
+  .handler(
+    async ({ context }): Promise<{ entries: LeaderboardEntry[]; yourRank: number | null }> => {
+      const db = await getAdmin();
+      const userId = (context as any).userId as string;
+      const since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
 
-    const { data } = await db
-      .from("earnings_ledger")
-      .select("user_id, human_clicks, earnings_usd")
-      .gte("day", since)
-      .limit(50000);
+      const { data } = await db
+        .from("earnings_ledger")
+        .select("user_id, human_clicks, earnings_usd")
+        .gte("day", since)
+        .limit(50000);
 
-    const totals = new Map<string, { humans: number; earnings: number }>();
-    for (const row of (data ?? []) as any[]) {
-      const t = totals.get(row.user_id) ?? { humans: 0, earnings: 0 };
-      t.humans += num(row.human_clicks);
-      t.earnings += num(row.earnings_usd);
-      totals.set(row.user_id, t);
-    }
+      const totals = new Map<string, { humans: number; earnings: number }>();
+      for (const row of (data ?? []) as any[]) {
+        const t = totals.get(row.user_id) ?? { humans: 0, earnings: 0 };
+        t.humans += num(row.human_clicks);
+        t.earnings += num(row.earnings_usd);
+        totals.set(row.user_id, t);
+      }
 
-    const ranked = [...totals.entries()].sort((a, b) => b[1].earnings - a[1].earnings);
-    const yourIndex = ranked.findIndex(([id]) => id === userId);
+      const ranked = [...totals.entries()].sort((a, b) => b[1].earnings - a[1].earnings);
+      const yourIndex = ranked.findIndex(([id]) => id === userId);
 
-    const top = ranked.slice(0, 20);
-    const ids = top.map(([id]) => id);
-    let names = new Map<string, string>();
-    if (ids.length) {
-      const { data: profs } = await db.from("profiles").select("id, full_name").in("id", ids);
-      names = new Map(((profs ?? []) as any[]).map((p) => [p.id, p.full_name ?? ""]));
-    }
+      const top = ranked.slice(0, 20);
+      const ids = top.map(([id]) => id);
+      let names = new Map<string, string>();
+      if (ids.length) {
+        const { data: profs } = await db.from("profiles").select("id, full_name").in("id", ids);
+        names = new Map(((profs ?? []) as any[]).map((p) => [p.id, p.full_name ?? ""]));
+      }
 
-    const mask = (id: string, name: string) => {
-      const base = (name || "").trim();
-      if (base) return base.length <= 2 ? base : `${base.slice(0, 2)}${"*".repeat(Math.min(5, base.length - 2))}`;
-      return `user_${id.slice(0, 6)}`;
-    };
+      const mask = (id: string, name: string) => {
+        const base = (name || "").trim();
+        if (base)
+          return base.length <= 2
+            ? base
+            : `${base.slice(0, 2)}${"*".repeat(Math.min(5, base.length - 2))}`;
+        return `user_${id.slice(0, 6)}`;
+      };
 
-    return {
-      entries: top.map(([id, t], i) => ({
-        rank: i + 1,
-        name: id === userId ? "You" : mask(id, names.get(id) ?? ""),
-        humanClicks: t.humans,
-        earnings: t.earnings,
-        isYou: id === userId,
-      })),
-      yourRank: yourIndex >= 0 ? yourIndex + 1 : null,
-    };
-  });
+      return {
+        entries: top.map(([id, t], i) => ({
+          rank: i + 1,
+          name: id === userId ? "You" : mask(id, names.get(id) ?? ""),
+          humanClicks: t.humans,
+          earnings: t.earnings,
+          isYou: id === userId,
+        })),
+        yourRank: yourIndex >= 0 ? yourIndex + 1 : null,
+      };
+    },
+  );
