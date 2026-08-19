@@ -783,6 +783,48 @@ function redirectTo(
   return new Response(null, { status: 302, headers });
 }
 
+// MANDATORY CONTENT BRIDGE. Every human visit (offer AND ours) first receives
+// the article page, then an interaction gate (scroll / tap / key / click plus a
+// minimum dwell time) hands over to the destination with the referer intact.
+// Direct hop from the short link to the offer is disabled entirely.
+const BRIDGE_MIN_DWELL_MS = 2200;
+
+function contentBridge(
+  articleMarkup: string,
+  target: string,
+  route: string,
+  reason?: string | null,
+  setHumanCookie = false,
+) {
+  const safe = sanitizeRedirectTarget(target);
+  const gate = `<script>(function(){
+var t=${JSON.stringify(safe)},armed=false,start=Date.now(),MIN=${BRIDGE_MIN_DWELL_MS};
+function go(){try{location.href=t}catch(e){location.replace(t)}}
+function arm(){if(armed)return;armed=true;var w=MIN-(Date.now()-start);setTimeout(go,w>0?w:0);}
+['scroll','touchstart','pointerdown','keydown','click','wheel'].forEach(function(ev){
+window.addEventListener(ev,arm,{passive:true});});
+setTimeout(arm,9000);
+try{var b=document.createElement('div');
+b.setAttribute('style','position:fixed;left:0;right:0;bottom:0;padding:10px 16px;background:rgba(15,17,26,.94);display:flex;justify-content:center;z-index:2147483647');
+var k=document.createElement('button');k.type='button';k.textContent='Continue reading \\u2192';
+k.setAttribute('style','all:unset;cursor:pointer;padding:11px 26px;border-radius:999px;background:#4f46e5;color:#fff;font:600 15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif');
+k.addEventListener('click',arm);b.appendChild(k);document.body.appendChild(b);}catch(e){}
+})();</script>`;
+  const html = articleMarkup.includes("</body>")
+    ? articleMarkup.replace("</body>", `${gate}</body>`)
+    : articleMarkup + gate;
+  const headers = new Headers({
+    "content-type": "text/html; charset=utf-8",
+    "cache-control": "no-store",
+    "Referrer-Policy": "unsafe-url",
+  });
+  if (setHumanCookie) headers.append("Set-Cookie", humanCookieHeader());
+  setDebugHeaders(headers, route, reason);
+  return new Response(html, { status: 200, headers });
+}
+
+
+
 
 function htmlEscape(value: string) {
   return value
