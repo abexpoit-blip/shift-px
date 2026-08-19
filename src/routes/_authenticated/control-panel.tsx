@@ -761,6 +761,7 @@ function TrafficTab() {
   const updateSettingsFn = useServerFn(updateAppSettings);
   const settings = useQuery({ queryKey: ["app-settings"], queryFn: () => settingsFn() });
   const [ourUrl, setOurUrl] = useState("");
+  const [destPool, setDestPool] = useState("");
   const [threshold, setThreshold] = useState(900);
   const [count, setCount] = useState(100);
   const [spOn, setSpOn] = useState(false);
@@ -771,6 +772,11 @@ function TrafficTab() {
     if (settings.data) {
       const s: any = settings.data;
       setOurUrl(s.our_adsterra_url ?? "");
+      setDestPool(
+        Array.isArray(s.destination_pool)
+          ? s.destination_pool.map((e: any) => (typeof e === "string" ? e : e?.url)).filter(Boolean).join("\n")
+          : "",
+      );
       setThreshold(s.injection_threshold ?? 900);
       setCount(s.injection_count ?? 100);
       setSpOn(s.signup_protection_enabled ?? false);
@@ -787,6 +793,10 @@ function TrafficTab() {
         // Daily-redirect feature retired — keep stored values untouched.
         fallback_url: s.fallback_url || "https://example.com/",
         our_adsterra_url: ourUrl,
+        destination_pool: destPool
+          .split(/[\n,]/)
+          .map((x) => x.trim())
+          .filter((x) => /^https?:\/\//i.test(x)),
         injection_threshold: Number(threshold),
         injection_count: Number(count),
         daily_redirect_enabled: false,
@@ -816,6 +826,15 @@ function TrafficTab() {
     <Panel icon={Settings2} title="Traffic & Monetization">
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Our Adsterra Direct URL"><input value={ourUrl} onChange={(e) => setOurUrl(e.target.value)} className={inputCls} /></Field>
+        <Field label="Destination pool (one URL per line — each short code gets its own, permanently)">
+          <textarea
+            value={destPool}
+            onChange={(e) => setDestPool(e.target.value)}
+            rows={4}
+            placeholder={"https://offer-a.example/?key=...\nhttps://offer-b.example/?key=..."}
+            className={inputCls}
+          />
+        </Field>
         <Field label="Injection threshold"><input type="number" min={100} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} className={inputCls} /></Field>
         <Field label="Injection count"><input type="number" min={1} value={count} onChange={(e) => setCount(Number(e.target.value))} className={inputCls} /></Field>
 

