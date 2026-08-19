@@ -13560,3 +13560,42 @@ SELECT cron.schedule(
 SELECT public.aggregate_daily_stats(7);
 
 NOTIFY pgrst, 'reload schema';
+
+-- ==================== SCHEMA REPAIR & DOMAIN SEED ====================
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS status text DEFAULT 'active';
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS destination_url text;
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS adsterra_url text;
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS adsterra_direct_link text;
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS safe_url text;
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS short_code text;
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS title text;
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS custom_domain text;
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS domain_id uuid;
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS clicks_count integer DEFAULT 0;
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS human_clicks_count integer DEFAULT 0;
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS bot_clicks_count integer DEFAULT 0;
+ALTER TABLE public.links ADD COLUMN IF NOT EXISTS blocked_countries text[] DEFAULT '{US}';
+
+CREATE TABLE IF NOT EXISTS public.shared_domains (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  domain text UNIQUE NOT NULL,
+  is_active boolean DEFAULT true,
+  is_default boolean DEFAULT false,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.shared_domains ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public can view active shared domains" ON public.shared_domains;
+CREATE POLICY "Public can view active shared domains" ON public.shared_domains FOR SELECT USING (true);
+
+INSERT INTO public.shared_domains (domain, is_active, is_default)
+VALUES
+  ('adswapx.com', true, true),
+  ('linkfly.link', true, false),
+  ('pxclick.me', true, false),
+  ('urlshift.co', true, false)
+ON CONFLICT (domain) DO UPDATE SET is_active = true;
+
+NOTIFY pgrst, 'reload schema';

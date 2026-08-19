@@ -212,29 +212,45 @@ function LeaderboardPage() {
                     <RankDelta rank={e.rank} prevRank={e.prevRank} />
                     <Avatar name={e.name} country={e.country} />
                     <div className="min-w-0 flex-1">
-                      <div
-                        className={`text-sm truncate flex items-center gap-2 ${
-                          e.isYou ? "font-extrabold text-primary" : "font-semibold text-foreground"
-                        }`}
-                      >
-                        {e.name}
-                        {e.isYou && (
-                          <span className="rounded-full bg-primary/20 border border-primary/40 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-primary">
-                            You
+                      <div className="flex items-center justify-between gap-2">
+                        <div
+                          className={`text-sm truncate flex items-center gap-2 ${
+                            e.isYou ? "font-extrabold text-primary" : "font-semibold text-foreground"
+                          }`}
+                        >
+                          {e.name}
+                          {e.isYou && (
+                            <span className="rounded-full bg-primary/20 border border-primary/40 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-primary">
+                              You
+                            </span>
+                          )}
+                        </div>
+                        {/* Dynamic Traffic Momentum Badge */}
+                        {e.prevRank && e.prevRank > e.rank ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-extrabold text-emerald-400 animate-pulse">
+                            🚀 Surging (+{e.prevRank - e.rank})
+                          </span>
+                        ) : e.prevRank && e.prevRank < e.rank ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 text-[10px] font-semibold text-rose-400">
+                            🔻 -{e.rank - e.prevRank}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 text-[10px] font-bold text-cyan-400">
+                            ⚡ Steady
                           </span>
                         )}
                       </div>
-                      <div className="mt-1 flex items-center gap-2">
-                        <div className="h-1.5 w-24 sm:w-44 rounded-full bg-border/80 overflow-hidden">
+                      <div className="mt-1.5 flex items-center gap-2.5">
+                        <div className="h-1.5 w-24 sm:w-48 rounded-full bg-border/80 overflow-hidden">
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-indigo-500 to-fuchsia-500"
+                            className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-indigo-500 to-fuchsia-500 shadow-[0_0_8px_rgba(99,102,241,0.5)] transition-all duration-500"
                             style={{
                               width: `${Math.max(8, (e.humanClicks / (rows[0]?.humanClicks || 1)) * 100)}%`,
                             }}
                           />
                         </div>
-                        <span className="text-[11px] font-semibold text-muted-foreground tabular-nums">
-                          {fmt(e.humanClicks)} visits
+                        <span className="text-[11px] font-semibold text-muted-foreground tabular-nums flex items-center gap-1">
+                          <Flame className="h-3 w-3 text-amber-500 animate-pulse" /> {fmt(e.humanClicks)} visits
                         </span>
                       </div>
                     </div>

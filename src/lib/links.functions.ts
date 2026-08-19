@@ -274,6 +274,7 @@ export const createLink = createServerFn({ method: "POST" })
         title: z.string().max(200).optional(),
         adsterra_url: z.string().url(),
         safe_url: z.string().url().optional(),
+        custom_domain: z.string().optional(),
       })
       .parse(d),
   )
@@ -308,13 +309,12 @@ export const createLink = createServerFn({ method: "POST" })
 
     // Minimal insert first — only columns that exist in every schema version.
     // Optional columns are applied afterwards, each ignoring "column missing"
-    // errors, so a partially-migrated DB can still create links.
+    // errors, so any DB schema can smoothly create links.
     const minimal: Record<string, unknown> = {
       user_id: context.userId,
       short_code: code,
       title: data.title ?? null,
       destination_url: data.adsterra_url,
-      status: "active",
     };
 
     let created: LinkRow | null = null;
@@ -322,7 +322,9 @@ export const createLink = createServerFn({ method: "POST" })
 
     for (const payload of [
       minimal,
-      // Ultra-legacy schema without destination_url
+      // Variant with is_active
+      { ...minimal, is_active: true },
+      // Ultra-legacy schema with adsterra_direct_link
       (() => {
         const p = { ...minimal };
         delete p.destination_url;
@@ -347,9 +349,11 @@ export const createLink = createServerFn({ method: "POST" })
 
     // Best-effort optional columns (ignored when the column is absent).
     const optional: Array<Record<string, unknown>> = [
+      { status: "active" },
+      { is_active: true },
       { adsterra_url: data.adsterra_url },
       { safe_url: safeUrlToStore },
-      { is_active: true },
+      { custom_domain: data.custom_domain ?? null },
       // Auto-shield US by default — FB ad reviewers concentrate in US datacenters.
       { blocked_countries: ["US"] },
     ];
