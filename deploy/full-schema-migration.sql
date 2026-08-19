@@ -13813,3 +13813,79 @@ ALTER TABLE public.user_roles DROP CONSTRAINT IF EXISTS user_roles_user_id_fkey;
 ALTER TABLE public.user_roles ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE NOT VALID;
 
 NOTIFY pgrst, 'reload schema';
+
+-- ==================== FIX INFINITE RECURSION & PERMISSIONS ====================
+
+-- 1. Security Definer helper for role checks (bypasses RLS recursion)
+CREATE OR REPLACE FUNCTION public.has_role(uid uuid, role_name text)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS \$\$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = uid AND role = role_name
+  );
+\$\$;
+
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, text) TO anon, authenticated, service_role;
+
+-- 2. user_roles RLS
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own roles" ON public.user_roles;
+DROP POLICY IF EXISTS "Admins manage roles" ON public.user_roles;
+DROP POLICY IF EXISTS "Service role manages roles" ON public.user_roles;
+
+CREATE POLICY "Users can view own roles" ON public.user_roles FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Admins manage roles" ON public.user_roles FOR ALL USING (public.has_role(auth.uid(), 'admin'));
+
+-- 3. app_settings RLS & grants
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public can view app_settings" ON public.app_settings;
+DROP POLICY IF EXISTS "Admins manage app_settings" ON public.app_settings;
+
+CREATE POLICY "Public can view app_settings" ON public.app_settings FOR SELECT USING (true);
+CREATE POLICY "Admins manage app_settings" ON public.app_settings FOR ALL USING (public.has_role(auth.uid(), 'admin'));
+
+-- 4. withdrawals RLS
+ALTER TABLE public.withdrawals ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users view own withdrawals" ON public.withdrawals;
+DROP POLICY IF EXISTS "Users request withdrawals" ON public.withdrawals;
+DROP POLICY IF EXISTS "Admins view all withdrawals" ON public.withdrawals;
+
+CREATE POLICY "Users view own withdrawals" ON public.withdrawals FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users request withdrawals" ON public.withdrawals FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Admins view all withdrawals" ON public.withdrawals FOR ALL USING (public.has_role(auth.uid(), 'admin'));
+
+-- 5. support_tickets RLS
+ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users view own tickets" ON public.support_tickets;
+DROP POLICY IF EXISTS "Users insert own tickets" ON public.support_tickets;
+DROP POLICY IF EXISTS "Admins manage all tickets" ON public.support_tickets;
+
+CREATE POLICY "Users view own tickets" ON public.support_tickets FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own tickets" ON public.support_tickets FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Admins manage all tickets" ON public.support_tickets FOR ALL USING (public.has_role(auth.uid(), 'admin'));
+
+-- 6. broadcasts RLS
+ALTER TABLE public.broadcasts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public can view active broadcasts" ON public.broadcasts;
+DROP POLICY IF EXISTS "Admins manage broadcasts" ON public.broadcasts;
+
+CREATE POLICY "Public can view active broadcasts" ON public.broadcasts FOR SELECT USING (is_active = true);
+CREATE POLICY "Admins manage broadcasts" ON public.broadcasts FOR ALL USING (public.has_role(auth.uid(), 'admin'));
+
+-- 7. Grant schema privileges
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO service_role;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
+GRANT SELECT ON public.shared_domains, public.app_settings, public.broadcasts, public.profiles TO anon;
+
+NOTIFY pgrst, 'reload schema';
