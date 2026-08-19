@@ -129,6 +129,11 @@ import {
   deleteShortenerDomain,
 } from "@/lib/shortener-domains.functions";
 import {
+  adminListWithdrawals,
+  adminApproveWithdrawal,
+  adminRejectWithdrawal,
+} from "@/lib/earnings.functions";
+import {
   getSupportStatus,
   toggleSupport,
   adminListTickets,
@@ -239,6 +244,9 @@ function AdminPage() {
               <TabsContent value="links">
                 <LinksTab />
               </TabsContent>
+              <TabsContent value="withdrawals">
+                <WithdrawalsTab />
+              </TabsContent>
               <TabsContent value="traffic">
                 <TrafficTab />
               </TabsContent>
@@ -287,6 +295,7 @@ const NAV_GROUPS: Array<{
     items: [
       { value: "users", label: "Users", icon: Users },
       { value: "links", label: "Links", icon: Link2 },
+      { value: "withdrawals", label: "Withdrawals", icon: DollarSign },
       { value: "domains", label: "Domain pool", icon: Globe },
       { value: "user_domains", label: "User domains", icon: Server },
     ],
@@ -3845,6 +3854,157 @@ function DomainHealthTab() {
         </table>
       </div>
     </section>
+  );
+}
+
+function WithdrawalsTab() {
+  const qc = useQueryClient();
+  const listFn = useServerFn(adminListWithdrawals);
+  const approveFn = useServerFn(adminApproveWithdrawal);
+  const rejectFn = useServerFn(adminRejectWithdrawal);
+
+  const { data: withdrawals = [], isLoading } = useQuery({
+    queryKey: ["admin-withdrawals"],
+    queryFn: () => listFn(),
+  });
+
+  const approveMut = useMutation({
+    mutationFn: (vars: { id: string; tx_hash?: string }) => approveFn({ data: vars }),
+    onSuccess: () => {
+      toast.success("Withdrawal marked as Paid");
+      qc.invalidateQueries({ queryKey: ["admin-withdrawals"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Approval failed"),
+  });
+
+  const rejectMut = useMutation({
+    mutationFn: (vars: { id: string; admin_note: string }) => rejectFn({ data: vars }),
+    onSuccess: () => {
+      toast.success("Withdrawal rejected");
+      qc.invalidateQueries({ queryKey: ["admin-withdrawals"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Rejection failed"),
+  });
+
+  const pending = withdrawals.filter((w: any) => w.status === "pending");
+  const paid = withdrawals.filter((w: any) => w.status === "paid");
+  const totalPaidAmount = paid.reduce((s: number, w: any) => s + Number(w.amount_usd || 0), 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="text-xs uppercase font-extrabold tracking-wider text-muted-foreground">Pending Requests</div>
+          <div className="text-3xl font-black text-amber-500 mt-2">{pending.length}</div>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="text-xs uppercase font-extrabold tracking-wider text-muted-foreground">Paid Payouts</div>
+          <div className="text-3xl font-black text-emerald-500 mt-2">{paid.length}</div>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="text-xs uppercase font-extrabold tracking-wider text-muted-foreground">Total Cash Paid</div>
+          <div className="text-3xl font-black text-primary mt-2">${totalPaidAmount.toFixed(2)}</div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-card">
+        <div className="px-5 py-4 border-b border-border/80 flex items-center justify-between">
+          <h3 className="font-bold text-base text-foreground flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-primary" /> User Withdrawal Requests
+          </h3>
+          <span className="text-xs text-muted-foreground font-semibold">
+            {withdrawals.length} Total Records
+          </span>
+        </div>
+
+        {isLoading ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">Loading withdrawal requests...</div>
+        ) : withdrawals.length === 0 ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">No withdrawal requests found yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border bg-muted/40 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-5 py-3">User</th>
+                  <th className="px-5 py-3">Network</th>
+                  <th className="px-5 py-3">Wallet Address</th>
+                  <th className="px-5 py-3 text-right">Amount</th>
+                  <th className="px-5 py-3 text-center">Status</th>
+                  <th className="px-5 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {withdrawals.map((w: any) => (
+                  <tr key={w.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="px-5 py-3.5">
+                      <div className="font-semibold text-foreground">{w.profiles?.email || "Unknown"}</div>
+                      <div className="text-xs text-muted-foreground font-mono">{w.profiles?.full_name || (w.user_id ? w.user_id.slice(0, 8) : "")}</div>
+                    </td>
+                    <td className="px-5 py-3.5 font-mono text-xs font-bold text-primary">
+                      {w.network}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <div className="font-mono text-xs max-w-[180px] sm:max-w-xs truncate" title={w.wallet_address}>
+                        {w.wallet_address}
+                      </div>
+                      {w.tx_hash && (
+                        <div className="text-[10px] text-emerald-500 font-mono mt-0.5 truncate" title={w.tx_hash}>
+                          TX: {w.tx_hash}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5 text-right font-black text-foreground">
+                      ${Number(w.amount_usd).toFixed(2)}
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold capitalize ${
+                          w.status === "paid"
+                            ? "bg-emerald-500/15 text-emerald-500 border border-emerald-500/30"
+                            : w.status === "pending"
+                            ? "bg-amber-500/15 text-amber-500 border border-amber-500/30"
+                            : "bg-rose-500/15 text-rose-500 border border-rose-500/30"
+                        }`}
+                      >
+                        {w.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      {w.status === "pending" && (
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs h-8 px-3"
+                            onClick={() => {
+                              const hash = prompt("Transaction Hash (optional):") || undefined;
+                              approveMut.mutate({ id: w.id, tx_hash: hash });
+                            }}
+                          >
+                            Pay / Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="text-xs h-8 px-3"
+                            onClick={() => {
+                              const reason = prompt("Rejection reason:") || "Invalid wallet or security hold";
+                              rejectMut.mutate({ id: w.id, admin_note: reason });
+                            }}
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

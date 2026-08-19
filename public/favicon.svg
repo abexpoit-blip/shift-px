@@ -5,17 +5,18 @@
       <stop offset="50%" stop-color="#6366F1"/>
       <stop offset="100%" stop-color="#D946EF"/>
     </linearGradient>
-    <linearGradient id="fav-ring" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#00F5FF"/>
-      <stop offset="100%" stop-color="#D946EF"/>
+    <linearGradient id="fav-halo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00F5FF" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.9"/>
     </linearGradient>
   </defs>
-  <!-- Base Dark Shield -->
-  <rect x="2" y="2" width="44" height="44" rx="12" fill="#070913" stroke="url(#fav-ring)" stroke-width="1.8"/>
+  <!-- Outer Neon Aura Ring -->
+  <rect x="3" y="3" width="42" height="42" rx="13" fill="none" stroke="url(#fav-halo)" stroke-width="1.8" stroke-dasharray="14 6"/>
   <!-- Glowing Monogram A+X -->
-  <path d="M13 33 L21 15 C21.6 13.8 23.4 13.8 24 15 L26 19.5 L19 33 Z" fill="url(#fav-core)"/>
-  <path d="M35 33 L25 15 C24.4 13.8 22.6 13.8 22 15 L20 19.5 L31 33 Z" fill="#00F5FF" opacity="0.9"/>
-  <path d="M16.5 25.5 L31.5 25.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
-  <circle cx="24" cy="20" r="2.2" fill="#FFFFFF"/>
+  <path d="M12 34 L21 14 C21.6 12.8 23.4 12.8 24 14 L26 18.5 L18.5 34 Z" fill="url(#fav-core)"/>
+  <path d="M36 34 L25 14 C24.4 12.8 22.6 12.8 22 14 L20 18.5 L32 34 Z" fill="#00F5FF" opacity="0.95"/>
+  <path d="M16 26 L32 26" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="24" cy="19.5" r="2.4" fill="#FFFFFF"/>
 </svg>
+
 
