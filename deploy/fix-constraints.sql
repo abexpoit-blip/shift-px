@@ -121,3 +121,9 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authentic
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated, anon, service_role, postgres;
 
 NOTIFY pgrst, 'reload schema';
+
+-- Grant execute on click counting RPCs
+GRANT EXECUTE ON FUNCTION public.record_redirect_clicks_batch(jsonb) TO anon, authenticated, service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+
+NOTIFY pgrst, 'reload schema';
