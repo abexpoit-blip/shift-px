@@ -90,9 +90,9 @@ function SignupPage() {
   return (
     <div className="min-h-screen grid place-items-center bg-background px-6 py-10">
       <div className="w-full max-w-md">
-        <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-          <AdspxMark className="h-8 w-8" />
-          <span className="font-display font-semibold text-lg tracking-tight">
+        <Link to="/" className="flex items-center justify-center gap-3 mb-8 group">
+          <AdspxMark className="h-12 w-12 transition-transform duration-300 group-hover:scale-105" glow />
+          <span className="font-display font-black text-2xl tracking-tight">
             Ads<span className="text-gradient">Px</span>
           </span>
         </Link>

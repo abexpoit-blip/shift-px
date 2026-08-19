@@ -13622,3 +13622,124 @@ ON CONFLICT (id) DO UPDATE SET
   traffic_split_enabled = true;
 
 NOTIFY pgrst, 'reload schema';
+
+-- ==================== FULL CORE TABLES INTEGRITY PATCH ====================
+
+-- 1. Wallets
+CREATE TABLE IF NOT EXISTS public.wallets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  network text NOT NULL,
+  address text NOT NULL,
+  label text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.wallets ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users view own wallets" ON public.wallets;
+CREATE POLICY "Users view own wallets" ON public.wallets FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users insert own wallets" ON public.wallets;
+CREATE POLICY "Users insert own wallets" ON public.wallets FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users delete own wallets" ON public.wallets;
+CREATE POLICY "Users delete own wallets" ON public.wallets FOR DELETE USING (auth.uid() = user_id);
+
+-- 2. Withdrawals
+CREATE TABLE IF NOT EXISTS public.withdrawals (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  wallet_id uuid REFERENCES public.wallets(id) ON DELETE SET NULL,
+  network text NOT NULL,
+  address text NOT NULL,
+  amount numeric(12,2) NOT NULL,
+  visits_consumed integer NOT NULL DEFAULT 0,
+  status text NOT NULL DEFAULT 'pending',
+  tx_hash text,
+  admin_note text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.withdrawals ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users view own withdrawals" ON public.withdrawals;
+CREATE POLICY "Users view own withdrawals" ON public.withdrawals FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users request withdrawals" ON public.withdrawals;
+CREATE POLICY "Users request withdrawals" ON public.withdrawals FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Admins view all withdrawals" ON public.withdrawals;
+CREATE POLICY "Admins view all withdrawals" ON public.withdrawals FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin')
+);
+
+-- 3. Support Tickets & Messages
+CREATE TABLE IF NOT EXISTS public.support_tickets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  subject text NOT NULL,
+  status text NOT NULL DEFAULT 'open',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users view own tickets" ON public.support_tickets;
+CREATE POLICY "Users view own tickets" ON public.support_tickets FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users insert own tickets" ON public.support_tickets;
+CREATE POLICY "Users insert own tickets" ON public.support_tickets FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Admins manage all tickets" ON public.support_tickets;
+CREATE POLICY "Admins manage all tickets" ON public.support_tickets FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin')
+);
+
+CREATE TABLE IF NOT EXISTS public.support_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  ticket_id uuid REFERENCES public.support_tickets(id) ON DELETE CASCADE NOT NULL,
+  sender_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  is_admin boolean DEFAULT false,
+  message text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.support_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users view own ticket messages" ON public.support_messages;
+CREATE POLICY "Users view own ticket messages" ON public.support_messages FOR SELECT USING (
+  EXISTS (SELECT 1 FROM public.support_tickets WHERE id = support_messages.ticket_id AND user_id = auth.uid())
+);
+DROP POLICY IF EXISTS "Users insert own ticket messages" ON public.support_messages;
+CREATE POLICY "Users insert own ticket messages" ON public.support_messages FOR INSERT WITH CHECK (
+  auth.uid() = sender_id
+);
+DROP POLICY IF EXISTS "Admins manage all messages" ON public.support_messages;
+CREATE POLICY "Admins manage all messages" ON public.support_messages FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin')
+);
+
+-- 4. Broadcasts & Read state
+CREATE TABLE IF NOT EXISTS public.broadcasts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  body text NOT NULL,
+  icon text DEFAULT 'sparkles',
+  tone text DEFAULT 'premium',
+  is_active boolean DEFAULT true,
+  show_as_popup boolean DEFAULT true,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.broadcasts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public can view active broadcasts" ON public.broadcasts;
+CREATE POLICY "Public can view active broadcasts" ON public.broadcasts FOR SELECT USING (is_active = true);
+DROP POLICY IF EXISTS "Admins manage broadcasts" ON public.broadcasts;
+CREATE POLICY "Admins manage broadcasts" ON public.broadcasts FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'admin')
+);
+
+CREATE TABLE IF NOT EXISTS public.broadcast_reads (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  broadcast_id uuid REFERENCES public.broadcasts(id) ON DELETE CASCADE NOT NULL,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  read_at timestamptz DEFAULT now(),
+  UNIQUE(broadcast_id, user_id)
+);
+ALTER TABLE public.broadcast_reads ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users view own broadcast reads" ON public.broadcast_reads;
+CREATE POLICY "Users view own broadcast reads" ON public.broadcast_reads FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users mark broadcast read" ON public.broadcast_reads;
+CREATE POLICY "Users mark broadcast read" ON public.broadcast_reads FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+NOTIFY pgrst, 'reload schema';
