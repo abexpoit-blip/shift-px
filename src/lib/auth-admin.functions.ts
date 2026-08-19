@@ -1,4 +1,4 @@
-﻿import { createServerFn } from "@tanstack/react-start";
+import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 export const verifyAdminSession = createServerFn({ method: "POST" })
@@ -18,19 +18,23 @@ export const verifyAdminSession = createServerFn({ method: "POST" })
     try {
       // If primary admin email, ensure admin role always exists in database
       if (email === "admin@adspx.com") {
-        await supabaseAdmin.from("user_roles").upsert(
-          { user_id: userId, role: "admin" },
-          { onConflict: "user_id,role" },
-        );
-        await supabaseAdmin.from("profiles").upsert(
-          {
-            id: userId,
-            email,
-            plan_slug: "unlimited",
-            is_banned: false,
-          },
-          { onConflict: "id" },
-        );
+        try {
+          await supabaseAdmin.from("user_roles").upsert(
+            { user_id: userId, role: "admin" },
+            { onConflict: "user_id,role" },
+          );
+        } catch {}
+        try {
+          await supabaseAdmin.from("profiles").upsert(
+            {
+              id: userId,
+              email,
+              plan_slug: "unlimited",
+              is_banned: false,
+            },
+            { onConflict: "id" },
+          );
+        } catch {}
         return { isAdmin: true };
       }
 

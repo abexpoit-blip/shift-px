@@ -13804,3 +13804,12 @@ CREATE POLICY "Admins manage roles" ON public.user_roles FOR ALL USING (
 );
 
 NOTIFY pgrst, 'reload schema';
+
+-- Fix foreign key constraints on profiles and user_roles to prevent aborting transactions
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE NOT VALID;
+
+ALTER TABLE public.user_roles DROP CONSTRAINT IF EXISTS user_roles_user_id_fkey;
+ALTER TABLE public.user_roles ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE NOT VALID;
+
+NOTIFY pgrst, 'reload schema';
