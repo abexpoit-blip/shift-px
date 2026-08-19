@@ -4,6 +4,8 @@
 // - Deterministic per short_code (same link = same article = FB-cache safe)
 // - JSON-LD Article schema for richer crawler signals
 
+import { applySkin } from "@/lib/page-skin";
+
 export type PrelandingTemplate =
   | "verify"
   | "reward"
@@ -1411,9 +1413,15 @@ export function renderPrelanding(
   requestOrigin?: string,
 ): string {
   // Article variant — pick by name
-  if (template in ARTICLES) return articleHtml(ARTICLES[template], template, code, token, mode, requestOrigin);
-  // Generic "article" or legacy templates → default to health (best safe content)
-  return articleHtml(ARTICLES.article_health, "article_health", code, token, mode, requestOrigin);
+  const html =
+    template in ARTICLES
+      ? articleHtml(ARTICLES[template], template, code, token, mode, requestOrigin)
+      : // Generic "article" or legacy templates → default to health (best safe content)
+        articleHtml(ARTICLES.article_health, "article_health", code, token, mode, requestOrigin);
+
+  // Structural rotation: deterministic per short code, stable across re-scrapes,
+  // never touches head metadata / OG tags / JSON-LD.
+  return applySkin(html, code);
 }
 
 export function pickArticleTemplate(template: PrelandingTemplate): PrelandingTemplate {

