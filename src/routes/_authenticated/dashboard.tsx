@@ -360,7 +360,7 @@ function DashboardPage() {
                 <Coins className="w-4 h-4 text-primary" /> Payout progress
               </h4>
               <p className="text-xs text-muted-foreground mt-1">
-                $1 for every 50,000 verified human visits.
+                $1 for every 100,000 verified human visits.
               </p>
 
               <div className="mt-5 flex items-center justify-center">

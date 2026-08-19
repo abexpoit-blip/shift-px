@@ -217,7 +217,7 @@ function Hero() {
             <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-xl leading-relaxed">
               AdsPx is the short-link platform built for creators. Share on
               <strong className="text-foreground"> Facebook</strong>, Telegram or YouTube and earn
-              <strong className="text-foreground"> $1 per 50,000 visits</strong>. Withdraw in
+              <strong className="text-foreground"> $1 per 100,000 visits</strong>. Withdraw in
               <strong className="text-foreground"> USDT</strong> from just $10.
             </p>
 
@@ -482,7 +482,7 @@ function HowItWorks() {
         <div className="md:col-span-5 rounded-3xl bg-card border-2 border-foreground p-7 flex flex-col justify-center items-center text-center">
           <div className="font-display text-5xl md:text-6xl font-black text-gradient">$1.00</div>
           <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">
-            Per 50,000 clicks
+            Per 100,000 clicks
           </div>
 
           <div className="mt-5 grid grid-cols-8 gap-1" aria-hidden>
@@ -511,8 +511,8 @@ function HowItWorks() {
 /* ─────────────────────────────────────────────── EARNINGS CALCULATOR */
 function EarningsCalculator() {
   const [daily, setDaily] = useState(5000);
-  // $1 per 50,000 clicks
-  const rate = 1 / 50000;
+  // $1 per 100,000 clicks
+  const rate = 1 / 100000;
 
   const dailyEarn = daily * rate;
   const monthlyEarn = dailyEarn * 30;
@@ -582,7 +582,7 @@ function EarningsCalculator() {
         </div>
 
         <p className="text-xs text-center text-muted-foreground mt-6 leading-relaxed">
-          Flat rate: <strong className="text-foreground">$1 per 50,000 real visits</strong> ·
+          Flat rate: <strong className="text-foreground">$1 per 100,000 real visits</strong> ·
           Minimum withdrawal: <strong className="text-foreground">$10 USDT (TRC20 / BEP20)</strong>{" "}
           · Bot traffic auto-filtered.
         </p>
@@ -608,7 +608,7 @@ function Sponsors() {
           ad-network links on <strong className="text-foreground">Facebook</strong>. We negotiate
           bulk deals with these networks at scale, then pass{" "}
           <strong className="text-foreground">most of the revenue back to you</strong> — that's how
-          we can pay <strong className="text-foreground">$1 per 50,000 visits</strong> with zero
+          we can pay <strong className="text-foreground">$1 per 100,000 visits</strong> with zero
           hidden cuts.
         </p>
       </div>

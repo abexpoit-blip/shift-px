@@ -45,8 +45,8 @@ export function currentSlot(now = Date.now()): number {
   return Math.floor(now / LEADERBOARD_SLOT_MS);
 }
 
-/** Rate used by the payout engine: $1 per 50,000 verified human visits. */
-const RATE_PER_CLICK = 1 / 50_000;
+/** Rate used by the payout engine: $1 per 100,000 verified human visits. */
+const RATE_PER_CLICK = 1 / 100_000;
 
 export function demoLeaderboard(now = Date.now()): DemoEntry[] {
   const slot = currentSlot(now);

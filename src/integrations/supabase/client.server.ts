@@ -32,24 +32,20 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
+const DEFAULT_SUPABASE_URL = "http://127.0.0.1:8000";
+const DEFAULT_SERVICE_ROLE_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3ODI4MTQ2MzksImV4cCI6MjA5ODE3NDYzOX0.X00UwEmqY4I0GkYvkT3tNO2BvI81Ffzs_CF2Kb0ybNM";
+
 function createSupabaseAdminClient() {
   const SUPABASE_URL =
     process.env["VITE_SUPABASE_URL"] ||
     process.env["SUPABASE_URL"] ||
-    "http://127.0.0.1:8000";
+    DEFAULT_SUPABASE_URL;
+
   const SUPABASE_SERVICE_ROLE_KEY =
     process.env["SUPABASE_SERVICE_ROLE_KEY"] ||
-    process.env["SERVICE_ROLE_KEY"];
-
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    const missing = [
-      ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),
-      ...(!SUPABASE_SERVICE_ROLE_KEY ? ["SUPABASE_SERVICE_ROLE_KEY"] : []),
-    ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(", ")}.`;
-    console.error(`[Supabase] ${message}`);
-    throw new Error(message);
-  }
+    process.env["SERVICE_ROLE_KEY"] ||
+    DEFAULT_SERVICE_ROLE_KEY;
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     global: {
