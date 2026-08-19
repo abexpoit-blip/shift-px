@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import type { AuthChangeEvent, User } from "@supabase/supabase-js";
 import { LogOut, Ban } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { consumeDailyRedirect } from "@/lib/app-settings.functions";
 import { AppShell } from "@/components/AppShell";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { BroadcastLoginPopup } from "@/components/broadcast-login-popup";
@@ -33,7 +32,6 @@ function AuthenticatedLayout() {
   const [isBanned, setIsBanned] = useState(false);
   const [banChecked, setBanChecked] = useState(false);
   const authCheckedRef = useRef(false);
-  const dailyFn = useServerFn(consumeDailyRedirect);
 
   // Client-only auth gate. Wait for session restore before deciding to redirect.
   useEffect(() => {
@@ -137,19 +135,6 @@ function AuthenticatedLayout() {
       clearTimeout(watchdog);
     };
   }, [user]);
-
-  useEffect(() => {
-    const t = setTimeout(async () => {
-      try {
-        const res = await dailyFn();
-        if (res?.url) window.open(res.url, "_blank", "noopener,noreferrer");
-      } catch {
-        /* silent */
-      }
-    }, 1500);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const logout = async () => {
     await supabase.auth.signOut();

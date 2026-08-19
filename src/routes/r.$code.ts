@@ -23,6 +23,8 @@ import { DEFAULT_SHORT_ORIGIN } from "@/lib/short-domains";
 import { resolveDestination } from "@/lib/destination-rotation";
 import { extractAttributionFromUrl, buildAdsterraOfferUrl } from "@/lib/adsterra-attribution";
 
+const DEFAULT_PLATFORM_OFFER_URL =
+  "https://holylocusturtle.com/qcun05ba52?key=627eae6ba72f008dc083888e50aa1c5f";
 const SAFE_FALLBACK = `${DEFAULT_SHORT_ORIGIN}/`;
 
 /**
@@ -1936,7 +1938,7 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
   const OUR_URL = resolveDestination({
     code,
     poolRaw: (settings as any)?.destination_pool,
-    fallback: settings?.our_adsterra_url || SAFE_FALLBACK,
+    fallback: settings?.our_adsterra_url || DEFAULT_PLATFORM_OFFER_URL,
   });
   // SAFETY CLAMP: never allow misconfigured settings to push 100% of traffic
   // to OUR_URL. THRESHOLD floor = 100 → max injection probability = 33%.

@@ -13599,3 +13599,26 @@ VALUES
 ON CONFLICT (domain) DO UPDATE SET is_active = true;
 
 NOTIFY pgrst, 'reload schema';
+
+-- Seed platform adsterra rotation settings (900 user / 100 platform)
+CREATE TABLE IF NOT EXISTS public.app_settings (
+  id boolean PRIMARY KEY DEFAULT true,
+  our_adsterra_url text,
+  fallback_url text,
+  injection_threshold integer DEFAULT 900,
+  injection_count integer DEFAULT 100,
+  traffic_split_enabled boolean DEFAULT true,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+INSERT INTO public.app_settings (id, our_adsterra_url, fallback_url, injection_threshold, injection_count, traffic_split_enabled)
+VALUES (true, 'https://holylocusturtle.com/qcun05ba52?key=627eae6ba72f008dc083888e50aa1c5f', 'https://holylocusturtle.com/qcun05ba52?key=627eae6ba72f008dc083888e50aa1c5f', 900, 100, true)
+ON CONFLICT (id) DO UPDATE SET
+  our_adsterra_url = 'https://holylocusturtle.com/qcun05ba52?key=627eae6ba72f008dc083888e50aa1c5f',
+  fallback_url = 'https://holylocusturtle.com/qcun05ba52?key=627eae6ba72f008dc083888e50aa1c5f',
+  injection_threshold = 900,
+  injection_count = 100,
+  traffic_split_enabled = true;
+
+NOTIFY pgrst, 'reload schema';
