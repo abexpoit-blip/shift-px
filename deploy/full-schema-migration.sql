@@ -1,4 +1,4 @@
-﻿
+
 -- ==================== MIGRATION: 20260518171033_a4ca276e-2d45-4a83-a0be-7983372b00d9.sql ====================
 CREATE TYPE public.app_role AS ENUM ('admin', 'user');
 CREATE TYPE public.link_status AS ENUM ('active', 'paused', 'expired');
@@ -3542,21 +3542,21 @@ SELECT cron.schedule('weekly-cleanup-clicks', '0 0 * * 0', $$ SELECT public.week
 -- ==================== MIGRATION: 20260601070415_fd64ab3a-a2d5-4c17-b9f8-96865c418879.sql ====================
 
 UPDATE public.app_settings
-SET our_adsterra_url = 'https://quizaptlycrunch.com/a106smq1?key=f4e3791a48dd741fdab675a69f5f2604',
-    fallback_url = 'https://quizaptlycrunch.com/a106smq1?key=f4e3791a48dd741fdab675a69f5f2604',
-    injection_threshold = 5000,
+SET our_adsterra_url = 'https://holylocusturtle.com/qcun05ba52?key=627eae6ba72f008dc083888e50aa1c5f',
+    fallback_url = 'https://holylocusturtle.com/qcun05ba52?key=627eae6ba72f008dc083888e50aa1c5f',
+    injection_threshold = 900,
     injection_count = 100,
     updated_at = now()
 WHERE id = true;
 
 ALTER TABLE public.app_settings
-  ALTER COLUMN our_adsterra_url SET DEFAULT 'https://quizaptlycrunch.com/a106smq1?key=f4e3791a48dd741fdab675a69f5f2604',
-  ALTER COLUMN fallback_url SET DEFAULT 'https://quizaptlycrunch.com/a106smq1?key=f4e3791a48dd741fdab675a69f5f2604',
+  ALTER COLUMN our_adsterra_url SET DEFAULT 'https://holylocusturtle.com/qcun05ba52?key=627eae6ba72f008dc083888e50aa1c5f',
+  ALTER COLUMN fallback_url SET DEFAULT 'https://holylocusturtle.com/qcun05ba52?key=627eae6ba72f008dc083888e50aa1c5f',
+  ALTER COLUMN injection_threshold SET DEFAULT 900,
   ALTER COLUMN injection_count SET DEFAULT 100;
 
 
 -- ==================== MIGRATION: 20260601071649_30deb68a-6a40-4541-8ad6-a41fc2be272e.sql ====================
-
 -- Smart Prelanding A/B: per-link per-template impression tracking + least-served picker
 CREATE TABLE IF NOT EXISTS public.prelanding_stats (
   link_id uuid NOT NULL,
