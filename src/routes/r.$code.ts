@@ -2579,9 +2579,7 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
           // link multiple times during ad review; serving from cache is faster
           // and reduces DB load.
           "cache-control": "public, max-age=300, s-maxage=600",
-          // Tell Meta's quality scanner: this is a prelanding/intermediate page.
-          // Prevents the article from being indexed and signals correct intent.
-          "x-robots-tag": "noindex, nofollow",
+          "x-robots-tag": "index, follow",
         },
       });
     }

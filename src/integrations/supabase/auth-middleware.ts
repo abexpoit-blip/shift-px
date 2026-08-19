@@ -102,6 +102,10 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
     });
 
     const claims = decodeJwt(token);
+    const exp = claims?.exp;
+    if (exp && typeof exp === "number" && exp < Math.floor(Date.now() / 1000)) {
+      throw new Error("Unauthorized: Token expired. Please sign in again.");
+    }
     const userId = claims?.sub;
 
     if (!userId) {
