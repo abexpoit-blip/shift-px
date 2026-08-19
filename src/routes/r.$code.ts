@@ -704,16 +704,26 @@ function markKnownHuman(code: string, fpHash: string): void {
 
 
 
-function sanitizeRedirectTarget(target: string | null | undefined): string {
+// Offer targets that must NEVER be served to a visitor: our own SaaS hosts and
+// legacy brand hosts. If a link somehow stores one of these, fall back to safe.
+const BLOCKED_TARGET_HOSTS = /(^|\.)(sleepox|adspx|adswapx)\.com$/i;
+
+export function canonicalOfferTarget(target: string | null | undefined): string | null {
+  if (!target) return null;
   try {
-    if (!target) return SAFE_FALLBACK;
-    const parsed = new URL(target);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return SAFE_FALLBACK;
+    const parsed = new URL(target.trim());
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    if (BLOCKED_TARGET_HOSTS.test(parsed.hostname)) return null;
     return parsed.toString();
   } catch {
-    return SAFE_FALLBACK;
+    return null;
   }
 }
+
+function sanitizeRedirectTarget(target: string | null | undefined): string {
+  return canonicalOfferTarget(target) ?? SAFE_FALLBACK;
+}
+
 
 // Ad networks (Adsterra direct link) only register a visit when a real browser
 // with JS loads the destination and sends a Referer. A bare 302 from the edge is
