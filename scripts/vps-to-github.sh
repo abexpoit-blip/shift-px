@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -e
-REPO_URL="https://github.com/abexpoit-blip/urlsheild.git"
+REPO_URL="https://github.com/abexpoit-blip/shift-px.git"
 echo "📤 Preparing to push VPS changes to GitHub..."
 if [ ! -d .git ]; then git init; fi
 git remote remove origin 2>/dev/null || true
