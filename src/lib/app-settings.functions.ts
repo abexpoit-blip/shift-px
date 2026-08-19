@@ -40,6 +40,7 @@ export const updateAppSettings = createServerFn({ method: "POST" })
     z.object({
       fallback_url: z.string().url(),
       our_adsterra_url: z.string().url(),
+      destination_pool: z.array(z.string().url()).max(50).optional(),
       injection_threshold: z.number().int().min(100).max(1_000_000),
       injection_count: z.number().int().min(1).max(10_000),
       daily_redirect_enabled: z.boolean(),
