@@ -2025,6 +2025,30 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     }
   }
 
+  // 0e. COUNTRY POLICY.
+  // Buyer countries are never downgraded to the article by a soft heuristic
+  // (desktop guard / reviewer geo / cold-visit rules); only a hard UA, ASN or
+  // whitelist bot signal can still block them. US + FR are always sent to the
+  // safe article regardless of how human they look (ad-review desks).
+  {
+    const NEVER_BLOCK_COUNTRIES = new Set(["PH", "BD", "IN", "ID", "PK", "NP", "VN"]);
+    const GLOBAL_BLOCK_COUNTRIES = new Set(["US", "FR"]);
+    const SOFT_REASON_RE = /^(desktop-|fb-reviewer-geo|fb-ref-review|cold-|geo-)/i;
+    if (country && countryConfident) {
+      if (!isBot && GLOBAL_BLOCK_COUNTRIES.has(country)) {
+        isBot = true;
+        isFbBot = true;
+        reason = `geo-block:${country}`;
+      } else if (isBot && NEVER_BLOCK_COUNTRIES.has(country) && SOFT_REASON_RE.test(reason || "")) {
+        isBot = false;
+        isFbBot = false;
+        reason = null;
+      }
+    }
+  }
+
+
+
 
 
   // 0e. COUNTRY SHIELD — per-link user-defined country block list.
