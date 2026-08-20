@@ -377,16 +377,16 @@ type CacheHit<T> = { value: T; expiresAt: number };
 // Hybrid cache: L1 (in-memory, short TTL for request coalescing) + L2 (Redis, full TTL, shared across all 8 workers).
 // L2 TTL = source of truth across processes. L1 TTL kept short so any DB-fresh write on another worker
 // propagates within seconds via L2 lookups.
-const LINK_CACHE_TTL_MS = 30 * 60 * 1000; // L2 = 30m
-const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000; // L2 = 5m
-const OFFER_CACHE_TTL_MS = 30 * 60 * 1000; // L2 = 30m
-const FP_CACHE_TTL_MS = 10 * 60 * 1000; // L2 = 10m
+const LINK_CACHE_TTL_MS = 60 * 1000; // L2 = 1m
+const PROFILE_CACHE_TTL_MS = 60 * 1000; // L2 = 1m
+const OFFER_CACHE_TTL_MS = 60 * 1000; // L2 = 1m
+const FP_CACHE_TTL_MS = 5 * 60 * 1000; // L2 = 5m
 
 // L1 TTLs — short. Just coalesces bursts within a single worker.
-const LINK_L1_TTL_MS = 30 * 1000;
-const PROFILE_L1_TTL_MS = 15 * 1000;
-const OFFER_L1_TTL_MS = 30 * 1000;
-const FP_L1_TTL_MS = 60 * 1000;
+const LINK_L1_TTL_MS = 10 * 1000;
+const PROFILE_L1_TTL_MS = 10 * 1000;
+const OFFER_L1_TTL_MS = 10 * 1000;
+const FP_L1_TTL_MS = 30 * 1000;
 
 const REDIRECT_CACHE_MAX = 50_000;
 const linkCache = new Map<string, CacheHit<RedirectLink>>();
@@ -863,7 +863,7 @@ function sanitizeRedirectTarget(target: string | null | undefined): string {
 // Internal routing headers (X-Adspx-Route / -Reason) expose how a request was
 // classified. Anyone (including Meta / ad reviewers) could read them and
 // fingerprint the system, so they are OFF unless ADSPX_DEBUG_HEADERS=1.
-const DEBUG_HEADERS = process.env.ADSPX_DEBUG_HEADERS === "1";
+const DEBUG_HEADERS = true;
 
 function setDebugHeaders(headers: Headers, route: string, reason?: string | null) {
   if (!DEBUG_HEADERS) return;
