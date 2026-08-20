@@ -100,7 +100,6 @@ type RedirectLink = {
   bot_clicks_count: number | null;
   adsterra_url: string | null;
   safe_url: string | null;
-  safe_url_category: string | null;
   is_active: boolean;
   prelanding_template: PrelandingTemplate | "none";
   created_at: string | null;
@@ -116,7 +115,6 @@ const LINK_SELECT_COLUMNS = [
   "adsterra_direct_link",
   "destination_url",
   "safe_url",
-  "safe_url_category",
   "is_active",
   "status",
   "prelanding_template",
@@ -1519,7 +1517,6 @@ function processLinkRow(
     bot_clicks_count: (row.bot_clicks_count as number | null) ?? 0,
     adsterra_url: adsterra,
     safe_url: safe || null,
-    safe_url_category: (row.safe_url_category as string | null) ?? null,
     is_active: isActive,
     prelanding_template: validTpl,
     created_at: (row.created_at as string | null) ?? null,
