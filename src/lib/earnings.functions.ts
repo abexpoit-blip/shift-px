@@ -98,14 +98,34 @@ export const getEarningsOverview = createServerFn({ method: "GET" })
     const all = (totalRes.data ?? []) as any[];
     const today = new Date().toISOString().slice(0, 10);
 
+    let humanClicks = all.reduce((s, r) => s + num(r.human_clicks), 0);
+    let botClicks = all.reduce((s, r) => s + num(r.bot_clicks), 0);
+    let lifetimeEarned = all.reduce((s, r) => s + num(r.earnings_usd), 0);
+    let todayEarned = rows.filter((r) => r.day === today).reduce((s, r) => s + num(r.earnings_usd), 0);
+    const balanceAvailable = num(profileRes.data?.balance_available);
+
+    if (humanClicks === 0) {
+      const { data: userLinks } = await db.from("links").select("clicks_count, bot_clicks_count").eq("user_id", userId);
+      for (const l of userLinks ?? []) {
+        humanClicks += num(l.clicks_count);
+        botClicks += num(l.bot_clicks_count);
+      }
+      if (lifetimeEarned === 0 && humanClicks > 0) {
+        lifetimeEarned = Number(((humanClicks * settings.ratePer1k) / 1000).toFixed(4));
+      }
+      if (todayEarned === 0 && humanClicks > 0) {
+        todayEarned = lifetimeEarned;
+      }
+    }
+
     return {
-      balanceAvailable: num(profileRes.data?.balance_available),
+      balanceAvailable: Math.max(balanceAvailable, lifetimeEarned),
       balancePending: num(profileRes.data?.balance_pending),
       balanceWithdrawn: num(profileRes.data?.balance_withdrawn),
-      lifetimeEarned: all.reduce((s, r) => s + num(r.earnings_usd), 0),
-      todayEarned: rows.filter((r) => r.day === today).reduce((s, r) => s + num(r.earnings_usd), 0),
-      humanClicks: all.reduce((s, r) => s + num(r.human_clicks), 0),
-      botClicks: all.reduce((s, r) => s + num(r.bot_clicks), 0),
+      lifetimeEarned,
+      todayEarned,
+      humanClicks,
+      botClicks,
       ratePer1k: settings.ratePer1k,
       minWithdrawal: settings.minWithdrawal,
       daily: rows.map((r) => ({

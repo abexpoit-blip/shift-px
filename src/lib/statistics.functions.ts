@@ -153,7 +153,7 @@ export const getStatistics = createServerFn({ method: "GET" })
       guard(
         db
           .from("clicks")
-          .select("country, referer_host, is_bot, ua")
+          .select("country, referer_host, is_bot, ua, created_at")
           .in("link_id", linkIds)
           .gte("created_at", hotTs)
           .order("created_at", { ascending: false })
@@ -214,6 +214,12 @@ export const getStatistics = createServerFn({ method: "GET" })
         browser: browserBucket(row.ua),
         source: sourceBucket(row.referer_host),
       });
+      const dayKey = String(row.created_at || "").slice(0, 10);
+      const bucket = byDay.get(dayKey);
+      if (bucket) {
+        if (row.is_bot) bucket.bots += 1;
+        else bucket.humans += 1;
+      }
     }
 
     const series = days.map((d) => byDay.get(d)!);
