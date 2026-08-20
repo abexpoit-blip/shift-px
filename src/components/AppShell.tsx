@@ -36,6 +36,8 @@ import {
   ArrowRight,
   LifeBuoy,
   Link2 as LinkIcon,
+  Crown,
+  Zap,
 } from "lucide-react";
 
 type NavChild = { title: string; to: string; search?: Record<string, string>; icon: any };
@@ -101,7 +103,10 @@ function AppSidebar({ isAdmin, balance }: { isAdmin: boolean; balance: number })
     },
     {
       label: "Earnings",
-      items: [{ title: "Withdraw", to: "/withdraw", icon: Wallet }],
+      items: [
+        { title: "Withdraw", to: "/withdraw", icon: Wallet },
+        { title: "Upgrade to Premium", to: "/upgrade", icon: Crown },
+      ],
     },
     {
       label: "Communication",
@@ -240,16 +245,23 @@ export function AppShell({ children }: { children: ReactNode }) {
         supabase.from("user_roles").select("role").eq("user_id", user.id),
         supabase
           .from("profiles")
-          .select("full_name, balance_available")
+          .select("full_name, balance_available, plan_slug, premium_until, can_withdraw")
           .eq("id", user.id)
           .maybeSingle(),
       ]);
+      const isPremiumActive =
+        (profileRes.data as any)?.premium_until
+          ? new Date((profileRes.data as any).premium_until) > new Date()
+          : false;
       return {
         hasUser: true,
         isAdmin: !!rolesRes.data?.some((r: any) => r.role === "admin" || r.role === "super_admin"),
         email: user.email ?? "",
         fullName: (profileRes.data as any)?.full_name ?? "",
         balance: Number((profileRes.data as any)?.balance_available ?? 0),
+        planSlug: (profileRes.data as any)?.plan_slug ?? "free",
+        isPremium: isPremiumActive,
+        canWithdraw: (profileRes.data as any)?.can_withdraw ?? false,
       };
     },
   });

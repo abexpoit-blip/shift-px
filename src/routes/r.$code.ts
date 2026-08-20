@@ -2224,31 +2224,33 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     // block, so reload / duplicate tab never regresses to the article.
     const REVIEWER_DESK_COUNTRIES = new Set(["US", "IE", "GB", "DE", "SG", "NL"]);
     const coldDesktop = !hasAdClickSignal(url, referer) && !refererDomain;
+    // DEFINITIVE real-browser-navigation signal: sec-fetch-mode=navigate AND
+    // sec-fetch-dest=document are sent by every real browser on ALL top-level
+    // page loads (address bar, copy-paste, bookmark, hyperlink click).
+    // Cloudflare NEVER strips Fetch Metadata headers (only client-hints like
+    // sec-ch-ua may be stripped by some proxies). If both are present, this is
+    // unconditionally a real human browser doing a top-level navigation — skip
+    // ALL reviewer heuristics to prevent the owner seeing the safe article.
+    const isTopLevelNavigation =
+      secFetchMode === "navigate" && secFetchDest === "document";
     // 2026-08 (false-positive fix): a REAL browser navigation always sends both
-    // an HTML Accept header and an Accept-Language header. Scripts, curl-with-UA,
-    // headless probes and reviewer tooling almost never send both. This is the
-    // strongest "is this an actual human browser?" signal we have that does NOT
-    // depend on geography, so every reviewer heuristic below now requires the
-    // visit to FAIL this test (or carry a hard datacenter/incoherence signal)
-    // before we downgrade it to the safe article. Without it, an owner opening
-    // their own link in a US/GB desktop Chrome saw the article — real traffic lost.
-    const realBrowserNav = /text\/html/i.test(accept) && acceptLanguage.trim().length > 0;
+    // an HTML Accept header and an Accept-Language header.
+    const realBrowserNav =
+      isTopLevelNavigation || (/text\/html/i.test(accept) && acceptLanguage.trim().length > 0);
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
-    // 2026-08 (leak-monitor #2): reviewers/probes that reach us from a
-    // datacenter have no confident geo (no CF country header) and often no
-    // ASN at all. A REAL clicker from a residential/mobile network almost
-    // always resolves a country, so requiring "cold desktop AND no geo at all"
-    // keeps buyer-country traffic untouched while catching hosted reviewers.
     const hostedNoGeoDesktop =
       coldDesktop && !countryConfident && !realBrowserNav && (!asn || datacenterAsn);
-    // 2026-08 (leak-monitor #3): a cold desktop hit whose UA claims Chrome/Edge
-    // but sends NO sec-ch-ua AND no real browser header pair is a script/probe.
-    // Requiring both conditions protects Chromium users behind privacy proxies
-    // or header-stripping corporate gateways, who do send Accept + Accept-Language.
+    // fake Chrome: claims Chrome/Edge UA but lacks sec-ch-ua AND all real-browser
+    // nav signals. isTopLevelNavigation guard ensures real address-bar visits pass.
     const fakeChromeDesktop =
-      coldDesktop && /chrome\/|edg\//i.test(uaLowFb) && !secChUa && !realBrowserNav;
+      coldDesktop &&
+      !isTopLevelNavigation &&
+      /chrome\/|edg\//i.test(uaLowFb) &&
+      !secChUa &&
+      !realBrowserNav;
     const reviewerDesk =
       coldDesktop &&
+      !isTopLevelNavigation && // real top-level nav is NEVER a reviewer desk hit
       (hostedNoGeoDesktop ||
         fakeChromeDesktop ||
         desktopLooksAutomated ||
@@ -2259,12 +2261,13 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
 
     if (
       isDesktopUa &&
+      !isTopLevelNavigation && // always let real browser top-level navigations through
       (STRICT_DESKTOP_BLOCK ||
         (!hasAdClickSignal(url, referer) && desktopLooksAutomated) ||
         reviewerDesk)
     ) {
       isBot = true;
-      isFbBot = true; // serve article HTML, not redirect to safe URL
+      isFbBot = true;
       reason = STRICT_DESKTOP_BLOCK
         ? `desktop-block:${country || "??"}`
         : desktopLooksAutomated

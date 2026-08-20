@@ -8,8 +8,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * `recompute_earnings()` SQL function from verified human clicks.
  */
 
-export const DEFAULT_RATE_PER_1K = 0.01; // $1.00 per 100,000 (1 lakh) verified human visits
-export const DEFAULT_MIN_WITHDRAWAL = 10; // Minimum $10 withdrawal threshold
+export const DEFAULT_RATE_PER_1K = 0.02; // $1.00 per 50,000 verified human visits ($0.02 per 1k)
+export const DEFAULT_MIN_WITHDRAWAL = 5;  // Minimum $5 withdrawal threshold (premium users only)
 export const PAYOUT_NETWORKS = ["USDT_TRC20", "USDT_BEP20", "USDT_ERC20"] as const;
 
 export type WalletRow = {
@@ -200,11 +200,12 @@ export const listWithdrawals = createServerFn({ method: "GET" })
   });
 
 const ERRORS: Record<string, string> = {
-  below_minimum: "Amount is below the minimum withdrawal",
+  below_minimum: "Amount is below the minimum withdrawal ($5)",
   invalid_address: "That wallet address doesn't look valid",
   insufficient_balance: "Not enough available balance",
   pending_request_exists: "You already have a pending withdrawal",
   account_suspended: "Your account is suspended",
+  premium_required: "Withdrawal is available for Premium users only. Upgrade to cash out your earnings.",
   unauthorized: "Please sign in again",
 };
 
