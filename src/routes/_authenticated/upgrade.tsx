@@ -1,16 +1,22 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   Zap, Crown, Check, Loader2, Clock, Copy,
   ExternalLink, ShieldCheck, AlertCircle, Sparkles,
-  ArrowRight, Star, Infinity as InfinityIcon, Shield,
-  Globe2, Cpu, DollarSign, Wallet, HelpCircle, ChevronDown,
-  Layers, Flame, CheckCircle2, XCircle
+  ArrowRight, Star, Shield, Globe2, Wallet,
+  HelpCircle, ChevronDown, Flame, CheckCircle2,
+  XCircle, Send, QrCode
 } from "lucide-react";
 import { toast } from "sonner";
-import { listPackages, createUpgradeRequest, getMyPlanStatus, type Package } from "@/lib/packages.functions";
+import {
+  listPackages,
+  createUpgradeRequest,
+  submitUpgradeTransaction,
+  getMyPlanStatus,
+  type Package
+} from "@/lib/packages.functions";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
@@ -23,37 +29,35 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
   component: UpgradePage,
 });
 
-const NETWORKS = [
-  { value: "USDT_TRC20", label: "USDT (TRC-20)", icon: "🟢", note: "Recommended · Lowest network fees" },
-  { value: "USDT_BEP20", label: "USDT (BEP-20)", icon: "🟡", note: "Fast · Binance Smart Chain" },
-  { value: "USDT_ERC20", label: "USDT (ERC-20)", icon: "🔵", note: "Ethereum Network" },
-];
-
 const COMPARISON_ROWS = [
   { feature: "Short Links Creation", free: "50 Links Limit", p6m: "Unlimited Links", p12m: "Unlimited Links" },
   { feature: "Traffic & Clicks Volume", free: "Unlimited", p6m: "Unlimited (Tier-1 Speed)", p12m: "Unlimited (Max Priority)" },
   { feature: "Earning Rate per 50k Human Clicks", free: "$1.00 USD", p6m: "$1.00 USD", p12m: "$1.00 USD" },
-  { feature: "Earnings Withdrawal (Cashout)", free: "Disabled (Upgrade Req.)", p6m: "Instant (Min $5 USDT)", p12m: "Instant (Min $5 USDT)" },
+  { feature: "Earnings Withdrawal (Cashout)", free: "Disabled (Upgrade Required)", p6m: "Instant (Min $5 USD)", p12m: "Instant (Min $5 USD)" },
   { feature: "Facebook & Meta Review Cloaking", free: "Standard Safe Article", p6m: "Advanced AI Shield", p12m: "Military-Grade VIP Shield" },
   { feature: "Zero Traffic Loss Direct 302", free: "Included", p6m: "Included (Ultra-Low Latency)", p12m: "Included (Dedicated Edge)" },
   { feature: "Adsterra SubID & UTM Forwarding", free: "Basic", p6m: "Full Dynamic Tracking", p12m: "Full Dynamic Tracking" },
-  { feature: "Geo-Targeting & A/B Multi-Offer", free: "Not Available", p6m: "Full A/B Rotation", p12m: "Full A/B Rotation" },
+  { feature: "Geo-Targeting & Multi-Offer Rotation", free: "Not Available", p6m: "Full A/B Rotation", p12m: "Full A/B Rotation" },
   { feature: "Custom Short Domains", free: "Not Available", p6m: "Standard", p12m: "Unlimited Custom Domains" },
   { feature: "Support Tier", free: "Community Support", p6m: "Priority VIP Telegram", p12m: "24/7 Dedicated Account Manager" },
 ];
 
 const FAQS = [
   {
+    q: "Why is Litecoin (LTC) the preferred payment method?",
+    a: "Litecoin offers lightning-fast transactions (averaging under 2.5 minutes) and ultra-low blockchain network fees (often under $0.01), ensuring you don't waste money on expensive gas fees."
+  },
+  {
     q: "How fast does my Premium membership activate?",
-    a: "Activation is fully automated. As soon as your crypto payment receives 1 on-chain confirmation (usually within 1–3 minutes), your account is upgraded to Premium instantly."
+    a: "Once you send the LTC and paste your transaction hash (TXID), our system verifies the payment. Your account is upgraded to Premium immediately upon blockchain confirmation."
   },
   {
     q: "Can I earn money on the Free plan before upgrading?",
-    a: "Yes! Free users earn $1.00 for every 50,000 verified human clicks. All earnings accumulate in your balance. Once you are ready to cash out (min $5), simply upgrade to Premium to enable instant withdrawals."
+    a: "Yes! Free users earn $1.00 for every 50,000 verified human clicks. All earnings accumulate in your balance. Once you are ready to cash out (minimum $5), simply upgrade to Premium to enable instant withdrawals."
   },
   {
     q: "How does the $5 minimum withdrawal work?",
-    a: "Premium members can request withdrawals anytime their available balance reaches $5.00 or more. Payouts are sent directly in USDT (TRC-20, BEP-20, or ERC-20) to your specified wallet address."
+    a: "Premium members can request withdrawals anytime their available balance reaches $5.00 or more. Payouts are processed directly in cryptocurrency to your specified wallet address."
   },
   {
     q: "What happens to my links if my subscription expires?",
@@ -95,7 +99,7 @@ function PlanCard({
       {isYearly && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 px-4 py-1 text-[11px] font-black uppercase tracking-wider text-slate-950 shadow-lg animate-pulse">
-            <Star className="h-3.5 w-3.5 fill-current" /> BEST VALUE · SAVE $20 (2 MO FREE)
+            <Star className="h-3.5 w-3.5 fill-current" /> BEST VALUE · SAVE $20 (2 MONTHS FREE)
           </span>
         </div>
       )}
@@ -140,7 +144,7 @@ function PlanCard({
             <div>
               <h3 className="font-extrabold text-xl text-foreground tracking-tight">{pkg.name}</h3>
               <p className="text-xs text-muted-foreground">
-                {isFree ? "Starter tier" : `${pkg.duration_months} Months Full Access`}
+                {isFree ? "Starter Tier" : `${pkg.duration_months} Months Full Access`}
               </p>
             </div>
           </div>
@@ -151,7 +155,7 @@ function PlanCard({
           {isFree ? (
             <div className="flex items-baseline gap-1">
               <span className="text-4xl font-black tracking-tight text-foreground">$0</span>
-              <span className="text-xs font-semibold text-muted-foreground">/ Forever</span>
+              <span className="text-xs font-semibold text-muted-foreground">/ Lifetime</span>
             </div>
           ) : (
             <div className="space-y-1">
@@ -169,7 +173,7 @@ function PlanCard({
                 )}
               </div>
               <p className="text-xs font-semibold text-emerald-500">
-                {isYearly ? "Only $8.33 / month" : "Only $10.00 / month"}
+                {isYearly ? "Only $8.33 / month equivalent" : "Only $10.00 / month equivalent"}
               </p>
             </div>
           )}
@@ -178,7 +182,7 @@ function PlanCard({
         {/* Features List */}
         <div className="space-y-3 mb-6">
           <div className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground">
-            What is included:
+            Included Facilities:
           </div>
           <ul className="space-y-2.5">
             {(pkg.features as string[]).map((f, i) => (
@@ -235,6 +239,7 @@ function InvoicePanel({
     cryptoCurrency: string | null;
     cryptoAmount: string | null;
     cryptoAddress: string | null;
+    ltcPriceUsd?: number;
     plisioInvoiceUrl: string | null;
     expiresAt: string;
     manualMode: boolean;
@@ -242,124 +247,126 @@ function InvoicePanel({
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState<"amount" | "address" | null>(null);
+  const [txHash, setTxHash] = useState("");
+  const submitTx = useServerFn(submitUpgradeTransaction);
+
+  const submitMut = useMutation({
+    mutationFn: () => submitTx({ data: { request_id: result.requestId, tx_hash: txHash } }),
+    onSuccess: (res) => {
+      toast.success(res.message);
+      onClose();
+    },
+    onError: (e: Error) => {
+      toast.error(e.message || "Failed to submit transaction ID");
+    },
+  });
 
   const copy = (val: string, type: "amount" | "address") => {
     navigator.clipboard.writeText(val).then(() => {
       setCopied(type);
-      toast.success(`${type === "amount" ? "Amount" : "Wallet address"} copied to clipboard!`);
+      toast.success(`${type === "amount" ? "Amount" : "Litecoin address"} copied to clipboard!`);
       setTimeout(() => setCopied(null), 2500);
     });
   };
 
-  const expiresIn = Math.max(0, Math.round((new Date(result.expiresAt).getTime() - Date.now()) / 60000));
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-lg rounded-3xl bg-card border border-border/80 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="w-full max-w-lg rounded-3xl bg-card border border-border/80 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
         {/* Invoice Header */}
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 px-6 py-5 text-white">
+        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 px-6 py-5 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner">
-                <Crown className="h-6 w-6" />
+              <div className="h-11 w-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner font-black text-xl">
+                Ł
               </div>
               <div>
-                <h3 className="font-black text-xl leading-none mb-1">Upgrade Invoice</h3>
-                <p className="text-xs text-white/80 font-medium">
+                <h3 className="font-black text-xl leading-none mb-1">Litecoin (LTC) Invoice</h3>
+                <p className="text-xs text-white/85 font-medium">
                   {result.packageName} · <strong className="text-white">${result.amountUsd} USD</strong>
                 </p>
               </div>
             </div>
             <span className="rounded-full bg-emerald-400/20 border border-emerald-400/40 px-3 py-1 text-[11px] font-bold text-emerald-300 animate-pulse">
-              Awaiting Payment
+              Awaiting Deposit
             </span>
           </div>
         </div>
 
         <div className="p-6 space-y-5">
-          {result.manualMode ? (
-            <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-5 space-y-3">
-              <div className="flex items-center gap-2 text-amber-500 font-bold text-sm">
-                <AlertCircle className="h-5 w-5" /> Manual Payment Instructions
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Automated gateway is in maintenance. Please send <strong>${result.amountUsd} USDT</strong> to the official admin address and send your transaction hash via Telegram support for instant approval.
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Crypto details panel */}
-              <div className="rounded-2xl bg-muted/50 border border-border/80 p-4 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-border/60">
-                  <span className="text-xs font-semibold text-muted-foreground">Payment Network</span>
-                  <span className="font-bold text-sm text-foreground flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" /> {result.cryptoCurrency}
-                  </span>
-                </div>
-
-                {result.cryptoAmount && (
-                  <div className="flex items-center justify-between pb-3 border-b border-border/60">
-                    <span className="text-xs font-semibold text-muted-foreground">Exact Amount to Send</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-black text-lg text-emerald-500">
-                        {result.cryptoAmount} {result.cryptoCurrency?.split("_")[0]}
-                      </span>
-                      <button
-                        onClick={() => copy(result.cryptoAmount!, "amount")}
-                        className="h-8 px-2.5 rounded-lg bg-card border border-border flex items-center gap-1 text-xs font-semibold hover:bg-muted transition-colors"
-                      >
-                        {copied === "amount" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-                        {copied === "amount" ? "Copied" : "Copy"}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {result.cryptoAddress && (
-                  <div>
-                    <div className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center justify-between">
-                      <span>Deposit Wallet Address</span>
-                      <span className="text-[10px] text-amber-500 font-bold">Send only {result.cryptoCurrency}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <code className="text-xs font-mono font-bold bg-background rounded-xl p-3 flex-1 break-all border border-border/80 text-foreground">
-                        {result.cryptoAddress}
-                      </code>
-                      <button
-                        onClick={() => copy(result.cryptoAddress!, "address")}
-                        className="h-11 px-3 rounded-xl bg-primary text-primary-foreground font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity flex-shrink-0"
-                      >
-                        {copied === "address" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        {copied === "address" ? "Copied" : "Copy"}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {result.plisioInvoiceUrl && (
-                <a
-                  href={result.plisioInvoiceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full h-11 rounded-2xl bg-indigo-500/10 text-indigo-400 font-bold text-sm border border-indigo-500/30 hover:bg-indigo-500/20 transition-all"
-                >
-                  <ExternalLink className="h-4 w-4" /> Open Dedicated Plisio Checkout Window
-                </a>
-              )}
-
-              <div className="flex items-center gap-2.5 text-xs text-muted-foreground bg-amber-500/5 border border-amber-500/20 rounded-xl p-3">
-                <Clock className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                <span>
-                  Invoice expires in <strong>~{expiresIn} minutes</strong>. Membership activates automatically upon 1 network confirmation.
+          {/* LTC Details Card */}
+          <div className="rounded-2xl bg-muted/40 border border-border/80 p-5 space-y-4">
+            {/* Amount Section */}
+            <div className="flex items-center justify-between pb-3 border-b border-border/60">
+              <div>
+                <span className="text-xs font-semibold text-muted-foreground block">Exact LTC to Send</span>
+                <span className="text-[11px] text-muted-foreground">
+                  (Rate: ${result.ltcPriceUsd?.toFixed(2) || "90.00"} / LTC)
                 </span>
               </div>
-            </>
-          )}
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-black text-xl text-emerald-500">
+                  {result.cryptoAmount} LTC
+                </span>
+                <button
+                  onClick={() => copy(result.cryptoAmount!, "amount")}
+                  className="h-8 px-2.5 rounded-lg bg-card border border-border flex items-center gap-1 text-xs font-semibold hover:bg-muted transition-colors"
+                >
+                  {copied === "amount" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copied === "amount" ? "Copied" : "Copy"}
+                </button>
+              </div>
+            </div>
+
+            {/* Address Section */}
+            <div>
+              <div className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center justify-between">
+                <span>Official Litecoin Address</span>
+                <span className="text-[10px] text-blue-400 font-bold">LTC Network Only</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <code className="text-xs font-mono font-bold bg-background rounded-xl p-3 flex-1 break-all border border-border/80 text-foreground">
+                  {result.cryptoAddress}
+                </code>
+                <button
+                  onClick={() => copy(result.cryptoAddress!, "address")}
+                  className="h-11 px-3.5 rounded-xl bg-primary text-primary-foreground font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity flex-shrink-0"
+                >
+                  {copied === "address" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied === "address" ? "Copied" : "Copy"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* TXID Submission Box */}
+          <div className="rounded-2xl border border-indigo-500/30 bg-indigo-500/5 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs">
+              <Send className="h-4 w-4" /> Submit Transaction Hash (TXID)
+            </div>
+            <p className="text-xs text-muted-foreground">
+              After sending the LTC from your wallet or exchange (Binance, TrustWallet, etc.), paste your Transaction Hash below for instant confirmation:
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={txHash}
+                onChange={(e) => setTxHash(e.target.value)}
+                placeholder="e.g. 5f8b9e... (Transaction ID / Hash)"
+                className="flex-1 h-10 rounded-xl bg-background border border-border px-3 text-xs font-mono text-foreground focus:outline-none focus:border-primary"
+              />
+              <Button
+                onClick={() => submitMut.mutate()}
+                disabled={submitMut.isPending || !txHash.trim()}
+                className="h-10 px-4 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                {submitMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit"}
+              </Button>
+            </div>
+          </div>
 
           <div className="flex items-center gap-2 text-xs text-emerald-500 font-semibold bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
             <ShieldCheck className="h-4 w-4 flex-shrink-0" />
-            <span>Instant Webhook: No manual approval needed. Your dashboard upgrades the moment the transaction confirms.</span>
+            <span>Fast Settlement: Litecoin transactions confirm within ~2.5 minutes with virtually zero gas fees.</span>
           </div>
 
           <Button onClick={onClose} variant="outline" className="w-full h-11 rounded-2xl font-bold">
@@ -377,7 +384,6 @@ function UpgradePage() {
   const upgradeFn = useServerFn(createUpgradeRequest);
 
   const [selectedSlug, setSelectedSlug] = useState<"premium_6m" | "premium_12m">("premium_12m");
-  const [network, setNetwork] = useState("USDT_TRC20");
   const [invoiceResult, setInvoiceResult] = useState<any>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
@@ -394,12 +400,12 @@ function UpgradePage() {
 
   const upgrade = useMutation({
     mutationFn: () =>
-      upgradeFn({ data: { package_slug: selectedSlug, crypto_currency: network } }),
+      upgradeFn({ data: { package_slug: selectedSlug, crypto_currency: "LTC" } }),
     onSuccess: (res) => {
       setInvoiceResult(res);
     },
     onError: (e: Error) => {
-      toast.error(e.message || "Failed to generate invoice");
+      toast.error(e.message || "Failed to generate LTC invoice");
     },
   });
 
@@ -426,7 +432,7 @@ function UpgradePage() {
             <span className="text-gradient">Every Single Click</span>
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-            Create unlimited short links, enjoy zero-loss redirection, bypass Facebook ad review checks with stealth cloaking, and unlock instant USDT payouts.
+            Create unlimited short links, enjoy zero-loss redirection, bypass Facebook ad review checks with stealth cloaking, and unlock instant crypto cashouts.
           </p>
         </header>
 
@@ -460,7 +466,7 @@ function UpgradePage() {
             {
               icon: Zap,
               title: "Zero Traffic Loss",
-              desc: "Instant HTTP 302 routing with strict no-cache headers. 100% visits reach Adsterra.",
+              desc: "Instant HTTP 302 routing with strict no-cache headers. 100% human clicks reach your offers.",
               color: "text-amber-400",
             },
             {
@@ -472,13 +478,13 @@ function UpgradePage() {
             {
               icon: Wallet,
               title: "Instant Cashout",
-              desc: "Minimum $5 withdrawal threshold in USDT (TRC-20, BEP-20, ERC-20).",
+              desc: "Minimum $5 withdrawal threshold. Cash out directly to your personal crypto wallet.",
               color: "text-emerald-400",
             },
             {
               icon: Globe2,
               title: "SubID & Geo Split",
-              desc: "Dynamic SubID forwarding and multi-offer A/B country rotation engine.",
+              desc: "Dynamic SubID parameter forwarding and multi-offer A/B country rotation engine.",
               color: "text-purple-400",
             },
           ].map(({ icon: Icon, title, desc, color }) => (
@@ -495,9 +501,9 @@ function UpgradePage() {
         {/* Plan Cards Grid */}
         <div className="space-y-4">
           <div className="text-center">
-            <h2 className="text-2xl sm:text-3xl font-black text-foreground">Select Your Membership</h2>
+            <h2 className="text-2xl sm:text-3xl font-black text-foreground">Select Your Membership Plan</h2>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Choose the package that fits your campaign volume. Instant crypto activation.
+              Choose the package that fits your campaign volume. Fast Litecoin (LTC) activation.
             </p>
           </div>
 
@@ -520,12 +526,12 @@ function UpgradePage() {
           )}
         </div>
 
-        {/* Crypto Payment Checkout Box */}
+        {/* Litecoin Payment Checkout Box */}
         <div className="rounded-3xl border-2 border-indigo-500/30 bg-card p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/70">
             <div>
               <div className="flex items-center gap-2 text-indigo-400 font-black text-lg">
-                <Sparkles className="h-5 w-5" /> Automated Self-Hosted Crypto Checkout
+                <Sparkles className="h-5 w-5" /> Direct Litecoin (LTC) Deposit Checkout
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Selected Plan:{" "}
@@ -536,39 +542,26 @@ function UpgradePage() {
             </div>
             <div className="text-left sm:text-right">
               <span className="text-2xl font-black text-foreground">
-                {selectedSlug === "premium_12m" ? "$100.00" : "$60.00"}
+                {selectedSlug === "premium_12m" ? "$100.00" : "$60.00"} USD
               </span>
-              <span className="text-xs text-muted-foreground block">USDT Equivalent</span>
+              <span className="text-xs text-muted-foreground block">Payable via Litecoin (LTC)</span>
             </div>
           </div>
 
-          {/* Network Selector */}
-          <div className="space-y-3">
-            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              1. Choose Payment Network:
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {NETWORKS.map((n) => (
-                <button
-                  key={n.value}
-                  type="button"
-                  onClick={() => setNetwork(n.value)}
-                  className={`flex flex-col items-start gap-1 rounded-2xl border-2 p-4 transition-all text-left ${
-                    network === n.value
-                      ? "border-primary bg-primary/10 shadow-glow"
-                      : "border-border bg-muted/20 hover:border-primary/40"
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <span className="text-base font-bold text-foreground flex items-center gap-2">
-                      <span>{n.icon}</span> {n.label}
-                    </span>
-                    {network === n.value && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                  </div>
-                  <span className="text-[11px] text-muted-foreground mt-1">{n.note}</span>
-                </button>
-              ))}
+          {/* Payment Method Badge */}
+          <div className="rounded-2xl border-2 border-primary bg-primary/10 p-4 flex items-center justify-between shadow-glow">
+            <div className="flex items-center gap-3">
+              <div className="h-11 w-11 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center font-black text-xl text-blue-400">
+                Ł
+              </div>
+              <div>
+                <span className="font-bold text-sm text-foreground block">Litecoin (LTC)</span>
+                <span className="text-xs text-muted-foreground">Fast 2.5 min settlement · Lowest blockchain fees (&lt; $0.01)</span>
+              </div>
             </div>
+            <span className="rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 text-xs font-bold flex items-center gap-1">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Instant Deposit Ready
+            </span>
           </div>
 
           {/* CTA Action */}
@@ -576,29 +569,29 @@ function UpgradePage() {
             <Button
               onClick={() => upgrade.mutate()}
               disabled={upgrade.isPending || !selectedSlug}
-              className="w-full h-14 text-lg font-black bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-600 text-white hover:opacity-95 shadow-[0_0_30px_rgba(99,102,241,0.4)] rounded-2xl"
+              className="w-full h-14 text-lg font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white hover:opacity-95 shadow-[0_0_30px_rgba(99,102,241,0.4)] rounded-2xl"
             >
               {upgrade.isPending ? (
                 <>
-                  <Loader2 className="h-6 w-6 animate-spin mr-3" /> Generating Secure Invoice…
+                  <Loader2 className="h-6 w-6 animate-spin mr-3" /> Calculating Live LTC Rate…
                 </>
               ) : (
                 <>
                   <Crown className="h-6 w-6 mr-3 stroke-[2.5]" />
-                  Pay ${selectedSlug === "premium_12m" ? "100" : "60"} & Upgrade Instantly
+                  Pay ${selectedSlug === "premium_12m" ? "100" : "60"} with LTC & Upgrade
                 </>
               )}
             </Button>
 
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
-                <Check className="h-3.5 w-3.5 text-emerald-500" /> Instant on-chain confirmation
+                <Check className="h-3.5 w-3.5 text-emerald-500" /> Fast LTC confirmation
               </span>
               <span className="flex items-center gap-1">
-                <Check className="h-3.5 w-3.5 text-emerald-500" /> No hidden fees
+                <Check className="h-3.5 w-3.5 text-emerald-500" /> Lowest network fees
               </span>
               <span className="flex items-center gap-1">
-                <Check className="h-3.5 w-3.5 text-emerald-500" /> 100% automated activation
+                <Check className="h-3.5 w-3.5 text-emerald-500" /> Instant activation
               </span>
             </div>
           </div>

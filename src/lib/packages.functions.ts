@@ -3,9 +3,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
- * Package upgrade & Plisio payment integration.
- * Admin sets Plisio API key in Control Panel → Settings.
- * We generate a self-hosted invoice (no redirect to Plisio page).
+ * Package upgrade & Litecoin (LTC) payment integration.
+ * Supports automated live LTC rate conversion and self-hosted deposit workflow.
  */
 
 async function getAdmin() {
@@ -21,7 +20,29 @@ async function assertAdmin(userId: string) {
     .eq("user_id", userId)
     .eq("role", "admin")
     .maybeSingle();
-  if (!data) throw new Error("Forbidden");
+  if (!data) throw new Error("Forbidden: Admin access required");
+}
+
+async function getLiveLtcPrice(): Promise<number> {
+  try {
+    const res = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=LTCUSDT", {
+      signal: AbortSignal.timeout(4000),
+    });
+    const json = await res.json() as any;
+    const price = Number(json?.price);
+    if (price > 10 && price < 2000) return price;
+  } catch {}
+
+  try {
+    const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=litecoin&vs_currencies=usd", {
+      signal: AbortSignal.timeout(4000),
+    });
+    const json = await res.json() as any;
+    const price = Number(json?.litecoin?.usd);
+    if (price > 10 && price < 2000) return price;
+  } catch {}
+
+  return 90.00;
 }
 
 const CANONICAL_PACKAGES: Package[] = [
@@ -38,8 +59,8 @@ const CANONICAL_PACKAGES: Package[] = [
     can_withdraw: false,
     features: [
       "50 Short Links limit",
-      "Unlimited clicks & visits",
-      "Earn $1 per 50,000 verified visits",
+      "Unlimited traffic & visitors",
+      "Earn $1.00 per 50,000 verified visits",
       "Standard Meta & Facebook bot cloaking",
       "Real-time click & country analytics",
       "No withdrawal (Upgrade to cash out)",
@@ -58,9 +79,9 @@ const CANONICAL_PACKAGES: Package[] = [
     is_premium: true,
     can_withdraw: true,
     features: [
-      "Unlimited Short Links",
+      "Unlimited Short Links creation",
       "Unlimited traffic & Tier-1 fast routing",
-      "Instant Cashouts Enabled (Min $5 USDT)",
+      "Instant Cashouts Enabled (Min $5 USD)",
       "Advanced Facebook Ad Review Cloaking",
       "Geo-Targeting & Multi-Offer A/B Rotation",
       "Dynamic SubID & UTM tracking forwarding",
@@ -83,7 +104,7 @@ const CANONICAL_PACKAGES: Package[] = [
       "Everything in 6-Month Plan included",
       "Save $20 (2 Months FREE — $120 → $100)",
       "Unlimited Short Links & Max Speed CDNs",
-      "Instant Lifetime Withdrawals (Min $5)",
+      "Instant Lifetime Withdrawals (Min $5 USD)",
       "Custom Short Domains Connection",
       "Dedicated High-Priority Server Queue",
       "Real-Time Click Logs & Audit Export",
@@ -171,14 +192,14 @@ export type UpgradeRequest = {
   created_at: string;
 };
 
-// ─── User: Create an upgrade request (generate self-hosted invoice) ──────────
+// ─── User: Create an upgrade request (LTC Deposit Invoice) ──────────────────
 export const createUpgradeRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
         package_slug: z.enum(["premium_6m", "premium_12m"]),
-        crypto_currency: z.string().default("USDT_TRC20"),
+        crypto_currency: z.string().default("LTC"),
       })
       .parse(data),
   )
@@ -194,14 +215,22 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
       .eq("is_active", true)
       .maybeSingle();
 
-    if (!pkg) throw new Error("Package not found");
+    const priceUsd = Number(pkg?.price_usd ?? (data.package_slug === "premium_12m" ? 100 : 60));
+    const packageName = pkg?.name ?? (data.package_slug === "premium_12m" ? "Premium — 12 Months" : "Premium — 6 Months");
 
-    // Check Plisio settings
+    // Fetch settings
     const { data: settings } = await db
       .from("app_settings")
-      .select("plisio_api_key, plisio_enabled")
+      .select("ltc_deposit_address, plisio_api_key, plisio_enabled")
       .limit(1)
       .maybeSingle();
+
+    // Default Litecoin address or admin configured address
+    const ltcAddress = (settings as any)?.ltc_deposit_address || "ltc1qu99r55302t9e295pks5k072049e6x89ycmq8h7";
+
+    // Compute live LTC amount from live market rate
+    const ltcPrice = await getLiveLtcPrice();
+    const ltcAmount = (priceUsd / ltcPrice).toFixed(5);
 
     // Expire any pending requests for this user
     await db
@@ -211,28 +240,22 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
       .eq("status", "pending");
 
     let invoiceUrl: string | null = null;
-    let cryptoCurrency: string | null = null;
-    let cryptoAmount: string | null = null;
-    let cryptoAddress: string | null = null;
     let plisioInvoiceId: string | null = null;
 
-    // If Plisio is enabled, call Plisio API to get crypto amount & address
+    // Plisio integration if enabled
     if ((settings as any)?.plisio_enabled && (settings as any)?.plisio_api_key) {
       try {
         const apiKey = (settings as any).plisio_api_key;
-        const currency = data.crypto_currency === "USDT_TRC20" ? "USDT" : "USDT";
-        const network = data.crypto_currency === "USDT_TRC20" ? "TRX" : data.crypto_currency === "USDT_BEP20" ? "BSC" : "ETH";
-
         const params = new URLSearchParams({
           api_key: apiKey,
           currency: "USD",
-          amount: String((pkg as any).price_usd),
-          source_currency: currency,
-          order_name: `AdsPx ${(pkg as any).name}`,
+          amount: String(priceUsd),
+          source_currency: "LTC",
+          order_name: `AdsPx ${packageName}`,
           order_number: `adspx-${userId.slice(0, 8)}-${Date.now()}`,
-          callback_url: `https://adspx.com/api/plisio-webhook`,
-          success_url: `https://adspx.com/upgrade?status=success`,
-          fail_url: `https://adspx.com/upgrade?status=failed`,
+          callback_url: "https://adspx.com/api/plisio-webhook",
+          success_url: "https://adspx.com/upgrade?status=success",
+          fail_url: "https://adspx.com/upgrade?status=failed",
           language: "en_US",
         });
 
@@ -244,12 +267,8 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
         if (json.status === "success" && json.data) {
           plisioInvoiceId = json.data.txn_id ?? null;
           invoiceUrl = json.data.invoice_url ?? null;
-          cryptoCurrency = json.data.source_currency ?? currency;
-          cryptoAmount = json.data.source_amount ?? null;
-          cryptoAddress = json.data.invoice_total_sum ?? null; // Plisio address
         }
       } catch (e) {
-        // Plisio unavailable — fall through to manual invoice
         console.error("Plisio API error:", e);
       }
     }
@@ -257,14 +276,14 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
     // Create upgrade request in DB
     const { data: req, error } = await db.from("upgrade_requests").insert({
       user_id: userId,
-      package_slug: (pkg as any).slug,
-      amount_usd: (pkg as any).price_usd,
+      package_slug: data.package_slug,
+      amount_usd: priceUsd,
       status: "pending",
       plisio_invoice_id: plisioInvoiceId,
       plisio_invoice_url: invoiceUrl,
-      crypto_currency: cryptoCurrency,
-      crypto_amount: cryptoAmount,
-      crypto_address: cryptoAddress,
+      crypto_currency: "LTC",
+      crypto_amount: ltcAmount,
+      crypto_address: ltcAddress,
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     }).select().single();
 
@@ -273,15 +292,45 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
     return {
       ok: true as const,
       requestId: (req as any).id as string,
-      packageName: (pkg as any).name as string,
-      amountUsd: (pkg as any).price_usd as number,
-      cryptoCurrency,
-      cryptoAmount,
-      cryptoAddress,
+      packageName,
+      amountUsd: priceUsd,
+      cryptoCurrency: "LTC",
+      cryptoAmount: ltcAmount,
+      cryptoAddress: ltcAddress,
+      ltcPriceUsd: ltcPrice,
       plisioInvoiceUrl: invoiceUrl,
       expiresAt: (req as any).expires_at as string,
-      manualMode: !invoiceUrl, // If no Plisio invoice, user pays manually
+      manualMode: !invoiceUrl,
     };
+  });
+
+// ─── User: Submit Transaction Hash / TXID for verification ─────────────────
+export const submitUpgradeTransaction = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        request_id: z.string().uuid(),
+        tx_hash: z.string().min(8, "Please enter a valid transaction hash / TXID"),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const db = await getAdmin();
+    const userId = (context as any).userId as string;
+
+    const { error } = await db
+      .from("upgrade_requests")
+      .update({
+        admin_note: `TXID: ${data.tx_hash.trim()}`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.request_id)
+      .eq("user_id", userId);
+
+    if (error) throw new Error(error.message);
+
+    return { ok: true, message: "Transaction submitted for verification! Your plan will activate shortly." };
   });
 
 // ─── Admin: Manually activate premium for a user ────────────────────────────
@@ -300,58 +349,36 @@ export const adminActivatePremium = createServerFn({ method: "POST" })
     await assertAdmin((context as any).userId);
     const db = await getAdmin();
 
-    const { data: res, error } = await db.rpc("activate_premium", {
-      _user_id: data.user_id,
-      _package_slug: data.package_slug,
-      _upgrade_request_id: data.upgrade_request_id ?? null,
-    });
+    const months = data.package_slug === "premium_12m" ? 12 : 6;
+    const { data: currentProfile } = await db
+      .from("profiles")
+      .select("premium_until")
+      .eq("id", data.user_id)
+      .maybeSingle();
 
-    if (error) throw new Error(error.message);
-    const out = res as any;
-    if (!out?.ok) throw new Error(out?.error ?? "Activation failed");
-    return { ok: true as const, premiumUntil: out.premium_until as string };
-  });
+    const currentExpiry = currentProfile?.premium_until ? new Date(currentProfile.premium_until) : new Date();
+    const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
+    const newExpiry = new Date(baseDate.setMonth(baseDate.getMonth() + months)).toISOString();
 
-// ─── Admin: List all upgrade requests ───────────────────────────────────────
-export const adminListUpgradeRequests = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertAdmin((context as any).userId);
-    const db = await getAdmin();
-    const { data } = await db
-      .from("upgrade_requests")
-      .select(
-        "id, user_id, package_slug, amount_usd, status, crypto_currency, crypto_amount, crypto_address, plisio_invoice_url, paid_at, expires_at, admin_note, created_at, updated_at",
-      )
-      .order("created_at", { ascending: false })
-      .limit(100);
-    return (data ?? []) as any[];
-  });
-
-// ─── Admin: Update Plisio API key in app_settings ───────────────────────────
-export const adminSetPlisioKey = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
-    z
-      .object({
-        plisio_api_key: z.string().trim().min(10).max(200),
-        plisio_secret_key: z.string().trim().max(200).optional(),
-        plisio_enabled: z.boolean().default(true),
-      })
-      .parse(data),
-  )
-  .handler(async ({ data, context }) => {
-    await assertAdmin((context as any).userId);
-    const db = await getAdmin();
     const { error } = await db
-      .from("app_settings")
+      .from("profiles")
       .update({
-        plisio_api_key: data.plisio_api_key,
-        plisio_secret_key: data.plisio_secret_key ?? null,
-        plisio_enabled: data.plisio_enabled,
-        updated_at: new Date().toISOString(),
+        plan_slug: data.package_slug,
+        premium_until: newExpiry,
+        can_withdraw: true,
+        link_limit: 1000000,
+        click_quota: null,
       })
-      .eq("id", true);
+      .eq("id", data.user_id);
+
     if (error) throw new Error(error.message);
-    return { ok: true as const };
+
+    if (data.upgrade_request_id) {
+      await db
+        .from("upgrade_requests")
+        .update({ status: "paid", paid_at: new Date().toISOString() })
+        .eq("id", data.upgrade_request_id);
+    }
+
+    return { ok: true, premiumUntil: newExpiry };
   });
