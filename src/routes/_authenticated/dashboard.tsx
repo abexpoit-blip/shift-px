@@ -121,8 +121,8 @@ function DashboardPage() {
   const uniqueVisitors = stats?.uniqueVisitors ?? 0;
   const botPct = allTraffic > 0 ? (botBlocked / allTraffic) * 100 : 0;
 
-  // Payout model: $1 per 100,000 verified human visits (matches earnings.functions.ts DEFAULT_RATE_PER_1K=0.01)
-  const CLICKS_PER_DOLLAR = 100_000;
+  // Payout model: $1 per 50,000 verified human visits ($0.02 per 1k)
+  const CLICKS_PER_DOLLAR = 50_000;
   const payoutEarned = totalClicks / CLICKS_PER_DOLLAR;
   const payoutProgress = totalClicks % CLICKS_PER_DOLLAR;
   const payoutRemaining = CLICKS_PER_DOLLAR - payoutProgress;

@@ -238,7 +238,7 @@ async function saveDashboardCache(userId: string, payload: DashboardPayload) {
 export const getDashboardData = createServerFn({ method: "GET" }).handler(async () => {
   const context = await getRequestAuth();
 
-  // 1) Try cache first — instant load, zero DB pressure on heavy RPC
+  // 1) Try cache first — only valid if less than 10 seconds old
   const cacheRes = await context.supabase
     .from("dashboard_cache" as never)
     .select("data, updated_at")
@@ -246,7 +246,11 @@ export const getDashboardData = createServerFn({ method: "GET" }).handler(async 
     .maybeSingle();
 
   const cached = cacheRes.data as { data: DashboardPayload; updated_at: string } | null;
-  if (cached?.data) {
+  const cacheAgeMs = cached?.updated_at
+    ? Date.now() - new Date(cached.updated_at).getTime()
+    : Infinity;
+
+  if (cached?.data && cacheAgeMs < 10_000) {
     return {
       ...cached.data,
       _cachedAt: cached.updated_at,
@@ -254,7 +258,7 @@ export const getDashboardData = createServerFn({ method: "GET" }).handler(async 
     } satisfies DashboardPayload;
   }
 
-  // 2) No cache yet → compute + save so next visit is instant
+  // 2) Cache missing or stale (> 10s) → compute fresh from DB and save
   const fresh = await computeDashboardPayload(context);
   await saveDashboardCache(context.userId, fresh);
   return { ...fresh, _cachedAt: new Date().toISOString(), _fresh: true } satisfies DashboardPayload;

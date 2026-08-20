@@ -94,9 +94,12 @@ function LinksPage() {
   const dashQ = useQuery({
     queryKey: ["dashboard"],
     queryFn: () => dash(),
-    staleTime: Infinity,
-    gcTime: 30 * 60_000,
-    refetchOnWindowFocus: false,
+    staleTime: 5_000,
+    gcTime: 5 * 60_000,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
   });
 
   const refreshMut = useMutation({
