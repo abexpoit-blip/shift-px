@@ -24,6 +24,75 @@ async function assertAdmin(userId: string) {
   if (!data) throw new Error("Forbidden");
 }
 
+const CANONICAL_PACKAGES: Package[] = [
+  {
+    id: "pkg-free",
+    slug: "free",
+    name: "Free Plan",
+    price_monthly: 0,
+    price_usd: 0,
+    duration_months: 0,
+    link_limit: 50,
+    click_quota: null,
+    is_premium: false,
+    can_withdraw: false,
+    features: [
+      "50 Short Links limit",
+      "Unlimited clicks & visits",
+      "Earn $1 per 50,000 verified visits",
+      "Standard Meta & Facebook bot cloaking",
+      "Real-time click & country analytics",
+      "No withdrawal (Upgrade to cash out)",
+    ],
+    sort_order: 0,
+  },
+  {
+    id: "pkg-6m",
+    slug: "premium_6m",
+    name: "Premium — 6 Months",
+    price_monthly: 10,
+    price_usd: 60,
+    duration_months: 6,
+    link_limit: 1000000,
+    click_quota: null,
+    is_premium: true,
+    can_withdraw: true,
+    features: [
+      "Unlimited Short Links",
+      "Unlimited traffic & Tier-1 fast routing",
+      "Instant Cashouts Enabled (Min $5 USDT)",
+      "Advanced Facebook Ad Review Cloaking",
+      "Geo-Targeting & Multi-Offer A/B Rotation",
+      "Dynamic SubID & UTM tracking forwarding",
+      "Priority VIP Telegram & Discord Support",
+    ],
+    sort_order: 1,
+  },
+  {
+    id: "pkg-12m",
+    slug: "premium_12m",
+    name: "Premium — 12 Months",
+    price_monthly: 8.33,
+    price_usd: 100,
+    duration_months: 12,
+    link_limit: 1000000,
+    click_quota: null,
+    is_premium: true,
+    can_withdraw: true,
+    features: [
+      "Everything in 6-Month Plan included",
+      "Save $20 (2 Months FREE — $120 → $100)",
+      "Unlimited Short Links & Max Speed CDNs",
+      "Instant Lifetime Withdrawals (Min $5)",
+      "Custom Short Domains Connection",
+      "Dedicated High-Priority Server Queue",
+      "Real-Time Click Logs & Audit Export",
+      "24/7 Dedicated VIP Account Manager",
+    ],
+    sort_order: 2,
+  },
+];
+
 // ─── Public: list available packages ────────────────────────────────────────
 export const listPackages = createServerFn({ method: "GET" }).handler(async () => {
   const db = await getAdmin();
@@ -32,7 +101,13 @@ export const listPackages = createServerFn({ method: "GET" }).handler(async () =
     .select("id, slug, name, price_monthly, price_usd, duration_months, link_limit, click_quota, is_premium, can_withdraw, features, sort_order")
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
-  return (data ?? []) as Package[];
+
+  const rows = (data ?? []) as Package[];
+  const hasPremium = rows.some((p) => p.slug === "premium_6m" || p.slug === "premium_12m");
+  if (!hasPremium || rows.length < 3) {
+    return CANONICAL_PACKAGES;
+  }
+  return rows;
 });
 
 export type Package = {
