@@ -1733,7 +1733,7 @@ export const Route = createFileRoute("/r/$code")({
   },
 });
 
-async function handleRedirect(request: Request, code: string, shouldRecordClick = true) {
+async function handleRedirect(request: Request, rawCode: string, shouldRecordClick = true) {
   const url = new URL(request.url);
   // Behind nginx, request.url is the upstream URL (e.g. http://localhost:4000/...),
   // so url.origin would leak "localhost:4000" into og:url / canonical and break
@@ -1741,7 +1741,9 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
   const fwdHost = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
   const fwdProto = (request.headers.get("x-forwarded-proto") || "https").split(",")[0].trim();
   const publicOrigin = fwdHost ? `${fwdProto}://${fwdHost.split(",")[0].trim()}` : url.origin;
-  const normalizedCode = code.trim().toLowerCase();
+  const pathSegment = url.pathname.replace(/^\/r\//i, "").replace(/^\//, "").split("/")[0].split("?")[0];
+  const code = (rawCode || pathSegment || "").trim().toLowerCase();
+  const normalizedCode = code;
   if (RESERVED_PUBLIC_PATHS.has(normalizedCode)) {
     const reservedHtml = renderReservedPublicPage(normalizedCode, publicOrigin);
     if (!reservedHtml) return new Response("Not Found", { status: 404 });

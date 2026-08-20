@@ -10,7 +10,7 @@ function isNewSupabaseApiKey(value: string): boolean {
 }
 
 function createSupabaseFetch(supabaseKey: string): typeof fetch {
-  return (input, init) => {
+  return async (input, init) => {
     const headers = new Headers(
       typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
     );
@@ -24,6 +24,25 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
     }
 
     headers.set("apikey", supabaseKey);
+
+    const inputUrl = typeof input === "string" ? input : input instanceof Request ? input.url : String(input);
+    const fallbacks = [
+      inputUrl,
+      inputUrl.replace(":8000", ":3000"),
+      inputUrl.replace(/^http:\/\/127\.0\.0\.1:\d+/i, "https://adspx.com"),
+    ];
+
+    let lastError: unknown = null;
+    for (const targetUrl of fallbacks) {
+      try {
+        const res = await fetch(targetUrl, { ...init, headers });
+        if (res.ok || res.status < 500) return res;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    // If all fallbacks failed, do standard fetch
     return fetch(input, { ...init, headers });
   };
 }
