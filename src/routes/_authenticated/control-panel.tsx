@@ -807,11 +807,9 @@ function UsersTab() {
             className="bg-card/80 border border-[var(--border)] rounded-lg px-2 py-1 text-xs"
           >
             <option value="">Move to plan…</option>
-            {packages.data?.map((p) => (
-              <option key={p.slug} value={p.slug}>
-                {p.name}
-              </option>
-            ))}
+            <option value="free">Free Plan</option>
+            <option value="premium_6m">Premium — 6 Months</option>
+            <option value="premium_12m">Premium — 12 Months</option>
           </select>
           <Button
             size="sm"
@@ -874,14 +872,12 @@ function UsersTab() {
                       )
                         planMut.mutate({ user_id: u.id, package_slug: e.target.value });
                     }}
-                    className="bg-card/80 border border-[var(--border)] rounded-lg px-2 py-1 text-xs"
+                    className="bg-card/80 border border-[var(--border)] rounded-lg px-2 py-1 text-xs font-semibold"
                   >
-                    {packages.data?.map((p) => (
-                      <option key={p.slug} value={p.slug}>
-                        {p.name}
-                      </option>
-                    ))}
-                    {!packages.data?.some((p) => p.slug === u.plan_slug) && (
+                    <option value="free">Free Plan</option>
+                    <option value="premium_6m">Premium — 6 Months</option>
+                    <option value="premium_12m">Premium — 12 Months</option>
+                    {!["free", "premium_6m", "premium_12m"].includes(u.plan_slug) && (
                       <option value={u.plan_slug}>{u.plan_slug}</option>
                     )}
                   </select>

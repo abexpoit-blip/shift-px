@@ -274,11 +274,21 @@ export function TopBar({
                 className="ml-1 inline-flex items-center gap-2 rounded-full hover:bg-muted transition px-1.5 py-1"
                 aria-label="Account menu"
               >
-                <Avatar className="h-7 w-7">
-                  <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative h-8 w-8 rounded-full p-[1.5px] bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 shadow-md">
+    <div className="h-full w-full rounded-full overflow-hidden bg-slate-900 flex items-center justify-center">
+      <img
+        src={`https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(email || 'adspx')}&backgroundColor=transparent`}
+        alt="Avatar"
+        className="h-full w-full object-cover"
+        onError={(e) => {
+          (e.target as HTMLElement).style.display = 'none';
+        }}
+      />
+      <span className="text-[11px] font-bold text-white uppercase hidden">
+        {initials}
+      </span>
+    </div>
+  </div>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

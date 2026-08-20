@@ -269,7 +269,7 @@ export type LeaderboardEntry = {
 export const getLeaderboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(
-    async ({ context }): Promise<{ entries: LeaderboardEntry[]; yourRank: number | null }> => {
+    async ({ context }): Promise<{ entries: LeaderboardEntry[]; yourRank: number | null; userSummary?: { humanClicks: number; earnings: number } | null }> => {
       const db = await getAdmin();
       const userId = (context as any).userId as string;
       const since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
@@ -308,6 +308,18 @@ export const getLeaderboard = createServerFn({ method: "GET" })
         return `user_${id.slice(0, 6)}`;
       };
 
+      let userSummary: { humanClicks: number; earnings: number } | null = null;
+      if (totals.has(userId)) {
+        const u = totals.get(userId)!;
+        userSummary = { humanClicks: u.humans, earnings: u.earnings };
+      } else {
+        const { data: userLinks } = await db.from("links").select("clicks_count").eq("user_id", userId);
+        const humans = (userLinks ?? []).reduce((s: number, l: any) => s + num(l.clicks_count), 0);
+        if (humans > 0) {
+          userSummary = { humanClicks: humans, earnings: Number(((humans * 0.02) / 1000).toFixed(4)) };
+        }
+      }
+
       return {
         entries: top.map(([id, t], i) => ({
           rank: i + 1,
@@ -317,6 +329,7 @@ export const getLeaderboard = createServerFn({ method: "GET" })
           isYou: id === userId,
         })),
         yourRank: yourIndex >= 0 ? yourIndex + 1 : null,
+        userSummary,
       };
     },
   );

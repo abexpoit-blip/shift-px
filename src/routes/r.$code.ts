@@ -30,10 +30,10 @@ const SAFE_FALLBACK = `${DEFAULT_SHORT_ORIGIN}/`;
 /**
  * A link's OWN safe / landing page, if the user set one.
  * Only accepts a valid http(s) URL and ignores any bare SaaS-homepage
- * default that older deploys (adspx / adswapx / the legacy sleepox host)
+ * default that older deploys (adspx / adswapx)
  * used to store — our own homepage must never be served as a safe page.
  */
-const LEGACY_SAFE_HOST_RE = /^https?:\/\/(www\.)?(sleepox|adspx|adswapx)\.com\/?$/i;
+const LEGACY_SAFE_HOST_RE = /^https?:\/\/(www\.)?(adspx|adswapx)\.com\/?$/i;
 
 function customSafePage(link: { safe_url?: string | null }): string | null {
   const raw = (link.safe_url ?? "").trim();
@@ -833,9 +833,9 @@ function markKnownHuman(code: string, fpHash: string): void {
   void redisSet(humanPassGlobalKey(fpHash), 1, HUMAN_PASS_TTL_SEC * 1000).catch(() => {});
 }
 
-// Offer targets that must NEVER be served to a visitor: our own SaaS hosts and
-// legacy brand hosts. If a link somehow stores one of these, fall back to safe.
-const BLOCKED_TARGET_HOSTS = /(^|\.)(sleepox|adspx|adswapx)\.com$/i;
+// Offer targets that must NEVER be served to a visitor: our own SaaS hosts.
+// If a link somehow stores one of these, fall back to safe.
+const BLOCKED_TARGET_HOSTS = /(^|\.)(adspx|adswapx)\.com$/i;
 
 export function canonicalOfferTarget(target: string | null | undefined): string | null {
   if (!target) return null;

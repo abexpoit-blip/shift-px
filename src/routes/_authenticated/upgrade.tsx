@@ -618,25 +618,31 @@ function UpgradePage() {
               </thead>
               <tbody className="divide-y divide-border/60">
                 {COMPARISON_ROWS.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-muted/20 transition-colors">
-                    <td className="py-3.5 font-semibold text-foreground">{row.feature}</td>
-                    <td className="py-3.5 text-center text-muted-foreground">
-                      {row.free.includes("Disabled") || row.free.includes("Not Available") ? (
-                        <span className="inline-flex items-center gap-1 text-amber-500/90 font-medium">
-                          <XCircle className="h-3.5 w-3.5" /> {row.free}
-                        </span>
-                      ) : (
-                        row.free
-                      )}
-                    </td>
-                    <td className="py-3.5 text-center font-bold text-indigo-300 bg-indigo-500/5">
-                      {row.p6m}
-                    </td>
-                    <td className="py-3.5 text-center font-extrabold text-amber-300 bg-amber-500/5">
-                      {row.p12m}
-                    </td>
-                  </tr>
-                ))}
+    <tr key={idx} className="hover:bg-muted/30 transition-colors">
+      <td className="py-4 font-bold text-foreground text-sm">{row.feature}</td>
+      <td className="py-4 text-center">
+        {row.free.includes("Disabled") || row.free.includes("Not Available") ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/10 border border-rose-500/30 px-3 py-1 text-xs font-bold text-rose-400">
+            <XCircle className="h-3.5 w-3.5" /> Upgrade Required
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 border border-border px-3 py-1 text-xs font-semibold text-foreground">
+            {row.free}
+          </span>
+        )}
+      </td>
+      <td className="py-4 text-center bg-indigo-500/5">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 px-3 py-1 text-xs font-extrabold text-indigo-300">
+          <CheckCircle2 className="h-3.5 w-3.5 text-indigo-400" /> {row.p6m}
+        </span>
+      </td>
+      <td className="py-4 text-center bg-amber-500/5">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-1 text-xs font-black text-amber-300">
+          <CheckCircle2 className="h-3.5 w-3.5 text-amber-400" /> {row.p12m}
+        </span>
+      </td>
+    </tr>
+  ))}
               </tbody>
             </table>
           </div>

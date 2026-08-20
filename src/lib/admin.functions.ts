@@ -19,61 +19,26 @@ type PackageQuota = {
   link_limit: number | null;
 };
 
-async function applyPackageToProfileIds(userIds: string[], pkg: PackageQuota) {
+async function applyPackageToProfileIds(userIds: string[], pkg: any) {
   const ids = [...new Set(userIds)];
   const now = new Date();
   const resetAt = now.toISOString();
-  const nowMs = now.getTime();
-  const PERIOD_MS = 30 * 24 * 60 * 60 * 1000;
-  const isLifetime = pkg.slug === "lifetime" || pkg.slug === "unlimited";
   const isFree = pkg.slug === "free";
-
-  const { data: profiles, error: fetchErr } = await supabaseAdmin
-    .from("profiles")
-    .select("id, plan_slug, plan_expires_at, click_quota")
-    .in("id", ids);
-  if (fetchErr) throw new Error(fetchErr.message);
-
-  const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
-
-  // Renewal = same paid plan that is still active → stack days + stack quota.
-  const isRenewal = (profile: any) => {
-    if (isFree || isLifetime) return false;
-    if (profile?.plan_slug !== pkg.slug) return false;
-    const expiry = profile?.plan_expires_at ? new Date(profile.plan_expires_at).getTime() : null;
-    return expiry != null && !Number.isNaN(expiry) && expiry > nowMs;
-  };
+  const durationMonths = Number(pkg.duration_months ?? (pkg.slug === "premium_12m" ? 12 : pkg.slug === "premium_6m" ? 6 : 1));
 
   for (const id of ids) {
-    const profile = profileMap.get(id);
-    const renewal = isRenewal(profile);
+    const baseDate = new Date();
+    const expiryDate = isFree ? null : new Date(baseDate.setMonth(baseDate.getMonth() + (durationMonths || 6))).toISOString();
 
-    let update: Record<string, unknown>;
-
-    if (renewal) {
-      const currentExpiry = new Date(profile.plan_expires_at).getTime();
-      update = {
-        plan_slug: pkg.slug,
-        click_quota:
-          pkg.click_quota == null
-            ? null
-            : Number(profile?.click_quota ?? 0) + Number(pkg.click_quota),
-        link_limit: pkg.link_limit,
-        plan_expires_at: new Date(currentExpiry + PERIOD_MS).toISOString(),
-      };
-    } else {
-      update = {
-        plan_slug: pkg.slug,
-        click_quota: pkg.click_quota,
-        link_limit: pkg.link_limit,
-        clicks_used: 0,
-        clicks_period_start: resetAt,
-        // Manual admin upgrades must also carry a visible start/expiry date,
-        // otherwise the control panel shows "—" for the plan period.
-        plan_started_at: isFree ? null : resetAt,
-        plan_expires_at: isFree || isLifetime ? null : new Date(nowMs + PERIOD_MS).toISOString(),
-      };
-    }
+    const update = {
+      plan_slug: pkg.slug,
+      click_quota: pkg.click_quota ?? null,
+      link_limit: isFree ? 50 : 1000000,
+      can_withdraw: !isFree,
+      plan_started_at: isFree ? null : resetAt,
+      premium_until: expiryDate,
+      plan_expires_at: expiryDate,
+    };
 
     const { error } = await supabaseAdmin
       .from("profiles")
@@ -575,7 +540,15 @@ export const adminListPackages = createServerFn({ method: "GET" })
       .eq("is_active", true)
       .order("sort_order");
     if (error) throw new Error(error.message);
-    return data;
+    const list = (data ?? []) as any[];
+    if (list.length === 0 || !list.some((p) => p.slug === "premium_6m" || p.slug === "premium_12m")) {
+      return [
+        { id: "pkg-free", slug: "free", name: "Free Plan", price_usd: 0, duration_months: 0, link_limit: 50, click_quota: null, is_premium: false, can_withdraw: false, sort_order: 0 },
+        { id: "pkg-6m", slug: "premium_6m", name: "Premium — 6 Months", price_usd: 60, duration_months: 6, link_limit: 1000000, click_quota: null, is_premium: true, can_withdraw: true, sort_order: 1 },
+        { id: "pkg-12m", slug: "premium_12m", name: "Premium — 12 Months", price_usd: 100, duration_months: 12, link_limit: 1000000, click_quota: null, is_premium: true, can_withdraw: true, sort_order: 2 }
+      ];
+    }
+    return list;
   });
 
 export const adminListAllPackages = createServerFn({ method: "GET" })

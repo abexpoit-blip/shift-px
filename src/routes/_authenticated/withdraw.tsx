@@ -5,81 +5,61 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   Wallet,
-  Bitcoin,
-  Plus,
-  Trash2,
   Clock,
   CheckCircle2,
   XCircle,
   Loader2,
-  ArrowUpRight,
+  Coins,
+  ShieldCheck,
+  AlertCircle,
+  Sparkles,
+  ArrowRight
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
-  addWallet,
-  deleteWallet,
   getEarningsOverview,
-  listWallets,
   listWithdrawals,
   requestWithdrawal,
-  PAYOUT_NETWORKS,
   type WithdrawalRow,
 } from "@/lib/earnings.functions";
 
 export const Route = createFileRoute("/_authenticated/withdraw")({
   head: () => ({
     meta: [
-      { title: "Withdraw earnings — Adspx" },
+      { title: "Withdraw Earnings — AdsPx" },
       {
         name: "description",
-        content:
-          "Cash out your Adspx earnings in USDT (TRC20 / BEP20). Minimum $10, processed within 24 hours.",
+        content: "Cash out your AdsPx earnings in Litecoin (LTC). Minimum $5 USD payout threshold.",
       },
-      { property: "og:title", content: "Withdraw earnings — Adspx" },
-      {
-        property: "og:description",
-        content: "Cash out your Adspx earnings in USDT. Minimum $10, processed within 24 hours.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: WithdrawPage,
 });
 
-const NETWORK_LABEL: Record<string, string> = {
-  USDT_TRC20: "USDT · TRC20",
-  USDT_BEP20: "USDT · BEP20 (BSC)",
-  USDT_ERC20: "USDT · ERC20 (ETH)",
-};
-
-function money(n: number) {
-  return `$${n.toFixed(2)}`;
-}
+const display = { fontFamily: "'Outfit', system-ui, sans-serif" } as const;
 
 function StatusBadge({ status }: { status: WithdrawalRow["status"] }) {
   const map = {
     pending: {
       icon: Clock,
-      cls: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+      cls: "bg-amber-500/10 text-amber-500 border-amber-500/20",
       label: "Pending",
     },
     approved: {
       icon: Clock,
-      cls: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+      cls: "bg-blue-500/10 text-blue-400 border-blue-500/20",
       label: "Approved",
     },
     paid: {
       icon: CheckCircle2,
-      cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+      cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
       label: "Paid",
     },
     rejected: {
       icon: XCircle,
-      cls: "bg-red-500/10 text-red-600 border-red-500/20",
+      cls: "bg-rose-500/10 text-rose-400 border-rose-500/20",
       label: "Rejected",
     },
   } as const;
@@ -87,7 +67,7 @@ function StatusBadge({ status }: { status: WithdrawalRow["status"] }) {
   const Icon = cfg.icon;
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${cfg.cls}`}
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-bold ${cfg.cls}`}
     >
       <Icon className="h-3 w-3" />
       {cfg.label}
@@ -98,315 +78,215 @@ function StatusBadge({ status }: { status: WithdrawalRow["status"] }) {
 function WithdrawPage() {
   const qc = useQueryClient();
   const overviewFn = useServerFn(getEarningsOverview);
-  const walletsFn = useServerFn(listWallets);
-  const historyFn = useServerFn(listWithdrawals);
-  const addWalletFn = useServerFn(addWallet);
-  const deleteWalletFn = useServerFn(deleteWallet);
+  const withdrawalsFn = useServerFn(listWithdrawals);
   const requestFn = useServerFn(requestWithdrawal);
 
-  const overview = useQuery({ queryKey: ["earnings-overview"], queryFn: () => overviewFn({}) });
-  const wallets = useQuery({ queryKey: ["wallets"], queryFn: () => walletsFn({}) });
-  const history = useQuery({ queryKey: ["withdrawals"], queryFn: () => historyFn({}) });
-
-  const [showAdd, setShowAdd] = useState(false);
-  const [network, setNetwork] = useState<(typeof PAYOUT_NETWORKS)[number]>("USDT_TRC20");
-  const [address, setAddress] = useState("");
-  const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
-  const [walletId, setWalletId] = useState<string | null>(null);
+  const [address, setAddress] = useState("");
 
-  const balance = overview.data?.balanceAvailable ?? 0;
-  const pending = overview.data?.balancePending ?? 0;
-  const withdrawn = overview.data?.balanceWithdrawn ?? 0;
-  const minAmount = overview.data?.minWithdrawal ?? 10;
+  const { data: overview, isLoading: isOverviewLoading } = useQuery({
+    queryKey: ["earnings-overview"],
+    queryFn: () => overviewFn(),
+    staleTime: 10_000,
+  });
 
-  const saveWallet = useMutation({
+  const { data: withdrawals = [], isLoading: isWithdrawalsLoading } = useQuery({
+    queryKey: ["withdrawals"],
+    queryFn: () => withdrawalsFn(),
+    staleTime: 10_000,
+  });
+
+  const withdrawMut = useMutation({
     mutationFn: () =>
-      addWalletFn({ data: { network, address: address.trim(), label: label.trim() || undefined } }),
-    onSuccess: () => {
-      toast.success("Wallet saved");
-      setAddress("");
-      setLabel("");
-      setShowAdd(false);
-      qc.invalidateQueries({ queryKey: ["wallets"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const removeWallet = useMutation({
-    mutationFn: (id: string) => deleteWalletFn({ data: { id } }),
-    onSuccess: () => {
-      toast.success("Wallet removed");
-      qc.invalidateQueries({ queryKey: ["wallets"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const submit = useMutation({
-    mutationFn: () => {
-      const w = (wallets.data ?? []).find((x) => x.id === walletId);
-      if (!w) throw new Error("Select a wallet first");
-      return requestFn({
+      requestFn({
         data: {
-          amount: Number(amount),
-          network: w.network as (typeof PAYOUT_NETWORKS)[number],
-          address: w.address,
+          amount_usd: Number(amount),
+          network: "LTC",
+          wallet_address: address.trim(),
         },
-      });
-    },
-    onSuccess: () => {
-      toast.success("Withdrawal requested — processed within 24 hours");
+      }),
+    onSuccess: (res) => {
+      toast.success("Withdrawal request submitted successfully!");
       setAmount("");
-      qc.invalidateQueries({ queryKey: ["withdrawals"] });
+      setAddress("");
       qc.invalidateQueries({ queryKey: ["earnings-overview"] });
+      qc.invalidateQueries({ queryKey: ["withdrawals"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message || "Withdrawal failed"),
   });
 
-  const amountNum = Number(amount);
-  const canSubmit =
-    !!walletId &&
-    Number.isFinite(amountNum) &&
-    amountNum >= minAmount &&
-    amountNum <= balance &&
-    !submit.isPending;
+  const available = Number(overview?.balanceAvailable ?? 0);
+  const minWithdrawal = Number(overview?.minWithdrawal ?? 5);
+  const canSubmit = available >= minWithdrawal && Number(amount) >= minWithdrawal && Number(amount) <= available && address.trim().length >= 10;
 
   return (
-    <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-5xl space-y-5 sm:space-y-7">
-      <header>
-        <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
-          Withdraw earnings
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          USDT payouts · TRC20, BEP20 or ERC20 · minimum {money(minAmount)} · processed within 24 h.
-        </p>
-      </header>
+    <div className="relative min-h-screen text-foreground pb-16" style={display}>
+      {/* Ambient glow */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <span className="orb orb-indigo w-[500px] h-[500px] -top-32 -left-20 opacity-25" />
+        <span className="orb orb-purple w-[400px] h-[400px] top-80 -right-20 opacity-20" />
+      </div>
 
-      <section className="grid md:grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Wallet className="h-3.5 w-3.5" /> Available
+      <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-8">
+        {/* Page Header */}
+        <header className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 border border-blue-500/20 px-3.5 py-1 text-xs font-bold uppercase tracking-[0.2em] text-blue-400">
+            <span className="font-black text-sm">Ł</span> Litecoin (LTC) Payouts
           </div>
-          <div className="mt-1 text-3xl font-bold tabular-nums">{money(balance)}</div>
-          <p className="text-xs text-muted-foreground mt-1">Ready to withdraw</p>
-        </div>
-        <div className="rounded-2xl glass-card p-5">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Clock className="h-3.5 w-3.5" /> Pending
-          </div>
-          <div className="mt-1 text-3xl font-bold tabular-nums">{money(pending)}</div>
-          <p className="text-xs text-muted-foreground mt-1">Awaiting payout</p>
-        </div>
-        <div className="rounded-2xl glass-card p-5">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <ArrowUpRight className="h-3.5 w-3.5" /> Withdrawn
-          </div>
-          <div className="mt-1 text-3xl font-bold tabular-nums">{money(withdrawn)}</div>
-          <p className="text-xs text-muted-foreground mt-1">Lifetime paid out</p>
-        </div>
-      </section>
-
-      <section className="rounded-2xl glass-card p-5 sm:p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-lg font-semibold flex items-center gap-2">
-            <Bitcoin className="h-4 w-4 text-primary" /> Your wallets
-          </h2>
-          <Button variant="outline" size="sm" onClick={() => setShowAdd((v) => !v)}>
-            <Plus className="h-4 w-4 mr-1" /> Add wallet
-          </Button>
-        </div>
-
-        {showAdd && (
-          <div className="rounded-xl border border-border bg-muted/40 p-4 mb-4 space-y-3">
-            <div className="flex gap-2">
-              {PAYOUT_NETWORKS.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setNetwork(n)}
-                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-                    network === n
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground"
-                  }`}
-                >
-                  {NETWORK_LABEL[n]}
-                </button>
-              ))}
-            </div>
-            <div className="grid sm:grid-cols-[1fr_200px] gap-3">
-              <div>
-                <Label htmlFor="addr">Wallet address</Label>
-                <Input
-                  id="addr"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="T… (TRC20) · 0x… (BEP20 / ERC20)"
-                  maxLength={120}
-                  className="mt-1.5 font-mono text-xs"
-                />
-              </div>
-              <div>
-                <Label htmlFor="wlabel">Label (optional)</Label>
-                <Input
-                  id="wlabel"
-                  value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                  maxLength={60}
-                  className="mt-1.5"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={() => saveWallet.mutate()}
-                disabled={address.trim().length < 20 || saveWallet.isPending}
-              >
-                {saveWallet.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Save wallet"
-                )}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {(wallets.data ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No wallets yet — add one to request a payout.
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight">Withdraw Earnings</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Request instant crypto cashouts in Litecoin (LTC). Minimum payout threshold: <strong>${minWithdrawal.toFixed(2)} USD</strong>.
           </p>
-        ) : (
-          <ul className="space-y-2">
-            {(wallets.data ?? []).map((w) => (
-              <li
-                key={w.id}
-                className="flex items-center gap-3 rounded-xl border border-border p-3"
-              >
-                <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium">
-                  {NETWORK_LABEL[w.network] ?? w.network}
-                </span>
-                {w.label && <span className="text-sm">{w.label}</span>}
-                <span className="font-mono text-xs text-muted-foreground truncate flex-1">
-                  {w.address}
-                </span>
-                <button
-                  onClick={() => removeWallet.mutate(w.id)}
-                  className="text-muted-foreground hover:text-destructive transition"
-                  aria-label="Delete wallet"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        </header>
 
-      <section className="rounded-2xl border border-primary/30 bg-card p-5 sm:p-6">
-        <h2 className="font-display text-lg font-semibold">Request a withdrawal</h2>
-        <p className="text-sm text-muted-foreground mt-1 mb-4">
-          Min {money(minAmount)} · processed within 24 hours · no network fees deducted.
-        </p>
-
-        {balance < minAmount && (
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 mb-4">
-            You need at least {money(minAmount)} available to request a payout.
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <div className="max-w-xs">
-            <Label htmlFor="amount">Amount (USD)</Label>
-            <Input
-              id="amount"
-              type="number"
-              min={minAmount}
-              max={balance}
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="mt-1.5"
-            />
-          </div>
-
-          {(wallets.data ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">Add a wallet above to continue.</p>
-          ) : (
-            <div className="grid sm:grid-cols-2 gap-2">
-              {(wallets.data ?? []).map((w) => (
-                <button
-                  key={w.id}
-                  type="button"
-                  onClick={() => setWalletId(w.id)}
-                  className={`rounded-xl border p-3 text-left transition ${
-                    walletId === w.id
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/40"
-                  }`}
-                >
-                  <div className="text-xs font-medium">{NETWORK_LABEL[w.network] ?? w.network}</div>
-                  <div className="font-mono text-[11px] text-muted-foreground truncate">
-                    {w.address}
-                  </div>
-                </button>
-              ))}
+        {/* Balance Overview Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="rounded-3xl bg-card border border-border/80 p-6 space-y-1 shadow-lg">
+            <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Available Balance</div>
+            <div className="text-3xl sm:text-4xl font-black text-emerald-400 font-mono">
+              ${available.toFixed(4)}
             </div>
-          )}
+            <p className="text-[11px] text-muted-foreground">Ready for instant withdrawal</p>
+          </div>
 
-          <Button
-            onClick={() => submit.mutate()}
-            disabled={!canSubmit}
-            className="bg-primary-gradient"
-          >
-            {submit.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Request withdrawal"}
-          </Button>
+          <div className="rounded-3xl bg-card border border-border/80 p-6 space-y-1 shadow-lg">
+            <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pending Payouts</div>
+            <div className="text-3xl sm:text-4xl font-black text-amber-400 font-mono">
+              ${Number(overview?.balancePending ?? 0).toFixed(2)}
+            </div>
+            <p className="text-[11px] text-muted-foreground">Currently processing</p>
+          </div>
+
+          <div className="rounded-3xl bg-card border border-border/80 p-6 space-y-1 shadow-lg">
+            <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Lifetime Withdrawn</div>
+            <div className="text-3xl sm:text-4xl font-black text-foreground font-mono">
+              ${Number(overview?.balanceWithdrawn ?? 0).toFixed(2)}
+            </div>
+            <p className="text-[11px] text-muted-foreground">Total earnings sent</p>
+          </div>
         </div>
-      </section>
 
-      <section className="rounded-2xl glass-card p-5 sm:p-6">
-        <h2 className="font-display text-lg font-semibold mb-4">Withdrawal history</h2>
-        {(history.data ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground">No withdrawals yet.</p>
-        ) : (
+        {/* Withdrawal Request Form */}
+        <div className="rounded-3xl border-2 border-blue-500/30 bg-card p-6 sm:p-8 space-y-6 shadow-2xl">
+          <div className="flex items-center justify-between border-b border-border/70 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-11 w-11 rounded-2xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center font-black text-xl text-blue-400">
+                Ł
+              </div>
+              <div>
+                <h3 className="font-black text-lg text-foreground">New Litecoin (LTC) Withdrawal</h3>
+                <p className="text-xs text-muted-foreground">Payouts are sent directly to your personal Litecoin address.</p>
+              </div>
+            </div>
+            <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-bold text-emerald-400">
+              Min ${minWithdrawal.toFixed(2)}
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex justify-between">
+                <span>Amount to Withdraw (USD) *</span>
+                <span className="text-emerald-400 font-mono cursor-pointer hover:underline" onClick={() => setAmount(String(available))}>
+                  Max: ${available.toFixed(4)}
+                </span>
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                min={minWithdrawal}
+                max={available}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder={`Min $${minWithdrawal}.00`}
+                className="h-12 text-base font-mono rounded-2xl bg-muted/40 border-border"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Your Litecoin (LTC) Wallet Address *
+              </label>
+              <Input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="e.g. ltc1q... or L..."
+                className="h-12 text-sm font-mono rounded-2xl bg-muted/40 border-border"
+              />
+            </div>
+
+            <div className="rounded-2xl bg-blue-500/5 border border-blue-500/20 p-4 flex items-center gap-3">
+              <ShieldCheck className="h-5 w-5 text-blue-400 flex-shrink-0" />
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Litecoin blockchain confirmation is fast (under 2.5 minutes) with near-zero network fees. Please ensure your address is accurate on the native LTC network.
+              </p>
+            </div>
+
+            <Button
+              onClick={() => withdrawMut.mutate()}
+              disabled={withdrawMut.isPending || !canSubmit}
+              className="w-full h-14 text-base font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl shadow-glow hover:opacity-95"
+            >
+              {withdrawMut.isPending ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" /> Submitting Payout Request…
+                </>
+              ) : (
+                <>
+                  <Coins className="h-5 w-5 mr-2" /> Request ${amount ? Number(amount).toFixed(2) : "0.00"} LTC Withdrawal
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Withdrawal History Table */}
+        <div className="rounded-3xl border border-border/80 bg-card p-6 sm:p-8 space-y-4 shadow-lg">
+          <h3 className="font-extrabold text-xl text-foreground">Withdrawal History</h3>
+
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-left text-xs sm:text-sm border-collapse">
               <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="py-2 pr-3 font-medium">Date</th>
-                  <th className="py-2 pr-3 font-medium">Amount</th>
-                  <th className="py-2 pr-3 font-medium">Network</th>
-                  <th className="py-2 pr-3 font-medium">Wallet</th>
-                  <th className="py-2 font-medium">Status</th>
+                <tr className="border-b border-border/80 text-muted-foreground font-bold">
+                  <th className="pb-3">Date</th>
+                  <th className="pb-3">Amount (USD)</th>
+                  <th className="pb-3">Method</th>
+                  <th className="pb-3">Wallet Address</th>
+                  <th className="pb-3 text-right">Status</th>
                 </tr>
               </thead>
-              <tbody>
-                {(history.data ?? []).map((w) => (
-                  <tr key={w.id} className="border-t border-border">
-                    <td className="py-2.5 pr-3 whitespace-nowrap">
-                      {new Date(w.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="py-2.5 pr-3 font-semibold tabular-nums">
-                      {money(Number(w.amount_usd))}
-                    </td>
-                    <td className="py-2.5 pr-3">{NETWORK_LABEL[w.network] ?? w.network}</td>
-                    <td className="py-2.5 pr-3 font-mono text-xs text-muted-foreground max-w-[180px] truncate">
-                      {w.wallet_address}
-                    </td>
-                    <td className="py-2.5">
-                      <StatusBadge status={w.status} />
+              <tbody className="divide-y divide-border/60">
+                {withdrawals.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-10 text-center text-muted-foreground">
+                      No withdrawal history found.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  withdrawals.map((w) => (
+                    <tr key={w.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="py-3.5 text-muted-foreground">
+                        {new Date(w.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="py-3.5 font-bold font-mono text-foreground">
+                        ${Number(w.amount_usd).toFixed(2)}
+                      </td>
+                      <td className="py-3.5 font-semibold text-blue-400">Litecoin (LTC)</td>
+                      <td className="py-3.5 font-mono text-xs text-muted-foreground">
+                        {w.wallet_address.slice(0, 8)}...{w.wallet_address.slice(-6)}
+                      </td>
+                      <td className="py-3.5 text-right">
+                        <StatusBadge status={w.status} />
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-        )}
-      </section>
-    </main>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -388,6 +388,38 @@ export const createLink = createServerFn({ method: "POST" })
     return normalizeLink(created);
   });
 
+export const updateLink = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        title: z.string().max(200).optional(),
+        adsterra_url: z.string().url("Please enter a valid URL"),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const context = await getRequestAuth();
+    await assertNotBanned(context.supabase, context.userId);
+    const { data: row, error } = await (context.supabase as any)
+      .from("links")
+      .update({
+        title: data.title ?? null,
+        adsterra_url: data.adsterra_url,
+        adsterra_direct_link: data.adsterra_url,
+        destination_url: data.adsterra_url,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.id)
+      .eq("user_id", context.userId)
+      .select("short_code")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    const { invalidateLinkCache } = await import("@/lib/link-cache.server");
+    await invalidateLinkCache(row?.short_code);
+    return { ok: true };
+  });
+
 export const deleteLink = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
