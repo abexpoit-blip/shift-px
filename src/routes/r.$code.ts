@@ -2058,249 +2058,39 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     }
   }
 
-  // 0b. FB AD-REVIEW WINDOW: during the first FB_AD_REVIEW_WINDOW_HOURS after
-  // link creation, treat FB/IG in-app browsers AND clicks coming from FB/IG
-  // domains as crawler traffic. Facebook's deep ad-review opens the link in a
-  // real headless Chrome from a clean US IP, often via l.facebook.com referer
-  // or inside the FB in-app browser (FBAN/FBAV/FB_IAB UA). Serving the
-  // Adsterra offer to that reviewer = ad rejected. After the window passes,
-  // these visitors get the normal offer like any other user.
-  if (!isBot) {
-    const fbReviewEnabled = (settings as any)?.fb_review_protection_enabled ?? true;
-    const linkAgeMs = link.created_at
-      ? Date.now() - new Date(link.created_at).getTime()
-      : Number.POSITIVE_INFINITY;
-    // Use human clicks only — bot_clicks_count is incremented by every FB
-    // crawler hit, so including it would prematurely close the review window
-    // on popular ads and the next real ad reviewer would receive the offer.
-    const totalClicks = link.clicks_count ?? 0;
-    const inReviewWindow =
-      fbReviewEnabled &&
-      linkAgeMs < FB_AD_REVIEW_WINDOW_HOURS * 60 * 60 * 1000 &&
-      totalClicks < FB_AD_REVIEW_MAX_CLICKS;
-    // ALWAYS-ON: FB-referer + no in-app marker = headless reviewer/scanner.
-    // Real FB/IG users ALWAYS carry FBAN/FBAV/Instagram markers, so this
-    // never blocks real traffic. Lifted out of review window per smart
-    // protection plan — FB now monitors continuously, not just on submit.
-    if (fbReviewEnabled) {
-      const FB_REFERER_HOSTS_AO = [
-        "facebook.com",
-        "l.facebook.com",
-        "lm.facebook.com",
-        "m.facebook.com",
-        "web.facebook.com",
-        "business.facebook.com",
-        "fb.me",
-        "fb.watch",
-        "instagram.com",
-        "l.instagram.com",
-        "messenger.com",
-        "l.messenger.com",
-      ];
-      const refLowAO = refererDomain.toLowerCase();
-      const fbRefHitAO = FB_REFERER_HOSTS_AO.find(
-        (h) => refLowAO === h || refLowAO.endsWith(`.${h}`),
-      );
-      const hasFbAppMarkerAO = /fban|fbav|fb_iab|fbios|fbss|instagram|messenger/i.test(uaLowFb);
-      if (!isBot && fbRefHitAO && !hasFbAppMarkerAO) {
-        isBot = true;
-        isFbBot = true;
-        reason = `fb-ref-headless:${fbRefHitAO}`;
-      }
-    }
+  // 0b. FB / SOCIAL CRAWLER SAFETY:
+  // Actual Meta crawlers (facebookexternalhit, facebot, etc.) and datacenter
+  // scrapers are already blocked above in Step 0 and 0a.
+  // Real humans clicking from Facebook feed, Facebook Lite, Messenger app,
+  // Messenger web, Instagram, TikTok, WhatsApp, or direct copy-paste DO NOT
+  // get blocked here — they pass straight through to the offer.
 
-    if (inReviewWindow) {
-      // FB ad reviewer uses `facebookexternalhit` UA (already caught in step 0)
-      // OR a real headless Chrome from clean US IP often with l.facebook.com referer.
-      // Real users clicking from FB/IG app have FBAN/FBAV UA — those are REAL
-      // HUMANS, not reviewers. Blocking them = massive revenue loss.
-      //
-      // Conservative rule: only block during review window when BOTH
-      //   (a) referer is a Facebook/Instagram domain (l.facebook.com etc.), AND
-      //   (b) UA does NOT contain FBAN/FBAV/Instagram markers
-      // That covers headless-Chrome reviewer (no FB app marker but FB referer)
-      // and lets all real in-app users through normally.
-      const FB_REFERER_HOSTS = [
-        "facebook.com",
-        "l.facebook.com",
-        "lm.facebook.com",
-        "m.facebook.com",
-        "web.facebook.com",
-        "business.facebook.com",
-        "fb.me",
-        "fb.watch",
-        "instagram.com",
-        "l.instagram.com",
-        "messenger.com",
-        "l.messenger.com",
-      ];
-      const refLow = refererDomain.toLowerCase();
-      const fbRefHit = FB_REFERER_HOSTS.find((h) => refLow === h || refLow.endsWith(`.${h}`));
-      const hasFbAppMarker = /fban|fbav|fb_iab|fbios|fbss|instagram|messenger/i.test(uaLowFb);
-      if (fbRefHit && !hasFbAppMarker) {
-        isBot = true;
-        isFbBot = true;
-        reason = `fb-ref-review:${fbRefHit}`;
-      }
-
-      // NEW: catch FB ad reviewers who land with NO referer (direct hit) from
-      // a US/EU IP using a regular desktop or headless-Chrome UA during the
-      // ad-review window. Pattern observed in production: country=US, ref=direct,
-      // UA = plain Chrome/Safari with no FBAN/FBAV marker, link <6h old, <25 clicks.
-      // Outside the review window this rule does NOT fire, so real US/EU users
-      // are unaffected once the campaign matures.
-      if (!isBot && !knownHuman) {
-        const REVIEWER_COUNTRIES = new Set(["US", "IE", "GB", "DE", "SG", "NL"]);
-        // countryConfident: never fire on a guessed country (see country
-        // resolution above) — a language-derived "US" is not evidence.
-        const isReviewerGeo = countryConfident && !!country && REVIEWER_COUNTRIES.has(country);
-
-        const isDirect = !refererDomain; // no referer header at all
-        // H2 FIX: Only fire on the very first few visits of a brand-new link
-        // (totalClicks < 5). FB ad reviewers always hit within the first
-        // handful of clicks. After that, direct US/EU visits are almost
-        // certainly real users (someone pasted the link into their browser,
-        // privacy-extension stripped the referer, etc.) — do NOT block them.
-        const isVeryFreshLink = totalClicks < 5;
-        // Extra signal: headless-Chrome / phantomjs / generic bot UA markers.
-        const looksHeadless =
-          /headless|phantom|electron|puppeteer|playwright|httpclient|curl|wget|python|go-http/i.test(
-            uaLowFb,
-          );
-        if (isReviewerGeo && isDirect && !hasFbAppMarker && (isVeryFreshLink || looksHeadless)) {
-          isBot = true;
-          isFbBot = true;
-          reason = `fb-reviewer-geo:${country}`;
-        }
-      }
-    }
-  }
-
-  // 0d. DESKTOP GUARD — mobile-first ad campaigns (FB/TikTok in-app).
-  //
-  // 2026-08 RECALIBRATION: the old rule sent EVERY desktop browser without an
-  // ad-click param or social referrer to the article. In practice that is a
-  // large slice of real laptop/desktop clickers:
-  //   • Facebook's link shim strips fbclid on some placements,
-  //   • `Referrer-Policy: strict-origin-when-cross-origin` (now the browser
-  //     default) drops the referer on http→https and cross-site hops,
-  //   • privacy extensions / iOS-style tracking protection strip both.
-  // A visitor with no ad param AND no referrer is indistinguishable from a
-  // real user by that test alone, so it was blocking humans, not reviewers.
-  //
-  // New rule: a desktop browser is only sent to the article when it has no
-  // ad-click signal AND shows at least one INDEPENDENT bot indicator:
-  //   • headless/automation UA marker, or
-  //   • datacenter-grade header incoherence (signals.score >= 40), or
-  //   • an unknown/blank UA.
-  // Everything else (a normal Chrome/Firefox/Safari desktop) reaches the
-  // offer. STRICT_DESKTOP_BLOCK=true restores the old block-everything mode.
-  // 2026-08 (second-tab fix): a visitor already served the offer for this link
-  // keeps passing. Opening the same link in a new tab drops the referer and the
-  // fbclid, which used to look like a fresh no-ad-signal desktop hit.
+  // 0d. DESKTOP & BOT FILTER:
+  // Only block automated/headless tools (Puppeteer, Playwright, HeadlessChrome,
+  // curl, Python, wget, etc.) or pure datacenter ASNs.
+  // Standard desktop and mobile browsers (Chrome, Safari, Firefox, Edge, etc.)
+  // ALWAYS pass through to the offer URL.
   if (!isBot && !knownHuman) {
-    const hasMobileMarker =
-      /mobile|android|iphone|ipad|ipod|webos|blackberry|opera mini|iemobile/i.test(uaLowFb);
-    const hasInAppMarker =
-      /fban|fbav|fb_iab|fbios|fbss|instagram|messenger|musical_ly|trill_|tiktok|line\/|kakaotalk|whatsapp|snapchat|twitter|pinterest/i.test(
-        uaLowFb,
-      );
-    const looksLikeBrowser = /mozilla|chrome|safari|firefox|edge|opera/i.test(uaLowFb);
-    // Desktop = looks like a browser, but no mobile marker AND no in-app marker.
-    const isDesktopUa = looksLikeBrowser && !hasMobileMarker && !hasInAppMarker;
-    const signalScore = analyzeSignals(detectInput).score;
     const desktopLooksAutomated =
       /headless|phantom|electron|puppeteer|playwright|httpclient|curl|wget|python|go-http|java\/|okhttp|axios|node-fetch/i.test(
         uaLowFb,
-      ) || signalScore >= 40;
-
-    // 2026-08 (leak-monitor fix): a COLD desktop visit — no ad-click param AND
-    // no referer at all — is exactly what a manual Facebook/Meta ad reviewer
-    // looks like. Blocking every cold desktop hit costs real traffic, so we
-    // only do it when the visit ALSO sits in a reviewer geography (Meta's
-    // review desks: US/IE/GB/DE/SG/NL) or shows mild header incoherence.
-    // Real clickers from buyer countries (BD/IN/SEA/LATAM/…) are untouched,
-    // and anyone already known-human (cookie or Redis pass) skips this whole
-    // block, so reload / duplicate tab never regresses to the article.
-    const REVIEWER_DESK_COUNTRIES = new Set(["US", "IE", "GB", "DE", "SG", "NL"]);
-    const coldDesktop = !hasAdClickSignal(url, referer) && !refererDomain;
-    // DEFINITIVE real-browser-navigation signal: sec-fetch-mode=navigate AND
-    // sec-fetch-dest=document are sent by every real browser on ALL top-level
-    // page loads (address bar, copy-paste, bookmark, hyperlink click).
-    // Cloudflare NEVER strips Fetch Metadata headers (only client-hints like
-    // sec-ch-ua may be stripped by some proxies). If both are present, this is
-    // unconditionally a real human browser doing a top-level navigation — skip
-    // ALL reviewer heuristics to prevent the owner seeing the safe article.
-    const isTopLevelNavigation =
-      secFetchMode === "navigate" && secFetchDest === "document";
-    // 2026-08 (false-positive fix): a REAL browser navigation always sends both
-    // an HTML Accept header and an Accept-Language header.
-    const realBrowserNav =
-      isTopLevelNavigation || (/text\/html/i.test(accept) && acceptLanguage.trim().length > 0);
+      );
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
-    const hostedNoGeoDesktop =
-      coldDesktop && !countryConfident && !realBrowserNav && (!asn || datacenterAsn);
-    // fake Chrome: claims Chrome/Edge UA but lacks sec-ch-ua AND all real-browser
-    // nav signals. isTopLevelNavigation guard ensures real address-bar visits pass.
-    const fakeChromeDesktop =
-      coldDesktop &&
-      !isTopLevelNavigation &&
-      /chrome\/|edg\//i.test(uaLowFb) &&
-      !secChUa &&
-      !realBrowserNav;
-    const reviewerDesk =
-      coldDesktop &&
-      !isTopLevelNavigation && // real top-level nav is NEVER a reviewer desk hit
-      (hostedNoGeoDesktop ||
-        fakeChromeDesktop ||
-        desktopLooksAutomated ||
-        (countryConfident &&
-          !!country &&
-          REVIEWER_DESK_COUNTRIES.has(country) &&
-          (datacenterAsn || signalScore >= 40 || (!realBrowserNav && (link.clicks_count ?? 0) < 10))));
 
-    if (
-      isDesktopUa &&
-      !isTopLevelNavigation && // always let real browser top-level navigations through
-      (STRICT_DESKTOP_BLOCK ||
-        (!hasAdClickSignal(url, referer) && desktopLooksAutomated) ||
-        reviewerDesk)
-    ) {
+    if (desktopLooksAutomated || datacenterAsn || STRICT_DESKTOP_BLOCK) {
       isBot = true;
       isFbBot = true;
       reason = STRICT_DESKTOP_BLOCK
         ? `desktop-block:${country || "??"}`
         : desktopLooksAutomated
-          ? `desktop-automated:${country || "??"}`
-          : hostedNoGeoDesktop
-            ? `desktop-reviewer-hosted:${asn || "noasn"}`
-            : fakeChromeDesktop
-              ? `desktop-reviewer-nohints:${country || "??"}`
-              : `desktop-reviewer:${country || "??"}`;
+          ? `automated-ua:${country || "??"}`
+          : `dc-asn:${asn || "??"}`;
     }
   }
 
   // 0e. COUNTRY POLICY.
-  // Buyer countries are never downgraded to the article by a soft heuristic
-  // (desktop guard / reviewer geo / cold-visit rules); only a hard UA, ASN or
-  // whitelist bot signal can still block them. US + FR are always sent to the
-  // safe article regardless of how human they look (ad-review desks).
-  {
-    const NEVER_BLOCK_COUNTRIES = new Set(["PH", "BD", "IN", "ID", "PK", "NP", "VN"]);
-    const GLOBAL_BLOCK_COUNTRIES = new Set(["US", "FR"]);
-    const SOFT_REASON_RE = /^(desktop-|fb-reviewer-geo|fb-ref-review|cold-|geo-)/i;
-    if (country && countryConfident) {
-      if (!isBot && GLOBAL_BLOCK_COUNTRIES.has(country)) {
-        isBot = true;
-        isFbBot = true;
-        reason = `geo-block:${country}`;
-      } else if (isBot && NEVER_BLOCK_COUNTRIES.has(country) && SOFT_REASON_RE.test(reason || "")) {
-        isBot = false;
-        isFbBot = false;
-        reason = null;
-      }
-    }
-  }
+  // Real human traffic from all countries reaches the offer URL.
+  // Whitelist / hard bot rules take precedence if applicable.
 
   // 0e. COUNTRY SHIELD — per-link user-defined country block list.
   // Paid users (monthly/lifetime) can pick countries (e.g. US, DK, IE, OM)

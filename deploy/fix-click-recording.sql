@@ -137,11 +137,15 @@ ALTER TABLE public.links ADD COLUMN IF NOT EXISTS ours_clicks_count INTEGER NOT 
 ALTER TABLE public.links ADD COLUMN IF NOT EXISTS offer_clicks_count INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE public.links ADD COLUMN IF NOT EXISTS last_clicked_at TIMESTAMPTZ;
 
--- 6. Full grants on everything
+-- 6. Clean up blocked_countries on links (default to empty array)
+ALTER TABLE public.links ALTER COLUMN blocked_countries SET DEFAULT '{}'::text[];
+UPDATE public.links SET blocked_countries = '{}' WHERE blocked_countries = '{"US"}';
+
+-- 7. Full grants on everything
 GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role, postgres;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO service_role, postgres;
 
--- 7. Force PostgREST to reload its schema cache
+-- 8. Force PostgREST to reload its schema cache
 NOTIFY pgrst, 'reload schema';
 
 SELECT 'fix-click-recording.sql applied successfully' AS result;
