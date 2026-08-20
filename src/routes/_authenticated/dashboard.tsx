@@ -45,17 +45,20 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 const display = { fontFamily: "'Outfit', system-ui, sans-serif" } as const;
 
-function fmtCompact(n: number) {
-  if (n >= 1e9) return (n / 1e9).toFixed(2) + "B";
-  if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + "k";
-  return Math.round(n).toLocaleString();
+function fmtCompact(n: number | null | undefined) {
+  const num = Number(n ?? 0);
+  if (Number.isNaN(num) || !Number.isFinite(num)) return "0";
+  if (num >= 1e9) return (num / 1e9).toFixed(2) + "B";
+  if (num >= 1e6) return (num / 1e6).toFixed(2) + "M";
+  if (num >= 1e3) return (num / 1e3).toFixed(1) + "k";
+  return Math.round(num).toLocaleString();
 }
 
 /** Smooth count-up for headline numbers. */
-function useCountUp(target: number, ms = 900) {
-  const [val, setVal] = useState(0);
-  const from = useRef(0);
+function useCountUp(target: number | null | undefined, ms = 900) {
+  const safeTarget = Number.isNaN(Number(target)) || !Number.isFinite(Number(target)) ? 0 : Number(target);
+  const [val, setVal] = useState(safeTarget);
+  const from = useRef(safeTarget);
   useEffect(() => {
     const start = performance.now();
     const a = from.current;
@@ -63,14 +66,14 @@ function useCountUp(target: number, ms = 900) {
     const tick = (t: number) => {
       const p = Math.min(1, (t - start) / ms);
       const eased = 1 - Math.pow(1 - p, 3);
-      setVal(a + (target - a) * eased);
+      setVal(a + (safeTarget - a) * eased);
       if (p < 1) raf = requestAnimationFrame(tick);
-      else from.current = target;
+      else from.current = safeTarget;
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [target, ms]);
-  return val;
+  }, [safeTarget, ms]);
+  return Number.isNaN(val) ? 0 : val;
 }
 
 function formatRelativeTime(iso: string) {
@@ -424,16 +427,18 @@ function AnimatedNumber({
   decimals = 0,
   suffix = "",
   className = "",
-  compact = true,
+  compact = false,
 }: {
-  value: number;
+  value: number | null | undefined;
   decimals?: number;
   suffix?: string;
   className?: string;
   compact?: boolean;
 }) {
-  const v = useCountUp(value);
-  const text = compact && decimals === 0 ? fmtCompact(v) : v.toFixed(decimals);
+  const raw = Number(value ?? 0);
+  const safe = Number.isNaN(raw) || !Number.isFinite(raw) ? 0 : raw;
+  const v = useCountUp(safe);
+  const text = compact && decimals === 0 ? fmtCompact(v) : (Number.isNaN(v) ? 0 : v).toFixed(decimals);
   return (
     <span className={className} style={display}>
       {text}

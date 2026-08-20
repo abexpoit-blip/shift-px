@@ -48,10 +48,12 @@ type Row = {
   country?: string;
 };
 
-function fmt(n: number) {
-  if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + "k";
-  return n.toLocaleString();
+function fmt(n: number | null | undefined) {
+  const num = Number(n ?? 0);
+  if (Number.isNaN(num) || !Number.isFinite(num)) return "0";
+  if (num >= 1e6) return (num / 1e6).toFixed(2) + "M";
+  if (num >= 1e3) return (num / 1e3).toFixed(1) + "k";
+  return num.toLocaleString();
 }
 
 function useCountdown(slot: number) {
