@@ -9,154 +9,55 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as CodeRouteImport } from './routes/$code'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
-import { Route as AboutRouteImport } from './routes/about'
-import { Route as BlogRouteImport } from './routes/blog'
-import { Route as CartRouteImport } from './routes/cart'
-import { Route as CheckoutRouteImport } from './routes/checkout'
-import { Route as ContactRouteImport } from './routes/contact'
-import { Route as FaqRouteImport } from './routes/faq'
-import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as ManifestDotjsonRouteImport } from './routes/manifest[.]json'
-import { Route as OrderConfirmedRouteImport } from './routes/order-confirmed'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as ReturnsRouteImport } from './routes/returns'
-import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
-import { Route as ShippingRouteImport } from './routes/shipping'
-import { Route as ShopRouteImport } from './routes/shop'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as SizeGuideRouteImport } from './routes/size-guide'
-import { Route as SxVault9k2m7xRouteImport } from './routes/sx-vault-9k2m7x'
 import { Route as TermsRouteImport } from './routes/terms'
-import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
-import { Route as AuthenticatedControlPanelRouteImport } from './routes/_authenticated/control-panel'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedDomainsRouteImport } from './routes/_authenticated/domains'
-import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
-import { Route as AuthenticatedLinksRouteImport } from './routes/_authenticated/links'
-import { Route as AuthenticatedNoticesRouteImport } from './routes/_authenticated/notices'
-import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedStatisticsRouteImport } from './routes/_authenticated/statistics'
-import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
-import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
-import { Route as AuthenticatedWithdrawRouteImport } from './routes/_authenticated/withdraw'
+import { Route as SxVault9k2m7xRouteImport } from './routes/sx-vault-9k2m7x'
+import { Route as SizeGuideRouteImport } from './routes/size-guide'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ShopRouteImport } from './routes/shop'
+import { Route as ShippingRouteImport } from './routes/shipping'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as ReturnsRouteImport } from './routes/returns'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as OrderConfirmedRouteImport } from './routes/order-confirmed'
+import { Route as ManifestDotjsonRouteImport } from './routes/manifest[.]json'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as CartRouteImport } from './routes/cart'
+import { Route as BlogRouteImport } from './routes/blog'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as CodeRouteImport } from './routes/$code'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
-import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
-import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
-import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
+import { Route as RCodeRouteImport } from './routes/r.$code'
+import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as AuthenticatedWithdrawRouteImport } from './routes/_authenticated/withdraw'
+import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
+import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
+import { Route as AuthenticatedStatisticsRouteImport } from './routes/_authenticated/statistics'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedNoticesRouteImport } from './routes/_authenticated/notices'
+import { Route as AuthenticatedLinksRouteImport } from './routes/_authenticated/links'
+import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
+import { Route as AuthenticatedDomainsRouteImport } from './routes/_authenticated/domains'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedControlPanelRouteImport } from './routes/_authenticated/control-panel'
+import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as ApiPublicSafePoolRefreshRouteImport } from './routes/api/public/safe-pool-refresh'
-import { Route as ApiPublicHooksDomainHealthScanRouteImport } from './routes/api/public/hooks/domain-health-scan'
-import { Route as ApiPublicHooksLeakScanRouteImport } from './routes/api/public/hooks/leak-scan'
-import { Route as ApiPublicHooksMetaCrawlerProbeRouteImport } from './routes/api/public/hooks/meta-crawler-probe'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicPreviewPrelandingCodeRouteImport } from './routes/api/public/preview-prelanding.$code'
+import { Route as ApiPublicHooksMetaCrawlerProbeRouteImport } from './routes/api/public/hooks/meta-crawler-probe'
+import { Route as ApiPublicHooksLeakScanRouteImport } from './routes/api/public/hooks/leak-scan'
+import { Route as ApiPublicHooksDomainHealthScanRouteImport } from './routes/api/public/hooks/domain-health-scan'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CodeRoute = CodeRouteImport.update({
-  id: '/$code',
-  path: '/$code',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogRoute = BlogRouteImport.update({
-  id: '/blog',
-  path: '/blog',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CartRoute = CartRouteImport.update({
-  id: '/cart',
-  path: '/cart',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CheckoutRoute = CheckoutRouteImport.update({
-  id: '/checkout',
-  path: '/checkout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContactRoute = ContactRouteImport.update({
-  id: '/contact',
-  path: '/contact',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FaqRoute = FaqRouteImport.update({
-  id: '/faq',
-  path: '/faq',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
-  id: '/llms.txt',
-  path: '/llms.txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ManifestDotjsonRoute = ManifestDotjsonRouteImport.update({
-  id: '/manifest.json',
-  path: '/manifest.json',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrderConfirmedRoute = OrderConfirmedRouteImport.update({
-  id: '/order-confirmed',
-  path: '/order-confirmed',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReturnsRoute = ReturnsRouteImport.update({
-  id: '/returns',
-  path: '/returns',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
-  id: '/robots.txt',
-  path: '/robots.txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ShippingRoute = ShippingRouteImport.update({
-  id: '/shipping',
-  path: '/shipping',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ShopRoute = ShopRouteImport.update({
-  id: '/shop',
-  path: '/shop',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SizeGuideRoute = SizeGuideRouteImport.update({
-  id: '/size-guide',
-  path: '/size-guide',
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SxVault9k2m7xRoute = SxVault9k2m7xRouteImport.update({
@@ -164,30 +65,163 @@ const SxVault9k2m7xRoute = SxVault9k2m7xRouteImport.update({
   path: '/sx-vault-9k2m7x',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
+const SizeGuideRoute = SizeGuideRouteImport.update({
+  id: '/size-guide',
+  path: '/size-guide',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopRoute = ShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShippingRoute = ShippingRouteImport.update({
+  id: '/shipping',
+  path: '/shipping',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReturnsRoute = ReturnsRouteImport.update({
+  id: '/returns',
+  path: '/returns',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrderConfirmedRoute = OrderConfirmedRouteImport.update({
+  id: '/order-confirmed',
+  path: '/order-confirmed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManifestDotjsonRoute = ManifestDotjsonRouteImport.update({
+  id: '/manifest.json',
+  path: '/manifest.json',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
+  id: '/llms.txt',
+  path: '/llms.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CartRoute = CartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogRoute = BlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CodeRoute = CodeRouteImport.update({
+  id: '/$code',
+  path: '/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BlogRoute,
+} as any)
+const ShopSlugRoute = ShopSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ShopRoute,
+} as any)
+const RCodeRoute = RCodeRouteImport.update({
+  id: '/r/$code',
+  path: '/r/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => BlogRoute,
+} as any)
+const AuthenticatedWithdrawRoute = AuthenticatedWithdrawRouteImport.update({
+  id: '/withdraw',
+  path: '/withdraw',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedControlPanelRoute =
-  AuthenticatedControlPanelRouteImport.update({
-    id: '/control-panel',
-    path: '/control-panel',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
+  id: '/upgrade',
+  path: '/upgrade',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedDomainsRoute = AuthenticatedDomainsRouteImport.update({
-  id: '/domains',
-  path: '/domains',
+const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedStatisticsRoute = AuthenticatedStatisticsRouteImport.update({
+  id: '/statistics',
+  path: '/statistics',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedNoticesRoute = AuthenticatedNoticesRouteImport.update({
+  id: '/notices',
+  path: '/notices',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedLinksRoute = AuthenticatedLinksRouteImport.update({
+  id: '/links',
+  path: '/links',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedLeaderboardRoute =
@@ -196,65 +230,26 @@ const AuthenticatedLeaderboardRoute =
     path: '/leaderboard',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedLinksRoute = AuthenticatedLinksRouteImport.update({
-  id: '/links',
-  path: '/links',
+const AuthenticatedDomainsRoute = AuthenticatedDomainsRouteImport.update({
+  id: '/domains',
+  path: '/domains',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedNoticesRoute = AuthenticatedNoticesRouteImport.update({
-  id: '/notices',
-  path: '/notices',
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const AuthenticatedControlPanelRoute =
+  AuthenticatedControlPanelRouteImport.update({
+    id: '/control-panel',
+    path: '/control-panel',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedStatisticsRoute = AuthenticatedStatisticsRouteImport.update({
-  id: '/statistics',
-  path: '/statistics',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
-  id: '/upgrade',
-  path: '/upgrade',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedWithdrawRoute = AuthenticatedWithdrawRouteImport.update({
-  id: '/withdraw',
-  path: '/withdraw',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const BlogIndexRoute = BlogIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => BlogRoute,
-} as any)
-const BlogSlugRoute = BlogSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => BlogRoute,
-} as any)
-const RCodeRoute = RCodeRouteImport.update({
-  id: '/r/$code',
-  path: '/r/$code',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ShopSlugRoute = ShopSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => ShopRoute,
-} as any)
-const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
-  id: '/api/public/health',
-  path: '/api/public/health',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicSafePoolRefreshRoute =
   ApiPublicSafePoolRefreshRouteImport.update({
@@ -262,10 +257,21 @@ const ApiPublicSafePoolRefreshRoute =
     path: '/api/public/safe-pool-refresh',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicHooksDomainHealthScanRoute =
-  ApiPublicHooksDomainHealthScanRouteImport.update({
-    id: '/api/public/hooks/domain-health-scan',
-    path: '/api/public/hooks/domain-health-scan',
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPreviewPrelandingCodeRoute =
+  ApiPublicPreviewPrelandingCodeRouteImport.update({
+    id: '/api/public/preview-prelanding/$code',
+    path: '/api/public/preview-prelanding/$code',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksMetaCrawlerProbeRoute =
+  ApiPublicHooksMetaCrawlerProbeRouteImport.update({
+    id: '/api/public/hooks/meta-crawler-probe',
+    path: '/api/public/hooks/meta-crawler-probe',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksLeakScanRoute = ApiPublicHooksLeakScanRouteImport.update({
@@ -273,16 +279,10 @@ const ApiPublicHooksLeakScanRoute = ApiPublicHooksLeakScanRouteImport.update({
   path: '/api/public/hooks/leak-scan',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHooksMetaCrawlerProbeRoute =
-  ApiPublicHooksMetaCrawlerProbeRouteImport.update({
-    id: '/api/public/hooks/meta-crawler-probe',
-    path: '/api/public/hooks/meta-crawler-probe',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicPreviewPrelandingCodeRoute =
-  ApiPublicPreviewPrelandingCodeRouteImport.update({
-    id: '/api/public/preview-prelanding/$code',
-    path: '/api/public/preview-prelanding/$code',
+const ApiPublicHooksDomainHealthScanRoute =
+  ApiPublicHooksDomainHealthScanRouteImport.update({
+    id: '/api/public/hooks/domain-health-scan',
+    path: '/api/public/hooks/domain-health-scan',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -601,151 +601,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/$code': {
-      id: '/$code'
-      path: '/$code'
-      fullPath: '/$code'
-      preLoaderRoute: typeof CodeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog': {
-      id: '/blog'
-      path: '/blog'
-      fullPath: '/blog'
-      preLoaderRoute: typeof BlogRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cart': {
-      id: '/cart'
-      path: '/cart'
-      fullPath: '/cart'
-      preLoaderRoute: typeof CartRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/checkout': {
-      id: '/checkout'
-      path: '/checkout'
-      fullPath: '/checkout'
-      preLoaderRoute: typeof CheckoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contact': {
-      id: '/contact'
-      path: '/contact'
-      fullPath: '/contact'
-      preLoaderRoute: typeof ContactRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/faq': {
-      id: '/faq'
-      path: '/faq'
-      fullPath: '/faq'
-      preLoaderRoute: typeof FaqRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/llms.txt': {
-      id: '/llms.txt'
-      path: '/llms.txt'
-      fullPath: '/llms.txt'
-      preLoaderRoute: typeof LlmsDottxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/manifest.json': {
-      id: '/manifest.json'
-      path: '/manifest.json'
-      fullPath: '/manifest.json'
-      preLoaderRoute: typeof ManifestDotjsonRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/order-confirmed': {
-      id: '/order-confirmed'
-      path: '/order-confirmed'
-      fullPath: '/order-confirmed'
-      preLoaderRoute: typeof OrderConfirmedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/returns': {
-      id: '/returns'
-      path: '/returns'
-      fullPath: '/returns'
-      preLoaderRoute: typeof ReturnsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/robots.txt': {
-      id: '/robots.txt'
-      path: '/robots.txt'
-      fullPath: '/robots.txt'
-      preLoaderRoute: typeof RobotsDottxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/shipping': {
-      id: '/shipping'
-      path: '/shipping'
-      fullPath: '/shipping'
-      preLoaderRoute: typeof ShippingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/shop': {
-      id: '/shop'
-      path: '/shop'
-      fullPath: '/shop'
-      preLoaderRoute: typeof ShopRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/size-guide': {
-      id: '/size-guide'
-      path: '/size-guide'
-      fullPath: '/size-guide'
-      preLoaderRoute: typeof SizeGuideRouteImport
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sx-vault-9k2m7x': {
@@ -755,81 +615,186 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SxVault9k2m7xRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
+    '/size-guide': {
+      id: '/size-guide'
+      path: '/size-guide'
+      fullPath: '/size-guide'
+      preLoaderRoute: typeof SizeGuideRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/analytics': {
-      id: '/_authenticated/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/control-panel': {
-      id: '/_authenticated/control-panel'
-      path: '/control-panel'
-      fullPath: '/control-panel'
-      preLoaderRoute: typeof AuthenticatedControlPanelRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/shop': {
+      id: '/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof ShopRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/domains': {
-      id: '/_authenticated/domains'
-      path: '/domains'
-      fullPath: '/domains'
-      preLoaderRoute: typeof AuthenticatedDomainsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/shipping': {
+      id: '/shipping'
+      path: '/shipping'
+      fullPath: '/shipping'
+      preLoaderRoute: typeof ShippingRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/leaderboard': {
-      id: '/_authenticated/leaderboard'
-      path: '/leaderboard'
-      fullPath: '/leaderboard'
-      preLoaderRoute: typeof AuthenticatedLeaderboardRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/links': {
-      id: '/_authenticated/links'
-      path: '/links'
-      fullPath: '/links'
-      preLoaderRoute: typeof AuthenticatedLinksRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/returns': {
+      id: '/returns'
+      path: '/returns'
+      fullPath: '/returns'
+      preLoaderRoute: typeof ReturnsRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/notices': {
-      id: '/_authenticated/notices'
-      path: '/notices'
-      fullPath: '/notices'
-      preLoaderRoute: typeof AuthenticatedNoticesRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/settings': {
-      id: '/_authenticated/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/order-confirmed': {
+      id: '/order-confirmed'
+      path: '/order-confirmed'
+      fullPath: '/order-confirmed'
+      preLoaderRoute: typeof OrderConfirmedRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/statistics': {
-      id: '/_authenticated/statistics'
-      path: '/statistics'
-      fullPath: '/statistics'
-      preLoaderRoute: typeof AuthenticatedStatisticsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/manifest.json': {
+      id: '/manifest.json'
+      path: '/manifest.json'
+      fullPath: '/manifest.json'
+      preLoaderRoute: typeof ManifestDotjsonRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/support': {
-      id: '/_authenticated/support'
-      path: '/support'
-      fullPath: '/support'
-      preLoaderRoute: typeof AuthenticatedSupportRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/llms.txt': {
+      id: '/llms.txt'
+      path: '/llms.txt'
+      fullPath: '/llms.txt'
+      preLoaderRoute: typeof LlmsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog': {
+      id: '/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$code': {
+      id: '/$code'
+      path: '/$code'
+      fullPath: '/$code'
+      preLoaderRoute: typeof CodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/': {
+      id: '/blog/'
+      path: '/'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/shop/$slug': {
+      id: '/shop/$slug'
+      path: '/$slug'
+      fullPath: '/shop/$slug'
+      preLoaderRoute: typeof ShopSlugRouteImport
+      parentRoute: typeof ShopRoute
+    }
+    '/r/$code': {
+      id: '/r/$code'
+      path: '/r/$code'
+      fullPath: '/r/$code'
+      preLoaderRoute: typeof RCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/_authenticated/withdraw': {
+      id: '/_authenticated/withdraw'
+      path: '/withdraw'
+      fullPath: '/withdraw'
+      preLoaderRoute: typeof AuthenticatedWithdrawRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/upgrade': {
@@ -839,47 +804,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUpgradeRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/withdraw': {
-      id: '/_authenticated/withdraw'
-      path: '/withdraw'
-      fullPath: '/withdraw'
-      preLoaderRoute: typeof AuthenticatedWithdrawRouteImport
+    '/_authenticated/support': {
+      id: '/_authenticated/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof AuthenticatedSupportRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/blog/': {
-      id: '/blog/'
-      path: '/'
-      fullPath: '/blog/'
-      preLoaderRoute: typeof BlogIndexRouteImport
-      parentRoute: typeof BlogRoute
+    '/_authenticated/statistics': {
+      id: '/_authenticated/statistics'
+      path: '/statistics'
+      fullPath: '/statistics'
+      preLoaderRoute: typeof AuthenticatedStatisticsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/blog/$slug': {
-      id: '/blog/$slug'
-      path: '/$slug'
-      fullPath: '/blog/$slug'
-      preLoaderRoute: typeof BlogSlugRouteImport
-      parentRoute: typeof BlogRoute
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/r/$code': {
-      id: '/r/$code'
-      path: '/r/$code'
-      fullPath: '/r/$code'
-      preLoaderRoute: typeof RCodeRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/notices': {
+      id: '/_authenticated/notices'
+      path: '/notices'
+      fullPath: '/notices'
+      preLoaderRoute: typeof AuthenticatedNoticesRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/shop/$slug': {
-      id: '/shop/$slug'
-      path: '/$slug'
-      fullPath: '/shop/$slug'
-      preLoaderRoute: typeof ShopSlugRouteImport
-      parentRoute: typeof ShopRoute
+    '/_authenticated/links': {
+      id: '/_authenticated/links'
+      path: '/links'
+      fullPath: '/links'
+      preLoaderRoute: typeof AuthenticatedLinksRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/api/public/health': {
-      id: '/api/public/health'
-      path: '/api/public/health'
-      fullPath: '/api/public/health'
-      preLoaderRoute: typeof ApiPublicHealthRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/leaderboard': {
+      id: '/_authenticated/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof AuthenticatedLeaderboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/domains': {
+      id: '/_authenticated/domains'
+      path: '/domains'
+      fullPath: '/domains'
+      preLoaderRoute: typeof AuthenticatedDomainsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/control-panel': {
+      id: '/_authenticated/control-panel'
+      path: '/control-panel'
+      fullPath: '/control-panel'
+      preLoaderRoute: typeof AuthenticatedControlPanelRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/analytics': {
+      id: '/_authenticated/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/api/public/safe-pool-refresh': {
       id: '/api/public/safe-pool-refresh'
@@ -888,18 +881,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSafePoolRefreshRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/domain-health-scan': {
-      id: '/api/public/hooks/domain-health-scan'
-      path: '/api/public/hooks/domain-health-scan'
-      fullPath: '/api/public/hooks/domain-health-scan'
-      preLoaderRoute: typeof ApiPublicHooksDomainHealthScanRouteImport
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/leak-scan': {
-      id: '/api/public/hooks/leak-scan'
-      path: '/api/public/hooks/leak-scan'
-      fullPath: '/api/public/hooks/leak-scan'
-      preLoaderRoute: typeof ApiPublicHooksLeakScanRouteImport
+    '/api/public/preview-prelanding/$code': {
+      id: '/api/public/preview-prelanding/$code'
+      path: '/api/public/preview-prelanding/$code'
+      fullPath: '/api/public/preview-prelanding/$code'
+      preLoaderRoute: typeof ApiPublicPreviewPrelandingCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/meta-crawler-probe': {
@@ -909,11 +902,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksMetaCrawlerProbeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/preview-prelanding/$code': {
-      id: '/api/public/preview-prelanding/$code'
-      path: '/api/public/preview-prelanding/$code'
-      fullPath: '/api/public/preview-prelanding/$code'
-      preLoaderRoute: typeof ApiPublicPreviewPrelandingCodeRouteImport
+    '/api/public/hooks/leak-scan': {
+      id: '/api/public/hooks/leak-scan'
+      path: '/api/public/hooks/leak-scan'
+      fullPath: '/api/public/hooks/leak-scan'
+      preLoaderRoute: typeof ApiPublicHooksLeakScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/domain-health-scan': {
+      id: '/api/public/hooks/domain-health-scan'
+      path: '/api/public/hooks/domain-health-scan'
+      fullPath: '/api/public/hooks/domain-health-scan'
+      preLoaderRoute: typeof ApiPublicHooksDomainHealthScanRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -1010,3 +1010,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

@@ -14,7 +14,19 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: Facebot
+Allow: /
+
 User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: meta-externalads
+Allow: /
+
+User-agent: meta-webindexer
+Allow: /
+
+User-agent: WhatsApp
 Allow: /
 
 # --- AI training crawlers: DISALLOW ---
