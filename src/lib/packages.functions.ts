@@ -312,6 +312,27 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
   });
 
 // ─── User: Submit Transaction Hash / TXID for verification ─────────────────
+export const checkUpgradeRequestStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ request_id: z.string().uuid() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const db = await getAdmin();
+    const userId = (context as any).userId as string;
+    const { data: req } = await db
+      .from("upgrade_requests")
+      .select("id, status, package_slug")
+      .eq("id", data.request_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    return {
+      status: (req as any)?.status ?? "pending",
+      isPaid: (req as any)?.status === "paid" || (req as any)?.status === "completed",
+    };
+  });
+
 export const submitUpgradeTransaction = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
