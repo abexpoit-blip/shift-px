@@ -2319,73 +2319,55 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     // actively blocks facebookexternalhit with 403, which causes FB to mark
     // the ad as "broken link" and reject it. Serving our own article HTML
     // (with proper OG tags) is what Meta's ad reviewer expects.
-    if (isFbBot) {
-      const tpl =
-        (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code);
-      const html = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
-      routedTo = "fb-article";
+    // ALL BOTS, META / GOOGLE AD REVIEWERS & CRAWLERS MUST GET 200 OK HTML ARTICLE.
+    // Serving our own high-quality article HTML (with matching OpenGraph meta tags)
+    // guarantees Meta and Google automated ad approval systems see a clean,
+    // policy-compliant landing page and approve the ad without redirection warnings.
+    const tpl =
+      (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code);
+    const html = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
+    routedTo = "fb-article";
 
-      // Log click (fire-and-forget — don't block the HTML response)
-      if (shouldRecordClick) {
-        recordRedirectClick({
-          linkId: link.id,
-          userId: link.user_id,
-          ip: ip || null,
-          country: country || null,
-          ua: ua || null,
-          isBot: true,
-          botReason: whitelistHit ? `whitelist:${whitelistHit.label}` : reason,
-          routedTo: "fb-article",
-          utm,
-          refererHost: refererDomain || null,
-          botScore: Math.max(80, signals.score),
-          challengePassed: false,
-          signals: {
-            source: "fb-article",
-            reasons: reason ? [reason, ...signals.reasons] : signals.reasons,
-            device,
-            referer_host: refererDomain || null,
-            cohort: cohortSource,
-            tier: countryTier,
-            ab: null,
-            whitelist: whitelistHit ? { id: whitelistHit.id, label: whitelistHit.label } : null,
-            target_host: "self",
-          },
-          fingerprintHash: fpHash,
-          abVariant: null,
-        }).catch((error) => {
-          console.error("fb-article click logging failed", { linkId: link.id, error });
-        });
-      }
-
-      return new Response(html, {
-        status: 200,
-        headers: {
-          "content-type": "text/html; charset=utf-8",
-          "cache-control": "private, no-store, no-cache, must-revalidate, max-age=0",
-          "x-robots-tag": "index, follow",
+    if (shouldRecordClick) {
+      recordRedirectClick({
+        linkId: link.id,
+        userId: link.user_id,
+        ip: ip || null,
+        country: country || null,
+        ua: ua || null,
+        isBot: true,
+        botReason: whitelistHit ? `whitelist:${whitelistHit.label}` : reason,
+        routedTo: "fb-article",
+        utm,
+        refererHost: refererDomain || null,
+        botScore: Math.max(80, signals.score),
+        challengePassed: false,
+        signals: {
+          source: "bot-article-shield",
+          reasons: reason ? [reason, ...signals.reasons] : signals.reasons,
+          device,
+          referer_host: refererDomain || null,
+          cohort: cohortSource,
+          tier: countryTier,
+          ab: null,
+          whitelist: whitelistHit ? { id: whitelistHit.id, label: whitelistHit.label } : null,
+          target_host: "self",
         },
+        fingerprintHash: fpHash,
+        abVariant: null,
+      }).catch((error) => {
+        console.error("bot-article click logging failed", { linkId: link.id, error });
       });
     }
 
-    // Non-FB crawlers (Google, Bing, generic scrapers) → sticky pool pick.
-    {
-      const pick = pickSafePage(code, fpHash, publicOrigin);
-      target = pick.url;
-      console.log(
-        JSON.stringify({
-          event: "redirect.safe_pool_pick",
-          code,
-          fp: fpHash,
-          target: pick.url,
-          idx: pick.index,
-          fallback_from: pick.fallbackFrom,
-          reason,
-          ua_class: "non-fb-bot",
-        }),
-      );
-    }
-    routedTo = "safe";
+    return new Response(html, {
+      status: 200,
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "public, max-age=3600",
+        "x-robots-tag": "index, follow",
+      },
+    });
   } else {
     const profile = await getProfileQuota(link.user_id);
 
