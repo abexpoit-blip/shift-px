@@ -35,11 +35,18 @@ function normalizeLink(row: LinkRow) {
 
 async function selectLinks(
   supabase: any,
+  userId?: string,
 ): Promise<{ data: DashboardLink[] | null; error: { message: string } | null }> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("links")
     .select("*")
     .order("created_at", { ascending: false });
+
+  if (userId) {
+    query = query.eq("user_id", userId);
+  }
+
+  const { data, error } = await query;
 
   if (error) return { data: null, error: { message: error.message } };
   return { data: (data ?? []).map((row: LinkRow) => normalizeLink(row)), error: null };
@@ -103,7 +110,7 @@ function isReservedShortCode(code: string) {
 
 export const listMyLinks = createServerFn({ method: "GET" }).handler(async () => {
   const context = await getRequestAuth();
-  const { data, error } = await selectLinks(context.supabase);
+  const { data, error } = await selectLinks(context.supabase, context.userId);
   if (error) throw new Error(error.message);
   return data;
 });
@@ -126,7 +133,7 @@ type DashboardPayload = {
 async function computeDashboardPayload(
   context: Awaited<ReturnType<typeof getRequestAuth>>,
 ): Promise<DashboardPayload> {
-  const linksRes = await selectLinks(context.supabase);
+  const linksRes = await selectLinks(context.supabase, context.userId);
   const linkIds = (linksRes.data ?? []).map((l: any) => l.id);
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   // Some self-hosted schemas lag behind on profile columns; fall back to `*`
