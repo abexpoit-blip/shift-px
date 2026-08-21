@@ -75,7 +75,7 @@ function AuthenticatedLayout() {
     // forever, which used to freeze the app on "Loading…".
     const authWatchdog = setTimeout(() => {
       if (!authCheckedRef.current) finishInitialAuthCheck(null);
-    }, 8000);
+    }, 3000);
 
     supabase.auth
       .getSession()
@@ -102,7 +102,7 @@ function AuthenticatedLayout() {
     // "Loading…". Worst case we render the dashboard without the ban check.
     const watchdog = setTimeout(() => {
       if (!cancelled) setBanChecked(true);
-    }, 5000);
+    }, 2000);
 
     (async () => {
       try {
@@ -144,10 +144,17 @@ function AuthenticatedLayout() {
   // Don't render protected UI until we've confirmed an authenticated session
   // AND the ban check has completed. Otherwise banned users see a flash of
   // the dashboard before the suspension screen appears.
-  if (!authChecked || !user || !banChecked) {
+  if (!authChecked || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFF9F5] text-[#7A5C45] text-sm">
-        Loading…
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-500/20 animate-pulse">
+            S
+          </div>
+          <div className="h-1 w-24 rounded-full bg-muted/60 overflow-hidden">
+            <div className="h-full w-full bg-indigo-500 rounded-full animate-pulse" />
+          </div>
+        </div>
       </div>
     );
   }
