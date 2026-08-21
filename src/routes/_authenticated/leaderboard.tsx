@@ -175,21 +175,21 @@ function LeaderboardPage() {
 
         {/* User Live Rank Highlight Banner */}
   {data?.userSummary && (
-    <div className="rounded-3xl border-2 border-cyan-500/40 bg-gradient-to-r from-cyan-500/15 via-indigo-500/10 to-card p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+    <div className="rounded-3xl border border-border bg-card p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
       <div className="flex items-center gap-4">
-        <div className="h-12 w-12 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center font-black text-lg text-cyan-400">
+        <div className="h-12 w-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center font-black text-base sm:text-lg text-primary shadow-sm">
           #100+
         </div>
         <div>
-          <div className="font-black text-base text-foreground flex items-center gap-2">
-            Your Publisher Position <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold text-cyan-300">Active</span>
+          <div className="font-extrabold text-base text-foreground flex items-center gap-2">
+            Your Publisher Position <span className="rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 text-[11px] font-bold">Active</span>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Verified visits: <strong className="text-foreground">{data.userSummary.humanClicks.toLocaleString()}</strong> · Earned: <strong className="text-emerald-400">${data.userSummary.earnings.toFixed(4)} USD</strong>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+            Verified visits: <strong className="text-foreground font-bold">{data.userSummary.humanClicks.toLocaleString()}</strong> · Earned: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">${data.userSummary.earnings.toFixed(4)} USD</strong>
           </p>
         </div>
       </div>
-      <span className="text-xs font-bold text-muted-foreground bg-muted/60 px-3 py-1.5 rounded-xl border border-border">
+      <span className="text-xs font-semibold text-muted-foreground bg-muted/60 px-3.5 py-1.5 rounded-xl border border-border">
         Rank updates in realtime
       </span>
     </div>

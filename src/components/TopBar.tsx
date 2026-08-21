@@ -274,19 +274,16 @@ export function TopBar({
                 className="ml-1 inline-flex items-center gap-2 rounded-full hover:bg-muted transition px-1.5 py-1"
                 aria-label="Account menu"
               >
-                <div className="relative h-8 w-8 rounded-full p-[1.5px] bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 shadow-md">
-    <div className="h-full w-full rounded-full overflow-hidden bg-slate-900 flex items-center justify-center">
+                <div className="relative h-9 w-9 rounded-full p-[2px] bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 shadow-md">
+    <div className="h-full w-full rounded-full overflow-hidden bg-indigo-50 dark:bg-slate-900 flex items-center justify-center border border-white/40">
       <img
-        src={`https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(email || 'adspx')}&backgroundColor=transparent`}
+        src={`https://api.dicebear.com/7.x/adventurer-neutral/svg?seed=${encodeURIComponent(email || 'adspx')}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`}
         alt="Avatar"
         className="h-full w-full object-cover"
         onError={(e) => {
           (e.target as HTMLElement).style.display = 'none';
         }}
       />
-      <span className="text-[11px] font-bold text-white uppercase hidden">
-        {initials}
-      </span>
     </div>
   </div>
               </button>
