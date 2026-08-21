@@ -161,7 +161,7 @@ export const getMyPlanStatus = createServerFn({ method: "GET" })
         .maybeSingle(),
       db
         .from("upgrade_requests")
-        .select("id, package_slug, amount_usd, status, crypto_currency, crypto_amount, crypto_address, plisio_invoice_url, expires_at, created_at")
+        .select("id, package_slug, amount, status, plisio_invoice_id, plisio_invoice_url, created_at, updated_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(5),
@@ -201,7 +201,18 @@ export const getMyPlanStatus = createServerFn({ method: "GET" })
       clickQuota: (profile as any).click_quota ?? null,
       canWithdraw,
       balanceAvailable: Number((profile as any).balance_available ?? 0),
-      recentUpgrades: (upgradeRes.data ?? []) as UpgradeRequest[],
+      recentUpgrades: ((upgradeRes.data ?? []) as any[]).map((r) => ({
+        id: r.id,
+        package_slug: r.package_slug,
+        amount_usd: Number(r.amount ?? 0),
+        status: r.status,
+        crypto_currency: "LTC",
+        crypto_amount: null,
+        crypto_address: null,
+        plisio_invoice_url: r.plisio_invoice_url,
+        expires_at: r.updated_at || r.created_at,
+        created_at: r.created_at,
+      })) as UpgradeRequest[],
     };
   });
 
@@ -307,18 +318,15 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
     }
 
     // Create upgrade request in DB
-    const { data: req, error } = await db.from("upgrade_requests").insert({
+    const { data: req, error } = await db.from("upgrade_requests" as any).insert({
       user_id: userId,
       package_slug: data.package_slug,
-      amount_usd: priceUsd,
+      amount: priceUsd,
       status: "pending",
       plisio_invoice_id: plisioInvoiceId,
       plisio_invoice_url: invoiceUrl,
-      crypto_currency: "LTC",
-      crypto_amount: ltcAmount,
-      crypto_address: ltcAddress,
-      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    }).select().single();
+      payment_id: ltcAddress,
+    } as any).select().single();
 
     if (error) throw new Error(error.message);
 
@@ -332,7 +340,7 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
       cryptoAddress: ltcAddress,
       ltcPriceUsd: ltcPrice,
       plisioInvoiceUrl: invoiceUrl,
-      expiresAt: (req as any).expires_at as string,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       manualMode: !invoiceUrl,
     };
   });
