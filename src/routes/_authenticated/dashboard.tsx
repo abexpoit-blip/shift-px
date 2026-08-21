@@ -275,44 +275,66 @@ function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2 space-y-5">
             {/* Chart */}
-            <Panel className="p-6 anim-rise d-2">
-              <div className="flex items-start justify-between mb-5 flex-wrap gap-3">
+            <div className="rounded-3xl border border-indigo-500/20 bg-card/85 shadow-2xl p-6 sm:p-7 relative overflow-hidden backdrop-blur-xl anim-rise d-2">
+              <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-gradient-to-br from-indigo-500/15 via-purple-500/10 to-pink-500/5 blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+
+              <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-border/60">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5 text-primary" /> Clicks over{" "}
-                    {range === "7D" ? "7 days" : "30 days"}
-                  </p>
-                  <div className="flex items-baseline gap-2 mt-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-indigo-500/15 text-indigo-400 border border-indigo-500/25">
+                      <Activity className="w-3 h-3 text-indigo-400 animate-pulse" /> Traffic Analytics
+                    </span>
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {range === "7D" ? "Last 7 Days" : "Last 30 Days"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-baseline gap-3 mt-2">
                     <AnimatedNumber
                       value={chartData.total}
-                      className="text-3xl font-extrabold tabular-nums"
+                      className="text-3xl sm:text-4xl font-black tabular-nums tracking-tight text-foreground"
                     />
                     <span
-                      className={`text-xs font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
+                      className={`text-xs font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shadow-sm ${
                         chartData.delta >= 0
-                          ? "text-emerald-600 bg-emerald-500/10"
-                          : "text-rose-600 bg-rose-500/10"
+                          ? "text-emerald-400 bg-emerald-500/15 border border-emerald-500/30"
+                          : "text-rose-400 bg-rose-500/15 border border-rose-500/30"
                       }`}
                     >
                       {chartData.delta >= 0 ? (
-                        <ArrowUpRight className="w-3 h-3" />
+                        <ArrowUpRight className="w-3.5 h-3.5" />
                       ) : (
-                        <ArrowDownRight className="w-3 h-3" />
+                        <ArrowDownRight className="w-3.5 h-3.5" />
                       )}
-                      {Math.abs(chartData.delta).toFixed(1)}%
+                      {chartData.delta >= 0 ? "+" : ""}{Math.abs(chartData.delta).toFixed(1)}% vs prev
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Compared with the previous period
-                  </p>
+                </div>
+
+                {/* Micro Stat Badges */}
+                <div className="flex items-center gap-2.5 self-start sm:self-auto">
+                  <div className="px-3.5 py-2 rounded-2xl bg-muted/40 border border-border/80 text-right">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Peak Traffic</span>
+                    <span className="text-sm font-extrabold text-foreground tabular-nums">
+                      {chartData.vals.length > 0 ? Math.max(...chartData.vals) : 0} <span className="text-[10px] font-normal text-muted-foreground">clicks</span>
+                    </span>
+                  </div>
+                  <div className="px-3.5 py-2 rounded-2xl bg-muted/40 border border-border/80 text-right">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Daily Avg</span>
+                    <span className="text-sm font-extrabold text-foreground tabular-nums">
+                      {chartData.vals.length > 0 ? (chartData.total / chartData.vals.length).toFixed(1) : "0.0"} <span className="text-[10px] font-normal text-muted-foreground">/ day</span>
+                    </span>
+                  </div>
                 </div>
               </div>
+
               <AreaChart
                 vals={chartData.vals}
                 peakIdx={chartData.peakIdx}
                 labels={chartData.labels}
               />
-            </Panel>
+            </div>
 
             {/* MANAGE LINKS CTA (creation lives on /links) */}
             <Link
@@ -541,14 +563,14 @@ function AreaChart({
 }) {
   const max = Math.max(1, ...vals);
   const [hover, setHover] = useState<number | null>(null);
-  const sw = 800,
-    sh = 200;
+  const sw = 900,
+    sh = 240;
 
   const pts =
     vals.length > 1
       ? vals.map((v, i) => {
           const x = (i / (vals.length - 1)) * sw;
-          const y = sh - (v / max) * (sh - 30) - 14;
+          const y = sh - (v / max) * (sh - 45) - 20;
           return [x, y] as const;
         })
       : ([
@@ -556,7 +578,7 @@ function AreaChart({
           [sw, sh / 2],
         ] as const);
 
-  // smooth cubic path
+  // Smooth cubic Bezier spline
   const line =
     pts.length > 1
       ? pts.reduce((d, [x, y], i, a) => {
@@ -579,12 +601,12 @@ function AreaChart({
   const activePt = pts[Math.min(active, pts.length - 1)];
 
   return (
-    <div className="space-y-3">
-      <div className="relative flex gap-2">
-        {/* y axis */}
-        <div className="flex w-10 shrink-0 flex-col justify-between py-1 text-right text-[10px] font-bold tabular-nums text-muted-foreground/70">
-          {[1, 0.66, 0.33, 0].map((g) => (
-            <span key={g}>{fmtCompact(max * g)}</span>
+    <div className="space-y-4">
+      <div className="relative flex gap-3">
+        {/* Y Axis */}
+        <div className="flex w-10 shrink-0 flex-col justify-between py-2 text-right text-[11px] font-mono font-bold tabular-nums text-muted-foreground/60 select-none">
+          {[1, 0.75, 0.5, 0.25, 0].map((g) => (
+            <span key={g}>{fmtCompact(Math.round(max * g))}</span>
           ))}
         </div>
 
@@ -592,40 +614,70 @@ function AreaChart({
           <svg
             viewBox={`0 0 ${sw} ${sh}`}
             preserveAspectRatio="none"
-            className="w-full h-[210px] overflow-visible"
+            className="w-full h-[230px] sm:h-[260px] overflow-visible"
           >
             <defs>
-              <linearGradient id="dashLine" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="var(--primary-glow)" />
-                <stop offset="100%" stopColor="var(--primary)" />
+              <linearGradient id="neonGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#3b82f6" />
+                <stop offset="50%" stopColor="#8b5cf6" />
+                <stop offset="100%" stopColor="#ec4899" />
               </linearGradient>
-              <linearGradient id="dashArea" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.32" />
-                <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+              <linearGradient id="neonArea" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.45" />
+                <stop offset="50%" stopColor="#6366f1" stopOpacity="0.15" />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
               </linearGradient>
+              <linearGradient id="laserLine" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#ec4899" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#6366f1" stopOpacity="0.1" />
+              </linearGradient>
+              <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
             </defs>
-            {[0, 0.33, 0.66, 1].map((g) => (
+
+            {/* Grid horizontal guidelines */}
+            {[0, 0.25, 0.5, 0.75, 1].map((g) => (
               <line
                 key={g}
                 x1="0"
                 x2={sw}
-                y1={Math.max(1, sh * g)}
-                y2={Math.max(1, sh * g)}
-                stroke="var(--border)"
+                y1={Math.max(1, (sh - 10) * g + 5)}
+                y2={Math.max(1, (sh - 10) * g + 5)}
+                stroke="currentColor"
+                strokeOpacity="0.08"
                 strokeWidth="1"
                 strokeDasharray="4 6"
               />
             ))}
-            <path d={area} fill="url(#dashArea)" />
+
+            {/* Area Fill */}
+            <path d={area} fill="url(#neonArea)" className="transition-all duration-300" />
+
+            {/* Glow Path Line */}
             <path
               d={line}
               fill="none"
-              stroke="url(#dashLine)"
+              stroke="url(#neonGradient)"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              filter="url(#glow)"
+              className="opacity-90 transition-all duration-300"
+            />
+
+            {/* Sharp Core Stroke */}
+            <path
+              d={line}
+              fill="none"
+              stroke="url(#neonGradient)"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="anim-fade"
             />
+
+            {/* Active Pointer Guidance */}
             {activePt && (
               <>
                 <line
@@ -633,64 +685,88 @@ function AreaChart({
                   x2={activePt[0]}
                   y1={activePt[1]}
                   y2={sh}
-                  stroke="var(--primary)"
-                  strokeWidth="1"
-                  strokeDasharray="3 4"
-                  opacity="0.5"
+                  stroke="url(#laserLine)"
+                  strokeWidth="1.5"
+                  strokeDasharray="3 3"
                 />
+                {/* Outer pulsing ring */}
                 <circle
                   cx={activePt[0]}
                   cy={activePt[1]}
-                  r="5.5"
-                  fill="var(--primary)"
-                  stroke="var(--card)"
-                  strokeWidth="2.5"
+                  r="9"
+                  fill="#8b5cf6"
+                  fillOpacity="0.3"
+                  className="animate-ping"
+                />
+                {/* Mid ring */}
+                <circle
+                  cx={activePt[0]}
+                  cy={activePt[1]}
+                  r="6"
+                  fill="#ec4899"
+                  stroke="#ffffff"
+                  strokeWidth="2"
+                  className="shadow-lg"
+                />
+                {/* Core dot */}
+                <circle
+                  cx={activePt[0]}
+                  cy={activePt[1]}
+                  r="2.5"
+                  fill="#ffffff"
                 />
               </>
             )}
           </svg>
 
-          {/* hover hit-areas */}
+          {/* Interactive Hover Columns */}
           <div className="absolute inset-0 flex">
             {vals.map((_, i) => (
               <div
                 key={i}
-                className="flex-1 cursor-pointer"
+                className="flex-1 cursor-pointer transition-colors hover:bg-white/[0.02]"
                 onMouseEnter={() => setHover(i)}
                 onMouseLeave={() => setHover(null)}
               />
             ))}
           </div>
 
+          {/* Luxury Floating Glass Tooltip */}
           {activePt && (
             <div
-              className="pointer-events-none absolute -translate-x-1/2 -translate-y-full"
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-full transition-all duration-150 z-20"
               style={{
                 left: `${(activePt[0] / sw) * 100}%`,
                 top: `${(activePt[1] / sh) * 100}%`,
-                marginTop: -10,
+                marginTop: -14,
               }}
             >
-              <div
-                className="rounded-lg bg-foreground text-background px-2.5 py-1.5 text-[11px] font-bold shadow-lg whitespace-nowrap"
-                style={display}
-              >
-                {fmtCompact(vals[active] ?? 0)} clicks
-                <span className="block text-[9px] font-normal opacity-70 leading-none mt-0.5">
-                  {fmtLabel(labels[active] ?? "")}
-                </span>
+              <div className="rounded-2xl bg-slate-950/90 dark:bg-slate-900/95 text-white p-3 border border-indigo-500/40 shadow-2xl backdrop-blur-xl whitespace-nowrap min-w-[120px]">
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">
+                    {fmtLabel(labels[active] ?? "")}
+                  </span>
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                </div>
+                <div className="text-base font-black tracking-tight text-white flex items-baseline gap-1">
+                  {fmtCompact(vals[active] ?? 0)}
+                  <span className="text-xs font-medium text-slate-300">clicks</span>
+                </div>
               </div>
             </div>
           )}
 
-          <div className="mt-1 flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          {/* Timeline Date Markers */}
+          <div className="mt-3 flex justify-between text-[11px] font-mono font-bold uppercase tracking-wider text-muted-foreground/80 px-1">
             {labels.length > 0 && (
               <>
-                <span>{fmtLabel(labels[0])}</span>
+                <span className="bg-muted/40 px-2 py-0.5 rounded-md">{fmtLabel(labels[0])}</span>
                 {labels.length > 6 && (
-                  <span>{fmtLabel(labels[Math.floor(labels.length / 2)])}</span>
+                  <span className="bg-muted/40 px-2 py-0.5 rounded-md">{fmtLabel(labels[Math.floor(labels.length / 2)])}</span>
                 )}
-                <span className="text-primary">{fmtLabel(labels[labels.length - 1])}</span>
+                <span className="bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-md font-black">
+                  {fmtLabel(labels[labels.length - 1])} (Today)
+                </span>
               </>
             )}
           </div>
