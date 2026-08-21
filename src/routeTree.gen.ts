@@ -49,6 +49,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedControlPanelRouteImport } from './routes/_authenticated/control-panel'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as ApiPublicSafePoolRefreshRouteImport } from './routes/api/public/safe-pool-refresh'
+import { Route as ApiPublicPlisioWebhookRouteImport } from './routes/api/public/plisio-webhook'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicPreviewPrelandingCodeRouteImport } from './routes/api/public/preview-prelanding.$code'
 import { Route as ApiPublicHooksMetaCrawlerProbeRouteImport } from './routes/api/public/hooks/meta-crawler-probe'
@@ -257,6 +258,11 @@ const ApiPublicSafePoolRefreshRoute =
     path: '/api/public/safe-pool-refresh',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicPlisioWebhookRoute = ApiPublicPlisioWebhookRouteImport.update({
+  id: '/api/public/plisio-webhook',
+  path: '/api/public/plisio-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   id: '/api/public/health',
   path: '/api/public/health',
@@ -326,6 +332,7 @@ export interface FileRoutesByFullPath {
   '/shop/$slug': typeof ShopSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/plisio-webhook': typeof ApiPublicPlisioWebhookRoute
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
   '/api/public/hooks/domain-health-scan': typeof ApiPublicHooksDomainHealthScanRoute
   '/api/public/hooks/leak-scan': typeof ApiPublicHooksLeakScanRoute
@@ -371,6 +378,7 @@ export interface FileRoutesByTo {
   '/shop/$slug': typeof ShopSlugRoute
   '/blog': typeof BlogIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/plisio-webhook': typeof ApiPublicPlisioWebhookRoute
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
   '/api/public/hooks/domain-health-scan': typeof ApiPublicHooksDomainHealthScanRoute
   '/api/public/hooks/leak-scan': typeof ApiPublicHooksLeakScanRoute
@@ -419,6 +427,7 @@ export interface FileRoutesById {
   '/shop/$slug': typeof ShopSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/plisio-webhook': typeof ApiPublicPlisioWebhookRoute
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
   '/api/public/hooks/domain-health-scan': typeof ApiPublicHooksDomainHealthScanRoute
   '/api/public/hooks/leak-scan': typeof ApiPublicHooksLeakScanRoute
@@ -467,6 +476,7 @@ export interface FileRouteTypes {
     | '/shop/$slug'
     | '/blog/'
     | '/api/public/health'
+    | '/api/public/plisio-webhook'
     | '/api/public/safe-pool-refresh'
     | '/api/public/hooks/domain-health-scan'
     | '/api/public/hooks/leak-scan'
@@ -512,6 +522,7 @@ export interface FileRouteTypes {
     | '/shop/$slug'
     | '/blog'
     | '/api/public/health'
+    | '/api/public/plisio-webhook'
     | '/api/public/safe-pool-refresh'
     | '/api/public/hooks/domain-health-scan'
     | '/api/public/hooks/leak-scan'
@@ -559,6 +570,7 @@ export interface FileRouteTypes {
     | '/shop/$slug'
     | '/blog/'
     | '/api/public/health'
+    | '/api/public/plisio-webhook'
     | '/api/public/safe-pool-refresh'
     | '/api/public/hooks/domain-health-scan'
     | '/api/public/hooks/leak-scan'
@@ -592,6 +604,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   RCodeRoute: typeof RCodeRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
+  ApiPublicPlisioWebhookRoute: typeof ApiPublicPlisioWebhookRoute
   ApiPublicSafePoolRefreshRoute: typeof ApiPublicSafePoolRefreshRoute
   ApiPublicHooksDomainHealthScanRoute: typeof ApiPublicHooksDomainHealthScanRoute
   ApiPublicHooksLeakScanRoute: typeof ApiPublicHooksLeakScanRoute
@@ -881,6 +894,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSafePoolRefreshRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/plisio-webhook': {
+      id: '/api/public/plisio-webhook'
+      path: '/api/public/plisio-webhook'
+      fullPath: '/api/public/plisio-webhook'
+      preLoaderRoute: typeof ApiPublicPlisioWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/health': {
       id: '/api/public/health'
       path: '/api/public/health'
@@ -1001,6 +1021,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   RCodeRoute: RCodeRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
+  ApiPublicPlisioWebhookRoute: ApiPublicPlisioWebhookRoute,
   ApiPublicSafePoolRefreshRoute: ApiPublicSafePoolRefreshRoute,
   ApiPublicHooksDomainHealthScanRoute: ApiPublicHooksDomainHealthScanRoute,
   ApiPublicHooksLeakScanRoute: ApiPublicHooksLeakScanRoute,

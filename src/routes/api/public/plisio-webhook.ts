@@ -149,7 +149,7 @@ async function handlePlisioCallback(request: Request) {
   }
 }
 
-export const Route = createFileRoute("/api/public/plisio-webhook" as any)({
+export const Route = createFileRoute("/api/public/plisio-webhook")({
   server: {
     handlers: {
       GET: async ({ request }) => handlePlisioCallback(request),

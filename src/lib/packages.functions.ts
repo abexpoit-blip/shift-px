@@ -168,12 +168,38 @@ export const getMyPlanStatus = createServerFn({ method: "GET" })
     ]);
 
     const profile = profileRes.data ?? {};
+    const premiumUntilStr = (profile as any).premium_until;
+    let isPremiumActive = false;
+    let daysRemaining = 0;
+    let formattedExpiry = "";
+
+    if (premiumUntilStr) {
+      const expiryDate = new Date(premiumUntilStr);
+      if (expiryDate > new Date()) {
+        isPremiumActive = true;
+        daysRemaining = Math.max(0, Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+        formattedExpiry = expiryDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+      }
+    }
+
+    const rawSlug = (profile as any).plan_slug ?? "free";
+    const effectivePlanSlug = isPremiumActive ? rawSlug : "free";
+    const canWithdraw = isPremiumActive ? ((profile as any).can_withdraw ?? true) : false;
+    const linkLimit = isPremiumActive ? 1000000 : 50;
+
     return {
-      planSlug: (profile as any).plan_slug ?? "free",
-      premiumUntil: (profile as any).premium_until ?? null,
-      linkLimit: (profile as any).link_limit ?? 50,
+      planSlug: effectivePlanSlug,
+      isPremiumActive,
+      premiumUntil: premiumUntilStr ?? null,
+      daysRemaining,
+      formattedExpiry,
+      linkLimit,
       clickQuota: (profile as any).click_quota ?? null,
-      canWithdraw: (profile as any).can_withdraw ?? false,
+      canWithdraw,
       balanceAvailable: Number((profile as any).balance_available ?? 0),
       recentUpgrades: (upgradeRes.data ?? []) as UpgradeRequest[],
     };
