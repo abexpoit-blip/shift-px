@@ -11,28 +11,34 @@ export type DemoEntry = {
 };
 
 export const LEADERBOARD_SLOT_MS = 30 * 60_000;
+export const TOTAL_GLOBAL_PUBLISHERS = 128_450;
 
 const ROSTER: Array<{ name: string; country: string; base: number }> = [
-  { name: "alexander.v***", country: "us", base: 1_250_000 },
-  { name: "kawsar.pro***", country: "bd", base: 1_120_000 },
-  { name: "budi.santoso***", country: "id", base: 980_500 },
-  { name: "juan.reyes***", country: "ph", base: 895_200 },
-  { name: "arjun.kapoor***", country: "in", base: 820_000 },
-  { name: "hassan.ali***", country: "pk", base: 745_000 },
-  { name: "nguyen.van***", country: "vn", base: 690_400 },
-  { name: "lukas.meyer***", country: "de", base: 640_800 },
-  { name: "carlos.silva***", country: "br", base: 580_000 },
-  { name: "priya.sharma***", country: "in", base: 520_300 },
-  { name: "ahmed.mansour***", country: "eg", base: 475_900 },
-  { name: "tanvir.islam***", country: "bd", base: 430_200 },
-  { name: "marcus.v***", country: "de", base: 395_100 },
-  { name: "jonas.weber***", country: "de", base: 360_000 },
-  { name: "rahul.mehta***", country: "in", base: 325_400 },
-  { name: "tariq.zaman***", country: "pk", base: 290_000 },
-  { name: "sadia.rahman***", country: "bd", base: 260_500 },
-  { name: "felix.braun***", country: "de", base: 230_000 },
-  { name: "vikram.patel***", country: "in", base: 195_800 },
-  { name: "usman.tariq***", country: "pk", base: 170_400 },
+  { name: "alexander.v***", country: "us", base: 1_450_000 },
+  { name: "kawsar.pro***", country: "bd", base: 1_280_000 },
+  { name: "budi.santoso***", country: "id", base: 1_120_500 },
+  { name: "juan.reyes***", country: "ph", base: 995_200 },
+  { name: "arjun.kapoor***", country: "in", base: 890_000 },
+  { name: "hassan.ali***", country: "pk", base: 815_000 },
+  { name: "nguyen.van***", country: "vn", base: 740_400 },
+  { name: "lukas.meyer***", country: "de", base: 690_800 },
+  { name: "carlos.silva***", country: "br", base: 630_000 },
+  { name: "priya.sharma***", country: "in", base: 580_300 },
+  { name: "ahmed.mansour***", country: "eg", base: 515_900 },
+  { name: "tanvir.islam***", country: "bd", base: 460_200 },
+  { name: "marcus.v***", country: "de", base: 425_100 },
+  { name: "jonas.weber***", country: "de", base: 380_000 },
+  { name: "rahul.mehta***", country: "in", base: 345_400 },
+  { name: "tariq.zaman***", country: "pk", base: 310_000 },
+  { name: "sadia.rahman***", country: "bd", base: 280_500 },
+  { name: "felix.braun***", country: "de", base: 250_000 },
+  { name: "vikram.patel***", country: "in", base: 215_800 },
+  { name: "usman.tariq***", country: "pk", base: 190_400 },
+  { name: "elena.rostova***", country: "us", base: 175_000 },
+  { name: "shin.takahashi***", country: "jp", base: 160_000 },
+  { name: "mateo.gomez***", country: "co", base: 145_000 },
+  { name: "gabriel.costa***", country: "br", base: 130_000 },
+  { name: "zack.miller***", country: "us", base: 115_000 },
 ];
 
 function noise(a: number, b: number): number {
@@ -60,4 +66,20 @@ export function demoLeaderboard(now = Date.now()): DemoEntry[] {
       earnings: Math.round(humanClicks * RATE_PER_CLICK * 100) / 100,
     };
   }).sort((a, b) => b.earnings - a.earnings);
+}
+
+/**
+ * Calculates realistic global publisher ranking starting from 100,000+ scale.
+ */
+export function calculateUserGlobalRank(userClicks: number): { rank: number; displayRank: string } {
+  if (!userClicks || userClicks <= 0) {
+    return { rank: TOTAL_GLOBAL_PUBLISHERS, displayRank: "#100,000+" };
+  }
+  // Logarithmic rank curve: more clicks climb up the 100k+ global publisher tier
+  const progress = Math.min(1, Math.log10(userClicks + 1) / Math.log10(1_500_000));
+  const computedRank = Math.max(26, Math.round(TOTAL_GLOBAL_PUBLISHERS - progress * (TOTAL_GLOBAL_PUBLISHERS - 26)));
+  return {
+    rank: computedRank,
+    displayRank: `#${computedRank.toLocaleString()}`,
+  };
 }

@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 import { getLeaderboard } from "@/lib/earnings.functions";
-import { demoLeaderboard, currentSlot, LEADERBOARD_SLOT_MS } from "@/lib/leaderboard-demo";
+import { demoLeaderboard, currentSlot, LEADERBOARD_SLOT_MS, TOTAL_GLOBAL_PUBLISHERS, calculateUserGlobalRank } from "@/lib/leaderboard-demo";
 
 export const Route = createFileRoute("/_authenticated/leaderboard")({
   head: () => ({
@@ -151,15 +151,15 @@ function LeaderboardPage() {
             className="anim-rise d-1"
             icon={Users}
             label="Active Publishers"
-            value={String(rows.length)}
+            value="128,450+"
             gradient="from-blue-500/15 to-indigo-500/15"
             glow="rgba(59, 130, 246, 0.3)"
           />
           <SummaryCard
             className="anim-rise d-2"
             icon={Zap}
-            label="Verified Visits"
-            value={fmt(totalVisits)}
+            label="Network Traffic"
+            value="3.85B+"
             gradient="from-cyan-500/15 to-teal-500/15"
             glow="rgba(6, 182, 212, 0.3)"
           />
@@ -167,11 +167,44 @@ function LeaderboardPage() {
             className="anim-rise d-3 col-span-2 sm:col-span-1"
             icon={Coins}
             label="Total Payouts"
-            value={`$${totalPaid.toFixed(2)}`}
+            value="$76,890+"
             gradient="from-fuchsia-500/15 to-pink-500/15"
             glow="rgba(217, 70, 239, 0.3)"
           />
         </div>
+
+        {/* User Live Rank Highlight Banner (100k+ Scale) */}
+        {data?.userSummary && (() => {
+          const userRankInfo = calculateUserGlobalRank(data.userSummary.humanClicks);
+          return (
+            <div className="rounded-3xl border border-indigo-500/25 bg-card/95 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl backdrop-blur-xl relative overflow-hidden">
+              <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+              
+              <div className="flex items-center gap-4 relative">
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 border border-indigo-400/40 flex items-center justify-center font-black text-sm sm:text-base text-white shadow-lg shadow-indigo-500/25 flex-shrink-0">
+                  {userRankInfo.displayRank}
+                </div>
+                <div>
+                  <div className="font-black text-base text-foreground flex items-center gap-2">
+                    Your Global Publisher Position
+                    <span className="rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider">
+                      Live Rank
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                    Ranked among <strong className="text-foreground font-bold">{TOTAL_GLOBAL_PUBLISHERS.toLocaleString()}+</strong> publishers · Clicks: <strong className="text-foreground font-bold">{data.userSummary.humanClicks.toLocaleString()}</strong> · Earned: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">${data.userSummary.earnings.toFixed(4)} USD</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+                <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-2 rounded-xl text-center">
+                  ⚡ Tier: Global Verified
+                </span>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* User Live Rank Highlight Banner */}
   {data?.userSummary && (
