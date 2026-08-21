@@ -226,11 +226,11 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
       .maybeSingle();
 
     // Default Litecoin address or admin configured address
-    const ltcAddress = (settings as any)?.ltc_deposit_address || "ltc1qu99r55302t9e295pks5k072049e6x89ycmq8h7";
+    let ltcAddress = (settings as any)?.ltc_deposit_address || "ltc1qu99r55302t9e295pks5k072049e6x89ycmq8h7";
 
     // Compute live LTC amount from live market rate
     const ltcPrice = await getLiveLtcPrice();
-    const ltcAmount = (priceUsd / ltcPrice).toFixed(5);
+    let ltcAmount = (priceUsd / ltcPrice).toFixed(5);
 
     // Expire any pending requests for this user
     await db
@@ -245,28 +245,35 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
     // Plisio integration if enabled
     if ((settings as any)?.plisio_enabled && (settings as any)?.plisio_api_key) {
       try {
-        const apiKey = (settings as any).plisio_api_key;
+        const apiKey = (settings as any).plisio_api_key || "mNftu0lvWb5iTX6AVsiUhZINdfZkWVFRNJke3sUwKXyrxFVo0cHUS0A3yOf065Dq";
+        const reqId = "req_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
         const params = new URLSearchParams({
           api_key: apiKey,
-          currency: "USD",
-          amount: String(priceUsd),
-          source_currency: "LTC",
+          currency: "LTC",
+          source_currency: "USD",
+          source_amount: String(priceUsd),
           order_name: `AdsPx ${packageName}`,
-          order_number: `adspx-${userId.slice(0, 8)}-${Date.now()}`,
-          callback_url: "https://adspx.com/api/plisio-webhook",
+          order_number: reqId,
+          callback_url: "https://adspx.com/api/public/plisio-webhook",
           success_url: "https://adspx.com/upgrade?status=success",
-          fail_url: "https://adspx.com/upgrade?status=failed",
+          cancel_url: "https://adspx.com/upgrade?status=failed",
           language: "en_US",
         });
 
         const res = await fetch(`https://plisio.net/api/v1/invoices/new?${params.toString()}`, {
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(10000),
         });
         const json = await res.json() as any;
 
         if (json.status === "success" && json.data) {
           plisioInvoiceId = json.data.txn_id ?? null;
           invoiceUrl = json.data.invoice_url ?? null;
+          if (json.data.wallet_hash) {
+            ltcAddress = json.data.wallet_hash;
+          }
+          if (json.data.amount) {
+            ltcAmount = String(json.data.amount);
+          }
         }
       } catch (e) {
         console.error("Plisio API error:", e);

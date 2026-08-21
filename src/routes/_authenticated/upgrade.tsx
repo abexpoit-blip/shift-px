@@ -364,6 +364,17 @@ function InvoicePanel({
             </div>
           </div>
 
+          {result.plisioInvoiceUrl && (
+            <a
+              href={result.plisioInvoiceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full h-12 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-black flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 hover:opacity-95 text-sm"
+            >
+              <ExternalLink className="h-4 w-4" /> Open Plisio Gateway (Pay LTC)
+            </a>
+          )}
+
           <div className="flex items-center gap-2 text-xs text-emerald-500 font-semibold bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
             <ShieldCheck className="h-4 w-4 flex-shrink-0" />
             <span>Fast Settlement: Litecoin transactions confirm within ~2.5 minutes with virtually zero gas fees.</span>
