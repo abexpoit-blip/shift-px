@@ -274,15 +274,18 @@ export function TopBar({
                 className="ml-1 inline-flex items-center gap-2 rounded-full hover:bg-muted transition px-1.5 py-1"
                 aria-label="Account menu"
               >
-                <div className="relative h-9 w-9 rounded-full p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-indigo-600 shadow-md shadow-sky-500/20">
-      <div className="h-full w-full rounded-full overflow-hidden bg-sky-500 flex items-center justify-center border-2 border-white text-white font-bold text-xs uppercase shadow-inner relative">
-        <img
-          src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=128&q=80"
-          alt="Male Profile Avatar"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        <span className="select-none font-black text-white text-xs tracking-tight">{(fullName || email || "U").charAt(0).toUpperCase()}</span>
+                <div className="relative group cursor-pointer">
+      <div className="relative h-10 w-10 rounded-full p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-indigo-600 shadow-[0_0_12px_rgba(56,189,248,0.4)] group-hover:scale-105 transition-transform duration-200">
+        <div className="h-full w-full rounded-full overflow-hidden bg-slate-900 flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-inner relative">
+          <img
+            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
+            alt="VIP Profile Avatar"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <span className="select-none font-black text-white text-xs tracking-tight">{(fullName || email || "U").charAt(0).toUpperCase()}</span>
+        </div>
       </div>
+      <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950 shadow-sm animate-pulse" title="Online" />
     </div>
               </button>
             </DropdownMenuTrigger>

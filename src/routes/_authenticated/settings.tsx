@@ -106,7 +106,7 @@ function SettingsPage() {
             <div className="h-full w-full rounded-[22px] overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center border border-white/40 text-white font-black text-2xl uppercase shadow-inner relative">
               <span>{initial}</span>
               <img
-                src={`https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80'adspx')}&top=shortHairShortFlat,shortHairShortCurly,shortHairShortWaved,shortHairTheCaesar,shortHairDreads01&facialHairProbability=30&clothingColor=262e33,65c9ff,5199e4,25557c&backgroundColor=b6e3f4,c0e8ff,d0e8ff'adspx')}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`}
+                src={`https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80'adspx')}&top=shortHairShortFlat,shortHairShortCurly,shortHairShortWaved,shortHairTheCaesar,shortHairDreads01&facialHairProbability=30&clothingColor=262e33,65c9ff,5199e4,25557c&backgroundColor=b6e3f4,c0e8ff,d0e8ff'adspx')}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`}
                 alt="Profile Avatar"
                 className="absolute inset-0 h-full w-full object-cover"
                 onError={(e) => {
