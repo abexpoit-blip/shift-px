@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/leaderboard")({
       { title: "Publisher Leaderboard — AdsPx" },
       {
         name: "description",
-        content: "Top AdsPx publishers and traffic earners of the last 30 days.",
+        content: "Top AdsPx publishers and traffic earners of the last 24 hours.",
       },
     ],
   }),
@@ -136,7 +136,7 @@ function LeaderboardPage() {
             Top Publisher <span className="text-gradient">Leaderboard</span>
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-2 max-w-lg mx-auto">
-            Top verified publishers over the last 30 days{yourRank ? ` · your position: #${yourRank}` : ""}.
+            Top verified publishers over the last 24 hours{yourRank ? ` · your position: #${yourRank}` : ""}.
           </p>
           <div className="mt-3 inline-flex items-center gap-2 rounded-xl bg-card/70 border border-border/70 px-3 py-1.5 backdrop-blur-md shadow-sm">
             <Timer className="h-4 w-4 text-primary animate-spin" style={{ animationDuration: "12s" }} />

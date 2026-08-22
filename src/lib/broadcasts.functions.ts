@@ -41,7 +41,7 @@ export const listActiveBroadcasts = createServerFn({ method: "GET" })
       .select("id,title,body,icon,tone,is_active,created_at,expires_at")
       .eq("is_active", true)
       .order("created_at", { ascending: false })
-      .limit(30);
+      .limit(5);
     if (error) throw new Error(error.message);
 
     const items = (rows ?? []).filter((b: any) => !b.expires_at || b.expires_at > now);

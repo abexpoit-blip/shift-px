@@ -25,7 +25,7 @@ export function EarningsStrip() {
       accent: true,
     },
     { icon: TrendingUp, label: "Earned today", value: money(data?.todayEarned ?? 0) },
-    { icon: Users, label: "Verified humans", value: num(data?.humanClicks ?? 0) },
+    { icon: Users, label: "Human Visit", value: num(data?.humanClicks ?? 0) },
     { icon: Bot, label: "Bots filtered", value: num(data?.botClicks ?? 0) },
   ];
 

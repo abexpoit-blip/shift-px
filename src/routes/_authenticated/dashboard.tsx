@@ -236,9 +236,9 @@ function DashboardPage() {
           <KpiCard
             className="anim-rise d-1"
             icon={Users}
-            label="Real visitors"
+            label="Verified Click"
             value={totalClicks}
-            sub="Humans served, bots filtered"
+            sub="Clean Ad Traffic"
             accent="indigo"
           />
           <KpiCard
