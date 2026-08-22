@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,14 +26,11 @@ import {
   Bell,
   Search,
   LogOut,
-  UserCircle,
   Settings,
   Wallet,
   BarChart3,
   LayoutDashboard,
   Link2,
-  Inbox,
-  Trophy,
   Shield,
   CheckCheck,
 } from "lucide-react";
@@ -275,18 +271,18 @@ export function TopBar({
                 aria-label="Account menu"
               >
                 <div className="relative group cursor-pointer">
-      <div className="relative h-10 w-10 rounded-full p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-indigo-600 shadow-[0_0_12px_rgba(56,189,248,0.4)] group-hover:scale-105 transition-transform duration-200">
-        <div className="h-full w-full rounded-full overflow-hidden bg-slate-900 flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-inner relative">
-          <img
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
-            alt="VIP Profile Avatar"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <span className="select-none font-black text-white text-xs tracking-tight">{(fullName || email || "U").charAt(0).toUpperCase()}</span>
-        </div>
-      </div>
-      <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950 shadow-sm animate-pulse" title="Online" />
-    </div>
+                  <div className="relative h-10 w-10 rounded-full p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-indigo-600 shadow-[0_0_15px_rgba(56,189,248,0.45)] group-hover:scale-105 transition-transform duration-200">
+                    <div className="h-full w-full rounded-full overflow-hidden bg-sky-100 flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-inner relative">
+                      <img
+                        src="https://api.dicebear.com/9.x/adventurer/svg?seed=Alexander&backgroundColor=b6e3f4"
+                        alt="Male Anime Avatar"
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                      <span className="select-none font-black text-sky-950 text-xs tracking-tight">{(fullName || email || "U").charAt(0).toUpperCase()}</span>
+                    </div>
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950 shadow-sm animate-pulse" title="Online" />
+                </div>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -338,68 +334,29 @@ export function TopBar({
         <CommandInput placeholder="Type a command or search…" />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="Navigate">
+          <CommandGroup heading="Navigation">
             <CommandItem onSelect={() => go("/dashboard")}>
               <LayoutDashboard className="h-4 w-4 mr-2" /> Dashboard
             </CommandItem>
-            <CommandItem onSelect={() => go("/create-link")}>
-              <Link2 className="h-4 w-4 mr-2" /> Create Link
+            <CommandItem onSelect={() => go("/links")}>
+              <Link2 className="h-4 w-4 mr-2" /> Links
             </CommandItem>
             <CommandItem onSelect={() => go("/statistics")}>
               <BarChart3 className="h-4 w-4 mr-2" /> Statistics
             </CommandItem>
-            <CommandItem onSelect={() => go("/leaderboard")}>
-              <Trophy className="h-4 w-4 mr-2" /> Leaderboard
-            </CommandItem>
-            <CommandItem onSelect={() => go("/inbox")}>
-              <Inbox className="h-4 w-4 mr-2" /> Messages
-            </CommandItem>
-          </CommandGroup>
-          <CommandSeparator />
-          <CommandGroup heading="Earnings">
             <CommandItem onSelect={() => go("/withdraw")}>
               <Wallet className="h-4 w-4 mr-2" /> Withdraw
             </CommandItem>
-          </CommandGroup>
-          <CommandSeparator />
-          <CommandGroup heading="Account">
             <CommandItem onSelect={() => go("/settings")}>
               <Settings className="h-4 w-4 mr-2" /> Settings
             </CommandItem>
-            <CommandItem onSelect={() => go("/")}>
-              <UserCircle className="h-4 w-4 mr-2" /> Home
-            </CommandItem>
-            <CommandItem
-              onSelect={() => {
-                setCmdOpen(false);
-                signOut();
-              }}
-            >
-              <LogOut className="h-4 w-4 mr-2" /> Sign out
-            </CommandItem>
+            {isAdmin && (
+              <CommandItem onSelect={() => go("/control-panel")}>
+                <Shield className="h-4 w-4 mr-2" /> Admin Panel
+              </CommandItem>
+            )}
           </CommandGroup>
-          {isAdmin && (
-            <>
-              <CommandSeparator />
-              <CommandGroup heading="Admin">
-                <CommandItem onSelect={() => go("/admin", { tab: "overview" })}>
-                  <Shield className="h-4 w-4 mr-2" /> Overview
-                </CommandItem>
-                <CommandItem onSelect={() => go("/admin", { tab: "users" })}>
-                  <Shield className="h-4 w-4 mr-2" /> Users
-                </CommandItem>
-                <CommandItem onSelect={() => go("/admin", { tab: "withdrawals" })}>
-                  <Shield className="h-4 w-4 mr-2" /> Payouts
-                </CommandItem>
-                <CommandItem onSelect={() => go("/admin", { tab: "ads" })}>
-                  <Shield className="h-4 w-4 mr-2" /> Ads Setup
-                </CommandItem>
-                <CommandItem onSelect={() => go("/admin", { tab: "system" })}>
-                  <Shield className="h-4 w-4 mr-2" /> System
-                </CommandItem>
-              </CommandGroup>
-            </>
-          )}
+          <CommandSeparator />
         </CommandList>
       </CommandDialog>
     </>
