@@ -15,10 +15,12 @@ module.exports = {
     max_memory_restart: "3072M",
     watch: false,
     autorestart: true,
-    restart_delay: 3000,
+    restart_delay: 2000,
     max_restarts: 10,
     min_uptime: "10s",
-    kill_timeout: 15000,
+    kill_timeout: 10000,
+    listen_timeout: 8000,
+    wait_ready: false,
 
     env: {
       PORT: String(4000 + i),
