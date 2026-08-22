@@ -70,16 +70,36 @@ export function demoLeaderboard(now = Date.now()): DemoEntry[] {
 
 /**
  * Calculates realistic global publisher ranking starting from 100,000+ scale.
+ * Users with < 100k clicks are unranked (#100,000+).
+ * Users with >= 100k clicks rank among the top global publishers based on their traffic.
  */
-export function calculateUserGlobalRank(userClicks: number): { rank: number; displayRank: string } {
-  if (!userClicks || userClicks <= 0) {
-    return { rank: TOTAL_GLOBAL_PUBLISHERS, displayRank: "#100,000+" };
+export function calculateUserGlobalRank(userClicks: number): {
+  rank: number;
+  displayRank: string;
+  isQualified: boolean;
+} {
+  const clicks = Number(userClicks ?? 0);
+
+  if (clicks < 100_000) {
+    return {
+      rank: TOTAL_GLOBAL_PUBLISHERS,
+      displayRank: "#100,000+",
+      isQualified: false,
+    };
   }
-  // Logarithmic rank curve: more clicks climb up the 100k+ global publisher tier
-  const progress = Math.min(1, Math.log10(userClicks + 1) / Math.log10(1_500_000));
-  const computedRank = Math.max(26, Math.round(TOTAL_GLOBAL_PUBLISHERS - progress * (TOTAL_GLOBAL_PUBLISHERS - 26)));
+
+  if (clicks >= 3_500_000) return { rank: 1, displayRank: "#1", isQualified: true };
+  if (clicks >= 3_200_000) return { rank: 3, displayRank: "#3", isQualified: true };
+  if (clicks >= 2_500_000) return { rank: 5, displayRank: "#5", isQualified: true };
+  if (clicks >= 2_000_000) return { rank: 7, displayRank: "#7", isQualified: true };
+  if (clicks >= 1_500_000) return { rank: 10, displayRank: "#10", isQualified: true };
+  if (clicks >= 1_000_000) return { rank: 14, displayRank: "#14", isQualified: true };
+  if (clicks >= 500_000) return { rank: 19, displayRank: "#19", isQualified: true };
+
+  const scaled = Math.max(21, Math.round(100 - ((clicks - 100_000) / 400_000) * 79));
   return {
-    rank: computedRank,
-    displayRank: `#${computedRank.toLocaleString()}`,
+    rank: scaled,
+    displayRank: `#${scaled}`,
+    isQualified: true,
   };
 }

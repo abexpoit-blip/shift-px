@@ -177,56 +177,48 @@ function LeaderboardPage() {
         {data?.userSummary && (() => {
           const userRankInfo = calculateUserGlobalRank(data.userSummary.humanClicks);
           return (
-            <div className="rounded-3xl border border-indigo-500/25 bg-card/95 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl backdrop-blur-xl relative overflow-hidden">
-              <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+            <div className="rounded-3xl border border-sky-500/30 bg-card p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl backdrop-blur-xl relative overflow-hidden">
+              <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
               
               <div className="flex items-center gap-4 relative">
-                <div className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 border border-indigo-400/40 flex items-center justify-center font-black text-sm sm:text-base text-white shadow-lg shadow-indigo-500/25 flex-shrink-0">
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 border border-white/20 flex items-center justify-center font-black text-sm sm:text-base text-white shadow-lg shadow-sky-500/25 flex-shrink-0">
                   {userRankInfo.displayRank}
                 </div>
                 <div>
-                  <div className="font-black text-base text-foreground flex items-center gap-2">
+                  <div className="font-extrabold text-base text-foreground flex items-center gap-2">
                     Your Global Publisher Position
-                    <span className="rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider">
-                      Live Rank
+                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider border ${
+                      userRankInfo.isQualified
+                        ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                        : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                    }`}>
+                      {userRankInfo.isQualified ? "Top Ranked (100k+ Qualified)" : "Unranked (< 100k Visits)"}
                     </span>
                   </div>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                    Ranked among <strong className="text-foreground font-bold">{TOTAL_GLOBAL_PUBLISHERS.toLocaleString()}+</strong> publishers · Clicks: <strong className="text-foreground font-bold">{data.userSummary.humanClicks.toLocaleString()}</strong> · Earned: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">${data.userSummary.earnings.toFixed(4)} USD</strong>
+                    {userRankInfo.isQualified ? (
+                      <>
+                        Ranked <strong className="text-foreground font-bold">{userRankInfo.displayRank}</strong> among <strong className="text-foreground font-bold">{TOTAL_GLOBAL_PUBLISHERS.toLocaleString()}+</strong> publishers · Clicks: <strong className="text-foreground font-bold">{data.userSummary.humanClicks.toLocaleString()}</strong> · Earned: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">${data.userSummary.earnings.toFixed(2)} USD</strong>
+                      </>
+                    ) : (
+                      <>
+                        Current Clicks: <strong className="text-foreground font-bold">{data.userSummary.humanClicks.toLocaleString()}</strong> · <span className="text-amber-500 font-semibold">Send 100,000+ verified visits to enter the Top Global Leaderboard!</span>
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
-                <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-2 rounded-xl text-center">
-                  ⚡ Tier: Global Verified
+                <span className="text-xs font-extrabold text-sky-600 dark:text-sky-400 bg-sky-500/10 border border-sky-500/20 px-3.5 py-2 rounded-xl text-center shadow-xs">
+                  ⚡ {userRankInfo.isQualified ? "Elite Publisher Tier" : "100k Qualification Tier"}
                 </span>
               </div>
             </div>
           );
         })()}
 
-        {/* User Live Rank Highlight Banner */}
-  {data?.userSummary && (
-    <div className="rounded-3xl border border-border bg-card p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
-      <div className="flex items-center gap-4">
-        <div className="h-12 w-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center font-black text-base sm:text-lg text-primary shadow-sm">
-          #100+
-        </div>
-        <div>
-          <div className="font-extrabold text-base text-foreground flex items-center gap-2">
-            Your Publisher Position <span className="rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 text-[11px] font-bold">Active</span>
-          </div>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Verified visits: <strong className="text-foreground font-bold">{data.userSummary.humanClicks.toLocaleString()}</strong> · Earned: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">${data.userSummary.earnings.toFixed(4)} USD</strong>
-          </p>
-        </div>
-      </div>
-      <span className="text-xs font-semibold text-muted-foreground bg-muted/60 px-3.5 py-1.5 rounded-xl border border-border">
-        Rank updates in realtime
-      </span>
-    </div>
-  )}
+        
 
   {isLoading ? (
           <div className="flex flex-col items-center justify-center py-28 text-muted-foreground gap-3">
