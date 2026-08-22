@@ -270,9 +270,14 @@ function LinksPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2">
               <Link2 className="w-7 h-7 text-primary" /> Smart Short Links
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              {activeLinks} Active · {links.length} Total · 100% human traffic redirection with Facebook review shield
-            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                {activeLinks} Active · {links.length} Total
+              </span>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+                {dashQ.data?.profile?.plan_slug && (dashQ.data.profile.plan_slug.includes("premium") || dashQ.data.profile.plan_slug === "lifetime") ? "Unlimited Links (Premium)" : `${links.length}/50 Links (Free Tier)`}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2.5">

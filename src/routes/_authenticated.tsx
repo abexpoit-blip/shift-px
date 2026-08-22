@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import type { AuthChangeEvent, User } from "@supabase/supabase-js";
 import { LogOut, Ban } from "lucide-react";
+import { AdspxMark } from "@/components/AdspxLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
