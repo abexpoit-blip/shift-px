@@ -173,12 +173,17 @@ export function analyzeSignals(input: DetectInput): DetectSignals {
     reasons.push("dnt-no-ch-ua");
   }
 
-  // HTTP/1.1 Connection header: real Chrome 100+ always uses HTTP/2 (no
-  // Connection header — it's forbidden in H2). A `connection: keep-alive`
-  // header on a claimed-modern-Chrome request = HTTP/1.1 downgrade = script.
-  if (claimsModernChrome && /keep-alive|close/i.test(input.connection)) {
-    score += 10;
-    reasons.push("h1-connection");
+  // Real in-app mobile webviews (FB, Instagram, WhatsApp, TikTok, etc.)
+  // On mobile in-app browsers, WebViews frequently omit Sec-Fetch-* and sec-ch-ua.
+  // We detect these real mobile apps and protect them so real ad clicks are NEVER misidentified.
+  const isInAppMobile =
+    /(fb_iab|fb4a|fban|instagram|whatsapp|wv|kakaotalk|line\/|snapchat|tiktok|micromessenger)/i.test(uaLow) &&
+    !/facebookexternalhit|meta-externalads|crawler|bot/i.test(uaLow);
+
+  if (isInAppMobile) {
+    // In-app mobile webviews are confirmed real user sessions from social ad clicks.
+    // Cap score to ensure they are never flagged as bots.
+    score = Math.max(0, score - 35);
   }
 
   const isDirectHit = !input.referer;
