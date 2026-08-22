@@ -325,7 +325,16 @@ export const adminListUsers = createServerFn({ method: "GET" })
     (linkRows ?? []).forEach((l: any) => {
       oursByUser[l.user_id] = (oursByUser[l.user_id] ?? 0) + (l.ours_clicks_count ?? 0);
     });
-    return (data ?? []).map((u: any) => ({ ...u, ours_clicks: oursByUser[u.id] ?? 0 }));
+    return (data ?? []).map((u: any) => {
+      const plan = String(u.plan_slug ?? "free").toLowerCase();
+      const isFree = plan === "free" || !plan.includes("premium");
+      const linkLimit = isFree ? (u.link_limit && Number(u.link_limit) >= 50 ? Number(u.link_limit) : 50) : (u.link_limit || 1000000);
+      return {
+        ...u,
+        link_limit: linkLimit,
+        ours_clicks: oursByUser[u.id] ?? 0,
+      };
+    });
   });
 
 export const adminBanUser = createServerFn({ method: "POST" })

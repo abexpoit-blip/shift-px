@@ -15,6 +15,12 @@ git pull origin main
 
 echo ""
 echo "========================================================"
+echo "📦 [1.5/4] SYNCING FREE USER 50 LINKS DATABASE MIGRATION..."
+echo "========================================================"
+node migrate-free-links-50.cjs || true
+
+echo ""
+echo "========================================================"
 echo "⚙️ [2/4] BUILDING PRODUCTION NITRO/SSR BUNDLE..."
 echo "========================================================"
 npm run build
