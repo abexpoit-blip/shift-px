@@ -180,12 +180,17 @@ function AuthenticatedLayout() {
   if (!authChecked || !user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-500/20 animate-pulse">
-            S
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-pulse flex items-center justify-center">
+            <AdspxMark className="h-14 w-14" glow={true} />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black uppercase tracking-[0.25em] bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+              AdsPx
+            </span>
           </div>
           <div className="h-1 w-24 rounded-full bg-muted/60 overflow-hidden">
-            <div className="h-full w-full bg-indigo-500 rounded-full animate-pulse" />
+            <div className="h-full w-full bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-500 rounded-full animate-pulse" />
           </div>
         </div>
       </div>
