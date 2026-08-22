@@ -64,12 +64,18 @@ export async function startImpersonation(args: {
     started_at: Date.now(),
   };
   localStorage.setItem(FLAG_KEY, JSON.stringify(flag));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("impersonation-change"));
+  }
 }
 
 export async function exitImpersonation(): Promise<{ restored: boolean }> {
   const raw = typeof window !== "undefined" ? localStorage.getItem(ADMIN_KEY) : null;
   if (!raw) {
     localStorage.removeItem(FLAG_KEY);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("impersonation-change"));
+    }
     return { restored: false };
   }
   let parsed: { access_token: string; refresh_token: string };
@@ -78,6 +84,9 @@ export async function exitImpersonation(): Promise<{ restored: boolean }> {
   } catch {
     localStorage.removeItem(ADMIN_KEY);
     localStorage.removeItem(FLAG_KEY);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("impersonation-change"));
+    }
     return { restored: false };
   }
 
@@ -87,6 +96,9 @@ export async function exitImpersonation(): Promise<{ restored: boolean }> {
   });
   localStorage.removeItem(ADMIN_KEY);
   localStorage.removeItem(FLAG_KEY);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("impersonation-change"));
+  }
   if (error) throw new Error(error.message);
   return { restored: true };
 }

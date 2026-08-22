@@ -257,7 +257,7 @@ export const getDashboardData = createServerFn({ method: "GET" }).handler(async 
     ? Date.now() - new Date(cached.updated_at).getTime()
     : Infinity;
 
-  if (cached?.data && cacheAgeMs < 10_000) {
+  if (cached?.data && cacheAgeMs < 60_000) {
     return {
       ...cached.data,
       _cachedAt: cached.updated_at,

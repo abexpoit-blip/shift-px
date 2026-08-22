@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import { ShieldAlert, LogOut, Loader2 } from "lucide-react";
+import { ShieldAlert, LogOut, Loader2, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import {
   exitImpersonation,
@@ -11,13 +10,20 @@ import {
 export function ImpersonationBanner() {
   const [flag, setFlag] = useState<ImpersonationFlag | null>(null);
   const [busy, setBusy] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    setFlag(getImpersonationFlag());
-    const onStorage = () => setFlag(getImpersonationFlag());
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    const update = () => setFlag(getImpersonationFlag());
+    update();
+
+    window.addEventListener("storage", update);
+    window.addEventListener("impersonation-change", update);
+    const timer = setInterval(update, 1000);
+
+    return () => {
+      window.removeEventListener("storage", update);
+      window.removeEventListener("impersonation-change", update);
+      clearInterval(timer);
+    };
   }, []);
 
   if (!flag) return null;
@@ -27,45 +33,47 @@ export function ImpersonationBanner() {
     try {
       await exitImpersonation();
       setFlag(null);
-      toast.success("Exited — back to admin");
-      navigate({ to: "/control-panel" });
+      toast.success("Exited user view — returning to admin panel");
+      // Force clean navigation to reinitialize admin session
+      window.location.href = "/control-panel";
     } catch (e) {
       toast.error((e as Error).message);
-    } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="sticky top-0 z-[60] w-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white shadow-lg">
-      <div className="max-w-[1600px] mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
-            <ShieldAlert className="w-4 h-4" />
+    <div className="fixed top-0 inset-x-0 z-[9999] w-full bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 text-white shadow-2xl border-b border-white/20 animate-in slide-in-from-top duration-300">
+      <div className="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/30">
+            <UserCheck className="w-4 h-4 text-white animate-pulse" />
           </div>
           <div className="min-w-0">
-            <div className="text-[10px] font-bold uppercase tracking-widest opacity-90">
-              Admin Impersonation
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-black/30 border border-white/20">
+                Admin Impersonation Mode
+              </span>
+              <span className="hidden sm:inline text-xs opacity-90">Viewing Publisher Dashboard</span>
             </div>
-            <div className="text-sm font-semibold truncate">
-              Signed in as{" "}
-              <span className="underline decoration-white/50">{flag.target_email}</span>
+            <div className="text-xs sm:text-sm font-bold truncate mt-0.5">
+              Logged in as: <span className="underline decoration-white/70 font-black">{flag.target_email}</span>
               {flag.admin_email && (
-                <span className="hidden sm:inline opacity-80 font-normal">
-                  {" "}
-                  · admin: {flag.admin_email}
+                <span className="opacity-75 font-normal ml-2">
+                  (Admin: {flag.admin_email})
                 </span>
               )}
             </div>
           </div>
         </div>
+
         <button
           onClick={handleExit}
           disabled={busy}
-          className="inline-flex items-center gap-2 rounded-xl bg-white text-rose-600 px-3.5 py-2 text-sm font-bold hover:bg-white/95 disabled:opacity-60 shadow-md"
+          className="inline-flex items-center gap-2 rounded-xl bg-white text-rose-700 px-4 py-2 text-xs sm:text-sm font-black hover:bg-white/90 hover:scale-105 active:scale-95 disabled:opacity-60 shadow-lg shadow-black/20 transition-all cursor-pointer"
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
-          Exit & return to admin
+          Exit & Return to Admin
         </button>
       </div>
     </div>

@@ -57,7 +57,7 @@ export function EarningsStrip() {
       ))}
       <p className="sm:col-span-2 lg:col-span-4 text-[11px] text-muted-foreground">
         All features are free · you earn {money(data?.ratePer1k ?? 0)} per 1,000 verified human
-        visits · minimum payout {money(data?.minWithdrawal ?? 10)}.
+        visits · minimum payout {money(data?.minWithdrawal ?? 5)}.
       </p>
     </div>
   );
