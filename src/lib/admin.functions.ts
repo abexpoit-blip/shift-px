@@ -1472,3 +1472,82 @@ export const adminQuotaSyncStatus = createServerFn({ method: "GET" })
 
     return { summary, rows };
   });
+
+// ─── 15-Day Inactive Links & Users Cleanup Engine ───────────────────────────
+
+export const adminGet15DaysInactiveStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
+
+    // 1. Dead links: created >= 15 days ago with 0 clicks
+    const { count: deadLinksCount } = await supabaseAdmin
+      .from("links")
+      .select("id", { count: "exact", head: true })
+      .eq("clicks_count", 0)
+      .lt("created_at", fifteenDaysAgo);
+
+    // 2. Dormant free users: no login for >= 15 days, not admin, not premium
+    const { data: dormantUsers } = await supabaseAdmin.rpc(
+      "admin_get_dormant_users" as never,
+      { _days: 15 } as never,
+    );
+
+    return {
+      deadLinksCount: deadLinksCount ?? 0,
+      dormantUsersCount: (dormantUsers ?? []).length,
+    };
+  });
+
+export const adminPurge15DaysInactive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
+
+    // 1. Purge dead links (0 clicks and >= 15 days old)
+    const { data: deadLinks } = await supabaseAdmin
+      .from("links")
+      .select("id")
+      .eq("clicks_count", 0)
+      .lt("created_at", fifteenDaysAgo)
+      .limit(500);
+
+    const deadLinkIds = (deadLinks ?? []).map((l: any) => l.id);
+    let deletedLinksCount = 0;
+    if (deadLinkIds.length > 0) {
+      await supabaseAdmin.from("clicks").delete().in("link_id", deadLinkIds);
+      const { error: linkErr } = await supabaseAdmin.from("links").delete().in("id", deadLinkIds);
+      if (!linkErr) deletedLinksCount = deadLinkIds.length;
+    }
+
+    // 2. Purge dormant users (15+ days inactive)
+    const { data: dormantUsers } = await supabaseAdmin.rpc(
+      "admin_get_dormant_users" as never,
+      { _days: 15 } as never,
+    );
+
+    const userIds = ((dormantUsers ?? []) as any[]).map((u) => u.id).slice(0, 50);
+    let deletedUsersCount = 0;
+
+    for (const uid of userIds) {
+      const linkIds = ((await supabaseAdmin.from("links").select("id").eq("user_id", uid)).data ?? []).map((l: any) => l.id);
+      if (linkIds.length) {
+        await supabaseAdmin.from("clicks").delete().in("link_id", linkIds);
+      }
+      await supabaseAdmin.from("links").delete().eq("user_id", uid);
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", uid);
+      await supabaseAdmin.from("upgrade_requests").delete().eq("user_id", uid);
+      await supabaseAdmin.from("custom_domains").delete().eq("user_id", uid);
+      await supabaseAdmin.from("profiles").delete().eq("id", uid);
+      await supabaseAdmin.auth.admin.deleteUser(uid);
+      deletedUsersCount++;
+    }
+
+    return {
+      ok: true,
+      deletedLinksCount,
+      deletedUsersCount,
+    };
+  });

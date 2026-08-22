@@ -53,6 +53,7 @@ import { Route as ApiPublicPlisioWebhookRouteImport } from './routes/api/public/
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicPreviewPrelandingCodeRouteImport } from './routes/api/public/preview-prelanding.$code'
 import { Route as ApiPublicHooksMetaCrawlerProbeRouteImport } from './routes/api/public/hooks/meta-crawler-probe'
+import { Route as ApiPublicHooksMaintenanceCronRouteImport } from './routes/api/public/hooks/maintenance-cron'
 import { Route as ApiPublicHooksLeakScanRouteImport } from './routes/api/public/hooks/leak-scan'
 import { Route as ApiPublicHooksDomainHealthScanRouteImport } from './routes/api/public/hooks/domain-health-scan'
 
@@ -280,6 +281,12 @@ const ApiPublicHooksMetaCrawlerProbeRoute =
     path: '/api/public/hooks/meta-crawler-probe',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksMaintenanceCronRoute =
+  ApiPublicHooksMaintenanceCronRouteImport.update({
+    id: '/api/public/hooks/maintenance-cron',
+    path: '/api/public/hooks/maintenance-cron',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksLeakScanRoute = ApiPublicHooksLeakScanRouteImport.update({
   id: '/api/public/hooks/leak-scan',
   path: '/api/public/hooks/leak-scan',
@@ -336,6 +343,7 @@ export interface FileRoutesByFullPath {
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
   '/api/public/hooks/domain-health-scan': typeof ApiPublicHooksDomainHealthScanRoute
   '/api/public/hooks/leak-scan': typeof ApiPublicHooksLeakScanRoute
+  '/api/public/hooks/maintenance-cron': typeof ApiPublicHooksMaintenanceCronRoute
   '/api/public/hooks/meta-crawler-probe': typeof ApiPublicHooksMetaCrawlerProbeRoute
   '/api/public/preview-prelanding/$code': typeof ApiPublicPreviewPrelandingCodeRoute
 }
@@ -382,6 +390,7 @@ export interface FileRoutesByTo {
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
   '/api/public/hooks/domain-health-scan': typeof ApiPublicHooksDomainHealthScanRoute
   '/api/public/hooks/leak-scan': typeof ApiPublicHooksLeakScanRoute
+  '/api/public/hooks/maintenance-cron': typeof ApiPublicHooksMaintenanceCronRoute
   '/api/public/hooks/meta-crawler-probe': typeof ApiPublicHooksMetaCrawlerProbeRoute
   '/api/public/preview-prelanding/$code': typeof ApiPublicPreviewPrelandingCodeRoute
 }
@@ -431,6 +440,7 @@ export interface FileRoutesById {
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
   '/api/public/hooks/domain-health-scan': typeof ApiPublicHooksDomainHealthScanRoute
   '/api/public/hooks/leak-scan': typeof ApiPublicHooksLeakScanRoute
+  '/api/public/hooks/maintenance-cron': typeof ApiPublicHooksMaintenanceCronRoute
   '/api/public/hooks/meta-crawler-probe': typeof ApiPublicHooksMetaCrawlerProbeRoute
   '/api/public/preview-prelanding/$code': typeof ApiPublicPreviewPrelandingCodeRoute
 }
@@ -480,6 +490,7 @@ export interface FileRouteTypes {
     | '/api/public/safe-pool-refresh'
     | '/api/public/hooks/domain-health-scan'
     | '/api/public/hooks/leak-scan'
+    | '/api/public/hooks/maintenance-cron'
     | '/api/public/hooks/meta-crawler-probe'
     | '/api/public/preview-prelanding/$code'
   fileRoutesByTo: FileRoutesByTo
@@ -526,6 +537,7 @@ export interface FileRouteTypes {
     | '/api/public/safe-pool-refresh'
     | '/api/public/hooks/domain-health-scan'
     | '/api/public/hooks/leak-scan'
+    | '/api/public/hooks/maintenance-cron'
     | '/api/public/hooks/meta-crawler-probe'
     | '/api/public/preview-prelanding/$code'
   id:
@@ -574,6 +586,7 @@ export interface FileRouteTypes {
     | '/api/public/safe-pool-refresh'
     | '/api/public/hooks/domain-health-scan'
     | '/api/public/hooks/leak-scan'
+    | '/api/public/hooks/maintenance-cron'
     | '/api/public/hooks/meta-crawler-probe'
     | '/api/public/preview-prelanding/$code'
   fileRoutesById: FileRoutesById
@@ -608,6 +621,7 @@ export interface RootRouteChildren {
   ApiPublicSafePoolRefreshRoute: typeof ApiPublicSafePoolRefreshRoute
   ApiPublicHooksDomainHealthScanRoute: typeof ApiPublicHooksDomainHealthScanRoute
   ApiPublicHooksLeakScanRoute: typeof ApiPublicHooksLeakScanRoute
+  ApiPublicHooksMaintenanceCronRoute: typeof ApiPublicHooksMaintenanceCronRoute
   ApiPublicHooksMetaCrawlerProbeRoute: typeof ApiPublicHooksMetaCrawlerProbeRoute
   ApiPublicPreviewPrelandingCodeRoute: typeof ApiPublicPreviewPrelandingCodeRoute
 }
@@ -922,6 +936,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksMetaCrawlerProbeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/maintenance-cron': {
+      id: '/api/public/hooks/maintenance-cron'
+      path: '/api/public/hooks/maintenance-cron'
+      fullPath: '/api/public/hooks/maintenance-cron'
+      preLoaderRoute: typeof ApiPublicHooksMaintenanceCronRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/leak-scan': {
       id: '/api/public/hooks/leak-scan'
       path: '/api/public/hooks/leak-scan'
@@ -1025,6 +1046,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSafePoolRefreshRoute: ApiPublicSafePoolRefreshRoute,
   ApiPublicHooksDomainHealthScanRoute: ApiPublicHooksDomainHealthScanRoute,
   ApiPublicHooksLeakScanRoute: ApiPublicHooksLeakScanRoute,
+  ApiPublicHooksMaintenanceCronRoute: ApiPublicHooksMaintenanceCronRoute,
   ApiPublicHooksMetaCrawlerProbeRoute: ApiPublicHooksMetaCrawlerProbeRoute,
   ApiPublicPreviewPrelandingCodeRoute: ApiPublicPreviewPrelandingCodeRoute,
 }

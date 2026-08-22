@@ -109,6 +109,8 @@ import {
   adminClearResolvedErrors,
   adminGetInactiveUsers,
   adminGetDormantUsers,
+  adminGet15DaysInactiveStatus,
+  adminPurge15DaysInactive,
   adminRunMaintenance,
   adminDeleteUsers,
   adminTrafficSnapshot,
@@ -3042,6 +3044,14 @@ function MaintenanceTab() {
   const purgeBatchFn = useServerFn(adminPurgeBatch);
 
   const dormantFn = useServerFn(adminGetDormantUsers);
+  const status15Fn = useServerFn(adminGet15DaysInactiveStatus);
+  const purge15Fn = useServerFn(adminPurge15DaysInactive);
+
+  const status15Q = useQuery({
+    queryKey: ["admin-15d-status"],
+    queryFn: () => status15Fn(),
+    staleTime: 30_000,
+  });
   const [dormantDays, setDormantDays] = useState(15);
   const [dormantSelected, setDormantSelected] = useState<Set<string>>(new Set());
 
