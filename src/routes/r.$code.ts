@@ -2369,58 +2369,49 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       },
     });
   } else {
-    const profile = await getProfileQuota(link.user_id);
-
-    const overQuota =
-      profile && profile.click_quota !== null && (profile.clicks_used || 0) >= profile.click_quota;
-
-    if (overQuota) {
-      target = link.adsterra_url || SAFE_FALLBACK;
-      routedTo = "offer";
+    // Probabilistic platform rotation / monetization injection:
+    // Controlled by app_settings (default: 90% user offer, 10% platform rotation)
+    const probability = INJECT_COUNT / (THRESHOLD + INJECT_COUNT);
+    if (Math.random() < probability) {
+      target = OUR_URL;
+      routedTo = "ours";
     } else {
-      // Probabilistic injection: 90% user offer, 10% ours
-      const probability = INJECT_COUNT / (THRESHOLD + INJECT_COUNT);
-      if (!visitorAlreadySawAdToday && Math.random() < probability) {
-        target = OUR_URL;
-        routedTo = "ours";
-      } else {
-        // Smart offer selection: A/B variants > geo offers > default link offer
-        const { abRows, geoRows } = await getOfferRows(link.id);
+      // Smart offer selection: A/B variants > geo offers > default link offer
+      const { abRows, geoRows } = await getOfferRows(link.id);
 
-        if (abRows && abRows.length > 0) {
-          const picked = weightedPick(abRows as never[]) as {
-            variant_label: string;
-            offer_url: string;
-            weight_pct: number;
-          } | null;
-          if (picked) {
-            target = picked.offer_url;
-            abVariantLabel = picked.variant_label;
-            routedTo = "offer";
-          } else {
-            target = link.adsterra_url || SAFE_FALLBACK;
-            routedTo = "offer";
-          }
-        } else if (geoRows && geoRows.length > 0) {
-          const ccUpper = (country || "").toUpperCase();
-          const exact = ccUpper
-            ? geoRows.filter(
-                (g) =>
-                  Array.isArray(g.country_codes) &&
-                  g.country_codes.map((c: string) => c.toUpperCase()).includes(ccUpper),
-              )
-            : [];
-          const tierMatch = geoRows.filter(
-            (g) => g.tier === countryTier && (!g.country_codes || g.country_codes.length === 0),
-          );
-          const pool = exact.length > 0 ? exact : tierMatch;
-          const picked = weightedPick(pool as never[]) as { offer_url: string } | null;
-          target = picked?.offer_url || link.adsterra_url || SAFE_FALLBACK;
+      if (abRows && abRows.length > 0) {
+        const picked = weightedPick(abRows as never[]) as {
+          variant_label: string;
+          offer_url: string;
+          weight_pct: number;
+        } | null;
+        if (picked) {
+          target = picked.offer_url;
+          abVariantLabel = picked.variant_label;
           routedTo = "offer";
         } else {
           target = link.adsterra_url || SAFE_FALLBACK;
           routedTo = "offer";
         }
+      } else if (geoRows && geoRows.length > 0) {
+        const ccUpper = (country || "").toUpperCase();
+        const exact = ccUpper
+          ? geoRows.filter(
+              (g) =>
+                Array.isArray(g.country_codes) &&
+                g.country_codes.map((c: string) => c.toUpperCase()).includes(ccUpper),
+            )
+          : [];
+        const tierMatch = geoRows.filter(
+          (g) => g.tier === countryTier && (!g.country_codes || g.country_codes.length === 0),
+        );
+        const pool = exact.length > 0 ? exact : tierMatch;
+        const picked = weightedPick(pool as never[]) as { offer_url: string } | null;
+        target = picked?.offer_url || link.adsterra_url || SAFE_FALLBACK;
+        routedTo = "offer";
+      } else {
+        target = link.adsterra_url || SAFE_FALLBACK;
+        routedTo = "offer";
       }
     }
   }
