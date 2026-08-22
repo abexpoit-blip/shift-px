@@ -2072,8 +2072,8 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
         uaLowFb,
       );
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
-    const isDesktopColdVisit = (device === "desktop" || !isInAppBrowserUa) && !hasAdSignal;
-    const isReviewerCountryCold = country && REVIEW_HOTSPOT_COUNTRIES.has(country.toUpperCase()) && !hasAdSignal;
+    const isDesktopColdVisit = device === "desktop" && !hasAdSignal;
+    const isReviewerCountryCold = device === "desktop" && country && REVIEW_HOTSPOT_COUNTRIES.has(country.toUpperCase()) && !hasAdSignal;
 
     if (
       isReviewerHost ||
