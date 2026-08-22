@@ -17,6 +17,8 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Bell,
+  ArrowRight,
 } from "lucide-react";
 import { listActiveBroadcasts, markBroadcastRead } from "@/lib/broadcasts.functions";
 import { BroadcastMarkdown } from "@/components/broadcast-markdown";
@@ -35,34 +37,38 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   trophy: Trophy,
 };
 
-const TONE: Record<string, { grad: string; ring: string; badge: string; accent: string }> = {
+const TONE: Record<string, { badge: string; border: string; glow: string; text: string; bg: string }> = {
   premium: {
-    grad: "from-[#FF7E5F] via-[#FEB47B] to-[#FFD4BB]",
-    ring: "shadow-[0_25px_80px_-20px_rgba(255,126,95,0.55)]",
-    badge: "bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white",
-    accent: "text-[#FF7E5F]",
+    badge: "bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black",
+    border: "border-amber-500/30",
+    glow: "shadow-[0_0_50px_rgba(245,158,11,0.25)]",
+    text: "text-amber-400",
+    bg: "from-amber-500/10 via-card to-card",
   },
   info: {
-    grad: "from-blue-400 via-blue-500 to-indigo-600",
-    ring: "shadow-[0_25px_80px_-20px_rgba(59,130,246,0.5)]",
-    badge: "bg-blue-500 text-white",
-    accent: "text-blue-600",
+    badge: "bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold",
+    border: "border-indigo-500/30",
+    glow: "shadow-[0_0_50px_rgba(99,102,241,0.25)]",
+    text: "text-indigo-400",
+    bg: "from-indigo-500/10 via-card to-card",
   },
   success: {
-    grad: "from-emerald-400 via-emerald-500 to-teal-600",
-    ring: "shadow-[0_25px_80px_-20px_rgba(16,185,129,0.5)]",
-    badge: "bg-emerald-500 text-white",
-    accent: "text-emerald-600",
+    badge: "bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold",
+    border: "border-emerald-500/30",
+    glow: "shadow-[0_0_50px_rgba(16,185,129,0.25)]",
+    text: "text-emerald-400",
+    bg: "from-emerald-500/10 via-card to-card",
   },
   warning: {
-    grad: "from-amber-400 via-orange-500 to-red-500",
-    ring: "shadow-[0_25px_80px_-20px_rgba(245,158,11,0.5)]",
-    badge: "bg-amber-500 text-white",
-    accent: "text-amber-600",
+    badge: "bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold",
+    border: "border-rose-500/30",
+    glow: "shadow-[0_0_50px_rgba(244,63,94,0.25)]",
+    text: "text-rose-400",
+    bg: "from-rose-500/10 via-card to-card",
   },
 };
 
-const SESSION_FLAG = "adspx_login_notice_seen_v1";
+const SESSION_FLAG = "adspx_login_notice_seen_v2";
 
 export function BroadcastLoginPopup() {
   const list = useServerFn(listActiveBroadcasts);
@@ -82,7 +88,6 @@ export function BroadcastLoginPopup() {
 
   useEffect(() => setMounted(true), []);
 
-  // Trigger once per browser session when unread notices exist.
   useEffect(() => {
     if (!mounted || unread.length === 0) return;
     try {
@@ -93,7 +98,6 @@ export function BroadcastLoginPopup() {
     setOpen(true);
   }, [mounted, unread.length]);
 
-  // Lock body scroll while open.
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -118,7 +122,9 @@ export function BroadcastLoginPopup() {
     if (idx + 1 < total) setIdx(idx + 1);
     else close();
   };
+
   const goPrev = () => setIdx(Math.max(0, idx - 1));
+
   const close = async () => {
     try {
       await mark({ data: { broadcast_id: current.id } });
@@ -128,126 +134,95 @@ export function BroadcastLoginPopup() {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 md:p-8 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="notice-title"
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-[#1a0f08]/70 backdrop-blur-md" onClick={close} />
+      {/* Dark Ambient Backdrop */}
+      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl" onClick={close} />
 
-      {/* Card — fluid width, capped, never taller than viewport */}
+      {/* Luxury Modal Card */}
       <div
-        className={`relative w-full max-w-[min(96vw,42rem)] max-h-[92vh] flex flex-col rounded-2xl sm:rounded-3xl overflow-hidden bg-white ${tone.ring} animate-in zoom-in-95 slide-in-from-bottom-4 duration-300`}
+        className={`relative w-full max-w-xl rounded-3xl bg-card border ${tone.border} ${tone.glow} overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200`}
       >
-        {/* Top gradient banner */}
-        <div
-          className={`relative h-28 sm:h-36 md:h-40 shrink-0 bg-gradient-to-br ${tone.grad} overflow-hidden`}
-        >
-          <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 20% 30%, rgba(255,255,255,0.6) 0%, transparent 40%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.4) 0%, transparent 40%)",
-            }}
-          />
-          <div className="absolute -bottom-8 -right-6 w-40 h-40 rounded-full bg-white/20 blur-2xl" />
+        {/* Ambient Top Glow Orbs */}
+        <div className="absolute -top-24 -right-24 w-60 h-60 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-60 h-60 rounded-full bg-purple-500/20 blur-3xl pointer-events-none" />
+
+        {/* Modal Header */}
+        <div className={`p-6 pb-4 bg-gradient-to-b ${tone.bg} border-b border-border/60 flex items-start justify-between gap-4 relative`}>
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shadow-inner">
+              <Icon className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-full ${tone.badge}`}>
+                  Official Announcement
+                </span>
+                {total > 1 && (
+                  <span className="text-[11px] font-extrabold text-muted-foreground">
+                    {idx + 1} of {total}
+                  </span>
+                )}
+              </div>
+              <span className="text-xs text-muted-foreground mt-0.5 block">
+                {current.created_at ? new Date(current.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recent"}
+              </span>
+            </div>
+          </div>
 
           <button
             onClick={close}
-            aria-label="Close notice"
-            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/25 hover:bg-white/40 backdrop-blur flex items-center justify-center text-white transition-colors"
+            aria-label="Close"
+            className="w-8 h-8 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
-
-          {total > 1 && (
-            <div className="absolute top-4 left-4 px-2.5 py-1 rounded-full bg-white/25 backdrop-blur text-white text-[11px] font-semibold tracking-wide">
-              {idx + 1} / {total}
-            </div>
-          )}
-
-          {/* Floating icon */}
-          <div className="absolute -bottom-8 left-5 sm:left-7">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white shadow-lg flex items-center justify-center ring-4 ring-white">
-              <div
-                className={`w-full h-full rounded-2xl bg-gradient-to-br ${tone.grad} flex items-center justify-center`}
-              >
-                <Icon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Body — flexes and scrolls internally so footer stays visible */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-8 pt-12 sm:pt-14 pb-5 sm:pb-6">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span
-              className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${tone.badge}`}
-            >
-              {current.tone === "premium" ? "✦ Premium" : current.tone}
-            </span>
-            <span className="text-[11px] text-[#9A9488]">
-              {new Date(current.created_at).toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-              })}
-            </span>
-          </div>
-
-          <h2
-            id="notice-title"
-            className="text-2xl sm:text-3xl md:text-[32px] leading-tight text-[#2A2A28] mb-4 break-words"
-            style={{ fontFamily: "'Instrument Serif', 'Outfit', serif", fontWeight: 500 }}
-          >
+        {/* Modal Body */}
+        <div className="p-6 sm:p-7 space-y-4 max-h-[60vh] overflow-y-auto relative">
+          <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight leading-snug">
             {current.title}
           </h2>
 
-          <div className="text-[15px] sm:text-base leading-relaxed text-[#5A554C]">
+          <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground leading-relaxed text-sm">
             <BroadcastMarkdown>{current.body}</BroadcastMarkdown>
           </div>
         </div>
 
-        {/* Footer actions */}
-        <div className="shrink-0 flex items-center justify-between gap-3 px-5 sm:px-8 py-4 bg-[#FAF7F2] border-t border-[#EFE9DD]">
-          <div className="flex items-center gap-1.5 min-w-0">
-            {total > 1 &&
-              Array.from({ length: total }).map((_, i) => (
-                <span
-                  key={i}
-                  className={`h-1.5 rounded-full transition-all ${
-                    i === idx ? `w-6 bg-gradient-to-r ${tone.grad}` : "w-1.5 bg-[#DDD5C4]"
-                  }`}
-                />
-              ))}
+        {/* Modal Footer / Navigation */}
+        <div className="p-4 sm:p-5 bg-card/80 border-t border-border/60 flex items-center justify-between gap-3 relative">
+          <div className="flex items-center gap-1.5">
+            {total > 1 && (
+              <>
+                <button
+                  onClick={goPrev}
+                  disabled={idx === 0}
+                  className="h-9 px-3 rounded-xl border border-border bg-card text-xs font-bold disabled:opacity-30 flex items-center gap-1 hover:bg-muted"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" /> Prev
+                </button>
+                <button
+                  onClick={goNext}
+                  className="h-9 px-3.5 rounded-xl border border-border bg-card text-xs font-bold flex items-center gap-1 hover:bg-muted"
+                >
+                  Next <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {total > 1 && idx > 0 && (
-              <button
-                onClick={goPrev}
-                className="w-9 h-9 rounded-full border border-[#E8E2D5] text-[#5A554C] hover:bg-white flex items-center justify-center transition-colors"
-                aria-label="Previous"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            )}
-            <button
-              onClick={goNext}
-              className={`px-5 sm:px-6 h-10 sm:h-11 rounded-full bg-gradient-to-r ${tone.grad} text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all flex items-center gap-1.5`}
-            >
-              {idx + 1 < total ? (
-                <>
-                  Next <ChevronRight className="w-4 h-4" />
-                </>
-              ) : (
-                <>Got it ✦</>
-              )}
-            </button>
-          </div>
+          <button
+            onClick={close}
+            className="h-10 px-5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white text-xs font-black shadow-lg shadow-indigo-500/20 hover:opacity-95 flex items-center gap-1.5 transition-opacity"
+          >
+            Got it, thanks <ArrowRight className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
     </div>,
-    document.body,
+    document.body
   );
 }

@@ -352,7 +352,7 @@ function LeaderboardPage() {
         </div>
 
         <p className="text-xs text-muted-foreground text-center">
-          Ranking strictly tracks verified human visits. Earnings computed at $1 per 100,000 verified human visits.
+          Ranking strictly tracks verified human visits. Earnings computed at $1 per 50,000 verified human visits ($0.02 / 1k).
         </p>
       </div>
     </main>

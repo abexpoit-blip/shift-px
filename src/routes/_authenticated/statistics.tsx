@@ -387,7 +387,7 @@ function LinkDrilldown({ linkId, onClose }: { linkId: string; onClose: () => voi
                 Earned
               </div>
               <div className="mt-1 text-xl font-extrabold tabular-nums text-primary">
-                ${(data.totals.humans / 100000).toFixed(2)}
+                ${(data.totals.humans / 50000).toFixed(2)}
               </div>
             </div>
           </div>
@@ -470,8 +470,8 @@ function StatisticsPage() {
       daysLeft,
       monthSoFar,
       projectedVisits,
-      earnedSoFar: monthSoFar / 100000,
-      projectedEarnings: projectedVisits / 100000,
+      earnedSoFar: monthSoFar / 50000,
+      projectedEarnings: projectedVisits / 50000,
     };
   }, [stats]);
 
