@@ -70,54 +70,54 @@
 
 :root {
   --radius: 0.85rem;
-  /* Soft cream / off-white canvas */
-  --background: oklch(0.99 0.005 90);
-  --foreground: oklch(0.18 0.02 270);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 270);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 270);
-  /* Indigo primary with pink glow */
-  --primary: oklch(0.55 0.22 280);
-  --primary-foreground: oklch(0.99 0.005 90);
-  --primary-glow: oklch(0.72 0.2 340);
-  --secondary: oklch(0.96 0.01 270);
-  --secondary-foreground: oklch(0.22 0.03 270);
-  --muted: oklch(0.96 0.01 270);
-  --muted-foreground: oklch(0.44 0.02 270);
-  --accent: oklch(0.94 0.04 320);
-  --accent-foreground: oklch(0.22 0.05 320);
-  --destructive: oklch(0.62 0.24 22);
-  --destructive-foreground: oklch(0.99 0.005 90);
-  --success: oklch(0.62 0.16 158);
-  --success-foreground: oklch(0.99 0.005 90);
-  --warning: oklch(0.78 0.16 75);
-  --warning-foreground: oklch(0.22 0.03 270);
-  --border: oklch(0.9 0.01 270);
-  --input: oklch(0.92 0.01 270);
-  --ring: oklch(0.55 0.22 280);
-  --chart-1: oklch(0.55 0.22 280);
-  --chart-2: oklch(0.72 0.2 340);
-  --chart-3: oklch(0.62 0.16 158);
-  --chart-4: oklch(0.78 0.16 75);
-  --chart-5: oklch(0.62 0.24 22);
-  --sidebar: oklch(0.98 0.005 270);
-  --sidebar-foreground: oklch(0.22 0.02 270);
-  --sidebar-primary: oklch(0.55 0.22 280);
-  --sidebar-primary-foreground: oklch(0.99 0.005 90);
-  --sidebar-accent: oklch(0.94 0.02 270);
-  --sidebar-accent-foreground: oklch(0.22 0.02 270);
-  --sidebar-border: oklch(0.9 0.01 270);
-  --sidebar-ring: oklch(0.55 0.22 280);
+  /* Crisp clean white canvas with skyblue / slate accent */
+  --background: #ffffff;
+  --foreground: oklch(0.18 0.02 260);
+  --card: #ffffff;
+  --card-foreground: oklch(0.18 0.02 260);
+  --popover: #ffffff;
+  --popover-foreground: oklch(0.18 0.02 260);
+  /* Electric Sky Blue & Royal Indigo */
+  --primary: #0284c7;
+  --primary-foreground: #ffffff;
+  --primary-glow: #38bdf8;
+  --secondary: #f0f9ff;
+  --secondary-foreground: #0369a1;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  --accent: #e0f2fe;
+  --accent-foreground: #0284c7;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --success: #10b981;
+  --success-foreground: #ffffff;
+  --warning: #f59e0b;
+  --warning-foreground: #1e293b;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #0284c7;
+  --chart-1: #0284c7;
+  --chart-2: #38bdf8;
+  --chart-3: #10b981;
+  --chart-4: #6366f1;
+  --chart-5: #f59e0b;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1e293b;
+  --sidebar-primary: #0284c7;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0f9ff;
+  --sidebar-accent-foreground: #0369a1;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #0284c7;
 
-  --gradient-primary: linear-gradient(135deg, oklch(0.55 0.22 280), oklch(0.72 0.2 340));
+  --gradient-primary: linear-gradient(135deg, #0284c7, #6366f1);
   --gradient-hero:
-    radial-gradient(ellipse 70% 50% at 50% 0%, oklch(0.55 0.22 280 / 14%), transparent 65%),
-    radial-gradient(ellipse 55% 45% at 88% 18%, oklch(0.72 0.2 340 / 14%), transparent 65%),
-    radial-gradient(ellipse 55% 45% at 12% 82%, oklch(0.62 0.16 158 / 10%), transparent 65%);
-  --shadow-glow: 0 12px 50px -10px oklch(0.55 0.22 280 / 28%);
-  --shadow-elegant: 0 20px 50px -20px oklch(0.3 0.08 280 / 22%);
-  --shadow-card: 0 1px 2px oklch(0 0 0 / 5%), 0 10px 30px -12px oklch(0.3 0.08 280 / 14%);
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(56, 189, 248, 0.12), transparent 65%),
+    radial-gradient(ellipse 55% 45% at 88% 18%, rgba(99, 102, 241, 0.08), transparent 65%),
+    radial-gradient(ellipse 55% 45% at 12% 82%, rgba(14, 165, 233, 0.08), transparent 65%);
+  --shadow-glow: 0 12px 50px -10px rgba(2, 132, 199, 0.25);
+  --shadow-elegant: 0 20px 50px -20px rgba(15, 23, 42, 0.08);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 8px 24px -4px rgba(15, 23, 42, 0.06);
 }
 
 @layer base {
@@ -134,12 +134,12 @@
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     background-image:
-      radial-gradient(ellipse 60% 40% at 50% -5%, oklch(0.55 0.22 280 / 12%), transparent 70%),
-      radial-gradient(ellipse 45% 35% at 95% 15%, oklch(0.72 0.2 340 / 11%), transparent 70%),
-      radial-gradient(ellipse 45% 35% at 5% 30%, oklch(0.62 0.22 220 / 9%), transparent 70%),
-      radial-gradient(ellipse 55% 40% at 85% 55%, oklch(0.72 0.2 340 / 9%), transparent 70%),
-      radial-gradient(ellipse 50% 40% at 10% 75%, oklch(0.55 0.22 280 / 10%), transparent 70%),
-      radial-gradient(ellipse 60% 45% at 60% 95%, oklch(0.62 0.16 158 / 8%), transparent 70%);
+      radial-gradient(ellipse 60% 40% at 50% -5%, rgba(56, 189, 248, 0.10), transparent 70%),
+      radial-gradient(ellipse 45% 35% at 95% 15%, rgba(99, 102, 241, 0.06), transparent 70%),
+      radial-gradient(ellipse 45% 35% at 5% 30%, rgba(14, 165, 233, 0.06), transparent 70%),
+      radial-gradient(ellipse 55% 40% at 85% 55%, rgba(56, 189, 248, 0.05), transparent 70%),
+      radial-gradient(ellipse 50% 40% at 10% 75%, rgba(99, 102, 241, 0.06), transparent 70%),
+      radial-gradient(ellipse 60% 45% at 60% 95%, rgba(14, 165, 233, 0.05), transparent 70%);
     background-attachment: fixed;
     background-size: 100% 100%;
   }
@@ -196,7 +196,7 @@
 
 @layer utilities {
   .text-gradient {
-    background: linear-gradient(135deg, oklch(0.55 0.22 280), oklch(0.68 0.22 340));
+    background: linear-gradient(135deg, #0284c7, #6366f1);
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
