@@ -63,11 +63,11 @@ async function getProfileQuota(supabase: any, userId: string) {
   if (plan.includes("premium") || plan === "lifetime" || plan === "unlimited" || plan === "monthly" || plan === "yearly") {
     return { limit: null, used: data?.links_used ?? 0, clickQuota: null };
   }
-  // Free tier: 1 link limit and 50 trial clicks allowance
+  // Free tier: 50 links limit and UNLIMITED clicks
   return {
-    limit: data?.link_limit !== null && data?.link_limit !== undefined ? data.link_limit : 1,
+    limit: data?.link_limit !== null && data?.link_limit !== undefined ? data.link_limit : 50,
     used: data?.links_used ?? 0,
-    clickQuota: data?.click_quota !== null && data?.click_quota !== undefined ? data.click_quota : 50,
+    clickQuota: null, // Unlimited clicks for all users
   };
 }
 
