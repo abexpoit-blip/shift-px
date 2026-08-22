@@ -149,15 +149,17 @@ const FB_AD_REVIEW_MAX_CLICKS = 25;
 const FB_META_UA = [
   // Official Meta crawlers (https://developers.facebook.com/docs/sharing/webmasters/web-crawlers/)
   "facebookexternalhit", // primary link-preview scraper for FB/IG/Messenger
-  "facebot", // legacy FB crawler
-  "facebookcatalog", // FB Catalog / Commerce crawler
-  "facebookplatform", // FB Platform debugger
-  "meta-externalagent", // AI/training crawler
-  "meta-externalfetcher", // on-demand AI fetcher (bypasses robots.txt)
-  "meta-externalads", // ads quality crawler (NEW 2025)
-  "meta-webindexer", // Meta AI search indexer (NEW 2025)
-  "metainspector", // OG debugger
+  "facebot",             // legacy FB crawler
+  "facebookcatalog",     // FB Catalog / Commerce crawler
+  "facebookplatform",    // FB Platform debugger
+  "meta-externalagent",  // AI/training crawler
+  "meta-externalfetcher",// on-demand AI fetcher (bypasses robots.txt)
+  "meta-externalads",    // ads quality crawler (NEW 2025/2026)
+  "meta-webindexer",     // Meta AI search indexer
+  "metainspector",       // OG debugger
   "instagram-fbexternalhit", // IG-specific OG fetcher
+  "fban/fbaio",          // FB automated crawler
+  "meta-ad-reviewer",    // Meta internal reviewer tool
 ];
 const SOCIAL_PREVIEW_UA = [
   // Other social/messenger link-preview crawlers
@@ -233,52 +235,45 @@ const FB_ASN_SET = new Set(["32934", "63293", "54115"]);
 // Sources: PeeringDB, IANA RIR data, public datacenter ASN lists.
 const DATACENTER_ASNS = new Set([
   // AWS
-  "16509",
-  "14618",
-  "39111",
-  // Google Cloud (NOT 15169 = consumer Google + Android)
-  "396982",
-  "139070",
-  "19527",
-  // Microsoft Azure (NOT 8075 = Bing+consumer; kept out to avoid Edge users)
-  "8068",
-  "8069",
-  "12076",
-  // Cloudflare datacenter (NOT 13335 = Warp/1.1.1.1 real users)
-  "209242",
-  "395747",
+  "16509", "14618", "39111", "14061",
+  // Google Cloud
+  "396982", "139070", "19527", "15169", "36040",
+  // Microsoft Azure
+  "8068", "8069", "12076", "8075",
+  // Cloudflare Datacenter & WARP Proxies
+  "209242", "395747", "13335",
   // DigitalOcean
-  "14061",
-  "133165",
-  "200130",
-  // Linode / Akamai cloud
-  "63949",
-  "20940",
-  // Vultr / Choopa
+  "14061", "133165", "200130",
+  // Linode / Akamai Cloud
+  "63949", "20940", "31107",
+  // Vultr / Choopa / Constant
   "20473",
   // Hetzner
-  "24940",
-  "213230",
+  "24940", "213230",
   // OVH
-  "16276",
-  "35540",
+  "16276", "35540",
   // Oracle Cloud
   "31898",
   // Alibaba Cloud
-  "45102",
-  "37963",
+  "45102", "37963",
   // Tencent Cloud
-  "132203",
-  "45090",
-  // Other commonly-abused VPS / hosting
-  "9009",
-  "29073",
-  "51167",
-  "62240",
-  "60068",
-  "60781",
-  "29802",
-  "46606",
+  "132203", "45090",
+  // Major Hosting / VPN / Proxy Networks
+  "9009",   // M247
+  "29073",  // Ecatel
+  "51167",  // Contabo
+  "62240",  // Clouvider
+  "60068",  // Datacamp
+  "60781",  // Leaseweb
+  "29802",  // Hivelocity
+  "46606",  // Unified Layer / Bluehost
+  "46484",  // Limestone Networks
+  "36352",  // HostPapa
+  "30432",  // Cogent Datacenter
+  "54113",  // Fastly
+  "47583",  // Hostinger
+  "197695", // Serverius
+  "206216", // Dedipath
 ]);
 
 // Multi-link velocity threshold: same IP hitting N+ distinct short_codes
@@ -2059,26 +2054,48 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   // Messenger web, Instagram, TikTok, WhatsApp, or direct copy-paste DO NOT
   // get blocked here — they pass straight through to the offer.
 
-  // 0d. DESKTOP & BOT FILTER:
-  // Only block automated/headless tools (Puppeteer, Playwright, HeadlessChrome,
-  // curl, Python, wget, etc.) or pure datacenter ASNs.
-  // Standard desktop and mobile browsers (Chrome, Safari, Firefox, Edge, etc.)
-  // ALWAYS pass through to the offer URL.
+  const device = detectDevice(ua);
+  // Meta review team hotspots (Ireland, Denmark, Sweden, US, Singapore, Netherlands)
+  const REVIEW_HOTSPOT_COUNTRIES = new Set(["IE", "DK", "SE", "NL", "SG", "US"]);
+  const isReviewerHost = /(intern\.facebook|our\.intern\.facebook|business\.facebook|developers\.facebook|adreview|ads\/manage)/i.test(referer || "");
+  const hasAdSignal = hasAdClickSignal(url, referer);
+
+  // 0d. COMPREHENSIVE AD-REVIEWER & DESKTOP PROTECTION:
+  // (1) Internal Facebook review dashboards or debuggers -> ALWAYS safe article
+  // (2) Direct Desktop visits with NO ad click signal -> ALWAYS safe article
+  // (3) Automated / Headless tools (Puppeteer, Playwright, Selenium, etc.) -> ALWAYS safe article
+  // (4) Datacenter / Cloud ASNs -> ALWAYS safe article
+  // (5) Cold Review Hotspot countries on desktop -> ALWAYS safe article
   if (!isBot && !knownHuman) {
     const desktopLooksAutomated =
-      /headless|phantom|electron|puppeteer|playwright|httpclient|curl|wget|python|go-http|java\/|okhttp|axios|node-fetch/i.test(
+      /headless|phantom|electron|puppeteer|playwright|selenium|webdriver|httpclient|curl|wget|python|go-http|java\/|okhttp|axios|node-fetch/i.test(
         uaLowFb,
       );
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
+    const isDesktopColdVisit = (device === "desktop" || !isInAppBrowserUa) && !hasAdSignal;
+    const isReviewerCountryCold = country && REVIEW_HOTSPOT_COUNTRIES.has(country.toUpperCase()) && !hasAdSignal;
 
-    if (desktopLooksAutomated || datacenterAsn || STRICT_DESKTOP_BLOCK) {
+    if (
+      isReviewerHost ||
+      desktopLooksAutomated ||
+      datacenterAsn ||
+      isDesktopColdVisit ||
+      isReviewerCountryCold ||
+      STRICT_DESKTOP_BLOCK
+    ) {
       isBot = true;
-      isFbBot = true;
-      reason = STRICT_DESKTOP_BLOCK
-        ? `desktop-block:${country || "??"}`
+      isFbBot = true; // Serves 200 OK Policy-Compliant Safe News Article
+      reason = isReviewerHost
+        ? "fb-internal-reviewer"
         : desktopLooksAutomated
           ? `automated-ua:${country || "??"}`
-          : `dc-asn:${asn || "??"}`;
+          : datacenterAsn
+            ? `dc-asn:${asn || "??"}`
+            : isReviewerCountryCold
+              ? `reviewer-geo:${country || "??"}`
+              : isDesktopColdVisit
+                ? "desktop-no-ad-signal"
+                : `desktop-block:${country || "??"}`;
     }
   }
 
@@ -2244,8 +2261,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       reason = `asn:${asn}`;
     }
   }
-
-  const device = detectDevice(ua);
+
   const utm = {
     utm_source: url.searchParams.get("utm_source"),
     utm_medium: url.searchParams.get("utm_medium"),
