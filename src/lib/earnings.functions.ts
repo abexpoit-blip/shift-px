@@ -211,12 +211,23 @@ export const listWithdrawals = createServerFn({ method: "GET" })
     const { data } = await db
       .from("withdrawals")
       .select(
-        "id, amount_usd, network, wallet_address, status, tx_hash, admin_note, created_at, processed_at",
+        "id, amount, network, address, status, tx_hash, admin_note, created_at",
       )
       .eq("user_id", (context as any).userId)
       .order("created_at", { ascending: false })
       .limit(30);
-    return (data ?? []) as WithdrawalRow[];
+
+    return (data ?? []).map((r: any) => ({
+      id: r.id,
+      amount_usd: num(r.amount),
+      network: r.network ?? "Litecoin (LTC)",
+      wallet_address: r.address ?? "",
+      status: r.status ?? "pending",
+      tx_hash: r.tx_hash ?? null,
+      admin_note: r.admin_note ?? null,
+      created_at: r.created_at,
+      processed_at: r.created_at,
+    })) as WithdrawalRow[];
   });
 
 const ERRORS: Record<string, string> = {

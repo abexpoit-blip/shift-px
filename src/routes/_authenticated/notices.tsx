@@ -16,6 +16,11 @@ import {
   Trophy,
   CheckCheck,
   Clock,
+  ShieldCheck,
+  Coins,
+  Globe2,
+  Activity,
+  Flame,
 } from "lucide-react";
 import {
   listActiveBroadcasts,
@@ -42,6 +47,11 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   rocket: Rocket,
   star: Star,
   trophy: Trophy,
+  shield: ShieldCheck,
+  coins: Coins,
+  globe: Globe2,
+  activity: Activity,
+  flame: Flame,
 };
 
 const TONE_STYLES: Record<string, string> = {
