@@ -106,7 +106,7 @@ function SettingsPage() {
             <div className="h-full w-full rounded-[22px] overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center border border-white/40 text-white font-black text-2xl uppercase shadow-inner relative">
               <span>{initial}</span>
               <img
-                src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(email || 'adspx')}&top=shortHairShortFlat,shortHairShortCurly,shortHairShortWaved,shortHairTheCaesar,shortHairDreads01&facialHairProbability=30&clothingColor=262e33,65c9ff,5199e4,25557c&backgroundColor=b6e3f4,c0e8ff,d0e8ff'adspx')}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`}
+                src={`https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80'adspx')}&top=shortHairShortFlat,shortHairShortCurly,shortHairShortWaved,shortHairTheCaesar,shortHairDreads01&facialHairProbability=30&clothingColor=262e33,65c9ff,5199e4,25557c&backgroundColor=b6e3f4,c0e8ff,d0e8ff'adspx')}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`}
                 alt="Profile Avatar"
                 className="absolute inset-0 h-full w-full object-cover"
                 onError={(e) => {
@@ -268,7 +268,7 @@ function SettingsPage() {
 
           <Link
             to="/upgrade"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-black text-xs shadow-lg shadow-indigo-500/20 hover:opacity-95 transition-opacity self-start sm:self-auto"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-600 text-white font-black text-xs shadow-lg shadow-indigo-500/20 hover:opacity-95 transition-opacity self-start sm:self-auto"
           >
             <Zap className="h-4 w-4" /> {isPremium ? "Extend / Renew Plan" : "Upgrade to Premium"} <ArrowRight className="h-3.5 w-3.5" />
           </Link>

@@ -43,7 +43,7 @@ export function ImpersonationBanner() {
   };
 
   return (
-    <div className="fixed top-0 inset-x-0 z-[9999] w-full bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 text-white shadow-2xl border-b border-white/20 animate-in slide-in-from-top duration-300">
+    <div className="fixed top-0 inset-x-0 z-[9999] w-full bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 text-white shadow-2xl border-b border-white/20 animate-in slide-in-from-top duration-300">
       <div className="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/30">

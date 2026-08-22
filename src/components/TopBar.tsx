@@ -162,7 +162,7 @@ export function TopBar({
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border/80 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl px-3 sm:px-4 py-2 shadow-xs">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-sky-100 bg-white/95 dark:bg-slate-950/95 dark:border-slate-800 backdrop-blur-xl px-3 sm:px-4 py-2.5 shadow-[0_1px_3px_rgba(2,132,199,0.05)]">
         <SidebarTrigger />
         {title && (
           <div className="hidden sm:flex items-center text-sm">
@@ -274,19 +274,16 @@ export function TopBar({
                 className="ml-1 inline-flex items-center gap-2 rounded-full hover:bg-muted transition px-1.5 py-1"
                 aria-label="Account menu"
               >
-                <div className="relative h-9 w-9 rounded-full p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-indigo-600 shadow-md">
-    <div className="h-full w-full rounded-full overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center border border-white/40 text-white font-bold text-xs uppercase shadow-inner relative">
-      <span className="select-none font-black text-white text-xs tracking-tight">{(fullName || email || "U").charAt(0).toUpperCase()}</span>
-      <img
-        src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(email || 'adspx')}&top=shortHairShortFlat,shortHairShortCurly,shortHairShortWaved,shortHairTheCaesar,shortHairDreads01&facialHairProbability=30&clothingColor=262e33,65c9ff,5199e4,25557c&backgroundColor=b6e3f4,c0e8ff,d0e8ff'adspx')}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`}
-        alt="Avatar"
-        className="absolute inset-0 h-full w-full object-cover"
-        onError={(e) => {
-          (e.target as HTMLElement).style.display = 'none';
-        }}
-      />
+                <div className="relative h-9 w-9 rounded-full p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-indigo-600 shadow-md shadow-sky-500/20">
+      <div className="h-full w-full rounded-full overflow-hidden bg-sky-500 flex items-center justify-center border-2 border-white text-white font-bold text-xs uppercase shadow-inner relative">
+        <img
+          src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=128&q=80"
+          alt="Male Profile Avatar"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <span className="select-none font-black text-white text-xs tracking-tight">{(fullName || email || "U").charAt(0).toUpperCase()}</span>
+      </div>
     </div>
-  </div>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
