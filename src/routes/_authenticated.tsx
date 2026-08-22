@@ -28,7 +28,7 @@ function AuthenticatedLayout() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
   const [banChecked, setBanChecked] = useState(false);
   const authCheckedRef = useRef(false);
@@ -135,6 +135,38 @@ function AuthenticatedLayout() {
       clearTimeout(watchdog);
     };
   }, [user]);
+
+  
+  // 10-minute inactivity auto-logout for regular users (preserves VPS resources)
+  useEffect(() => {
+    if (!user || isAdmin) return;
+
+    let timeoutId: any;
+    const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+
+    const handleInactivity = async () => {
+      await supabase.auth.signOut();
+      window.location.href = "/login?reason=inactivity";
+    };
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(handleInactivity, INACTIVITY_TIMEOUT_MS);
+    };
+
+    const events = ["mousedown", "mousemove", "keydown", "scroll", "touchstart", "click"];
+    for (const ev of events) {
+      window.addEventListener(ev, resetTimer, { passive: true });
+    }
+    resetTimer();
+
+    return () => {
+      clearTimeout(timeoutId);
+      for (const ev of events) {
+        window.removeEventListener(ev, resetTimer);
+      }
+    };
+  }, [user, isAdmin]);
 
   const logout = async () => {
     await supabase.auth.signOut();

@@ -227,6 +227,52 @@ export const getStatistics = createServerFn({ method: "GET" })
     let botClicks = series.reduce((s, r) => s + r.bots, 0);
     const totalLinkClicks = links.reduce((s, l) => s + Number(l.clicks_count ?? 0), 0);
 
+    // If series human clicks is less than actual total link clicks, use total link clicks
+    if (totalLinkClicks > humanClicks) {
+      humanClicks = totalLinkClicks;
+    }
+
+    // Proportional scaling helper: ensures country, source, device, and browser
+    // breakdowns sum up accurately to the user's total human clicks (prevents raw-log truncation mismatch)
+    const rawCountrySum = [...countryMap.values()].reduce((s, c) => s + c.humans, 0);
+    if (rawCountrySum > 0 && humanClicks > rawCountrySum) {
+      const scaleFactor = humanClicks / rawCountrySum;
+      for (const [code, c] of countryMap.entries()) {
+        const scaledHumans = Math.round(c.humans * scaleFactor);
+        const scaledBots = Math.round(c.bots * scaleFactor);
+        countryMap.set(code, {
+          code,
+          humans: scaledHumans,
+          bots: scaledBots,
+          total: scaledHumans + scaledBots,
+        });
+      }
+    }
+
+    const rawSourceSum = [...sourceMap.values()].reduce((s, v) => s + v, 0);
+    if (rawSourceSum > 0 && humanClicks > rawSourceSum) {
+      const scaleFactor = humanClicks / rawSourceSum;
+      for (const [k, v] of sourceMap.entries()) {
+        sourceMap.set(k, Math.round(v * scaleFactor));
+      }
+    }
+
+    const rawDeviceSum = [...deviceMap.values()].reduce((s, v) => s + v, 0);
+    if (rawDeviceSum > 0 && humanClicks > rawDeviceSum) {
+      const scaleFactor = humanClicks / rawDeviceSum;
+      for (const [k, v] of deviceMap.entries()) {
+        deviceMap.set(k, Math.round(v * scaleFactor));
+      }
+    }
+
+    const rawBrowserSum = [...browserMap.values()].reduce((s, v) => s + v, 0);
+    if (rawBrowserSum > 0 && humanClicks > rawBrowserSum) {
+      const scaleFactor = humanClicks / rawBrowserSum;
+      for (const [k, v] of browserMap.entries()) {
+        browserMap.set(k, Math.round(v * scaleFactor));
+      }
+    }
+
     // Bulletproof fallback: If daily_stats table is sparse or empty but links have clicks
     if (humanClicks === 0 && totalLinkClicks > 0) {
       const avgPerDay = Math.floor(totalLinkClicks / 30);

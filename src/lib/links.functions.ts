@@ -55,15 +55,20 @@ async function selectLinks(
 async function getProfileQuota(supabase: any, userId: string) {
   const { data, error } = await supabase
     .from("profiles")
-    .select("plan_slug, link_limit, links_used")
+    .select("plan_slug, link_limit, links_used, clicks_used, click_quota")
     .eq("id", userId)
     .single();
   if (error) return null;
-  const plan = String(data?.plan_slug ?? "").toLowerCase();
-  if (plan === "lifetime" || plan === "unlimited") {
-    return { limit: null, used: data?.links_used ?? 0 };
+  const plan = String(data?.plan_slug ?? "free").toLowerCase();
+  if (plan.includes("premium") || plan === "lifetime" || plan === "unlimited" || plan === "monthly" || plan === "yearly") {
+    return { limit: null, used: data?.links_used ?? 0, clickQuota: null };
   }
-  return { limit: data?.link_limit ?? null, used: data?.links_used ?? 0 };
+  // Free tier: 1 link limit and 50 trial clicks allowance
+  return {
+    limit: data?.link_limit !== null && data?.link_limit !== undefined ? data.link_limit : 1,
+    used: data?.links_used ?? 0,
+    clickQuota: data?.click_quota !== null && data?.click_quota !== undefined ? data.click_quota : 50,
+  };
 }
 
 /**
