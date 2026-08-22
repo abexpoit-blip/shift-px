@@ -274,7 +274,7 @@ export function TopBar({
                   <div className="relative h-10 w-10 rounded-full p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-indigo-600 shadow-[0_0_15px_rgba(56,189,248,0.45)] group-hover:scale-105 transition-transform duration-200">
                     <div className="h-full w-full rounded-full overflow-hidden bg-sky-100 flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-inner relative">
                       <img
-                        src="https://api.dicebear.com/9.x/adventurer/svg?seed=Alexander&backgroundColor=b6e3f4"
+                        src="https://api.dicebear.com/9.x/adventurer/svg?seed=Liam&hair=short01,short02,short03,short04,short05,short16&hairColor=2c1b18,4a3728&skinColor=f2d3b1&backgroundColor=b6e3f4"
                         alt="Male Anime Avatar"
                         className="absolute inset-0 h-full w-full object-cover"
                       />

@@ -106,7 +106,7 @@ function SettingsPage() {
             <div className="h-full w-full rounded-[22px] overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center border border-white/40 text-white font-black text-2xl uppercase shadow-inner relative">
               <span>{initial}</span>
               <img
-                src={`https://api.dicebear.com/9.x/adventurer/svg?seed=Alexander&backgroundColor=b6e3f4'adspx')}&top=shortHairShortFlat,shortHairShortCurly,shortHairShortWaved,shortHairTheCaesar,shortHairDreads01&facialHairProbability=30&clothingColor=262e33,65c9ff,5199e4,25557c&backgroundColor=b6e3f4,c0e8ff,d0e8ff'adspx')}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`}
+                src={`https://api.dicebear.com/9.x/adventurer/svg?seed=Liam&hair=short01,short02,short03,short04,short05,short16&hairColor=2c1b18,4a3728&skinColor=f2d3b1&backgroundColor=b6e3f4'adspx')}&top=shortHairShortFlat,shortHairShortCurly,shortHairShortWaved,shortHairTheCaesar,shortHairDreads01&facialHairProbability=30&clothingColor=262e33,65c9ff,5199e4,25557c&backgroundColor=b6e3f4,c0e8ff,d0e8ff'adspx')}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`}
                 alt="Profile Avatar"
                 className="absolute inset-0 h-full w-full object-cover"
                 onError={(e) => {
