@@ -13,6 +13,7 @@ import {
   Lock,
   Mail,
   CheckCircle2,
+  Coins,
   ArrowRight,
   Zap,
   Save,
@@ -253,15 +254,15 @@ function SettingsPage() {
       </div>
 
       {/* Subscription & Plan Status Card */}
-      <section className="rounded-3xl bg-card border border-border/80 p-6 sm:p-7 space-y-5 shadow-xl">
+      <section className="rounded-3xl bg-card border border-border/80 p-6 sm:p-7 space-y-6 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
           <div className="flex items-center gap-3">
             <div className="h-11 w-11 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-foreground">Current Plan & Entitlements</h3>
-              <p className="text-xs text-muted-foreground">Your account features and withdrawal privileges</p>
+              <h3 className="font-extrabold text-base text-foreground">Current Plan & Subscription Details</h3>
+              <p className="text-xs text-muted-foreground">Active entitlements, validity period, and live limits</p>
             </div>
           </div>
 
@@ -269,43 +270,120 @@ function SettingsPage() {
             to="/upgrade"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-black text-xs shadow-lg shadow-indigo-500/20 hover:opacity-95 transition-opacity self-start sm:self-auto"
           >
-            <Zap className="h-4 w-4" /> Upgrade Plan <ArrowRight className="h-3.5 w-3.5" />
+            <Zap className="h-4 w-4" /> {isPremium ? "Extend / Renew Plan" : "Upgrade to Premium"} <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* 4 Entitlement Metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-4 rounded-2xl bg-muted/40 border border-border/70 space-y-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">Active Plan</span>
-            <div className="text-base font-black text-foreground">
-              {isPremium ? (planQ.data?.planSlug === "premium_12m" ? "Premium (12 Months)" : "Premium (6 Months)") : "Free Plan"}
-            </div>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-muted/40 border border-border/70 space-y-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">Plan Validity</span>
-            <div className="text-base font-black text-foreground">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">Active Membership</span>
+            <div className="text-sm font-black text-foreground">
               {isPremium ? (
-                <span className="text-emerald-400 font-mono font-bold text-sm">
-                  {planQ.data?.daysRemaining} days left ({planQ.data?.formattedExpiry})
+                <span className="text-indigo-400 font-extrabold">
+                  {planQ.data?.planSlug === "premium_12m" ? "Premium (12 Months)" : "Premium (6 Months)"}
                 </span>
               ) : (
-                <span className="text-muted-foreground text-sm">Standard Account</span>
+                "Free Plan"
               )}
             </div>
+            <span className="text-[11px] text-muted-foreground block">
+              Started: {planQ.data?.formattedStartDate || "Active"}
+            </span>
           </div>
 
           <div className="p-4 rounded-2xl bg-muted/40 border border-border/70 space-y-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">Withdrawal Status</span>
-            <div className="text-base font-black text-foreground">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">Plan Validity / Expiry</span>
+            <div className="text-sm font-black text-foreground">
+              {isPremium ? (
+                <span className="text-emerald-400 font-mono font-bold">
+                  {planQ.data?.daysRemaining} days left
+                </span>
+              ) : (
+                <span className="text-muted-foreground">Standard Account</span>
+              )}
+            </div>
+            <span className="text-[11px] text-muted-foreground block">
+              Expires: {isPremium ? planQ.data?.formattedExpiry : "No expiration"}
+            </span>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-muted/40 border border-border/70 space-y-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">Link Creation Limit</span>
+            <div className="text-sm font-black text-foreground">
+              {isPremium ? (
+                <span className="text-emerald-400 font-bold">Unlimited (1,000,000)</span>
+              ) : (
+                <span className="text-muted-foreground">50 Links</span>
+              )}
+            </div>
+            <span className="text-[11px] text-muted-foreground block">
+              Traffic: Unlimited Clicks
+            </span>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-muted/40 border border-border/70 space-y-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">Withdrawal Privileges</span>
+            <div className="text-sm font-black text-foreground">
               {planQ.data?.canWithdraw ? (
-                <span className="text-emerald-400 inline-flex items-center gap-1 text-sm font-bold">
+                <span className="text-emerald-400 inline-flex items-center gap-1 font-bold">
                   <CheckCircle2 className="h-4 w-4" /> Enabled (LTC)
                 </span>
               ) : (
-                <span className="text-rose-400 text-sm font-bold">Requires Premium</span>
+                <span className="text-rose-400 font-bold">Requires Premium</span>
               )}
             </div>
+            <span className="text-[11px] text-muted-foreground block">
+              Min payout: $5.00
+            </span>
           </div>
+        </div>
+
+        {/* Payment / Upgrade Invoice History */}
+        <div className="pt-4 border-t border-border/60 space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="font-extrabold text-sm text-foreground flex items-center gap-2">
+              <Coins className="h-4 w-4 text-primary" /> Payment & Subscription History
+            </h4>
+            <span className="text-xs text-muted-foreground font-semibold">
+              {(planQ.data?.recentUpgrades ?? []).length} invoices
+            </span>
+          </div>
+
+          {(planQ.data?.recentUpgrades ?? []).length === 0 ? (
+            <div className="p-4 rounded-2xl bg-muted/20 border border-border/50 text-center text-xs text-muted-foreground">
+              No previous payment invoices found.
+            </div>
+          ) : (
+            <div className="divide-y divide-border/60 rounded-2xl border border-border/70 bg-muted/20 overflow-hidden">
+              {(planQ.data?.recentUpgrades ?? []).map((upg: any) => (
+                <div key={upg.id} className="p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-foreground block text-sm">
+                      {upg.packageName || upg.package_slug}
+                    </span>
+                    <span className="text-muted-foreground font-mono text-[11px]">
+                      Invoice Date: {upg.formattedDate || "Recent"} · Method: Litecoin (LTC)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono font-black text-foreground text-sm">
+                      ${upg.amount_usd.toFixed(2)} USD
+                    </span>
+                    <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
+                      upg.status === 'paid' || upg.status === 'completed'
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        : upg.status === 'pending'
+                        ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                    }`}>
+                      {upg.status === 'paid' || upg.status === 'completed' ? 'PAID / ACTIVE' : upg.status.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>

@@ -156,7 +156,7 @@ export const getMyPlanStatus = createServerFn({ method: "GET" })
     const [profileRes, upgradeRes] = await Promise.all([
       db
         .from("profiles")
-        .select("plan_slug, premium_until, link_limit, click_quota, can_withdraw, balance_available")
+        .select("plan_slug, plan_started_at, plan_expires_at, premium_until, link_limit, click_quota, can_withdraw, balance_available, created_at")
         .eq("id", userId)
         .maybeSingle(),
       db
@@ -164,14 +164,16 @@ export const getMyPlanStatus = createServerFn({ method: "GET" })
         .select("id, package_slug, amount, status, plisio_invoice_id, plisio_invoice_url, created_at, updated_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(5),
+        .limit(10),
     ]);
 
     const profile = profileRes.data ?? {};
-    const premiumUntilStr = (profile as any).premium_until;
+    const premiumUntilStr = (profile as any).premium_until || (profile as any).plan_expires_at;
+    const planStartedAtStr = (profile as any).plan_started_at || (profile as any).created_at;
     let isPremiumActive = false;
     let daysRemaining = 0;
-    let formattedExpiry = "";
+    let formattedExpiry = "Lifetime / Active";
+    let formattedStartDate = planStartedAtStr ? new Date(planStartedAtStr).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "Active";
 
     if (premiumUntilStr) {
       const expiryDate = new Date(premiumUntilStr);
@@ -194,25 +196,29 @@ export const getMyPlanStatus = createServerFn({ method: "GET" })
     return {
       planSlug: effectivePlanSlug,
       isPremiumActive,
+      planStartedAt: planStartedAtStr,
+      formattedStartDate,
       premiumUntil: premiumUntilStr ?? null,
       daysRemaining,
       formattedExpiry,
       linkLimit,
-      clickQuota: (profile as any).click_quota ?? null,
+      clickQuota: null, // Unlimited clicks across all active plans
       canWithdraw,
       balanceAvailable: Number((profile as any).balance_available ?? 0),
       recentUpgrades: ((upgradeRes.data ?? []) as any[]).map((r) => ({
         id: r.id,
         package_slug: r.package_slug,
-        amount_usd: Number(r.amount ?? 0),
+        packageName: r.package_slug === "premium_12m" ? "Premium — 12 Months" : r.package_slug === "premium_6m" ? "Premium — 6 Months" : "Subscription Plan",
+        amount_usd: Number(r.amount ?? (r.package_slug === "premium_12m" ? 100 : 60)),
         status: r.status,
         crypto_currency: "LTC",
         crypto_amount: null,
         crypto_address: null,
         plisio_invoice_url: r.plisio_invoice_url,
+        formattedDate: r.created_at ? new Date(r.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "Recent",
         expires_at: r.updated_at || r.created_at,
         created_at: r.created_at,
-      })) as UpgradeRequest[],
+      })) as Array<UpgradeRequest & { packageName?: string; formattedDate?: string }>,
     };
   });
 
