@@ -326,8 +326,26 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
         if (json.data.wallet_hash) {
           ltcAddress = json.data.wallet_hash;
         }
-        if (json.data.amount) {
-          ltcAmount = String(json.data.amount);
+        if (json.data.invoice_total_sum || json.data.amount) {
+          ltcAmount = String(json.data.invoice_total_sum || json.data.amount);
+        }
+
+        // Fetch dynamic blockchain wallet_hash from Plisio invoice details
+        if (!json.data.wallet_hash && plisioInvoiceId) {
+          try {
+            const detailRes = await fetchFn(`https://plisio.net/api/v1/invoices/${plisioInvoiceId}?api_key=${apiKey}`, {
+              signal: AbortSignal.timeout(10000),
+            });
+            const detailJson = await detailRes.json() as any;
+            if (detailJson?.status === "success" && detailJson?.data?.wallet_hash) {
+              ltcAddress = detailJson.data.wallet_hash;
+              if (detailJson.data.invoice_total_sum || detailJson.data.amount) {
+                ltcAmount = String(detailJson.data.invoice_total_sum || detailJson.data.amount);
+              }
+            }
+          } catch (err) {
+            console.error("[Plisio] Error fetching invoice detail wallet:", err);
+          }
         }
 
         // Update DB with Plisio details
