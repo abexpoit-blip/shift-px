@@ -247,7 +247,7 @@ function Hero() {
                 <Check className="h-3.5 w-3.5 text-primary" /> No referral required
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-primary" /> Min $10 withdrawal
+                <Check className="h-3.5 w-3.5 text-primary" /> Min $5 withdrawal
               </span>
             </div>
           </div>
