@@ -672,7 +672,7 @@ function PaymentsTab() {
       const q = search.toLowerCase().trim();
       const matchSearch =
         !q ||
-        (p.user_email && p.user_email.toLowerCase().includes(q)) ||
+        ((p.user_email || p.email) && (p.user_email || p.email).toLowerCase().includes(q)) ||
         (p.package_slug && p.package_slug.toLowerCase().includes(q)) ||
         (p.plisio_invoice_id && String(p.plisio_invoice_id).toLowerCase().includes(q)) ||
         (p.id && p.id.toLowerCase().includes(q));
@@ -841,7 +841,7 @@ function PaymentsTab() {
                   return (
                     <tr key={r.id} className="border-b border-border/50 hover:bg-card/60 transition-colors">
                       <Td>
-                        <div className="font-semibold text-foreground">{r.user_email}</div>
+                        <div className="font-semibold text-foreground">{r.user_email || r.email || "User"}</div>
                         <div className="text-[10px] font-mono text-muted-foreground">{r.user_id}</div>
                       </Td>
                       <Td>
@@ -878,7 +878,7 @@ function PaymentsTab() {
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-mono"
                           >
-                            <span>Plisio #{String(r.plisio_invoice_id || "").slice(-8) || "Invoice"}</span>
+                            <span>Invoice #{String(r.plisio_invoice_id || "").slice(-8) || "LTC"}</span>
                             <Eye className="w-3 h-3" />
                           </a>
                         ) : r.plisio_invoice_id ? (

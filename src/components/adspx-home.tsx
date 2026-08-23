@@ -220,7 +220,7 @@ function Hero() {
               AdsPx is the short-link platform built for creators. Share on
               <strong className="text-foreground"> Facebook</strong>, Telegram or YouTube and earn
               <strong className="text-foreground"> $1 per 50,000 visits</strong>. Withdraw in
-              <strong className="text-foreground"> USDT</strong> from just $10.
+              <strong className="text-foreground"> Litecoin (LTC)</strong> from just $5.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -514,10 +514,10 @@ function HowItWorks() {
               <div className="w-12 h-12 rounded-xl bg-primary-glow text-white grid place-items-center font-black text-lg italic mb-6 shadow-lg shadow-primary-glow/30">
                 03
               </div>
-              <h3 className="font-display text-2xl md:text-3xl font-bold mb-3">Collect USDT</h3>
+              <h3 className="font-display text-2xl md:text-3xl font-bold mb-3">Collect LTC</h3>
               <p className="text-background/70 leading-relaxed text-sm md:text-base">
-                Hit the <span className="text-background font-bold">$25 threshold</span> and cash
-                out directly to your wallet in USDT (TRC20 / BEP20). Processed within 24 hours.
+                Hit the <span className="text-background font-bold">$5 threshold</span> and cash
+                out directly to your wallet in Litecoin (LTC). Processed within 24 hours.
               </p>
             </div>
             <div className="shrink-0 w-28 h-28 rounded-2xl bg-background/5 border border-background/10 grid place-items-center">
@@ -636,7 +636,7 @@ function EarningsCalculator() {
 
         <p className="text-xs text-center text-muted-foreground mt-6 leading-relaxed">
           Flat rate: <strong className="text-foreground">$1 per 50,000 real visits</strong> ·
-          Minimum withdrawal: <strong className="text-foreground">$10 USDT (TRC20 / BEP20)</strong>{" "}
+          Minimum withdrawal: <strong className="text-foreground">$5 Litecoin (LTC)</strong>{" "}
           · Bot traffic auto-filtered.
         </p>
       </div>
@@ -697,7 +697,7 @@ function FeatureGrid() {
     {
       icon: Bitcoin,
       title: "Crypto withdrawals",
-      desc: "Cash out in USDT (TRC20 or BEP20). Low network fees, fast settlement, no bank required.",
+      desc: "Cash out in Litecoin (LTC). Near-zero network fees, fast settlement, no bank required.",
     },
     {
       icon: ShieldCheck,
@@ -916,11 +916,11 @@ function FaqStrip() {
     },
     {
       q: "What's the minimum withdrawal?",
-      a: "$25. Once your balance hits $25, you can request a withdrawal to your USDT crypto wallet (TRC20 or BEP20).",
+      a: "$5. Once your balance hits $5, you can request a withdrawal directly to your Litecoin (LTC) wallet.",
     },
     {
       q: "How long does payment take?",
-      a: "Most withdrawals are processed within 24 hours. You'll receive the USDT directly to your wallet address.",
+      a: "Most withdrawals are processed within 24 hours. You'll receive the LTC directly to your wallet address.",
     },
     {
       q: "Are bots and fake clicks counted?",
@@ -984,7 +984,7 @@ function FinalCta() {
             Start turning clicks into <span className="text-gradient">crypto today</span>
           </h2>
           <p className="text-muted-foreground">
-            Free signup. No minimum traffic. Withdraw from $25 in USDT.
+            Free signup. No minimum traffic. Withdraw from $5 in Litecoin (LTC).
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <Button size="lg" className="bg-primary-gradient shadow-glow h-12 px-7" asChild>

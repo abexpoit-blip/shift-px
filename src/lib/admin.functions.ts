@@ -645,15 +645,61 @@ export const adminListUpgradeRequests = createServerFn({ method: "GET" })
       .limit(500);
     if (error) throw new Error(error.message);
     const ids = Array.from(new Set((data ?? []).map((r: any) => r.user_id)));
-    let emailMap: Record<string, string> = {};
+    let profMap: Record<string, { email: string; plan_slug: string; premium_until: string | null }> = {};
     if (ids.length > 0) {
       const { data: profs } = await supabaseAdmin
         .from("profiles")
-        .select("id, email")
+        .select("id, email, plan_slug, premium_until")
         .in("id", ids);
-      emailMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.email ?? ""]));
+      profMap = Object.fromEntries(
+        (profs ?? []).map((p: any) => [
+          p.id,
+          {
+            email: p.email ?? "",
+            plan_slug: p.plan_slug ?? "free",
+            premium_until: p.premium_until ?? null,
+          },
+        ]),
+      );
     }
-    return (data ?? []).map((r: any) => ({ ...r, email: emailMap[r.user_id] ?? "" }));
+
+    const now = new Date();
+    const rows = (data ?? []).map((r: any) => {
+      const prof = profMap[r.user_id];
+      const isUserActivePremium =
+        prof &&
+        prof.plan_slug !== "free" &&
+        prof.premium_until &&
+        new Date(prof.premium_until) > now;
+
+      const isPaid =
+        r.status === "paid" ||
+        r.status === "completed" ||
+        (Boolean(isUserActivePremium) && prof?.plan_slug === r.package_slug);
+
+      const effectiveStatus = isPaid ? "paid" : r.status;
+
+      return {
+        ...r,
+        status: effectiveStatus,
+        email: prof?.email ?? "",
+        user_email: prof?.email ?? "",
+      };
+    });
+
+    // Auto-sync in DB any pending requests for users who are already active premium
+    const paidIdsToSync = rows
+      .filter((r: any) => r.status === "paid" && (data ?? []).find((d: any) => d.id === r.id)?.status === "pending")
+      .map((r: any) => r.id);
+
+    if (paidIdsToSync.length > 0) {
+      await supabaseAdmin
+        .from("upgrade_requests")
+        .update({ status: "paid", updated_at: new Date().toISOString() } as any)
+        .in("id", paidIdsToSync);
+    }
+
+    return rows;
   });
 
 export const adminDecideUpgradeRequest = createServerFn({ method: "POST" })
