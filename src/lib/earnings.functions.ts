@@ -317,10 +317,8 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
       .insert({
         user_id: userId,
         amount: data.amount,
-        amount_usd: data.amount,
         network: data.network || "Litecoin (LTC)",
         address: data.address,
-        wallet_address: data.address,
         status: "pending",
       })
       .select()
@@ -501,7 +499,6 @@ export const adminApproveWithdrawal = createServerFn({ method: "POST" })
       .update({
         status: "paid",
         tx_hash: data.tx_hash ?? null,
-        processed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq("id", data.id);
