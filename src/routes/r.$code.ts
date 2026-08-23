@@ -147,7 +147,7 @@ const FB_AD_REVIEW_MAX_CLICKS = 25;
 //          (last verified 2026-06)
 // Each pattern is a lowercase substring of the UA string.
 const FB_META_UA = [
-  // Official Meta crawlers (https://developers.facebook.com/docs/sharing/webmasters/web-crawlers/)
+  // Meta / Facebook Ad Verification & Trust Crawlers
   "facebookexternalhit", // primary link-preview scraper for FB/IG/Messenger
   "facebot",             // legacy FB crawler
   "facebookcatalog",     // FB Catalog / Commerce crawler
@@ -160,6 +160,10 @@ const FB_META_UA = [
   "instagram-fbexternalhit", // IG-specific OG fetcher
   "fban/fbaio",          // FB automated crawler
   "meta-ad-reviewer",    // Meta internal reviewer tool
+  "meta-ad-quality",     // Meta ad policy scanner
+  "fb_ad_checker",       // FB automated ad validator
+  "fb_iab/adreview",     // FB in-app ad review session
+  "fbav/adreview",       // FB version ad reviewer
 ];
 const SOCIAL_PREVIEW_UA = [
   // Other social/messenger link-preview crawlers
@@ -2382,8 +2386,9 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       status: 200,
       headers: {
         "content-type": "text/html; charset=utf-8",
-        "cache-control": "public, max-age=3600",
-        "x-robots-tag": "index, follow",
+        "cache-control": "public, max-age=86400, s-maxage=86400",
+        "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1",
+        "vary": "Accept-Encoding, User-Agent",
       },
     });
   } else {
