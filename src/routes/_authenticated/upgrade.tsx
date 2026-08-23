@@ -251,7 +251,7 @@ function InvoicePanel({
   const [copied, setCopied] = useState<"amount" | "address" | null>(null);
   const checkStatusFn = useServerFn(checkUpgradeRequestStatus);
 
-  // Live polling: automatically checks if Plisio marked the invoice as paid
+  // Live real-time polling: automatically checks when deposit arrives and upgrades instantly
   useEffect(() => {
     let active = true;
     const interval = setInterval(async () => {
@@ -260,7 +260,7 @@ function InvoicePanel({
         if (res?.status === "paid" || res?.status === "completed" || res?.isPaid) {
           if (!active) return;
           clearInterval(interval);
-          toast.success("🎉 Payment confirmed! Your account has been upgraded to Premium!");
+          toast.success("🎉 Payment verified! Your account is now upgraded to Premium!");
           qc.invalidateQueries({ queryKey: ["my-plan-status"] });
           qc.invalidateQueries({ queryKey: ["dashboard"] });
           onClose();
@@ -269,7 +269,7 @@ function InvoicePanel({
       } catch {
         // silent polling catch
       }
-    }, 4000);
+    }, 3000);
 
     return () => {
       active = false;
@@ -285,104 +285,107 @@ function InvoicePanel({
     });
   };
 
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=litecoin:${result.cryptoAddress}?amount=${result.cryptoAmount}&margin=6`;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-lg rounded-3xl bg-card border border-border/80 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-        {/* Invoice Header */}
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 px-6 py-5 text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-lg rounded-3xl bg-card border-2 border-primary/30 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+        {/* In-House AdsPx Invoice Header */}
+        <div className="bg-gradient-to-r from-indigo-600 via-primary to-purple-700 px-6 py-5 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner font-black text-xl">
                 Ł
               </div>
               <div>
-                <h3 className="font-black text-xl leading-none mb-1">Litecoin (LTC) Invoice</h3>
-                <p className="text-xs text-white/85 font-medium">
+                <h3 className="font-black text-xl leading-none mb-1">AdsPx Instant Invoice</h3>
+                <p className="text-xs text-white/90 font-medium">
                   {result.packageName} · <strong className="text-white">${result.amountUsd} USD</strong>
                 </p>
               </div>
             </div>
             <span className="rounded-full bg-emerald-400/20 border border-emerald-400/40 px-3 py-1 text-[11px] font-bold text-emerald-300 animate-pulse flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              Awaiting Payment
+              Awaiting Deposit
             </span>
           </div>
         </div>
 
         <div className="p-6 space-y-5">
-          {/* PRIMARY: DIRECT PLISIO GATEWAY BUTTON */}
-          {result.plisioInvoiceUrl && (
-            <div className="rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-500/10 via-card to-teal-500/10 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5" /> Instant Plisio Checkout
-                </span>
-                <span className="text-[10px] text-muted-foreground font-semibold">Auto-activates on payment</span>
-              </div>
-              <a
-                href={result.plisioInvoiceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <span>Pay via Plisio Invoice</span>
-                <ExternalLink className="h-4 w-4" />
-              </a>
+          {/* QR Code & Amount Display */}
+          <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-muted/40 border border-border/80">
+            <div className="bg-white p-2 rounded-2xl shadow-md border border-border shrink-0">
+              <img
+                src={qrUrl}
+                alt="Litecoin Deposit QR"
+                className="w-28 h-28 sm:w-32 sm:h-32 rounded-xl object-contain"
+              />
             </div>
-          )}
 
-          {/* LTC Details Card */}
-          <div className="rounded-2xl bg-muted/40 border border-border/80 p-5 space-y-4">
-            {/* Amount Section */}
-            <div className="flex items-center justify-between pb-3 border-b border-border/60">
+            <div className="space-y-3 flex-1 text-center sm:text-left min-w-0">
               <div>
-                <span className="text-xs font-semibold text-muted-foreground block">Exact LTC to Send</span>
-                <span className="text-[11px] text-muted-foreground">
-                  (Rate: ${result.ltcPriceUsd?.toFixed(2) || "90.00"} / LTC)
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
+                  Exact Amount to Send
+                </span>
+                <div className="flex items-center justify-center sm:justify-start gap-2 mt-0.5">
+                  <span className="font-mono font-black text-2xl text-emerald-500">
+                    {result.cryptoAmount} LTC
+                  </span>
+                  <button
+                    onClick={() => copy(result.cryptoAmount!, "amount")}
+                    className="h-7 px-2 rounded-lg bg-card border border-border flex items-center gap-1 text-[11px] font-bold hover:bg-muted transition-colors"
+                  >
+                    {copied === "amount" ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+                    {copied === "amount" ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <span className="text-[10px] text-muted-foreground block mt-0.5">
+                  Live Rate: ${result.ltcPriceUsd?.toFixed(2) || "90.00"} / LTC · Zero extra fee
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-black text-xl text-emerald-500">
-                  {result.cryptoAmount} LTC
-                </span>
-                <button
-                  onClick={() => copy(result.cryptoAmount!, "amount")}
-                  className="h-8 px-2.5 rounded-lg bg-card border border-border flex items-center gap-1 text-xs font-semibold hover:bg-muted transition-colors"
-                >
-                  {copied === "amount" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-                  {copied === "amount" ? "Copied" : "Copy"}
-                </button>
-              </div>
-            </div>
 
-            {/* Address Section */}
-            <div>
-              <div className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center justify-between">
-                <span>Official Litecoin Address</span>
-                <span className="text-[10px] text-blue-400 font-bold">LTC Network Only</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <code className="text-xs font-mono font-bold bg-background rounded-xl p-3 flex-1 break-all border border-border/80 text-foreground">
-                  {result.cryptoAddress}
-                </code>
-                <button
-                  onClick={() => copy(result.cryptoAddress!, "address")}
-                  className="h-11 px-3.5 rounded-xl bg-primary text-primary-foreground font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity flex-shrink-0"
-                >
-                  {copied === "address" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  {copied === "address" ? "Copied" : "Copy"}
-                </button>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                <Sparkles className="w-3 h-3 text-primary" />
+                Auto-Verifying Blockchain
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-emerald-500 font-semibold bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-            <ShieldCheck className="h-4 w-4 flex-shrink-0" />
-            <span>Automatic Instant Upgrade: Once you send payment, our Plisio engine automatically upgrades your plan without any manual submission needed.</span>
+          {/* Official LTC Deposit Address */}
+          <div className="rounded-2xl bg-muted/40 border border-border/80 p-4 space-y-2">
+            <div className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
+              <span>Official Deposit Address</span>
+              <span className="text-[10px] text-blue-400 font-bold">LTC Network Only</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <code className="text-xs font-mono font-bold bg-background rounded-xl p-3 flex-1 break-all border border-border/80 text-foreground">
+                {result.cryptoAddress}
+              </code>
+              <button
+                onClick={() => copy(result.cryptoAddress!, "address")}
+                className="h-11 px-3.5 rounded-xl bg-primary text-primary-foreground font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity flex-shrink-0"
+              >
+                {copied === "address" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied === "address" ? "Copied" : "Copy"}
+              </button>
+            </div>
+          </div>
+
+          {/* Real-time Status Card */}
+          <div className="flex items-center gap-3 text-xs text-emerald-500 font-semibold bg-emerald-500/10 border border-emerald-500/25 rounded-2xl p-3.5">
+            <div className="h-8 w-8 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+              <Loader2 className="h-4 w-4 text-emerald-500 animate-spin" />
+            </div>
+            <div className="space-y-0.5">
+              <div className="font-extrabold text-foreground text-xs">Listening for transaction...</div>
+              <div className="text-[11px] text-emerald-400/90 font-medium">
+                Send from Binance, TrustWallet, or any exchange. Account activates automatically in ~2 minutes!
+              </div>
+            </div>
           </div>
 
           <Button onClick={onClose} variant="outline" className="w-full h-11 rounded-2xl font-bold">
-            Done / Close Window
+            Close Window
           </Button>
         </div>
       </div>
@@ -415,9 +418,6 @@ function UpgradePage() {
       upgradeFn({ data: { package_slug: selectedSlug, crypto_currency: "LTC" } }),
     onSuccess: (res) => {
       setInvoiceResult(res);
-      if (res?.plisioInvoiceUrl) {
-        window.open(res.plisioInvoiceUrl, "_blank");
-      }
     },
     onError: (e: Error) => {
       toast.error(e.message || "Failed to generate LTC invoice");
