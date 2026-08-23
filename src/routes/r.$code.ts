@@ -1142,11 +1142,11 @@ type ClickBatchState = {
 // upstream timeouts, so keep per-worker flushing serial and use idempotent retries.
 // Batch size is ADAPTIVE: it shrinks on timeouts and slowly grows back when the
 // DB is healthy, so slow-RPC windows never turn into retry storms.
-const CLICK_BATCH_SIZE = 50;
-const CLICK_BATCH_SIZE_MIN = 20;
+const CLICK_BATCH_SIZE = 20;
+const CLICK_BATCH_SIZE_MIN = 10;
 const CLICK_BATCH_SIZE_MAX = 100;
 const CLICK_BATCH_QUEUE_MAX = 50_000;
-const CLICK_BATCH_FLUSH_MS = 400;
+const CLICK_BATCH_FLUSH_MS = 150;
 const CLICK_BATCH_TIMEOUT_MS = 60_000;
 const CLICK_BATCH_MAX_PARALLEL = 1;
 const CLICK_BATCH_MAX_ATTEMPTS = 10;

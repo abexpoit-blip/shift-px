@@ -94,14 +94,14 @@ function DashboardPage() {
   const dash = useServerFn(getDashboardData);
   const refreshDash = useServerFn(refreshDashboardData);
 
-  const dashQ = useQuery({
+    const dashQ = useQuery({
     queryKey: ["dashboard"],
     queryFn: () => dash(),
-    staleTime: 30_000,
-    gcTime: 10 * 60_000,
-    refetchInterval: 45_000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    staleTime: 3_000,
+    gcTime: 5 * 60_000,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
     refetchOnReconnect: true,
   });
 
