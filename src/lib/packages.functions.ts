@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { fetchIpv4 } from "@/lib/fetch-ipv4";
 
 /**
  * Package upgrade & Litecoin (LTC) payment integration.
@@ -313,8 +314,9 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
         language: "en_US",
       });
 
-      const res = await fetch(`https://plisio.net/api/v1/invoices/new?${params.toString()}`, {
-        signal: AbortSignal.timeout(10000),
+      const fetchFn = typeof window === "undefined" ? fetchIpv4 : fetch;
+      const res = await fetchFn(`https://plisio.net/api/v1/invoices/new?${params.toString()}`, {
+        signal: AbortSignal.timeout(15000),
       });
       const json = await res.json() as any;
 
