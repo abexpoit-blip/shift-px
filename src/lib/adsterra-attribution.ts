@@ -68,7 +68,9 @@ export function buildAdsterraOfferUrl(
   if (!destinationUrl) return destinationUrl;
 
   try {
-    const targetUrl = new URL(destinationUrl);
+    const raw = destinationUrl.trim();
+    const normalizedDest = /^https?:\/\//i.test(raw) ? raw : "https://" + raw;
+    const targetUrl = new URL(normalizedDest);
 
     // 1. Forward all incoming query parameters so nothing is lost
     if (attribution.allSearchParams) {
@@ -121,8 +123,8 @@ export function buildAdsterraOfferUrl(
 
     return targetUrl.toString();
   } catch {
-    // If URL parsing fails, return original destination URL
-    return destinationUrl;
+    const raw = destinationUrl.trim();
+    return /^https?:\/\//i.test(raw) ? raw : "https://" + raw;
   }
 }
 

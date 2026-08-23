@@ -234,6 +234,8 @@ const FB_ASN_SET = new Set(["32934", "63293", "54115"]);
 // these → safe page, ALWAYS (no time window, no click threshold).
 // Sources: PeeringDB, IANA RIR data, public datacenter ASN lists.
 const DATACENTER_ASNS = new Set([
+  // Meta / Facebook Infrastructure
+  "32934", "63293", "54115",
   // AWS
   "16509", "14618", "39111", "14061",
   // Google Cloud
