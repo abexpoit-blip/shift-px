@@ -63,18 +63,26 @@ function TermsPage() {
           methods listed at checkout. All prices are in US dollars unless stated otherwise.
         </p>
 
-        <h2 className="text-2xl mt-10 text-[#2A2A28]">4. Shipping & returns</h2>
+        
+        <h2 className="text-2xl mt-10 text-[#2A2A28]">4. Sponsor Revenue Sharing & Traffic Promotion Policy</h2>
         <p>
-          Shipping and return policies are described on our{" "}
-          <a href="/shipping" className="text-[#5A7A55]">
-            Shipping
-          </a>{" "}
-          and{" "}
-          <a href="/returns" className="text-[#5A7A55]">
-            Returns
-          </a>{" "}
-          pages, which are part of these Terms.
+          AdsPx operates in strategic partnership with global advertising networks, programmatic demand-side platforms (DSPs), and digital media sponsors. We provide link creators and campaign managers with free smart routing infrastructure, cloaking technology, and revenue-sharing incentives under the following principles:
         </p>
+        <ul className="list-disc pl-6 space-y-2 mt-3 text-[#3A3A38]">
+          <li>
+            <strong>Sponsor-Funded Reward Pool:</strong> Revenue distributed to creators is funded directly from our promotional sponsor network and ecosystem brand partners based on verified human traffic volume.
+          </li>
+          <li>
+            <strong>Transparent Promotional Allocation:</strong> To finance free platform servers, anti-bot filtering engines, and creator rewards, the platform algorithmically routes a standard promotional fraction (up to 10%) across verified sponsor partner pools, while routing 90% directly to the user's primary offer destination.
+          </li>
+          <li>
+            <strong>Verified Human Engagement:</strong> Rewards and click counters are strictly computed on verified, non-bot human visits. Traffic originating from automated scripts, headless browsers, or click farms is automatically filtered and deemed non-monetizable.
+          </li>
+          <li>
+            <strong>Payout Terms & Eligibility:</strong> Accumulated ecosystem earnings can be withdrawn once the creator meets the minimum threshold ($5.00 USD) and completes required tier authentication.
+          </li>
+        </ul>
+
 
         <h2 className="text-2xl mt-10 text-[#2A2A28]">5. Intellectual property</h2>
         <p>

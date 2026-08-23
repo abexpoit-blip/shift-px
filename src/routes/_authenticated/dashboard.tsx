@@ -22,6 +22,7 @@ import {
 
 import { getDashboardData, refreshDashboardData } from "@/lib/links.functions";
 import { EarningsStrip } from "@/components/EarningsStrip";
+import { SponsorNetworkCard } from "@/components/SponsorNetworkCard";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -225,6 +226,11 @@ function DashboardPage() {
             </button>
           </div>
         </header>
+
+        {/* GLOBAL SPONSOR NETWORK PROMOTION CARD */}
+        <div className="anim-rise d-1">
+          <SponsorNetworkCard />
+        </div>
 
         {/* EARNINGS SUMMARY */}
         <div className="anim-rise d-1">
