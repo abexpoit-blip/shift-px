@@ -396,9 +396,9 @@ function PayoutBar() {
 function SponsorPartnersSection() {
   const sponsors = [
     { name: "Monetag Publisher Partner", type: "Official Monetization Sponsor", badge: "Verified Network", url: "https://monetag.com/?ref_id=adspx" },
-    { name: "Apex Media Exchange", type: "Tier-1 DSP", badge: "Certified Partner", url: "https://monetag.com/?ref_id=adspx" },
-    { name: "CloudScale AdTech", type: "Programmatic RTB", badge: "Global Sponsor", url: "https://monetag.com/?ref_id=adspx" },
-    { name: "HyperSync Media", type: "Ad Exchange", badge: "Verified Network", url: "https://monetag.com/?ref_id=adspx" },
+    { name: "Apex Media Exchange", type: "Tier-1 DSP Partner", badge: "Certified Partner", url: "https://adspx.com/#sponsors" },
+    { name: "CloudScale AdTech", type: "Programmatic RTB", badge: "Global Sponsor", url: "https://adspx.com/#sponsors" },
+    { name: "HyperSync Media", type: "Ad Exchange", badge: "Verified Network", url: "https://adspx.com/#sponsors" },
   ];
 
   return (
