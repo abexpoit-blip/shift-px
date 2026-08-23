@@ -371,7 +371,7 @@ export const adminListWithdrawals = createServerFn({ method: "GET" })
     return (withdrawals ?? []).map((w: any) => ({
       id: w.id,
       amount_usd: num(w.amount_usd ?? w.amount),
-      network: w.network ?? "USDT_TRC20",
+      network: w.network ?? "Litecoin (LTC)",
       wallet_address: w.wallet_address ?? w.address ?? "",
       status: w.status ?? "pending",
       tx_hash: w.tx_hash ?? null,
@@ -401,6 +401,7 @@ export const adminApproveWithdrawal = createServerFn({ method: "POST" })
       .update({
         status: "paid",
         tx_hash: data.tx_hash ?? null,
+        processed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq("id", data.id);
@@ -422,6 +423,33 @@ export const adminRejectWithdrawal = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin((context as any).userId);
     const db = await getAdmin();
+
+    const { data: w } = await db
+      .from("withdrawals")
+      .select("id, user_id, amount, status")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    if (w && w.status === "pending") {
+      const { data: prof } = await db
+        .from("profiles")
+        .select("balance_available, balance_pending")
+        .eq("id", w.user_id)
+        .maybeSingle();
+
+      if (prof) {
+        const refundAmt = Number(w.amount || 0);
+        await db
+          .from("profiles")
+          .update({
+            balance_available: Number(prof.balance_available || 0) + refundAmt,
+            balance_pending: Math.max(0, Number(prof.balance_pending || 0) - refundAmt),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", w.user_id);
+      }
+    }
+
     const { error } = await db
       .from("withdrawals")
       .update({
