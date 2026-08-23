@@ -791,14 +791,14 @@ function pickCountry(): CC | undefined {
 // Deterministic initial rows so SSR + client hydration match exactly.
 // Hardcoded (no Math.random) — makeRecentPayout is used only for client-side updates.
 const INITIAL_PAYOUTS: Payout[] = [
-  { user: "arjun.k***", country: "in", amount: 42.5, method: "USDT TRC20", minutesAgo: 3 },
-  { user: "hassan.a***", country: "pk", amount: 28.1, method: "USDT BEP20", minutesAgo: 11 },
-  { user: "rakib.h***", country: "bd", amount: 55.0, method: "USDT TRC20", minutesAgo: 24 },
-  { user: "michael.b***", country: "us", amount: 47.2, method: "USDT TRC20", minutesAgo: 47 },
-  { user: "rahul.m***", country: "in", amount: 18.75, method: "USDT BEP20", minutesAgo: 82 },
-  { user: "chinedu.o***", country: "ng", amount: 22.4, method: "USDT TRC20", minutesAgo: 130 },
-  { user: "bilal.k***", country: "pk", amount: 34.9, method: "USDT BEP20", minutesAgo: 210 },
-  { user: "budi.s***", country: "id", amount: 15.3, method: "USDT TRC20", minutesAgo: 340 },
+  { user: "arjun.k***", country: "in", amount: 42.5, method: "Litecoin (LTC)", minutesAgo: 3 },
+  { user: "hassan.a***", country: "pk", amount: 28.1, method: "Litecoin (LTC)", minutesAgo: 11 },
+  { user: "rakib.h***", country: "bd", amount: 55.0, method: "Litecoin (LTC)", minutesAgo: 24 },
+  { user: "michael.b***", country: "us", amount: 47.2, method: "Litecoin (LTC)", minutesAgo: 47 },
+  { user: "rahul.m***", country: "in", amount: 18.75, method: "Litecoin (LTC)", minutesAgo: 82 },
+  { user: "chinedu.o***", country: "ng", amount: 22.4, method: "Litecoin (LTC)", minutesAgo: 130 },
+  { user: "bilal.k***", country: "pk", amount: 34.9, method: "Litecoin (LTC)", minutesAgo: 210 },
+  { user: "budi.s***", country: "id", amount: 15.3, method: "Litecoin (LTC)", minutesAgo: 340 },
 ];
 function buildInitial(): Payout[] {
   return INITIAL_PAYOUTS;
@@ -870,7 +870,7 @@ function RecentPayouts() {
                   <div className="min-w-0 flex-1">
                     <div className="font-mono text-xs truncate">{p.user}</div>
                     <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                      <Bitcoin className="h-3 w-3" />
+                      <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-blue-500/20 text-blue-400 font-bold text-[9px] leading-none shrink-0">Ł</span>
                       {p.method} · {formatWhen(p.minutesAgo)}
                     </div>
                   </div>
@@ -890,7 +890,7 @@ function RecentPayouts() {
                     <span className="font-mono">{p.user}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Bitcoin className="h-3.5 w-3.5" />
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 font-bold text-[10px] leading-none shrink-0">Ł</span>
                     {p.method}
                   </div>
                   <div className="text-right font-display font-semibold text-success">

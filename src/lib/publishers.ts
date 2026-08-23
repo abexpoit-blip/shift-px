@@ -676,7 +676,7 @@ export const OTHER_PUBLISHERS: Publisher[] = [
 /** Combined pool used by the recent-withdrawals feed. */
 export const ALL_PUBLISHERS: Publisher[] = [...TOP_PUBLISHERS, ...OTHER_PUBLISHERS];
 
-export type PayoutMethod = "USDT TRC20" | "USDT BEP20";
+export type PayoutMethod = "Litecoin (LTC)" | "Litecoin (Network)";
 
 export type RecentPayout = {
   user: string;
@@ -686,7 +686,7 @@ export type RecentPayout = {
   minutesAgo: number;
 };
 
-const METHODS: PayoutMethod[] = ["USDT TRC20", "USDT BEP20"];
+const METHODS: PayoutMethod[] = ["Litecoin (LTC)", "Litecoin (Network)"];
 
 function pickRand<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
