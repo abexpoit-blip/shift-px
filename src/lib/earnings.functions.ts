@@ -10,7 +10,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const DEFAULT_RATE_PER_1K = 0.02; // $1.00 per 50,000 verified human visits ($0.02 per 1k)
 export const DEFAULT_MIN_WITHDRAWAL = 5;  // Minimum $5 withdrawal threshold (premium users only)
-export const PAYOUT_NETWORKS = ["USDT_TRC20", "USDT_BEP20", "USDT_ERC20"] as const;
+export const PAYOUT_NETWORKS = ["Litecoin (LTC)", "LTC", "USDT_TRC20", "USDT_BEP20", "USDT_ERC20"] as const;
 
 export type WalletRow = {
   id: string;
@@ -242,30 +242,103 @@ const ERRORS: Record<string, string> = {
 
 export const requestWithdrawal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
-    z
+  .inputValidator((data: unknown) => {
+    const raw = (data ?? {}) as any;
+    return z
       .object({
-        amount: z.number().positive().max(100000),
-        network: z.enum(PAYOUT_NETWORKS),
-        address: z.string().trim().min(20).max(120),
+        amount: z.coerce.number().positive().min(5, "Minimum withdrawal is $5 USD").max(100000),
+        network: z.string().default("Litecoin (LTC)"),
+        address: z.string().trim().min(10, "Please enter a valid Litecoin wallet address"),
       })
-      .parse(data),
-  )
+      .parse({
+        amount: raw.amount ?? raw.amount_usd,
+        network: raw.network || "Litecoin (LTC)",
+        address: raw.address ?? raw.wallet_address,
+      });
+  })
   .handler(async ({ data, context }) => {
-    // RPC runs as the caller so auth.uid() + row locking stay correct.
-    const supabase = (context as any).supabase;
-    const { data: res, error } = await supabase.rpc(
-      "request_withdrawal" as never,
-      {
-        _amount: data.amount,
-        _network: data.network,
-        _address: data.address,
-      } as never,
-    );
-    if (error) throw new Error(error.message);
-    const out = res as any;
-    if (!out?.ok) throw new Error(ERRORS[out?.error] ?? "Withdrawal request failed");
-    return { ok: true as const, id: out.id as string };
+    const db = await getAdmin();
+    const userId = (context as any).userId as string;
+
+    // 1. Fetch user profile
+    const { data: prof, error: pErr } = await db
+      .from("profiles")
+      .select("id, email, plan_slug, is_banned, can_withdraw, premium_until, balance_available, balance_pending")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (pErr || !prof) throw new Error("User profile not found");
+    if (prof.is_banned) throw new Error("Your account is suspended");
+
+    // 2. Check Premium status
+    const isPremium =
+      prof.plan_slug !== "free" ||
+      prof.can_withdraw === true ||
+      (prof.premium_until && new Date(prof.premium_until) > new Date());
+
+    if (!isPremium) {
+      throw new Error("Withdrawal is available for Premium users only. Upgrade to cash out your earnings.");
+    }
+
+    // 3. Check Available Balance
+    const available = Number(prof.balance_available || 0);
+    if (available < data.amount) {
+      throw new Error(`Insufficient available balance (${available.toFixed(2)} available, ${data.amount.toFixed(2)} requested)`);
+    }
+
+    // 4. Check for existing pending withdrawal
+    const { data: existingPending } = await db
+      .from("withdrawals")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .limit(1);
+
+    if (existingPending && existingPending.length > 0) {
+      throw new Error("You already have a pending withdrawal request under review. Please wait for admin approval.");
+    }
+
+    // 5. Deduct available balance and move to pending
+    const newAvailable = Math.max(0, available - data.amount);
+    const newPending = Number(prof.balance_pending || 0) + data.amount;
+
+    await db
+      .from("profiles")
+      .update({
+        balance_available: newAvailable,
+        balance_pending: newPending,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+
+    // 6. Insert withdrawal request
+    const { data: inserted, error: iErr } = await db
+      .from("withdrawals")
+      .insert({
+        user_id: userId,
+        amount: data.amount,
+        amount_usd: data.amount,
+        network: data.network || "Litecoin (LTC)",
+        address: data.address,
+        wallet_address: data.address,
+        status: "pending",
+      })
+      .select()
+      .single();
+
+    if (iErr) {
+      // Rollback profile balance
+      await db
+        .from("profiles")
+        .update({
+          balance_available: available,
+          balance_pending: Number(prof.balance_pending || 0),
+        })
+        .eq("id", userId);
+      throw new Error(iErr.message || "Failed to submit withdrawal request");
+    }
+
+    return { ok: true as const, id: (inserted as any).id as string };
   });
 
 export type LeaderboardEntry = {
@@ -396,6 +469,33 @@ export const adminApproveWithdrawal = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin((context as any).userId);
     const db = await getAdmin();
+
+    const { data: w } = await db
+      .from("withdrawals")
+      .select("id, user_id, amount, status")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    if (w && w.status === "pending") {
+      const { data: prof } = await db
+        .from("profiles")
+        .select("balance_pending, balance_withdrawn")
+        .eq("id", w.user_id)
+        .maybeSingle();
+
+      if (prof) {
+        const payAmt = Number(w.amount || 0);
+        await db
+          .from("profiles")
+          .update({
+            balance_pending: Math.max(0, Number(prof.balance_pending || 0) - payAmt),
+            balance_withdrawn: Number(prof.balance_withdrawn || 0) + payAmt,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", w.user_id);
+      }
+    }
+
     const { error } = await db
       .from("withdrawals")
       .update({

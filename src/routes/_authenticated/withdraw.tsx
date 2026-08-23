@@ -96,17 +96,19 @@ function WithdrawPage() {
     staleTime: 10_000,
   });
 
-  const withdrawMut = useMutation({
+    const withdrawMut = useMutation({
     mutationFn: () =>
       requestFn({
         data: {
+          amount: Number(amount),
           amount_usd: Number(amount),
-          network: "LTC",
+          network: "Litecoin (LTC)",
+          address: address.trim(),
           wallet_address: address.trim(),
         },
       }),
-    onSuccess: (res) => {
-      toast.success("Withdrawal request submitted successfully!");
+    onSuccess: () => {
+      toast.success("Withdrawal request submitted successfully! Pending admin review.");
       setAmount("");
       setAddress("");
       qc.invalidateQueries({ queryKey: ["earnings-overview"] });
