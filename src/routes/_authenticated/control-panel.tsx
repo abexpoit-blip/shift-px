@@ -77,6 +77,8 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   adminStats,
   adminListUsers,
+  adminListPayments,
+  adminDecideUpgradeRequest,
   adminBanUser,
   adminBulkBan,
   adminResetUserQuota,
@@ -243,6 +245,9 @@ function AdminPage() {
               <TabsContent value="users">
                 <UsersTab />
               </TabsContent>
+              <TabsContent value="payments">
+                <PaymentsTab />
+              </TabsContent>
               <TabsContent value="links">
                 <LinksTab />
               </TabsContent>
@@ -296,6 +301,7 @@ const NAV_GROUPS: Array<{
     label: "Manage",
     items: [
       { value: "users", label: "Users", icon: Users },
+      { value: "payments", label: "Payments & Upgrades", icon: CreditCard },
       { value: "links", label: "Links", icon: Link2 },
       { value: "withdrawals", label: "Withdrawals", icon: DollarSign },
       { value: "domains", label: "Domain pool", icon: Globe },
@@ -607,6 +613,315 @@ function OverviewTab() {
               <Legend wrapperStyle={{ fontSize: 11 }} />
             </PieChart>
           </ResponsiveContainer>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+
+// ===================== PAYMENTS & UPGRADES TAB =====================
+function PaymentsTab() {
+  const qc = useQueryClient();
+  const listFn = useServerFn(adminListPayments);
+  const decideFn = useServerFn(adminDecideUpgradeRequest);
+  const paymentsQuery = useQuery({
+    queryKey: ["admin-payments"],
+    queryFn: () => listFn(),
+  });
+
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const decideMut = useMutation({
+    mutationFn: (v: { id: string; decision: "approve" | "reject" }) => decideFn({ data: v }),
+    onSuccess: (_, vars) => {
+      toast.success(vars.decision === "approve" ? "Upgrade approved & activated!" : "Upgrade request rejected");
+      qc.invalidateQueries({ queryKey: ["admin-payments"] });
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const items = paymentsQuery.data ?? [];
+
+  const stats = useMemo(() => {
+    let totalRevenue = 0;
+    let paidCount = 0;
+    let pendingCount = 0;
+    let expiredCount = 0;
+
+    items.forEach((p: any) => {
+      const st = String(p.status || "").toLowerCase();
+      if (st === "paid" || st === "completed" || st === "success" || st === "finished") {
+        totalRevenue += Number(p.amount || 0);
+        paidCount++;
+      } else if (st === "pending") {
+        pendingCount++;
+      } else {
+        expiredCount++;
+      }
+    });
+
+    return { totalRevenue, paidCount, pendingCount, expiredCount };
+  }, [items]);
+
+  const filtered = useMemo(() => {
+    return items.filter((p: any) => {
+      const q = search.toLowerCase().trim();
+      const matchSearch =
+        !q ||
+        (p.user_email && p.user_email.toLowerCase().includes(q)) ||
+        (p.package_slug && p.package_slug.toLowerCase().includes(q)) ||
+        (p.plisio_invoice_id && String(p.plisio_invoice_id).toLowerCase().includes(q)) ||
+        (p.id && p.id.toLowerCase().includes(q));
+
+      const st = String(p.status || "").toLowerCase();
+      const isPaid = st === "paid" || st === "completed" || st === "success" || st === "finished";
+
+      if (statusFilter === "paid" && !isPaid) return false;
+      if (statusFilter === "pending" && st !== "pending") return false;
+      if (statusFilter === "expired" && (isPaid || st === "pending")) return false;
+
+      return matchSearch;
+    });
+  }, [items, search, statusFilter]);
+
+  return (
+    <div className="space-y-6">
+      {/* Summary KPI Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-bold uppercase tracking-wider">Total Revenue</span>
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-emerald-500/10 text-emerald-500">
+              <DollarSign className="h-4 w-4" />
+            </span>
+          </div>
+          <div className="mt-3 text-2xl font-black text-foreground">
+            ${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">Verified customer payments</p>
+        </div>
+
+        <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-bold uppercase tracking-wider">Paid Upgrades</span>
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary">
+              <CheckCircle2 className="h-4 w-4" />
+            </span>
+          </div>
+          <div className="mt-3 text-2xl font-black text-foreground">
+            {stats.paidCount.toLocaleString()}
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">Active premium subscriptions</p>
+        </div>
+
+        <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-bold uppercase tracking-wider">Pending Orders</span>
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-amber-500/10 text-amber-500">
+              <Clock className="h-4 w-4" />
+            </span>
+          </div>
+          <div className="mt-3 text-2xl font-black text-amber-500">
+            {stats.pendingCount.toLocaleString()}
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">Awaiting crypto confirmation</p>
+        </div>
+
+        <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-bold uppercase tracking-wider">Expired / Closed</span>
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-muted/60 text-muted-foreground">
+              <X className="h-4 w-4" />
+            </span>
+          </div>
+          <div className="mt-3 text-2xl font-black text-foreground">
+            {stats.expiredCount.toLocaleString()}
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">Unpaid session timeouts</p>
+        </div>
+      </div>
+
+      {/* Main Table Panel */}
+      <Panel
+        icon={CreditCard}
+        title="Customer Payments & Upgrades"
+        subtitle="Live feed of all customer subscription checkouts, crypto invoices, and user plans"
+      >
+        {/* Filter / Search Row */}
+        <div className="mb-5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+          <div className="relative max-w-md flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by user email, plan, or invoice ID…"
+              className="${inputCls} pl-10 w-full"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setStatusFilter("all")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                statusFilter === "all"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-card border border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              All ({items.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter("paid")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                statusFilter === "paid"
+                  ? "bg-emerald-500 text-white shadow-sm"
+                  : "bg-card border border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Paid ({stats.paidCount})
+            </button>
+            <button
+              onClick={() => setStatusFilter("pending")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                statusFilter === "pending"
+                  ? "bg-amber-500 text-white shadow-sm"
+                  : "bg-card border border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Pending ({stats.pendingCount})
+            </button>
+            <button
+              onClick={() => paymentsQuery.refetch()}
+              className="p-2 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all"
+              title="Refresh payments"
+            >
+              <RefreshCw className={`w-4 h-4 ${paymentsQuery.isFetching ? "animate-spin" : ""}`} />
+            </button>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto -mx-2">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <Th>User Email</Th>
+                <Th>Plan / Duration</Th>
+                <Th>Amount</Th>
+                <Th>Status</Th>
+                <Th>Invoice / Gateway</Th>
+                <Th>Created Date</Th>
+                <Th>Actions</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-muted-foreground text-xs">
+                    {paymentsQuery.isLoading ? "Loading customer payments…" : "No payment records match your query."}
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((r: any) => {
+                  const st = String(r.status || "").toLowerCase();
+                  const isPaid = st === "paid" || st === "completed" || st === "success" || st === "finished";
+                  const isPending = st === "pending";
+
+                  const planName =
+                    r.package_slug === "premium_12m"
+                      ? "Premium — 12 Months"
+                      : r.package_slug === "premium_6m"
+                      ? "Premium — 6 Months"
+                      : r.package_slug?.replace(/_/g, " ").toUpperCase() || "Premium Plan";
+
+                  return (
+                    <tr key={r.id} className="border-b border-border/50 hover:bg-card/60 transition-colors">
+                      <Td>
+                        <div className="font-semibold text-foreground">{r.user_email}</div>
+                        <div className="text-[10px] font-mono text-muted-foreground">{r.user_id}</div>
+                      </Td>
+                      <Td>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20">
+                          <Crown className="w-3 h-3" />
+                          {planName}
+                        </span>
+                      </Td>
+                      <Td>
+                        <div className="font-black text-foreground text-sm">
+                          ${Number(r.amount || 0).toFixed(2)} USD
+                        </div>
+                      </Td>
+                      <Td>
+                        {isPaid ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            <CheckCircle2 className="w-3 h-3" /> Paid & Active
+                          </span>
+                        ) : isPending ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse">
+                            <Clock className="w-3 h-3" /> Pending Checkout
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-muted/40 text-muted-foreground border border-border">
+                            <X className="w-3 h-3" /> {r.status || "Expired"}
+                          </span>
+                        )}
+                      </Td>
+                      <Td>
+                        {r.plisio_invoice_url ? (
+                          <a
+                            href={r.plisio_invoice_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-mono"
+                          >
+                            <span>Plisio #{String(r.plisio_invoice_id || "").slice(-8) || "Invoice"}</span>
+                            <Eye className="w-3 h-3" />
+                          </a>
+                        ) : r.plisio_invoice_id ? (
+                          <span className="font-mono text-xs text-muted-foreground">
+                            #{String(r.plisio_invoice_id).slice(-10)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Direct / Internal</span>
+                        )}
+                      </Td>
+                      <Td>
+                        <div className="text-xs text-muted-foreground">
+                          {r.created_at ? new Date(r.created_at).toLocaleString() : "—"}
+                        </div>
+                      </Td>
+                      <Td className="text-right">
+                        {isPending ? (
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => decideMut.mutate({ id: r.id, decision: "approve" })}
+                              disabled={decideMut.isPending}
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => decideMut.mutate({ id: r.id, decision: "reject" })}
+                              disabled={decideMut.isPending}
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </Td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </Panel>
     </div>

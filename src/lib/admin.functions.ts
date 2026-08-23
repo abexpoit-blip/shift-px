@@ -1560,3 +1560,50 @@ export const adminPurge15DaysInactive = createServerFn({ method: "POST" })
       deletedUsersCount,
     };
   });
+
+export const adminListPayments = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+
+    // Auto-expire old pending requests (> 30 minutes)
+    const expiryCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    await supabaseAdmin
+      .from("upgrade_requests")
+      .update({ status: "expired" } as any)
+      .eq("status", "pending")
+      .lt("created_at", expiryCutoff);
+
+    const { data: requests, error } = await supabaseAdmin
+      .from("upgrade_requests")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(500);
+
+    if (error) throw new Error(error.message);
+
+    const userIds = Array.from(new Set((requests ?? []).map((r: any) => r.user_id).filter(Boolean)));
+    let userMap: Record<string, { email: string; full_name?: string; plan_slug?: string }> = {};
+
+    if (userIds.length > 0) {
+      const { data: profs } = await supabaseAdmin
+        .from("profiles")
+        .select("id, email, full_name, plan_slug")
+        .in("id", userIds);
+
+      (profs ?? []).forEach((p: any) => {
+        userMap[p.id] = {
+          email: p.email || "",
+          full_name: p.full_name || "",
+          plan_slug: p.plan_slug || "free",
+        };
+      });
+    }
+
+    return (requests ?? []).map((r: any) => ({
+      ...r,
+      user_email: userMap[r.user_id]?.email || "Unknown User",
+      user_name: userMap[r.user_id]?.full_name || "",
+      current_plan: userMap[r.user_id]?.plan_slug || "free",
+    }));
+  });
