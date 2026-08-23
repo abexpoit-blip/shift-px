@@ -2453,8 +2453,9 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     markKnownHuman(code, fpHash);
   }
 
+  // Instantaneous non-blocking click recording (0ms delay)
   if (shouldRecordClick) {
-    const persistPromise = recordRedirectClick({
+    recordRedirectClick({
       linkId: link.id,
       userId: link.user_id,
       ip: ip || null,
@@ -2489,8 +2490,6 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     }).catch((error) => {
       console.error("redirect click logging failed", { linkId: link.id, error });
     });
-
-    await Promise.race([persistPromise, new Promise((resolve) => setTimeout(resolve, 800))]);
   }
 
   const reasonOut = isBot
