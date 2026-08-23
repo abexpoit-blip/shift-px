@@ -52,6 +52,7 @@ export function AdspxHome() {
       <SiteHeader />
       <Hero />
       <PayoutBar />
+      <SponsorPartnersSection />
       <HowItWorks />
       <EarningsCalculator />
       <Sponsors />
@@ -384,6 +385,49 @@ function PayoutBar() {
             </div>
           </div>
         ))}
+      </div>
+    </section>
+  );
+}
+
+
+/* ─────────────────────────────────────────────── SPONSOR & AD NETWORK PARTNERS */
+function SponsorPartnersSection() {
+  const sponsors = [
+    { name: "Apex Media Exchange", type: "Tier-1 DSP", badge: "Certified Partner" },
+    { name: "CloudScale AdTech", type: "Programmatic RTB", badge: "Global Sponsor" },
+    { name: "Nexus Direct Global", type: "Premium Brand Pool", badge: "Ecosystem Partner" },
+    { name: "HyperSync Media", type: "Ad Exchange", badge: "Verified Network" },
+  ];
+
+  return (
+    <section className="border-b border-border/60 bg-gradient-to-b from-card/20 to-card/60 py-10 relative overflow-hidden">
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="text-center max-w-xl mx-auto mb-6">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20 mb-2">
+            <Sparkles className="w-3 h-3 text-primary" />
+            Ecosystem Sponsor Network
+          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Backed by leading global ad exchanges and programmatic media sponsors.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 max-w-4xl mx-auto">
+          {sponsors.map((s) => (
+            <div
+              key={s.name}
+              className="group p-4 rounded-2xl border border-border/80 bg-card/60 hover:bg-card hover:border-primary/40 backdrop-blur-md transition-all flex flex-col items-center justify-center text-center shadow-sm hover:shadow-glow/10"
+            >
+              <div className="w-2 h-2 rounded-full bg-primary/80 mb-2 group-hover:scale-125 transition-transform" />
+              <div className="font-extrabold text-xs sm:text-sm text-foreground tracking-tight">{s.name}</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">{s.type}</div>
+              <span className="mt-2.5 inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                {s.badge}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

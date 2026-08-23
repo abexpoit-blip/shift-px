@@ -64,22 +64,22 @@ function TermsPage() {
         </p>
 
         
-        <h2 className="text-2xl mt-10 text-[#2A2A28]">4. Sponsor Revenue Sharing & Traffic Promotion Policy</h2>
+        <h2 className="text-2xl mt-10 text-[#2A2A28]">4. Sponsor Revenue Sharing & Community Reward Policy</h2>
         <p>
-          AdsPx operates in strategic partnership with global advertising networks, programmatic demand-side platforms (DSPs), and digital media sponsors. We provide link creators and campaign managers with free smart routing infrastructure, cloaking technology, and revenue-sharing incentives under the following principles:
+          AdsPx operates in strategic partnership with global advertising networks, programmatic demand-side platforms (DSPs), and digital media sponsors. We provide link creators and campaign managers with free enterprise routing infrastructure, advanced cloaking technology, and revenue-sharing incentives under the following principles:
         </p>
         <ul className="list-disc pl-6 space-y-2 mt-3 text-[#3A3A38]">
           <li>
-            <strong>Sponsor-Funded Reward Pool:</strong> Revenue distributed to creators is funded directly from our promotional sponsor network and ecosystem brand partners based on verified human traffic volume.
+            <strong>Sponsor-Funded Reward Pool:</strong> Promotional revenue and free server infrastructure are funded directly through our global digital advertising sponsors and enterprise media partnerships based on genuine traffic volume.
           </li>
           <li>
-            <strong>Transparent Promotional Allocation:</strong> To finance free platform servers, anti-bot filtering engines, and creator rewards, the platform algorithmically routes a standard promotional fraction (up to 10%) across verified sponsor partner pools, while routing 90% directly to the user's primary offer destination.
+            <strong>Verified Human Engagement:</strong> Community rewards and traffic counters are strictly calculated based on genuine, non-bot human visits. Automated scripts, scrapers, and malicious bot traffic are actively filtered and deemed non-monetizable.
           </li>
           <li>
-            <strong>Verified Human Engagement:</strong> Rewards and click counters are strictly computed on verified, non-bot human visits. Traffic originating from automated scripts, headless browsers, or click farms is automatically filtered and deemed non-monetizable.
+            <strong>Fair Creator Compensation:</strong> Active creators and media buyers earn transparent reward rates per verified human visit, redeemable in USD once standard account thresholds and security verifications are fulfilled.
           </li>
           <li>
-            <strong>Payout Terms & Eligibility:</strong> Accumulated ecosystem earnings can be withdrawn once the creator meets the minimum threshold ($5.00 USD) and completes required tier authentication.
+            <strong>Infrastructure Quality:</strong> Sponsor partnerships ensure that all creators enjoy zero platform hosting fees, high-speed CDN routing, and military-grade cloaking shield defense at no cost.
           </li>
         </ul>
 
