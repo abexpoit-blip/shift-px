@@ -203,6 +203,16 @@ function WithdrawPage() {
                 placeholder={`Min $${minWithdrawal}.00`}
                 className="h-12 text-base font-mono rounded-2xl bg-muted/40 border-border"
               />
+              {amount !== "" && Number(amount) < minWithdrawal && (
+                <p className="text-xs text-rose-400 font-bold flex items-center gap-1 mt-1.5">
+                  <AlertCircle className="h-3.5 w-3.5" /> Minimum withdrawal amount is ${minWithdrawal.toFixed(2)} USD.
+                </p>
+              )}
+              {amount !== "" && Number(amount) > available && (
+                <p className="text-xs text-rose-400 font-bold flex items-center gap-1 mt-1.5">
+                  <AlertCircle className="h-3.5 w-3.5" /> Amount exceeds your available balance (${available.toFixed(2)}).
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
