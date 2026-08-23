@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import { MonetagBanner } from "@/components/MonetagBanner";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import {
@@ -394,10 +395,10 @@ function PayoutBar() {
 /* ─────────────────────────────────────────────── SPONSOR & AD NETWORK PARTNERS */
 function SponsorPartnersSection() {
   const sponsors = [
-    { name: "Apex Media Exchange", type: "Tier-1 DSP", badge: "Certified Partner" },
-    { name: "CloudScale AdTech", type: "Programmatic RTB", badge: "Global Sponsor" },
-    { name: "Nexus Direct Global", type: "Premium Brand Pool", badge: "Ecosystem Partner" },
-    { name: "HyperSync Media", type: "Ad Exchange", badge: "Verified Network" },
+    { name: "Monetag Publisher Partner", type: "Official Monetization Sponsor", badge: "Verified Network", url: "https://monetag.com/?ref_id=adspx" },
+    { name: "Apex Media Exchange", type: "Tier-1 DSP", badge: "Certified Partner", url: "https://monetag.com/?ref_id=adspx" },
+    { name: "CloudScale AdTech", type: "Programmatic RTB", badge: "Global Sponsor", url: "https://monetag.com/?ref_id=adspx" },
+    { name: "HyperSync Media", type: "Ad Exchange", badge: "Verified Network", url: "https://monetag.com/?ref_id=adspx" },
   ];
 
   return (
@@ -413,20 +414,28 @@ function SponsorPartnersSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 max-w-4xl mx-auto mb-8">
           {sponsors.map((s) => (
-            <div
+            <a
               key={s.name}
-              className="group p-4 rounded-2xl border border-border/80 bg-card/60 hover:bg-card hover:border-primary/40 backdrop-blur-md transition-all flex flex-col items-center justify-center text-center shadow-sm hover:shadow-glow/10"
+              href={s.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group p-4 rounded-2xl border border-border/80 bg-card/60 hover:bg-card hover:border-emerald-500/40 backdrop-blur-md transition-all flex flex-col items-center justify-center text-center shadow-sm hover:shadow-glow/10 hover:scale-[1.02]"
             >
-              <div className="w-2 h-2 rounded-full bg-primary/80 mb-2 group-hover:scale-125 transition-transform" />
+              <div className="w-2 h-2 rounded-full bg-emerald-400 mb-2 group-hover:scale-125 transition-transform animate-pulse" />
               <div className="font-extrabold text-xs sm:text-sm text-foreground tracking-tight">{s.name}</div>
               <div className="text-[10px] text-muted-foreground mt-0.5">{s.type}</div>
-              <span className="mt-2.5 inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+              <span className="mt-2.5 inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 {s.badge}
               </span>
-            </div>
+            </a>
           ))}
+        </div>
+
+        {/* DIRECT MONETAG BANNER AD ON HOMEPAGE */}
+        <div className="max-w-4xl mx-auto">
+          <MonetagBanner variant="home" />
         </div>
       </div>
     </section>

@@ -2,11 +2,20 @@ import { Sparkles, ShieldCheck, ArrowUpRight, Zap } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 export function SponsorNetworkCard() {
-  const sponsors = [
+      const sponsors = [
+    {
+      name: "Monetag Publisher Partner",
+      tier: "Official Monetization Sponsor",
+      tag: "Verified Network",
+      url: "https://monetag.com/?ref_id=adspx",
+      accent: "from-emerald-500/20 to-teal-500/10 text-emerald-400 border-emerald-500/30",
+      dot: "bg-emerald-400",
+    },
     {
       name: "Apex Media Exchange",
       tier: "Tier-1 Global DSP",
       tag: "Verified Partner",
+      url: "https://monetag.com/?ref_id=adspx",
       accent: "from-cyan-500/20 to-blue-500/10 text-cyan-400 border-cyan-500/30",
       dot: "bg-cyan-400",
     },
@@ -14,15 +23,9 @@ export function SponsorNetworkCard() {
       name: "CloudScale AdTech",
       tier: "Programmatic RTB",
       tag: "Active Sponsor",
+      url: "https://monetag.com/?ref_id=adspx",
       accent: "from-indigo-500/20 to-purple-500/10 text-indigo-400 border-indigo-500/30",
       dot: "bg-indigo-400",
-    },
-    {
-      name: "Nexus Direct Global",
-      tier: "High-CPM Brand Pool",
-      tag: "Revenue Partner",
-      accent: "from-purple-500/20 to-pink-500/10 text-purple-400 border-purple-500/30",
-      dot: "bg-purple-400",
     },
   ];
 
@@ -71,9 +74,12 @@ export function SponsorNetworkCard() {
         {/* Right Side: Sponsor Partner Badges */}
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2.5 shrink-0 lg:w-72">
           {sponsors.map((s) => (
-            <div
+            <a
               key={s.name}
-              className={`flex items-center justify-between gap-3 p-2.5 rounded-2xl border bg-gradient-to-r ${s.accent} backdrop-blur-md`}
+              href={s.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center justify-between gap-3 p-2.5 rounded-2xl border bg-gradient-to-r ${s.accent} backdrop-blur-md hover:scale-[1.02] transition-all cursor-pointer`}
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className={`w-2 h-2 rounded-full ${s.dot} animate-pulse shrink-0`} />
@@ -85,7 +91,7 @@ export function SponsorNetworkCard() {
               <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-background/50 border border-white/10 text-muted-foreground">
                 {s.tag}
               </span>
-            </div>
+            </a>
           ))}
         </div>
       </div>

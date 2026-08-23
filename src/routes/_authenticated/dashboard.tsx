@@ -23,6 +23,7 @@ import {
 import { getDashboardData, refreshDashboardData } from "@/lib/links.functions";
 import { EarningsStrip } from "@/components/EarningsStrip";
 import { SponsorNetworkCard } from "@/components/SponsorNetworkCard";
+import { MonetagBanner } from "@/components/MonetagBanner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -438,6 +439,11 @@ function DashboardPage() {
               </div>
             </Panel>
           </div>
+        </div>
+
+        {/* MONETAG SPONSOR FOOTER BANNER */}
+        <div className="anim-rise d-4 pt-2">
+          <MonetagBanner />
         </div>
       </div>
     </div>
