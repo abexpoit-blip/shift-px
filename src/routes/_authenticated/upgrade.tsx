@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import {
   Zap, Crown, Check, Loader2, Clock, Copy,
   ExternalLink, ShieldCheck, AlertCircle, Sparkles,
@@ -247,20 +247,35 @@ function InvoicePanel({
   };
   onClose: () => void;
 }) {
+  const qc = useQueryClient();
   const [copied, setCopied] = useState<"amount" | "address" | null>(null);
-  const [txHash, setTxHash] = useState("");
-  const submitTx = useServerFn(submitUpgradeTransaction);
+  const checkStatusFn = useServerFn(checkUpgradeRequestStatus);
 
-  const submitMut = useMutation({
-    mutationFn: () => submitTx({ data: { request_id: result.requestId, tx_hash: txHash } }),
-    onSuccess: (res) => {
-      toast.success(res.message);
-      onClose();
-    },
-    onError: (e: Error) => {
-      toast.error(e.message || "Failed to submit transaction ID");
-    },
-  });
+  // Live polling: automatically checks if Plisio marked the invoice as paid
+  useEffect(() => {
+    let active = true;
+    const interval = setInterval(async () => {
+      try {
+        const res = await checkStatusFn({ data: { request_id: result.requestId } });
+        if (res?.status === "paid" || res?.status === "completed" || res?.isPaid) {
+          if (!active) return;
+          clearInterval(interval);
+          toast.success("🎉 Payment confirmed! Your account has been upgraded to Premium!");
+          qc.invalidateQueries({ queryKey: ["my-plan-status"] });
+          qc.invalidateQueries({ queryKey: ["dashboard"] });
+          onClose();
+          window.location.href = "/dashboard";
+        }
+      } catch {
+        // silent polling catch
+      }
+    }, 4000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [result.requestId, checkStatusFn, qc, onClose]);
 
   const copy = (val: string, type: "amount" | "address") => {
     navigator.clipboard.writeText(val).then(() => {
@@ -287,13 +302,35 @@ function InvoicePanel({
                 </p>
               </div>
             </div>
-            <span className="rounded-full bg-emerald-400/20 border border-emerald-400/40 px-3 py-1 text-[11px] font-bold text-emerald-300 animate-pulse">
-              Awaiting Deposit
+            <span className="rounded-full bg-emerald-400/20 border border-emerald-400/40 px-3 py-1 text-[11px] font-bold text-emerald-300 animate-pulse flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              Awaiting Payment
             </span>
           </div>
         </div>
 
         <div className="p-6 space-y-5">
+          {/* PRIMARY: DIRECT PLISIO GATEWAY BUTTON */}
+          {result.plisioInvoiceUrl && (
+            <div className="rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-500/10 via-card to-teal-500/10 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5" /> Instant Plisio Checkout
+                </span>
+                <span className="text-[10px] text-muted-foreground font-semibold">Auto-activates on payment</span>
+              </div>
+              <a
+                href={result.plisioInvoiceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <span>Pay via Plisio Invoice</span>
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </div>
+          )}
+
           {/* LTC Details Card */}
           <div className="rounded-2xl bg-muted/40 border border-border/80 p-5 space-y-4">
             {/* Amount Section */}
@@ -339,46 +376,9 @@ function InvoicePanel({
             </div>
           </div>
 
-          {/* TXID Submission Box */}
-          <div className="rounded-2xl border border-indigo-500/30 bg-indigo-500/5 p-4 space-y-3">
-            <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs">
-              <Send className="h-4 w-4" /> Submit Transaction Hash (TXID)
-            </div>
-            <p className="text-xs text-muted-foreground">
-              After sending the LTC from your wallet or exchange (Binance, TrustWallet, etc.), paste your Transaction Hash below for instant confirmation:
-            </p>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={txHash}
-                onChange={(e) => setTxHash(e.target.value)}
-                placeholder="e.g. 5f8b9e... (Transaction ID / Hash)"
-                className="flex-1 h-10 rounded-xl bg-background border border-border px-3 text-xs font-mono text-foreground focus:outline-none focus:border-primary"
-              />
-              <Button
-                onClick={() => submitMut.mutate()}
-                disabled={submitMut.isPending || !txHash.trim()}
-                className="h-10 px-4 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
-                {submitMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit"}
-              </Button>
-            </div>
-          </div>
-
-          {result.plisioInvoiceUrl && (
-            <a
-              href={result.plisioInvoiceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full h-12 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-black flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 hover:opacity-95 text-sm"
-            >
-              <ExternalLink className="h-4 w-4" /> Open Plisio Gateway (Pay LTC)
-            </a>
-          )}
-
           <div className="flex items-center gap-2 text-xs text-emerald-500 font-semibold bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
             <ShieldCheck className="h-4 w-4 flex-shrink-0" />
-            <span>Fast Settlement: Litecoin transactions confirm within ~2.5 minutes with virtually zero gas fees.</span>
+            <span>Automatic Instant Upgrade: Once you send payment, our Plisio engine automatically upgrades your plan without any manual submission needed.</span>
           </div>
 
           <Button onClick={onClose} variant="outline" className="w-full h-11 rounded-2xl font-bold">
@@ -415,6 +415,9 @@ function UpgradePage() {
       upgradeFn({ data: { package_slug: selectedSlug, crypto_currency: "LTC" } }),
     onSuccess: (res) => {
       setInvoiceResult(res);
+      if (res?.plisioInvoiceUrl) {
+        window.open(res.plisioInvoiceUrl, "_blank");
+      }
     },
     onError: (e: Error) => {
       toast.error(e.message || "Failed to generate LTC invoice");

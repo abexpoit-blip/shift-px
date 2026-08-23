@@ -73,16 +73,39 @@ async function handlePlisioCallback(request: Request) {
       console.warn("[plisio-webhook] Invalid signature for order:", orderNumber);
     }
 
-    let query = supabaseAdmin.from("upgrade_requests" as any).select("*");
-    if (orderNumber) {
-      query = query.eq("id", orderNumber);
-    } else if (txnId) {
-      query = query.eq("plisio_invoice_id", txnId);
+        let reqRow: any = null;
+
+    // 1. Try lookup by UUID order_number
+    if (orderNumber && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderNumber)) {
+      const { data } = await supabaseAdmin
+        .from("upgrade_requests" as any)
+        .select("*")
+        .eq("id", orderNumber)
+        .maybeSingle();
+      if (data) reqRow = data;
     }
 
-    const { data: reqRow, error: reqErr } = await (query as any).maybeSingle();
+    // 2. Try lookup by plisio_invoice_id (txnId)
+    if (!reqRow && txnId) {
+      const { data } = await supabaseAdmin
+        .from("upgrade_requests" as any)
+        .select("*")
+        .eq("plisio_invoice_id", txnId)
+        .maybeSingle();
+      if (data) reqRow = data;
+    }
 
-    if (reqErr || !reqRow) {
+    // 3. Try lookup by orderNumber as plisio_invoice_id
+    if (!reqRow && orderNumber) {
+      const { data } = await supabaseAdmin
+        .from("upgrade_requests" as any)
+        .select("*")
+        .eq("plisio_invoice_id", orderNumber)
+        .maybeSingle();
+      if (data) reqRow = data;
+    }
+
+    if (!reqRow) {
       console.warn("[plisio-webhook] Upgrade request not found for:", orderNumber || txnId);
       return new Response(JSON.stringify({ status: "ok", message: "Processed unmatched event" }), {
         status: 200,

@@ -275,70 +275,79 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
     const ltcPrice = await getLiveLtcPrice();
     let ltcAmount = (priceUsd / ltcPrice).toFixed(5);
 
-    // Expire any pending requests for this user
+        // Expire any pending requests for this user
     await db
       .from("upgrade_requests")
       .update({ status: "expired", updated_at: new Date().toISOString() })
       .eq("user_id", userId)
       .eq("status", "pending");
 
-    let invoiceUrl: string | null = null;
-    let plisioInvoiceId: string | null = null;
-
-    // Plisio integration if enabled
-    if ((settings as any)?.plisio_enabled && (settings as any)?.plisio_api_key) {
-      try {
-        const apiKey = (settings as any).plisio_api_key || "mNftu0lvWb5iTX6AVsiUhZINdfZkWVFRNJke3sUwKXyrxFVo0cHUS0A3yOf065Dq";
-        const reqId = "req_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
-        const params = new URLSearchParams({
-          api_key: apiKey,
-          currency: "LTC",
-          source_currency: "USD",
-          source_amount: String(priceUsd),
-          order_name: `AdsPx ${packageName}`,
-          order_number: reqId,
-          callback_url: "https://adspx.com/api/public/plisio-webhook",
-          success_url: "https://adspx.com/upgrade?status=success",
-          cancel_url: "https://adspx.com/upgrade?status=failed",
-          language: "en_US",
-        });
-
-        const res = await fetch(`https://plisio.net/api/v1/invoices/new?${params.toString()}`, {
-          signal: AbortSignal.timeout(10000),
-        });
-        const json = await res.json() as any;
-
-        if (json.status === "success" && json.data) {
-          plisioInvoiceId = json.data.txn_id ?? null;
-          invoiceUrl = json.data.invoice_url ?? null;
-          if (json.data.wallet_hash) {
-            ltcAddress = json.data.wallet_hash;
-          }
-          if (json.data.amount) {
-            ltcAmount = String(json.data.amount);
-          }
-        }
-      } catch (e) {
-        console.error("Plisio API error:", e);
-      }
-    }
-
-    // Create upgrade request in DB
-    const { data: req, error } = await db.from("upgrade_requests" as any).insert({
+    // 1. Create upgrade request in DB first to get a permanent UUID
+    const { data: req, error: insertErr } = await db.from("upgrade_requests" as any).insert({
       user_id: userId,
       package_slug: data.package_slug,
       amount: priceUsd,
       status: "pending",
-      plisio_invoice_id: plisioInvoiceId,
-      plisio_invoice_url: invoiceUrl,
       payment_id: ltcAddress,
     } as any).select().single();
 
-    if (error) throw new Error(error.message);
+    if (insertErr || !req) throw new Error(insertErr?.message || "Failed to create order request");
+
+    const requestId = (req as any).id as string;
+    let invoiceUrl: string | null = null;
+    let plisioInvoiceId: string | null = null;
+
+    // 2. Always generate Plisio invoice with the permanent requestId
+    try {
+      const apiKey = (settings as any)?.plisio_api_key || "mNftu0lvWb5iTX6AVsiUhZINdfZkWVFRNJke3sUwKXyrxFVo0cHUS0A3yOf065Dq";
+      const params = new URLSearchParams({
+        api_key: apiKey,
+        currency: "LTC",
+        source_currency: "USD",
+        source_amount: String(priceUsd),
+        order_name: `AdsPx ${packageName}`,
+        order_number: requestId,
+        callback_url: "https://adspx.com/api/public/plisio-webhook",
+        success_url: "https://adspx.com/upgrade?status=success",
+        cancel_url: "https://adspx.com/upgrade?status=failed",
+        language: "en_US",
+      });
+
+      const res = await fetch(`https://plisio.net/api/v1/invoices/new?${params.toString()}`, {
+        signal: AbortSignal.timeout(10000),
+      });
+      const json = await res.json() as any;
+
+      if (json.status === "success" && json.data) {
+        plisioInvoiceId = json.data.txn_id ?? null;
+        invoiceUrl = json.data.invoice_url ?? null;
+        if (json.data.wallet_hash) {
+          ltcAddress = json.data.wallet_hash;
+        }
+        if (json.data.amount) {
+          ltcAmount = String(json.data.amount);
+        }
+
+        // Update DB with Plisio details
+        await db
+          .from("upgrade_requests" as any)
+          .update({
+            plisio_invoice_id: plisioInvoiceId,
+            plisio_invoice_url: invoiceUrl,
+            payment_id: ltcAddress,
+            updated_at: new Date().toISOString(),
+          } as any)
+          .eq("id", requestId);
+      } else {
+        console.warn("[Plisio] Non-success response:", json);
+      }
+    } catch (e) {
+      console.error("[Plisio] API error:", e);
+    }
 
     return {
       ok: true as const,
-      requestId: (req as any).id as string,
+      requestId,
       packageName,
       amountUsd: priceUsd,
       cryptoCurrency: "LTC",
