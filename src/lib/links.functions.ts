@@ -75,8 +75,8 @@ async function getProfileQuota(supabase: any, userId: string) {
 
     const actualUsed = actualCount !== null && actualCount !== undefined ? actualCount : (data?.links_used ?? 0);
     // Free tier: Minimum 50 links limit guaranteed for all free users
-    const rawLimit = Number(data?.link_limit ?? 50);
-    const limit = (!rawLimit || rawLimit < 50) ? 50 : rawLimit;
+    const rawLimit = Number(data?.link_limit || 50);
+    const limit = Math.max(50, rawLimit);
 
     return {
       limit,

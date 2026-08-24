@@ -18,7 +18,8 @@ import {
   Edit2,
   Loader2,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Globe
 } from "lucide-react";
 
 import {
@@ -30,7 +31,7 @@ import {
   toggleLink,
 } from "@/lib/links.functions";
 import { getPrimaryShortenerDomain } from "@/lib/shortener-domains.functions";
-import { DEFAULT_SHORT_HOST, isFlaggedShortDomain } from "@/lib/short-domains";
+import { DEFAULT_SHORT_HOST, isFlaggedShortDomain, useShortDomain, SHORT_DOMAINS } from "@/lib/short-domains";
 
 export const Route = createFileRoute("/_authenticated/links")({
   head: () => ({
@@ -232,6 +233,9 @@ function LinksPage() {
       ? DEFAULT_SHORT_HOST
       : rawPrimary;
 
+  const { host: selectedHost, setHost: setSelectedHost } = useShortDomain();
+  const activeDomain = selectedHost || primaryDomain;
+
   const links = dashQ.data?.links ?? [];
 
   const filtered = useMemo(() => {
@@ -280,27 +284,44 @@ function LinksPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <div className="relative min-w-[200px] sm:min-w-[260px]">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Short Domain Selector */}
+            <div className="flex items-center gap-1.5 bg-card border border-border/80 rounded-xl px-3 py-2 text-xs">
+              <Globe className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span className="text-muted-foreground font-bold hidden sm:inline">Domain:</span>
+              <select
+                value={activeDomain}
+                onChange={(e) => setSelectedHost(e.target.value)}
+                className="bg-transparent font-mono font-bold text-foreground focus:outline-none cursor-pointer"
+              >
+                {SHORT_DOMAINS.map((d) => (
+                  <option key={d.host} value={d.host} className="bg-card text-foreground">
+                    {d.host}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="relative min-w-[180px] sm:min-w-[240px]">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search links by code, title..."
-                className="w-full bg-card border border-border/80 rounded-xl py-2.5 pl-10 pr-4 text-xs sm:text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-all"
+                placeholder="Search links..."
+                className="w-full bg-card border border-border/80 rounded-xl py-2 pl-10 pr-4 text-xs sm:text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-all"
               />
             </div>
             <button
               onClick={() => refreshMut.mutate()}
               disabled={refreshMut.isPending}
               title="Refresh links"
-              className="w-10 h-10 rounded-xl border border-border/80 bg-card text-muted-foreground hover:text-primary hover:border-primary/50 flex items-center justify-center transition-all disabled:opacity-50"
+              className="w-9 h-9 rounded-xl border border-border/80 bg-card text-muted-foreground hover:text-primary hover:border-primary/50 flex items-center justify-center transition-all disabled:opacity-50"
             >
-              <RefreshCw className={`w-4 h-4 ${refreshMut.isPending ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshMut.isPending ? "animate-spin" : ""}`} />
             </button>
             <button
               onClick={() => setShowCreate((v) => !v)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20 hover:scale-[1.02] transition-all"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20 hover:scale-[1.02] transition-all"
             >
               <Plus className="w-4 h-4" />
               <span>+ Create Link</span>
@@ -389,7 +410,7 @@ function LinksPage() {
                   </tr>
                 ) : (
                   filtered.map((l: any) => {
-                    const shortUrl = `https://${primaryDomain}/${l.short_code}`;
+                    const shortUrl = `https://${activeDomain}/${l.short_code}`;
                     const clicks = Number(l.clicks_count || 0);
                     const isHot = clicks >= 100;
 
