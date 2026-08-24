@@ -285,21 +285,11 @@ function LinksPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Short Domain Selector */}
+            {/* Short Domain Badge */}
             <div className="flex items-center gap-1.5 bg-card border border-border/80 rounded-xl px-3 py-2 text-xs">
               <Globe className="w-3.5 h-3.5 text-primary shrink-0" />
               <span className="text-muted-foreground font-bold hidden sm:inline">Domain:</span>
-              <select
-                value={activeDomain}
-                onChange={(e) => setSelectedHost(e.target.value)}
-                className="bg-transparent font-mono font-bold text-foreground focus:outline-none cursor-pointer"
-              >
-                {SHORT_DOMAINS.map((d) => (
-                  <option key={d.host} value={d.host} className="bg-card text-foreground">
-                    {d.host}
-                  </option>
-                ))}
-              </select>
+              <span className="font-mono font-bold text-foreground">adswapx.com</span>
             </div>
 
             <div className="relative min-w-[180px] sm:min-w-[240px]">
@@ -410,7 +400,7 @@ function LinksPage() {
                   </tr>
                 ) : (
                   filtered.map((l: any) => {
-                    const shortUrl = `https://${activeDomain}/${l.short_code}`;
+                    const shortUrl = `https://adswapx.com/${l.short_code}`;
                     const clicks = Number(l.clicks_count || 0);
                     const isHot = clicks >= 100;
 

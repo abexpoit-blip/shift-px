@@ -19,9 +19,6 @@ export function isFlaggedShortDomain(host: string): boolean {
 
 export const SHORT_DOMAINS = [
   { host: "adswapx.com", label: "adswapx.com (Primary)" },
-  { host: "linkfly.link", label: "linkfly.link (Short 1)" },
-  { host: "pxclick.me", label: "pxclick.me (Short 2)" },
-  { host: "urlshift.co", label: "urlshift.co (Short 3)" },
 ] as const;
 
 export type ShortDomainHost = string;
