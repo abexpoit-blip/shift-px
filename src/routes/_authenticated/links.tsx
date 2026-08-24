@@ -30,8 +30,9 @@ import {
   deleteLink,
   toggleLink,
 } from "@/lib/links.functions";
+import { listCustomDomains } from "@/lib/custom-domains.functions";
 import { getPrimaryShortenerDomain } from "@/lib/shortener-domains.functions";
-import { DEFAULT_SHORT_HOST, isFlaggedShortDomain, useShortDomain, SHORT_DOMAINS } from "@/lib/short-domains";
+import { DEFAULT_SHORT_HOST, isFlaggedShortDomain } from "@/lib/short-domains";
 
 export const Route = createFileRoute("/_authenticated/links")({
   head: () => ({
@@ -220,21 +221,22 @@ function LinksPage() {
     });
   };
 
-  const primaryFn = useServerFn(getPrimaryShortenerDomain);
-  const primaryQ = useQuery({
-    queryKey: ["primary-shortener-domain"],
-    queryFn: () => primaryFn(),
-    staleTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
+  const listDomainsFn = useServerFn(listCustomDomains);
+  const customDomainsQ = useQuery({
+    queryKey: ["user-verified-custom-domains"],
+    queryFn: () => listDomainsFn(),
+    staleTime: 30_000,
   });
-  const rawPrimary = primaryQ.data?.domain ?? DEFAULT_SHORT_HOST;
-  const primaryDomain =
-    isFlaggedShortDomain(rawPrimary) || rawPrimary === "adspx.com"
-      ? DEFAULT_SHORT_HOST
-      : rawPrimary;
+  const verifiedCustomDomains = useMemo(() => {
+    return ((customDomainsQ.data?.domains as any[]) || []).filter((d: any) => d.verified);
+  }, [customDomainsQ.data]);
 
-  const { host: selectedHost, setHost: setSelectedHost } = useShortDomain();
-  const activeDomain = selectedHost || primaryDomain;
+  const [activeHost, setActiveHost] = useState("adswapx.com");
+  const effectiveHost = useMemo(() => {
+    if (activeHost === "adswapx.com") return "adswapx.com";
+    const exists = verifiedCustomDomains.some((d: any) => d.domain === activeHost);
+    return exists ? activeHost : "adswapx.com";
+  }, [activeHost, verifiedCustomDomains]);
 
   const links = dashQ.data?.links ?? [];
 
@@ -285,11 +287,28 @@ function LinksPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Short Domain Badge */}
+            {/* Short Domain Selector / Badge */}
             <div className="flex items-center gap-1.5 bg-card border border-border/80 rounded-xl px-3 py-2 text-xs">
               <Globe className="w-3.5 h-3.5 text-primary shrink-0" />
               <span className="text-muted-foreground font-bold hidden sm:inline">Domain:</span>
-              <span className="font-mono font-bold text-foreground">adswapx.com</span>
+              {verifiedCustomDomains.length > 0 ? (
+                <select
+                  value={effectiveHost}
+                  onChange={(e) => setActiveHost(e.target.value)}
+                  className="bg-transparent font-mono font-bold text-foreground focus:outline-none cursor-pointer"
+                >
+                  <option value="adswapx.com" className="bg-card text-foreground">
+                    adswapx.com (Primary)
+                  </option>
+                  {verifiedCustomDomains.map((d: any) => (
+                    <option key={d.id} value={d.domain} className="bg-card text-foreground">
+                      {d.domain} (Custom)
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="font-mono font-bold text-foreground">adswapx.com</span>
+              )}
             </div>
 
             <div className="relative min-w-[180px] sm:min-w-[240px]">
@@ -400,7 +419,7 @@ function LinksPage() {
                   </tr>
                 ) : (
                   filtered.map((l: any) => {
-                    const shortUrl = `https://adswapx.com/${l.short_code}`;
+                    const shortUrl = `https://${effectiveHost}/${l.short_code}`;
                     const clicks = Number(l.clicks_count || 0);
                     const isHot = clicks >= 100;
 

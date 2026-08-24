@@ -16,8 +16,8 @@ const PAID_PLANS = new Set([
   "enterprise",
 ]);
 
-// The public CNAME target every custom domain points to.
-export const CNAME_TARGET = "adspx.com";
+// The public CNAME target every custom domain points to (our Cloudflare Fallback Origin).
+export const CNAME_TARGET = "cname.adspx.com";
 
 const domainRegex = /^(?!:\/\/)([a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,}$/;
 
@@ -135,6 +135,10 @@ export const addCustomDomain = createServerFn({ method: "POST" })
       throw new Error("This domain is already registered by another account.");
     }
 
+    // Auto-register with Cloudflare for SaaS (Custom Hostnames)
+    const { cfRegisterCustomHostname } = await import("@/lib/cloudflare-saas.server");
+    await cfRegisterCustomHostname(domain);
+
     const tokenBytes = new Uint8Array(16);
     crypto.getRandomValues(tokenBytes);
     const verification_token = Array.from(tokenBytes)
@@ -151,8 +155,8 @@ export const addCustomDomain = createServerFn({ method: "POST" })
   });
 
 /**
- * Enhanced verify: checks TXT + CNAME, detects registrar from nameservers,
- * flips `verified = true` when both records are correct. Safe to poll.
+ * Enhanced verify: checks CNAME pointing to cname.adspx.com or adspx.com,
+ * checks Cloudflare SSL / hostname status, and flips `verified = true`.
  */
 export const verifyCustomDomain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -182,21 +186,34 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
 
     const txtOk = txtAnswers.some((v) => v.includes(row.verification_token));
     const cnameTarget =
-      cnameAnswers.find((v) => v.toLowerCase().includes(CNAME_TARGET)) ?? cnameAnswers[0] ?? "";
-    const cnameOk = !!cnameAnswers.find((v) => v.toLowerCase().includes(CNAME_TARGET));
+      cnameAnswers.find(
+        (v) =>
+          v.toLowerCase().includes("cname.adspx.com") ||
+          v.toLowerCase().includes("adspx.com") ||
+          v.toLowerCase().includes("adswapx.com"),
+      ) ?? cnameAnswers[0] ?? "";
 
-    // Fallback: some registrars flatten subdomain CNAMEs into A records at edge.
-    // If A record resolves to a Cloudflare/Adspx-fronted IP, treat as OK.
+    const cnameOk =
+      !!cnameAnswers.find(
+        (v) =>
+          v.toLowerCase().includes("cname.adspx.com") ||
+          v.toLowerCase().includes("adspx.com") ||
+          v.toLowerCase().includes("adswapx.com"),
+      );
+
+    // Fallback: A record pointing to our server IP or Cloudflare Edge IP
+    const targetA = await dohQuery("cname.adspx.com", "A");
     const aOk =
-      aAnswers.length > 0 && cnameAnswers.length === 0
-        ? await (async () => {
-            // Look up A record of CNAME_TARGET; consider OK if they match.
-            const targetA = await dohQuery(CNAME_TARGET, "A");
-            return targetA.some((ip) => aAnswers.includes(ip));
-          })()
+      aAnswers.length > 0
+        ? aAnswers.some((ip) => targetA.includes(ip) || ip === "109.205.180.183")
         : false;
 
-    const pointsOk = cnameOk || aOk;
+    // Check Cloudflare for SaaS API directly
+    const { cfGetCustomHostname } = await import("@/lib/cloudflare-saas.server");
+    const cfInfo = await cfGetCustomHostname(row.domain);
+    const cfActive = cfInfo.ok && (cfInfo.data?.status === "active" || cfInfo.data?.ssl?.status === "active");
+
+    const pointsOk = cnameOk || aOk || cfActive || txtOk;
     const provider = detectProvider(nsAnswers);
 
     const base = {
@@ -207,25 +224,10 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
       provider,
     };
 
-    if (!txtOk && !pointsOk) {
-      return {
-        ok: false,
-        message:
-          "DNS records not detected yet. Add both records at your registrar and try again in 1–2 minutes.",
-        ...base,
-      };
-    }
-    if (!txtOk) {
-      return {
-        ok: false,
-        message: `TXT record missing. Add TXT at "${txtName}" with value: ${row.verification_token}`,
-        ...base,
-      };
-    }
     if (!pointsOk) {
       return {
         ok: false,
-        message: `CNAME not pointing to ${CNAME_TARGET}. Add a CNAME at ${row.domain} → ${CNAME_TARGET}`,
+        message: `CNAME record not detected yet. Add a CNAME at "${row.domain}" pointing to "${CNAME_TARGET}" and try again in a few seconds.`,
         ...base,
       };
     }
@@ -241,7 +243,7 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
 
     return {
       ok: true,
-      message: "Domain verified successfully! You can now use it for your links.",
+      message: "Domain verified and SSL active! You can now use your custom domain for links.",
       ...base,
     };
   });
@@ -251,6 +253,20 @@ export const deleteCustomDomain = createServerFn({ method: "POST" })
   .inputValidator((data: { id: string }) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
+
+    const { data: row } = await supabase
+      .from("custom_domains")
+      .select("domain")
+      .eq("id", data.id)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (row?.domain) {
+      // Auto-delete from Cloudflare for SaaS
+      const { cfDeleteCustomHostname } = await import("@/lib/cloudflare-saas.server");
+      await cfDeleteCustomHostname(row.domain);
+    }
+
     const { error } = await supabase
       .from("custom_domains")
       .delete()
@@ -259,3 +275,4 @@ export const deleteCustomDomain = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+

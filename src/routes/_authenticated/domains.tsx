@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_authenticated/domains")({
 });
 
 const display = { fontFamily: "'Space Grotesk', sans-serif" } as const;
-const CNAME_TARGET = "adspx.com";
+const CNAME_TARGET = "cname.adspx.com";
 
 // Registrar quick-links (fallback list; server also detects provider).
 const REGISTRARS = [
