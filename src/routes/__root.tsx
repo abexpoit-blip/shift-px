@@ -94,6 +94,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "AdsPx is a next-generation link management platform with advanced anti-bot cloaking, real-time analytics, and instant crypto payout infrastructure.",
       },
+      { name: "facebook-domain-verification", content: "vwq9sy1oxrdami370lemzya1296y7j" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "robots", content: "index, follow" },
