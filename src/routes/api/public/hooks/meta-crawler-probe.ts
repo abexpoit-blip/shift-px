@@ -29,7 +29,7 @@ const META_UAS = [
 
 // Domains we advertise on Facebook / Meta. Keep this list in sync with
 // src/lib/short-domains.ts and the primary app host.
-const TARGET_DOMAINS = ["breezysocial.com", "skypq.com", "mefok.com", "adspx.com", "www.adspx.com"];
+const TARGET_DOMAINS = ["adswapx.com", "adspx.com", "www.adspx.com"];
 
 const FETCH_TIMEOUT_MS = 8000;
 

@@ -27,45 +27,17 @@ export type Brand = {
 };
 
 const REGISTRY: Record<string, Brand> = {
-  "tekuc.com": {
-    name: "Tekuc",
-    tagline: "Modern wellness tech for calm, focused living.",
-    email: "hello@tekuc.com",
-    city: "Austin, TX",
-    host: "tekuc.com",
-  },
-  "breezysocial.com": {
-    name: "BreezySocial",
-    tagline: "Smart gadgets for calm, modern living.",
-    email: "hello@breezysocial.com",
-    city: "San Francisco, CA",
-    host: "breezysocial.com",
-  },
-  "skypq.com": {
-    name: "Skypq",
-    tagline: "Everyday essentials, thoughtfully made.",
-    email: "hello@skypq.com",
-    city: "Denver, CO",
-    host: "skypq.com",
-  },
-  "mefok.com": {
-    name: "Mefok",
-    tagline: "Simple home gear for better daily routines.",
-    email: "hello@mefok.com",
-    city: "Portland, OR",
-    host: "mefok.com",
-  },
   "adswapx.com": {
     name: "Adswapx",
     tagline: "Everyday finds, simply delivered.",
-    email: "hello@adswapx.com",
+    email: "support@adswapx.com",
     city: "Chicago, IL",
     host: "adswapx.com",
   },
   "adspx.com": {
     name: "Adspx",
-    tagline: "Sleep-first gear engineered for real rest.",
-    email: "hello@adspx.com",
+    tagline: "High-performance link analytics and tools.",
+    email: "support@adspx.com",
     city: "Seattle, WA",
     host: "adspx.com",
   },
