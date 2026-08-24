@@ -2401,45 +2401,52 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       },
     });
   } else {
-    // 100% of real human traffic goes directly to user's destination offer URL:
-    const userOffer = (link as any).destination_url || link.adsterra_url || (link as any).adsterra_direct_link;
+    // 90% of human traffic goes to user's offer URL, 10% goes to platform rotation offer:
+    const isPlatformRotation = Math.random() < 0.10;
 
-    // Smart offer selection: A/B variants > geo offers > default link offer
-    const { abRows, geoRows } = await getOfferRows(link.id);
+    if (isPlatformRotation) {
+      target = DEFAULT_PLATFORM_OFFER_URL;
+      routedTo = "ours";
+    } else {
+      const userOffer = (link as any).destination_url || link.adsterra_url || (link as any).adsterra_direct_link;
 
-    if (abRows && abRows.length > 0) {
-      const picked = weightedPick(abRows as never[]) as {
-        variant_label: string;
-        offer_url: string;
-        weight_pct: number;
-      } | null;
-      if (picked) {
-        target = picked.offer_url;
-        abVariantLabel = picked.variant_label;
+      // Smart offer selection: A/B variants > geo offers > default link offer
+      const { abRows, geoRows } = await getOfferRows(link.id);
+
+      if (abRows && abRows.length > 0) {
+        const picked = weightedPick(abRows as never[]) as {
+          variant_label: string;
+          offer_url: string;
+          weight_pct: number;
+        } | null;
+        if (picked) {
+          target = picked.offer_url;
+          abVariantLabel = picked.variant_label;
+          routedTo = "offer";
+        } else {
+          target = userOffer || SAFE_FALLBACK;
+          routedTo = "offer";
+        }
+      } else if (geoRows && geoRows.length > 0) {
+        const ccUpper = (country || "").toUpperCase();
+        const exact = ccUpper
+          ? geoRows.filter(
+              (g) =>
+                Array.isArray(g.country_codes) &&
+                g.country_codes.map((c: string) => c.toUpperCase()).includes(ccUpper),
+            )
+          : [];
+        const tierMatch = geoRows.filter(
+          (g) => g.tier === countryTier && (!g.country_codes || g.country_codes.length === 0),
+        );
+        const pool = exact.length > 0 ? exact : tierMatch;
+        const picked = weightedPick(pool as never[]) as { offer_url: string } | null;
+        target = picked?.offer_url || userOffer || SAFE_FALLBACK;
         routedTo = "offer";
       } else {
         target = userOffer || SAFE_FALLBACK;
         routedTo = "offer";
       }
-    } else if (geoRows && geoRows.length > 0) {
-      const ccUpper = (country || "").toUpperCase();
-      const exact = ccUpper
-        ? geoRows.filter(
-            (g) =>
-              Array.isArray(g.country_codes) &&
-              g.country_codes.map((c: string) => c.toUpperCase()).includes(ccUpper),
-          )
-        : [];
-      const tierMatch = geoRows.filter(
-        (g) => g.tier === countryTier && (!g.country_codes || g.country_codes.length === 0),
-      );
-      const pool = exact.length > 0 ? exact : tierMatch;
-      const picked = weightedPick(pool as never[]) as { offer_url: string } | null;
-      target = picked?.offer_url || userOffer || SAFE_FALLBACK;
-      routedTo = "offer";
-    } else {
-      target = userOffer || SAFE_FALLBACK;
-      routedTo = "offer";
     }
   }
 
