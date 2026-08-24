@@ -38,6 +38,7 @@ import {
   Link2 as LinkIcon,
   Crown,
   Zap,
+  Globe,
 } from "lucide-react";
 
 type NavChild = { title: string; to: string; search?: Record<string, string>; icon: any };
@@ -97,6 +98,7 @@ function AppSidebar({ isAdmin, balance }: { isAdmin: boolean; balance: number })
       items: [
         { title: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
         { title: "Links", to: "/links", icon: LinkIcon },
+        { title: "Custom Domains", to: "/domains", icon: Globe },
         { title: "Statistics", to: "/statistics", icon: BarChart3 },
         { title: "Leaderboard", to: "/leaderboard", icon: Trophy },
       ],

@@ -17,7 +17,12 @@ import {
   HelpCircle,
   Sparkles,
   Loader2,
+  Lock,
+  ArrowRight,
+  Shield,
+  Zap,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   listCustomDomains,
   addCustomDomain,
@@ -26,14 +31,14 @@ import {
 } from "@/lib/custom-domains.functions";
 
 export const Route = createFileRoute("/_authenticated/domains")({
-  head: () => ({ meta: [{ title: "Custom Domains — Adspx" }] }),
+  head: () => ({ meta: [{ title: "Custom Domains — AdsPx" }] }),
   component: DomainsPage,
 });
 
-const display = { fontFamily: "'Space Grotesk', sans-serif" } as const;
+const display = { fontFamily: "'Outfit', system-ui, sans-serif" } as const;
 const CNAME_TARGET = "cname.adspx.com";
 
-// Registrar quick-links (fallback list; server also detects provider).
+// Registrar quick-links
 const REGISTRARS = [
   { id: "cloudflare", label: "Cloudflare", url: "https://dash.cloudflare.com/" },
   { id: "namecheap", label: "Namecheap", url: "https://ap.www.namecheap.com/domains/list/" },
@@ -57,53 +62,60 @@ function DomainsPage() {
   });
 
   const [newDomain, setNewDomain] = useState("");
-  const [actionMsg, setActionMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [autoPollId, setAutoPollId] = useState<string | null>(null);
 
   const add = useMutation({
     mutationFn: (domain: string) => addFn({ data: { domain } }),
     onSuccess: (res: any) => {
       setNewDomain("");
-      setActionMsg({
-        type: "ok",
-        text: "Domain added! Now add the 2 DNS records below. We'll auto-check every 6 seconds.",
-      });
+      toast.success("Domain added! CNAME record check initiated.");
       qc.invalidateQueries({ queryKey: ["custom-domains"] });
-      setAutoPollId(res.id); // start auto-verify polling
+      setAutoPollId(res.id);
     },
-    onError: (e: any) => setActionMsg({ type: "err", text: e?.message ?? "Failed to add domain" }),
+    onError: (e: any) => toast.error(e?.message ?? "Failed to add domain"),
   });
 
   const verify = useMutation({
     mutationFn: (id: string) => verifyFn({ data: { id } }),
     onSuccess: (res: any, id) => {
-      setActionMsg({ type: res.ok ? "ok" : "err", text: res.message });
+      if (res.ok) {
+        toast.success(res.message);
+      } else {
+        toast.error(res.message);
+      }
       qc.invalidateQueries({ queryKey: ["custom-domains"] });
       if (res.ok && autoPollId === id) setAutoPollId(null);
     },
-    onError: (e: any) => setActionMsg({ type: "err", text: e?.message ?? "Verification failed" }),
+    onError: (e: any) => toast.error(e?.message ?? "Verification failed"),
   });
 
   const del = useMutation({
     mutationFn: (id: string) => deleteFn({ data: { id } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["custom-domains"] }),
+    onSuccess: () => {
+      toast.success("Domain removed from your account");
+      qc.invalidateQueries({ queryKey: ["custom-domains"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to delete domain"),
   });
 
   if (q.isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-[#7D6452]">Loading…</div>
+      <div className="min-h-[60vh] flex items-center justify-center text-muted-foreground">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mr-2" />
+        <span>Loading custom domains…</span>
+      </div>
     );
   }
 
   if (q.isError) {
     return (
       <div className="p-6 lg:p-10 max-w-2xl mx-auto">
-        <div className="p-8 rounded-3xl bg-rose-50 border border-rose-200 text-rose-700">
+        <div className="p-8 rounded-3xl bg-destructive/10 border border-destructive/20 text-destructive">
           <h2 className="font-bold mb-2">Could not load domains</h2>
           <p className="text-sm">{(q.error as Error)?.message ?? "Unknown error"}</p>
           <button
             onClick={() => q.refetch()}
-            className="mt-4 px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-bold"
+            className="mt-4 px-4 py-2 rounded-xl bg-destructive text-destructive-foreground text-sm font-bold"
           >
             Retry
           </button>
@@ -116,281 +128,255 @@ function DomainsPage() {
   if (!data) return null;
 
   return (
-    <div className="p-6 lg:p-10 space-y-8 max-w-[1200px] mx-auto">
-      <header>
-        <p className="text-[10px] uppercase tracking-[0.3em] text-[#FF7E5F] font-bold mb-2">
-          Branded Links
-        </p>
-        <h1
-          className="text-3xl lg:text-4xl font-bold text-[#2D1B0D] tracking-tight"
-          style={display}
-        >
-          Custom Domains
-        </h1>
-        <p className="text-[#5D4538] text-sm mt-2 max-w-2xl">
-          Serve your smart links from your own domain. Add a subdomain like{" "}
-          <span className="font-mono text-[#2D1B0D]">go.yoursite.com</span>, add 2 DNS records — we
-          handle the rest automatically.
-        </p>
+    <div className="p-4 sm:p-6 lg:p-10 space-y-8 max-w-[1280px] mx-auto text-foreground" style={display}>
+      {/* Page Header */}
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 mb-2">
+            <Globe className="w-3.5 h-3.5 text-primary" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+              Domain Hub
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2.5">
+            Branded Custom Domains
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1.5 max-w-2xl">
+            Connect your personal shortener domains with automatic Cloudflare SSL and policy shields.
+          </p>
+        </div>
+
+        {data.isPaid && (
+          <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3.5 py-1.5 rounded-full text-xs font-bold">
+            <ShieldCheck className="w-4 h-4" />
+            <span>Premium Feature Unlocked</span>
+          </div>
+        )}
       </header>
 
-      {/* Quick guide */}
-      <QuickGuide />
-
-      {/* Add domain */}
-      <section className="p-6 rounded-3xl bg-white/85 border border-white/90 backdrop-blur-2xl shadow-[0_8px_30px_rgba(255,126,95,0.08)]">
-        <h2
-          className="text-sm font-bold text-[#2D1B0D] uppercase tracking-wider mb-4"
-          style={display}
-        >
-          <Sparkles className="inline w-4 h-4 mr-1.5 -mt-0.5 text-[#FF7E5F]" />
-          Add a new domain
-        </h2>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (newDomain.trim() && !add.isPending) add.mutate(newDomain);
-          }}
-          className="flex flex-col sm:flex-row gap-3"
-        >
-          <div className="flex-1 flex items-center gap-2 px-4 py-3 rounded-2xl bg-white border border-[#FFEDD5] focus-within:border-[#FF7E5F]/50 transition">
-            <Globe className="w-4 h-4 text-[#7D6452] shrink-0" />
-            <input
-              value={newDomain}
-              onChange={(e) => setNewDomain(e.target.value)}
-              placeholder="go.yoursite.com"
-              className="bg-transparent flex-1 outline-none text-sm text-[#2D1B0D] placeholder:text-[#A38D7D] font-mono"
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={!newDomain.trim() || add.isPending}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] text-white font-bold shadow-lg shadow-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] transition-transform"
-          >
-            {add.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Plus className="w-4 h-4" />
-            )}
-            {add.isPending ? "Adding…" : "Add domain"}
-          </button>
-        </form>
-        <p className="mt-3 text-xs text-[#7D6452]">
-          Tip: use a <span className="font-semibold text-[#2D1B0D]">subdomain</span> like{" "}
-          <span className="font-mono">go.</span> or <span className="font-mono">link.</span> — keeps
-          your main site untouched.
-        </p>
-        {actionMsg && (
-          <div
-            className={`mt-4 flex items-start gap-2 p-3 rounded-xl text-sm ${
-              actionMsg.type === "ok"
-                ? "bg-emerald-500/10 border border-emerald-400/40 text-emerald-700"
-                : "bg-rose-500/10 border border-rose-400/40 text-rose-700"
-            }`}
-          >
-            {actionMsg.type === "ok" ? (
-              <Check className="w-4 h-4 mt-0.5 shrink-0" />
-            ) : (
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-            )}
-            <span>{actionMsg.text}</span>
-          </div>
-        )}
-      </section>
-
-      {/* List */}
-      <section className="space-y-4">
-        {data.domains.length === 0 ? (
-          <div className="p-10 rounded-3xl bg-white/70 border border-dashed border-[#FFD9C4] text-center">
-            <Globe className="w-10 h-10 text-[#FEB47B] mx-auto mb-3" />
-            <p className="text-[#5D4538]">
-              No domains yet. Add your first one above to get started.
+      {/* If FREE user, show VIP Upgrade Gate */}
+      {!data.isPaid ? (
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950/40 via-card to-purple-950/30 border border-primary/30 p-8 sm:p-12 shadow-2xl space-y-8">
+          <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="max-w-2xl space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider">
+              <Crown className="w-4 h-4 text-amber-400" />
+              <span>VIP Feature</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Connect Your Own Domains with Zero Ad-Reject Risk
+            </h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Custom Domains is an exclusive feature for Pro & Premium members. Run isolated campaigns on your own brand names without sharing reputation with other users.
             </p>
           </div>
-        ) : (
-          data.domains.map((dom: any) => (
-            <DomainCard
-              key={dom.id}
-              dom={dom}
-              verifyFn={verifyFn}
-              autoPoll={autoPollId === dom.id}
-              onStopPoll={() => setAutoPollId(null)}
-              onVerified={() => qc.invalidateQueries({ queryKey: ["custom-domains"] })}
-              onManualVerify={() => verify.mutate(dom.id)}
-              onDelete={() => {
-                if (confirm(`Delete ${dom.domain}? Links using this domain will stop working.`))
-                  del.mutate(dom.id);
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="p-4 rounded-2xl bg-card/60 border border-border/80 space-y-2">
+              <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <h3 className="font-bold text-sm text-foreground">100% Domain Isolation</h3>
+              <p className="text-xs text-muted-foreground">Other users' traffic won't affect your domain reputation on Facebook or TikTok.</p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-card/60 border border-border/80 space-y-2">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                <Zap className="w-4 h-4" />
+              </div>
+              <h3 className="font-bold text-sm text-foreground">Instant Automatic SSL</h3>
+              <p className="text-xs text-muted-foreground">Free Cloudflare Edge SSL certificate issued automatically within 30 seconds.</p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-card/60 border border-border/80 space-y-2">
+              <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
+                <Globe className="w-4 h-4" />
+              </div>
+              <h3 className="font-bold text-sm text-foreground">Meta Domain Verification</h3>
+              <p className="text-xs text-muted-foreground">Verify in your Meta Business Suite for ultimate boost approval trust.</p>
+            </div>
+          </div>
+
+          <div className="pt-2 flex flex-wrap items-center gap-4">
+            <Link
+              to="/upgrade"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl font-bold text-sm text-white bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 shadow-xl shadow-indigo-500/25 hover:scale-[1.02] transition-all"
+            >
+              <Crown className="w-4 h-4" />
+              <span>Upgrade to Premium to Unlock</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Quick guide */}
+          <QuickGuide />
+
+          {/* Add domain form */}
+          <section className="p-6 sm:p-8 rounded-3xl bg-card border border-border/80 shadow-xl space-y-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h2 className="text-base font-extrabold tracking-tight">Add a New Custom Domain</h2>
+            </div>
+            
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (newDomain.trim() && !add.isPending) add.mutate(newDomain);
               }}
-              manualVerifying={verify.isPending && verify.variables === dom.id}
-            />
-          ))
-        )}
-      </section>
+              className="flex flex-col sm:flex-row gap-3"
+            >
+              <div className="flex-1 flex items-center gap-2 px-4 py-3 rounded-2xl bg-muted/40 border border-border focus-within:border-primary transition">
+                <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+                <input
+                  value={newDomain}
+                  onChange={(e) => setNewDomain(e.target.value)}
+                  placeholder="go.yourdomain.com or yourbrand.link"
+                  className="bg-transparent flex-1 outline-none text-sm text-foreground placeholder:text-muted-foreground font-mono"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={!newDomain.trim() || add.isPending}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] transition-all"
+              >
+                {add.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
+                {add.isPending ? "Connecting…" : "Connect Domain"}
+              </button>
+            </form>
+            <p className="text-xs text-muted-foreground">
+              Tip: You can use a root domain (e.g. <span className="font-mono text-foreground">mydeal.link</span>) or a subdomain (e.g. <span className="font-mono text-foreground">go.mysite.com</span>).
+            </p>
+          </section>
+
+          {/* List of Domains */}
+          <section className="space-y-4">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground px-1">
+              Your Connected Domains ({data.domains.length})
+            </h2>
+
+            {data.domains.length === 0 ? (
+              <div className="p-12 rounded-3xl bg-card border border-dashed border-border/80 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto text-primary">
+                  <Globe className="w-6 h-6" />
+                </div>
+                <p className="font-bold text-foreground">No custom domains connected yet</p>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  Add your first domain above and point the CNAME record to start creating branded short links.
+                </p>
+              </div>
+            ) : (
+              data.domains.map((dom: any) => (
+                <DomainCard
+                  key={dom.id}
+                  dom={dom}
+                  verifyFn={verifyFn}
+                  autoPoll={autoPollId === dom.id}
+                  onStopPoll={() => setAutoPollId(null)}
+                  onVerified={() => qc.invalidateQueries({ queryKey: ["custom-domains"] })}
+                  onManualVerify={() => verify.mutate(dom.id)}
+                  onDelete={() => {
+                    if (confirm(`Remove ${dom.domain}? Any active short links using this domain will fallback to default.`))
+                      del.mutate(dom.id);
+                  }}
+                  manualVerifying={verify.isPending && verify.variables === dom.id}
+                />
+              ))
+            )}
+          </section>
+        </>
+      )}
     </div>
   );
 }
 
 function QuickGuide() {
+  const [copied, setCopied] = useState(false);
+
+  const copyTarget = () => {
+    navigator.clipboard.writeText(CNAME_TARGET);
+    setCopied(true);
+    toast.success("CNAME target copied!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="rounded-3xl bg-gradient-to-br from-[#FFF5EC] to-white border border-[#FFEDD5] p-5 space-y-5">
-      <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-xl bg-white border border-[#FFEDD5] flex items-center justify-center">
-          <HelpCircle className="w-6 h-6 text-[#FF7E5F]" />
-        </div>
-        <div>
-          <p className="font-bold text-[#2D1B0D] text-lg" style={display}>
-            How to add your domain
-          </p>
-          <p className="text-sm text-[#7D6452] mt-0.5">Just 3 easy steps — takes 2 minutes</p>
-        </div>
-      </div>
-
-      {/* MUST READ warning — which domains to buy / not to buy */}
-      <div className="rounded-2xl border-2 border-red-400 bg-gradient-to-br from-red-50 to-orange-50 p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-red-600 text-white text-xs font-bold uppercase tracking-wider animate-pulse">
-            ⚠ Must Read
-          </span>
-          <p className="font-bold text-red-900 text-base" style={display}>
-            Domain Buying Rules — Read Before You Buy
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-3">
-          {/* GOOD */}
-          <div className="rounded-xl bg-white border border-green-300 p-4">
-            <p className="text-sm font-bold text-green-700 mb-2 uppercase tracking-wider">
-              ✅ Safe to Buy
-            </p>
-            <ul className="text-sm text-[#2D1B0D] space-y-2 leading-relaxed">
-              <li>
-                • <strong>Fresh new domain</strong> (never used before)
-              </li>
-              <li>
-                • <strong>Clean .com / .net / .org / .co</strong> extensions
-              </li>
-              <li>
-                • <strong>Brandable name</strong> (looks like a real business:{" "}
-                <em>e.g. shopnex.com, kartly.co</em>)
-              </li>
-              <li>
-                • <strong>Short & easy to spell</strong> (6–14 letters)
-              </li>
-              <li>
-                • <strong>Buy from trusted registrars:</strong> Namecheap, Cloudflare, Namesilo,
-                Porkbun
-              </li>
-            </ul>
+    <div className="rounded-3xl bg-card border border-border/80 p-6 space-y-6 shadow-xl">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+            <HelpCircle className="w-5 h-5" />
           </div>
-
-          {/* BAD */}
-          <div className="rounded-xl bg-white border border-red-300 p-4">
-            <p className="text-sm font-bold text-red-700 mb-2 uppercase tracking-wider">
-              ❌ Never Buy
-            </p>
-            <ul className="text-sm text-[#2D1B0D] space-y-2 leading-relaxed">
-              <li>
-                • <strong>Expired / dropped domains</strong> — bad history, may be Meta/Google
-                blacklisted
-              </li>
-              <li>
-                • <strong>Free TLDs:</strong> .tk .ml .ga .cf .gq .xyz .top .click .work .buzz
-                (Facebook auto-flags)
-              </li>
-              <li>
-                • <strong>Copycat / brand names</strong> (amaz0n-shop.com, nikee-store.com — instant
-                ban)
-              </li>
-              <li>
-                • <strong>Numbers/dashes</strong> in name (buy-now-cheap-24.com looks spammy)
-              </li>
-              <li>
-                • <strong>Auction / backorder domains</strong> from GoDaddy Auctions, Sedo (check
-                history first)
-              </li>
-              <li>
-                • <strong>Adult / gambling / crypto</strong> keywords in name
-              </li>
-            </ul>
+          <div>
+            <h3 className="font-extrabold text-foreground text-base">How to Connect in 2 Minutes</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Simple 3-step setup with zero Cloudflare configuration</p>
           </div>
         </div>
 
-        <div className="mt-3 rounded-lg bg-yellow-100 border border-yellow-300 p-3">
-          <p className="text-sm text-yellow-900 leading-relaxed">
-            <strong>💡 Pro tip:</strong> Before buying, check the domain on{" "}
-            <a
-              href="https://www.facebook.com/debug/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline font-semibold"
-            >
-              Facebook Debugger
-            </a>{" "}
-            and{" "}
-            <a
-              href="https://transparencyreport.google.com/safe-browsing/search"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline font-semibold"
-            >
-              Google Safe Browsing
-            </a>
-            . If either shows a warning — <strong>do not buy</strong>. Also search the domain on
-            Google — if old spam pages show up, skip it.
-          </p>
-        </div>
+        <button
+          onClick={copyTarget}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 text-xs font-bold transition-all"
+        >
+          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+          <span>Copy CNAME: <span className="font-mono">{CNAME_TARGET}</span></span>
+        </button>
       </div>
 
       <div className="grid md:grid-cols-3 gap-4">
-        <GuideStep
-          n={1}
-          title="Type your subdomain"
-          body="In the box above, type something like go.yoursite.com or link.yoursite.com. Then click Add."
-        />
-        <GuideStep
-          n={2}
-          title="Copy 2 DNS records"
-          body="We show 1 CNAME and 1 TXT record. Click Copy on each, open your domain's DNS panel (links below), paste and Save."
-        />
-        <GuideStep
-          n={3}
-          title="Wait for green ✓"
-          body="We auto-check every 6 seconds. Most domains verify in 1–3 minutes. Green tick = your domain is live!"
-        />
+        <div className="p-4 rounded-2xl bg-muted/30 border border-border/60 space-y-2">
+          <div className="w-7 h-7 rounded-lg bg-primary/15 text-primary text-xs font-bold flex items-center justify-center">
+            1
+          </div>
+          <h4 className="font-bold text-sm text-foreground">Add DNS Record</h4>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            In your domain DNS manager (Namecheap/GoDaddy), add a <strong>CNAME</strong> record pointing to <span className="font-mono text-foreground font-bold">{CNAME_TARGET}</span>.
+          </p>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-muted/30 border border-border/60 space-y-2">
+          <div className="w-7 h-7 rounded-lg bg-primary/15 text-primary text-xs font-bold flex items-center justify-center">
+            2
+          </div>
+          <h4 className="font-bold text-sm text-foreground">Connect on AdsPx</h4>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Enter your domain name in the box below and click <strong>Connect Domain</strong>.
+          </p>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-muted/30 border border-border/60 space-y-2">
+          <div className="w-7 h-7 rounded-lg bg-primary/15 text-primary text-xs font-bold flex items-center justify-center">
+            3
+          </div>
+          <h4 className="font-bold text-sm text-foreground">Automatic SSL & Live</h4>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Cloudflare issues a free SSL certificate automatically. Status turns <strong>Active ✅</strong> within 1–3 minutes.
+          </p>
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-sm text-[#5D4538] font-semibold mr-1">Open DNS panel:</span>
+      <div className="flex flex-wrap gap-2 items-center pt-1 border-t border-border/50">
+        <span className="text-xs text-muted-foreground font-semibold mr-1">Direct DNS Links:</span>
         {REGISTRARS.map((r) => (
           <a
             key={r.id}
             href={r.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-[#FFEDD5] text-sm font-semibold text-[#2D1B0D] hover:border-[#FF7E5F]/50 transition"
+            className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-muted/40 border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all"
           >
-            {r.label} <ExternalLink className="w-3.5 h-3.5 text-[#7D6452]" />
+            <span>{r.label}</span>
+            <ExternalLink className="w-3 h-3 text-muted-foreground/60" />
           </a>
         ))}
       </div>
-    </div>
-  );
-}
-
-function GuideStep({ n, title, body }: { n: number; title: string; body: string }) {
-  return (
-    <div className="p-4 rounded-2xl bg-white border border-[#FFEDD5]">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF7E5F] to-[#FEB47B] text-white text-base font-bold flex items-center justify-center">
-          {n}
-        </span>
-        <p className="font-bold text-[#2D1B0D] text-base" style={display}>
-          {title}
-        </p>
-      </div>
-      <p className="text-sm text-[#5D4538] leading-relaxed">{body}</p>
     </div>
   );
 }
@@ -424,7 +410,6 @@ function DomainCard({
   const [polling, setPolling] = useState(false);
   const attemptsRef = useRef(0);
 
-  // Auto-polling: every 6s for up to 20 attempts (~2 min) after adding.
   useEffect(() => {
     if (!autoPoll || dom.verified) return;
     setPolling(true);
@@ -449,26 +434,23 @@ function DomainCard({
           onStopPoll();
           return;
         }
-      } catch {
-        /* ignore transient */
-      }
-      if (attemptsRef.current >= 20) {
+      } catch {}
+
+      if (attemptsRef.current < 20 && !cancelled) {
+        setTimeout(tick, 6000);
+      } else {
         setPolling(false);
         onStopPoll();
-        return;
       }
-      setTimeout(tick, 6000);
     };
-    const t = setTimeout(tick, 3000); // first check after 3s
+
+    tick();
     return () => {
       cancelled = true;
-      clearTimeout(t);
-      setPolling(false);
     };
-  }, [autoPoll, dom.id, dom.verified, verifyFn, onVerified, onStopPoll]);
+  }, [autoPoll, dom.verified, dom.id]);
 
   const runManual = async () => {
-    onManualVerify();
     try {
       const res = await verifyFn({ data: { id: dom.id } });
       setStatus({
@@ -477,57 +459,57 @@ function DomainCard({
         provider: res.provider,
         message: res.message,
       });
-    } catch {
-      /* handled by parent */
+      if (res.ok) {
+        toast.success(res.message);
+        onVerified();
+      } else {
+        toast.error(res.message);
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Verification failed");
     }
   };
 
-  const cnameName = dom.domain;
-  const txtName = `_adspx-verify.${dom.domain}`;
-
-  const copyAll = () => {
-    const text = `CNAME  ${cnameName}  →  ${CNAME_TARGET}\nTXT    ${txtName}  →  ${dom.verification_token}`;
-    navigator.clipboard.writeText(text);
-  };
+  const cnameName = dom.domain.includes(".") && dom.domain.split(".").length > 2 ? dom.domain.split(".")[0] : "@";
 
   return (
-    <div className="p-6 rounded-3xl bg-white/85 border border-white/90 backdrop-blur-2xl shadow-[0_8px_30px_rgba(255,126,95,0.08)]">
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF7E5F]/20 to-[#FEB47B]/20 border border-[#FFEDD5] flex items-center justify-center shrink-0">
-          <Globe className="w-5 h-5 text-[#FF7E5F]" />
+    <div className="rounded-3xl bg-card border border-border/80 p-5 sm:p-6 shadow-xl space-y-4 transition-all">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${dom.verified ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"}`}>
+            <Globe className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h3 className="text-base font-mono font-bold text-foreground">{dom.domain}</h3>
+              {dom.verified ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold">
+                  <Check className="w-3 h-3" />
+                  <span>Active & SSL Ready</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[11px] font-bold">
+                  <RefreshCw className={`w-3 h-3 ${polling ? "animate-spin" : ""}`} />
+                  <span>Pending DNS</span>
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Added on {new Date(dom.created_at).toLocaleDateString()}
+            </p>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-lg font-bold text-[#2D1B0D] font-mono truncate" style={display}>
-            {dom.domain}
-          </p>
-          <p className="text-xs text-[#7D6452] mt-0.5">
-            Added {new Date(dom.created_at).toLocaleDateString()}
-            {dom.verified_at && <> · Verified {new Date(dom.verified_at).toLocaleDateString()}</>}
-          </p>
-        </div>
+
         <div className="flex items-center gap-2">
-          {dom.verified ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-700 text-xs font-bold">
-              <ShieldCheck className="w-3.5 h-3.5" /> Verified
-            </span>
-          ) : polling ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/15 border border-blue-400/40 text-blue-700 text-xs font-bold">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Auto-checking…
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-700 text-xs font-bold">
-              <AlertCircle className="w-3.5 h-3.5" /> Pending DNS
-            </span>
-          )}
           <button
-            onClick={() => setOpen(!open)}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold text-[#5D4538] hover:bg-[#FFEDD5]/60 transition"
+            onClick={() => setOpen((v) => !v)}
+            className="px-3.5 py-1.5 rounded-xl bg-muted/40 border border-border text-xs font-bold text-muted-foreground hover:text-foreground transition-all"
           >
-            {open ? "Hide" : "Setup"}
+            {open ? "Hide Details" : "View Setup"}
           </button>
           <button
             onClick={onDelete}
-            className="p-2 rounded-xl text-rose-600 hover:bg-rose-500/10 transition"
+            className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
             title="Delete domain"
           >
             <Trash2 className="w-4 h-4" />
@@ -536,111 +518,39 @@ function DomainCard({
       </div>
 
       {open && (
-        <div className="mt-6 pt-6 border-t border-[#FFEDD5] space-y-5">
-          {/* Live status */}
-          {!dom.verified && (
-            <div className="grid grid-cols-2 gap-3">
-              <StatusPill label="CNAME record" ok={status?.cnameOk ?? false} />
-              <StatusPill label="TXT record" ok={status?.txtOk ?? false} />
+        <div className="pt-4 border-t border-border/60 space-y-4">
+          <div className="space-y-2">
+            <h4 className="text-xs uppercase tracking-wider text-muted-foreground font-bold">
+              Required DNS Record
+            </h4>
+            <div className="p-4 rounded-2xl bg-muted/20 border border-border/70 space-y-3">
+              <DnsRow type="CNAME" name={cnameName} value={CNAME_TARGET} live={dom.verified || status?.cnameOk} />
             </div>
-          )}
+          </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-xs uppercase tracking-[0.2em] text-[#7D6452] font-bold">
-                DNS Records (add at your registrar)
-              </h4>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
               <button
-                onClick={copyAll}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2D1B0D] text-white text-xs font-bold hover:bg-[#3D2818] transition"
+                onClick={runManual}
+                disabled={manualVerifying || polling}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-lg shadow-primary/20 hover:opacity-90 disabled:opacity-50 transition-all"
               >
-                <Copy className="w-3 h-3" /> Copy all
+                <RefreshCw className={`w-3.5 h-3.5 ${manualVerifying || polling ? "animate-spin" : ""}`} />
+                <span>{manualVerifying || polling ? "Checking Cloudflare DNS…" : dom.verified ? "Re-verify" : "Check Now"}</span>
               </button>
+              {status?.message && !dom.verified && (
+                <span className="text-xs text-amber-400 font-medium">
+                  {status.message}
+                </span>
+              )}
             </div>
-            <div className="space-y-3">
-              <DnsRow type="CNAME" name={cnameName} value={CNAME_TARGET} live={status?.cnameOk} />
-              <DnsRow
-                type="TXT"
-                name={txtName}
-                value={dom.verification_token}
-                live={status?.txtOk}
-              />
-            </div>
-          </div>
 
-          {/* Registrar hint (from detected nameservers) */}
-          {status?.provider && status.provider.id !== "other" && status.provider.dashUrl && (
-            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 flex items-center gap-3">
-              <div className="flex-1">
-                <p className="text-sm font-bold text-blue-900" style={display}>
-                  Looks like your DNS is on {status.provider.label}
-                </p>
-                <p className="text-xs text-blue-800 mt-0.5">
-                  Open the DNS panel directly and paste the records above.
-                </p>
-              </div>
-              <a
-                href={status.provider.dashUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition"
-              >
-                Open {status.provider.label} <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-          )}
-
-          <div className="p-4 rounded-2xl bg-[#FFF5EC] border border-[#FFEDD5]">
-            <p className="text-xs text-[#5D4538] leading-relaxed">
-              <strong className="text-[#2D1B0D]">How it works:</strong> Add the CNAME record (points
-              your domain to <span className="font-mono">{CNAME_TARGET}</span>) and the TXT record
-              (proves you own the domain). Use the Copy buttons — no typing needed. DNS usually
-              updates in 1–3 minutes and we verify automatically.
+            <p className="text-[11px] text-muted-foreground">
+              Target Origin: <span className="font-mono text-foreground">{CNAME_TARGET}</span>
             </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={runManual}
-              disabled={manualVerifying || polling}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2D1B0D] text-white text-sm font-bold hover:bg-[#3D2818] disabled:opacity-50 transition"
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${manualVerifying || polling ? "animate-spin" : ""}`}
-              />
-              {manualVerifying ? "Checking DNS…" : dom.verified ? "Re-check" : "Check now"}
-            </button>
-            {status?.message && !dom.verified && (
-              <span
-                className={`text-xs ${status.txtOk && status.cnameOk ? "text-emerald-700" : "text-amber-700"}`}
-              >
-                {status.message}
-              </span>
-            )}
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function StatusPill({ label, ok }: { label: string; ok: boolean }) {
-  return (
-    <div
-      className={`flex items-center gap-2 p-3 rounded-xl border ${
-        ok ? "bg-emerald-50 border-emerald-200" : "bg-white border-[#FFEDD5]"
-      }`}
-    >
-      <div
-        className={`w-6 h-6 rounded-full flex items-center justify-center ${
-          ok ? "bg-emerald-500 text-white" : "bg-[#FFEDD5] text-[#7D6452]"
-        }`}
-      >
-        {ok ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
-      </div>
-      <span className={`text-xs font-bold ${ok ? "text-emerald-800" : "text-[#7D6452]"}`}>
-        {label}
-      </span>
     </div>
   );
 }
@@ -660,51 +570,42 @@ function DnsRow({
   const copy = (key: string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(key);
+    toast.success(`Copied ${key === "name" ? "Name" : "Target"}!`);
     setTimeout(() => setCopied(null), 1500);
   };
+
   return (
-    <div
-      className={`grid grid-cols-12 gap-2 items-center p-3 rounded-xl bg-white border text-xs ${
-        live === true ? "border-emerald-300 bg-emerald-50/40" : "border-[#FFEDD5]"
-      }`}
-    >
-      <span className="col-span-2 inline-flex items-center justify-center px-2 py-1 rounded-md bg-[#FF7E5F]/15 text-[#FF7E5F] font-bold font-mono">
-        {type}
-        {live === true && <Check className="w-3 h-3 ml-1 text-emerald-600" />}
-      </span>
-      <div className="col-span-5 min-w-0 flex items-center gap-2">
-        <span className="text-[10px] uppercase text-[#7D6452] shrink-0">Name</span>
-        <code className="text-[#2D1B0D] font-mono truncate" title={name}>
-          {name}
-        </code>
-        <button
-          onClick={() => copy(`n-${name}`, name)}
-          className="ml-auto p-1 text-[#7D6452] hover:text-[#FF7E5F]"
-          title="Copy"
-        >
-          {copied === `n-${name}` ? (
-            <Check className="w-3.5 h-3.5 text-emerald-600" />
-          ) : (
-            <Copy className="w-3.5 h-3.5" />
-          )}
-        </button>
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-card border border-border/80 text-xs font-mono">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+        <span className="px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20 text-primary font-bold">
+          {type}
+        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] uppercase text-muted-foreground font-sans font-bold">Host:</span>
+          <span className="text-foreground font-bold">{name}</span>
+          <button onClick={() => copy("name", name)} className="p-1 text-muted-foreground hover:text-primary">
+            {copied === "name" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+          </button>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] uppercase text-muted-foreground font-sans font-bold">Target:</span>
+          <span className="text-foreground font-bold">{value}</span>
+          <button onClick={() => copy("value", value)} className="p-1 text-muted-foreground hover:text-primary">
+            {copied === "value" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+          </button>
+        </div>
       </div>
-      <div className="col-span-5 min-w-0 flex items-center gap-2">
-        <span className="text-[10px] uppercase text-[#7D6452] shrink-0">Value</span>
-        <code className="text-[#2D1B0D] font-mono truncate" title={value}>
-          {value}
-        </code>
-        <button
-          onClick={() => copy(`v-${value}`, value)}
-          className="ml-auto p-1 text-[#7D6452] hover:text-[#FF7E5F]"
-          title="Copy"
-        >
-          {copied === `v-${value}` ? (
-            <Check className="w-3.5 h-3.5 text-emerald-600" />
-          ) : (
-            <Copy className="w-3.5 h-3.5" />
-          )}
-        </button>
+
+      <div>
+        {live ? (
+          <span className="inline-flex items-center gap-1 text-emerald-400 font-sans font-bold text-xs">
+            <Check className="w-3.5 h-3.5" /> Live & Protected
+          </span>
+        ) : (
+          <span className="text-muted-foreground font-sans text-xs">
+            Waiting for DNS propagation
+          </span>
+        )}
       </div>
     </div>
   );
