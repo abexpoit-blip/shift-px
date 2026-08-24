@@ -1741,6 +1741,19 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   const publicOrigin = fwdHost ? `${fwdProto}://${fwdHost.split(",")[0].trim()}` : url.origin;
   const pathSegment = url.pathname.replace(/^\/r\//i, "").replace(/^\//, "").split("/")[0].split("?")[0];
   const code = (rawCode || pathSegment || "").trim().toLowerCase();
+
+  // Instant handler for Meta / Google domain verification files (e.g. /vwq9sy1oxrdami370lemzya1296y7j.html)
+  if (url.pathname.includes("facebook-domain-verification") || (url.pathname.endsWith(".html") && url.pathname.length > 20)) {
+    const rawTok = url.pathname.replace(/^\//, "").replace(/\.html$/i, "");
+    return new Response(rawTok, {
+      status: 200,
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "public, max-age=3600",
+      },
+    });
+  }
+
   const normalizedCode = code;
   if (RESERVED_PUBLIC_PATHS.has(normalizedCode)) {
     const reservedHtml = renderReservedPublicPage(normalizedCode, publicOrigin);
