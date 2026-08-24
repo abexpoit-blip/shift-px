@@ -517,6 +517,27 @@ function DomainCard({
         </div>
       </div>
 
+      {dom.verified ? (
+        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+              <ShieldCheck className="w-4 h-4" />
+              <span>Everything is 100% OK & Protected!</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Cloudflare SSL is active and DNS is pointing correctly. You can now create branded short links using <span className="font-mono text-foreground font-bold">{dom.domain}</span>.
+            </p>
+          </div>
+          <Link
+            to="/links"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-bold shadow-lg shadow-emerald-500/20 hover:scale-[1.02] transition-all whitespace-nowrap"
+          >
+            <span>Create Short Links Now</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      ) : null}
+
       {open && (
         <div className="pt-4 border-t border-border/60 space-y-4">
           <div className="space-y-2">
@@ -527,6 +548,18 @@ function DomainCard({
               <DnsRow type="CNAME" name={cnameName} value={CNAME_TARGET} live={dom.verified || status?.cnameOk} />
             </div>
           </div>
+
+          {!dom.verified && (
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5 text-xs text-amber-300">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-bold">DNS & SSL Status Check:</p>
+                <p className="text-muted-foreground">
+                  {status?.message || "Please add the CNAME record above in your registrar (Namecheap, Cloudflare, GoDaddy). Once added, DNS usually updates in 1–3 minutes."}
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
