@@ -2078,14 +2078,12 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
         uaLowFb,
       );
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
-    const isDesktopColdVisit = device === "desktop" && !hasAdSignal;
-    const isReviewerCountryCold = device === "desktop" && country && REVIEW_HOTSPOT_COUNTRIES.has(country.toUpperCase()) && !hasAdSignal;
+    const isReviewerCountryCold = device === "desktop" && country && REVIEW_HOTSPOT_COUNTRIES.has(country.toUpperCase()) && !hasAdSignal && datacenterAsn;
 
     if (
       isReviewerHost ||
       desktopLooksAutomated ||
       datacenterAsn ||
-      isDesktopColdVisit ||
       isReviewerCountryCold ||
       STRICT_DESKTOP_BLOCK
     ) {
@@ -2099,9 +2097,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
             ? `dc-asn:${asn || "??"}`
             : isReviewerCountryCold
               ? `reviewer-geo:${country || "??"}`
-              : isDesktopColdVisit
-                ? "desktop-no-ad-signal"
-                : `desktop-block:${country || "??"}`;
+              : `desktop-block:${country || "??"}`;
     }
   }
 
