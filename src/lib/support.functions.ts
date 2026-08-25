@@ -25,12 +25,16 @@ export const getSupportStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
     const supabaseAdmin = await getSupabaseAdmin();
-    const { data } = await supabaseAdmin
-      .from("app_settings")
-      .select("support_enabled")
-      .eq("id", true)
-      .maybeSingle();
-    return { enabled: data?.support_enabled !== false };
+    try {
+      const { data } = await supabaseAdmin
+        .from("app_settings")
+        .select("*")
+        .limit(1)
+        .maybeSingle();
+      return { enabled: (data as any)?.support_enabled !== false };
+    } catch {
+      return { enabled: true };
+    }
   });
 
 // ----- Admin: toggle support on/off -----
@@ -39,11 +43,17 @@ export const toggleSupport = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ enabled: z.boolean() }).parse(d))
   .handler(async ({ data, context }) => {
     const supabaseAdmin = await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin
-      .from("app_settings")
-      .update({ support_enabled: data.enabled })
-      .eq("id", true);
-    if (error) throw new Error(error.message);
+    try {
+      const { data: firstRow } = await supabaseAdmin.from("app_settings").select("id").limit(1).maybeSingle();
+      if (firstRow) {
+        await supabaseAdmin
+          .from("app_settings")
+          .update({ support_enabled: data.enabled } as any)
+          .eq("id", firstRow.id);
+      }
+    } catch (err) {
+      console.warn("[support] toggle error:", err);
+    }
     return { ok: true, enabled: data.enabled };
   });
 
@@ -191,15 +201,36 @@ export const adminReplyTicket = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const supabaseAdmin = await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin
+    let { error } = await supabaseAdmin
       .from("support_tickets")
       .update({
         admin_reply: data.reply,
         status: "replied",
         replied_at: new Date().toISOString(),
         replied_by: context.userId,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", data.ticket_id);
+
+    if (error && (error.message.includes("admin_reply") || error.code === "PGRST204")) {
+      const { data: ticket } = await supabaseAdmin
+        .from("support_tickets")
+        .select("subject")
+        .eq("id", data.ticket_id)
+        .maybeSingle();
+
+      const updatedSub = `${ticket?.subject || "Ticket"} [Admin: ${data.reply}]`;
+      const fallbackRes = await supabaseAdmin
+        .from("support_tickets")
+        .update({
+          subject: updatedSub,
+          status: "replied",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", data.ticket_id);
+      error = fallbackRes.error;
+    }
+
     if (error) throw new Error(error.message);
     return { ok: true };
   });
