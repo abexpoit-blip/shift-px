@@ -1040,7 +1040,7 @@ function SiteFooter() {
         </div>
         <div className="pt-6 border-t border-border/60 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
           <div>© {new Date().getFullYear()} AdsPx. All rights reserved.</div>
-          <div>Built for creators worldwide ✦</div>
+          <div>Built with ❤️ by Cluster LLC</div>
         </div>
       </div>
     </footer>
