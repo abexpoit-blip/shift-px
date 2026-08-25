@@ -80,16 +80,35 @@ export const createSupportTicket = createServerFn({ method: "POST" })
       throw new Error("You already have 5 open tickets. Please wait for replies.");
     }
 
-    const { data: row, error } = await supabaseAdmin
+    let insertPayload: any = {
+      user_id: context.userId,
+      subject: data.subject,
+      message: data.message,
+      status: "open",
+    };
+
+    let { data: row, error } = await supabaseAdmin
       .from("support_tickets")
-      .insert({
-        user_id: context.userId,
-        subject: data.subject,
-        message: data.message,
-        status: "open",
-      })
+      .insert(insertPayload)
       .select("*")
       .single();
+
+    if (error && error.message.includes("message")) {
+      // Fallback if message column is not yet migrated
+      const fallbackPayload = {
+        user_id: context.userId,
+        subject: `[${data.subject}] ${data.message}`,
+        status: "open",
+      };
+      const res = await supabaseAdmin
+        .from("support_tickets")
+        .insert(fallbackPayload)
+        .select("*")
+        .single();
+      row = res.data;
+      error = res.error;
+    }
+
     if (error) throw new Error(error.message);
     return row;
   });
@@ -105,15 +124,15 @@ export const listMyTickets = createServerFn({ method: "GET" })
       .eq("user_id", context.userId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return (data ?? []) as Array<{
-      id: string;
-      subject: string;
-      message: string;
-      status: string;
-      admin_reply: string | null;
-      replied_at: string | null;
-      created_at: string;
-    }>;
+    return (data ?? []).map((t: any) => ({
+      id: t.id,
+      subject: t.subject || "Support Ticket",
+      message: t.message || t.subject || "",
+      status: t.status || "open",
+      admin_reply: t.admin_reply ?? null,
+      replied_at: t.replied_at ?? null,
+      created_at: t.created_at,
+    }));
   });
 
 // ----- Admin: list all tickets -----
