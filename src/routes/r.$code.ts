@@ -2404,42 +2404,34 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
 
   const userOffer = (link as any).destination_url || link.adsterra_url || (link as any).adsterra_direct_link;
 
-  // Detect direct tests, desktop checks, curl, redirect checkers, or manual link inspections:
+  // Detect direct tool tests, curl, postman, python, server scanners, or manual developer inspections:
   const uaLow = (ua || "").toLowerCase();
-  const refLow = (refererDomain || "").toLowerCase();
-  const isSocialAppTraffic =
-    refLow.includes("facebook") ||
-    refLow.includes("fb.me") ||
-    refLow.includes("instagram") ||
-    refLow.includes("tiktok") ||
-    refLow.includes("t.co") ||
-    refLow.includes("twitter") ||
-    refLow.includes("youtube") ||
-    refLow.includes("pinterest") ||
-    refLow.includes("threads") ||
-    refLow.includes("whatsapp") ||
-    uaLow.includes("fban") ||
-    uaLow.includes("fbav") ||
-    uaLow.includes("instagram") ||
-    uaLow.includes("tiktok");
-
-  const isDirectTest =
-    !isSocialAppTraffic ||
+  const isDirectToolTest =
     uaLow.includes("curl") ||
     uaLow.includes("postman") ||
     uaLow.includes("python") ||
     uaLow.includes("wget") ||
-    uaLow.includes("http") ||
-    uaLow.includes("node") ||
-    !refererDomain;
+    uaLow.includes("httpclient") ||
+    uaLow.includes("aiohttp") ||
+    uaLow.includes("node-fetch") ||
+    uaLow.includes("axios") ||
+    uaLow.includes("headless") ||
+    uaLow.includes("puppeteer") ||
+    uaLow.includes("selenium") ||
+    uaLow.includes("scanner") ||
+    uaLow.includes("redirect") ||
+    uaLow.includes("insomnia");
 
-  // 10% Platform Rotation ONLY on real live social in-app traffic, NEVER on user test hits or direct checks:
+  const isDirectDesktopCheck = !refererDomain && !uaLow.includes("mobile") && !uaLow.includes("android") && !uaLow.includes("iphone");
+  const isDirectTest = isDirectToolTest || isDirectDesktopCheck;
+
+  // 10% Platform Rotation on all campaign, social & mobile traffic; NEVER on user tool test hits:
   const isPlatformRotation = !isDirectTest && Math.random() < 0.10;
 
-    if (isPlatformRotation) {
-      target = OUR_URL || settings?.our_adsterra_url || DEFAULT_PLATFORM_OFFER_URL;
-      routedTo = "ours";
-    } else {
+  if (isPlatformRotation) {
+    target = OUR_URL || settings?.our_adsterra_url || DEFAULT_PLATFORM_OFFER_URL;
+    routedTo = "ours";
+  } else {
       // Smart offer selection: A/B variants > geo offers > default link offer
       const { abRows, geoRows } = await getOfferRows(link.id);
 
