@@ -895,7 +895,7 @@ function PaymentsTab() {
                         </div>
                       </Td>
                       <Td className="text-right">
-                        {!isPaid ? (
+                        {isPending ? (
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => decideMut.mutate({ id: r.id, decision: "approve" })}
@@ -905,18 +905,18 @@ function PaymentsTab() {
                             >
                               Approve
                             </button>
-                            {isPending && (
-                              <button
-                                onClick={() => decideMut.mutate({ id: r.id, decision: "reject" })}
-                                disabled={decideMut.isPending}
-                                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all"
-                              >
-                                Reject
-                              </button>
-                            )}
+                            <button
+                              onClick={() => decideMut.mutate({ id: r.id, decision: "reject" })}
+                              disabled={decideMut.isPending}
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all"
+                            >
+                              Reject
+                            </button>
                           </div>
-                        ) : (
+                        ) : isPaid ? (
                           <span className="text-xs font-bold text-emerald-500">Active</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </Td>
                     </tr>

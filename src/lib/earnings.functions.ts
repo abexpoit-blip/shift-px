@@ -102,7 +102,9 @@ export const getEarningsOverview = createServerFn({ method: "GET" })
     let botClicks = all.reduce((s, r) => s + num(r.bot_clicks), 0);
     let lifetimeEarned = all.reduce((s, r) => s + num(r.earnings_usd), 0);
     let todayEarned = rows.filter((r) => r.day === today).reduce((s, r) => s + num(r.earnings_usd), 0);
-    const balanceAvailable = num(profileRes.data?.balance_available);
+    let balanceAvailable = num(profileRes.data?.balance_available);
+    const balancePending = num(profileRes.data?.balance_pending);
+    const balanceWithdrawn = num(profileRes.data?.balance_withdrawn);
 
     if (humanClicks === 0) {
       const { data: userLinks } = await db.from("links").select("clicks_count, bot_clicks_count").eq("user_id", userId);
@@ -118,10 +120,15 @@ export const getEarningsOverview = createServerFn({ method: "GET" })
       }
     }
 
+    if (balanceAvailable === 0 && balancePending === 0 && balanceWithdrawn === 0 && lifetimeEarned > 0) {
+      balanceAvailable = lifetimeEarned;
+      await db.from("profiles").update({ balance_available: lifetimeEarned }).eq("id", userId);
+    }
+
     return {
-      balanceAvailable: Math.max(balanceAvailable, lifetimeEarned),
-      balancePending: num(profileRes.data?.balance_pending),
-      balanceWithdrawn: num(profileRes.data?.balance_withdrawn),
+      balanceAvailable,
+      balancePending,
+      balanceWithdrawn,
       lifetimeEarned,
       todayEarned,
       humanClicks,

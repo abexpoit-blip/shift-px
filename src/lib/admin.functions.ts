@@ -321,8 +321,10 @@ export const adminListUsers = createServerFn({ method: "GET" })
       const plan = String(u.plan_slug ?? "free").toLowerCase();
       const isFree = plan === "free" || !plan.includes("premium");
       const linkLimit = isFree ? (u.link_limit && Number(u.link_limit) >= 50 ? Number(u.link_limit) : 50) : (u.link_limit || 1000000);
+      const planExpiresAt = u.plan_expires_at || u.premium_until || null;
       return {
         ...u,
+        plan_expires_at: planExpiresAt,
         link_limit: linkLimit,
         ours_clicks: oursByUser[u.id] ?? 0,
       };
@@ -521,12 +523,24 @@ export const adminSetUserPlan = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
-    const { data: pkg } = await supabaseAdmin
+    let { data: pkg } = await supabaseAdmin
       .from("packages")
       .select("*")
       .eq("slug", data.package_slug)
       .maybeSingle();
-    if (!pkg) throw new Error("Package not found");
+
+    if (!pkg) {
+      const is12m = data.package_slug === "premium_12m";
+      const isFree = data.package_slug === "free";
+      pkg = {
+        slug: data.package_slug,
+        duration_months: isFree ? 0 : is12m ? 12 : 6,
+        link_limit: isFree ? 50 : 1000000,
+        click_quota: null,
+        price_usd: isFree ? 0 : is12m ? 100 : 60,
+      } as any;
+    }
+
     await applyPackageToProfileIds([data.user_id], pkg);
     return { ok: true };
   });
@@ -647,21 +661,13 @@ export const adminListUpgradeRequests = createServerFn({ method: "GET" })
       );
     }
 
-    const now = new Date();
     const rows = (data ?? []).map((r: any) => {
       const prof = profMap[r.user_id];
-      const isUserActivePremium =
-        prof &&
-        prof.plan_slug !== "free" &&
-        prof.premium_until &&
-        new Date(prof.premium_until) > now;
-
       const isPaid =
         r.status === "paid" ||
         r.status === "completed" ||
         r.status === "success" ||
-        r.status === "finished" ||
-        (Boolean(isUserActivePremium) && prof?.plan_slug === r.package_slug);
+        r.status === "finished";
 
       const effectiveStatus = isPaid ? "paid" : r.status;
 
@@ -674,18 +680,6 @@ export const adminListUpgradeRequests = createServerFn({ method: "GET" })
         current_plan: prof?.plan_slug ?? "free",
       };
     });
-
-    // Auto-sync in DB any pending requests for users who are already active premium
-    const paidIdsToSync = rows
-      .filter((r: any) => r.status === "paid" && (data ?? []).find((d: any) => d.id === r.id)?.status === "pending")
-      .map((r: any) => r.id);
-
-    if (paidIdsToSync.length > 0) {
-      await supabaseAdmin
-        .from("upgrade_requests")
-        .update({ status: "paid", updated_at: new Date().toISOString() } as any)
-        .in("id", paidIdsToSync);
-    }
 
     return rows;
   });
@@ -1635,21 +1629,13 @@ export const adminListPayments = createServerFn({ method: "GET" })
       });
     }
 
-    const now = new Date();
     const rows = (requests ?? []).map((r: any) => {
       const prof = userMap[r.user_id];
-      const isUserActivePremium =
-        prof &&
-        prof.plan_slug !== "free" &&
-        prof.premium_until &&
-        new Date(prof.premium_until) > now;
-
       const isPaid =
         r.status === "paid" ||
         r.status === "completed" ||
         r.status === "success" ||
-        r.status === "finished" ||
-        (Boolean(isUserActivePremium) && prof?.plan_slug === r.package_slug);
+        r.status === "finished";
 
       const effectiveStatus = isPaid ? "paid" : r.status;
 
