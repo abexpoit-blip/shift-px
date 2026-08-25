@@ -895,25 +895,28 @@ function PaymentsTab() {
                         </div>
                       </Td>
                       <Td className="text-right">
-                        {isPending ? (
+                        {!isPaid ? (
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => decideMut.mutate({ id: r.id, decision: "approve" })}
                               disabled={decideMut.isPending}
                               className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all"
+                              title="Approve and activate user package"
                             >
                               Approve
                             </button>
-                            <button
-                              onClick={() => decideMut.mutate({ id: r.id, decision: "reject" })}
-                              disabled={decideMut.isPending}
-                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all"
-                            >
-                              Reject
-                            </button>
+                            {isPending && (
+                              <button
+                                onClick={() => decideMut.mutate({ id: r.id, decision: "reject" })}
+                                disabled={decideMut.isPending}
+                                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all"
+                              >
+                                Reject
+                              </button>
+                            )}
                           </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
+                          <span className="text-xs font-bold text-emerald-500">Active</span>
                         )}
                       </Td>
                     </tr>
@@ -4292,7 +4295,7 @@ function WithdrawalsTab() {
                       </span>
                     </td>
                     <td className="px-5 py-3.5 text-right">
-                      {w.status === "pending" && (
+                      {w.status === "pending" ? (
                         <div className="flex items-center justify-end gap-2">
                           <Button
                             size="sm"
@@ -4316,6 +4319,8 @@ function WithdrawalsTab() {
                             Reject
                           </Button>
                         </div>
+                      ) : (
+                        <span className="text-xs font-semibold text-muted-foreground">Settled</span>
                       )}
                     </td>
                   </tr>

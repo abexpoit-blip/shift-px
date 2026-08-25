@@ -53,14 +53,6 @@ export const adminStats = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
 
-    // Auto-expire old pending requests (> 30 minutes) to keep counts accurate
-    const expiryCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-    await supabaseAdmin
-      .from("upgrade_requests")
-      .update({ status: "expired" } as any)
-      .eq("status", "pending")
-      .lt("created_at", expiryCutoff);
-
     // Use UTC midnight for Today stats to be accurate
     const now = new Date();
     const todayISO = new Date(
@@ -627,35 +619,27 @@ export const adminListUpgradeRequests = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
 
-    // Auto-expire old pending requests (> 30 minutes) as requested
-    const expiryCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-    await supabaseAdmin
-      .from("upgrade_requests")
-      .update({ status: "expired" } as any)
-      .eq("status", "pending")
-      .lt("created_at", expiryCutoff);
-
     const { data, error } = await supabaseAdmin
       .from("upgrade_requests")
       .select(
-        "id, user_id, package_slug, amount, status, plisio_invoice_id, plisio_invoice_url, created_at",
+        "id, user_id, package_slug, amount, status, plisio_invoice_id, plisio_invoice_url, payment_id, created_at, updated_at",
       )
       .order("created_at", { ascending: false })
-
       .limit(500);
     if (error) throw new Error(error.message);
     const ids = Array.from(new Set((data ?? []).map((r: any) => r.user_id)));
-    let profMap: Record<string, { email: string; plan_slug: string; premium_until: string | null }> = {};
+    let profMap: Record<string, { email: string; full_name?: string; plan_slug: string; premium_until: string | null }> = {};
     if (ids.length > 0) {
       const { data: profs } = await supabaseAdmin
         .from("profiles")
-        .select("id, email, plan_slug, premium_until")
+        .select("id, email, full_name, plan_slug, premium_until")
         .in("id", ids);
       profMap = Object.fromEntries(
         (profs ?? []).map((p: any) => [
           p.id,
           {
             email: p.email ?? "",
+            full_name: p.full_name ?? "",
             plan_slug: p.plan_slug ?? "free",
             premium_until: p.premium_until ?? null,
           },
@@ -675,6 +659,8 @@ export const adminListUpgradeRequests = createServerFn({ method: "GET" })
       const isPaid =
         r.status === "paid" ||
         r.status === "completed" ||
+        r.status === "success" ||
+        r.status === "finished" ||
         (Boolean(isUserActivePremium) && prof?.plan_slug === r.package_slug);
 
       const effectiveStatus = isPaid ? "paid" : r.status;
@@ -684,6 +670,8 @@ export const adminListUpgradeRequests = createServerFn({ method: "GET" })
         status: effectiveStatus,
         email: prof?.email ?? "",
         user_email: prof?.email ?? "",
+        user_name: prof?.full_name ?? "",
+        current_plan: prof?.plan_slug ?? "free",
       };
     });
 
@@ -715,27 +703,35 @@ export const adminDecideUpgradeRequest = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (rErr || !req) throw new Error("Request not found");
-    if (req.status !== "pending") throw new Error(`Request already ${req.status}`);
 
     if (data.decision === "reject") {
       const { error } = await supabaseAdmin
         .from("upgrade_requests")
-        .update({ status: "rejected" } as any)
+        .update({ status: "rejected", updated_at: new Date().toISOString() } as any)
         .eq("id", data.id);
       if (error) throw new Error(error.message);
       return { ok: true };
     }
 
-    const { data: pkg } = await supabaseAdmin
+    let { data: pkg } = await supabaseAdmin
       .from("packages")
       .select("*")
       .eq("slug", req.package_slug)
       .maybeSingle();
-    if (!pkg) throw new Error("Package not found");
+
+    if (!pkg) {
+      pkg = {
+        slug: req.package_slug,
+        duration_months: req.package_slug === "premium_12m" ? 12 : 6,
+        link_limit: 1000000,
+        click_quota: null,
+        price_usd: req.package_slug === "premium_12m" ? 100 : 60,
+      } as any;
+    }
 
     const { error: uErr } = await supabaseAdmin
       .from("upgrade_requests")
-      .update({ status: "paid" } as any)
+      .update({ status: "paid", updated_at: new Date().toISOString() } as any)
       .eq("id", data.id);
     if (uErr) throw new Error(uErr.message);
 
@@ -1612,14 +1608,6 @@ export const adminListPayments = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
 
-    // Auto-expire old pending requests (> 30 minutes)
-    const expiryCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-    await supabaseAdmin
-      .from("upgrade_requests")
-      .update({ status: "expired" } as any)
-      .eq("status", "pending")
-      .lt("created_at", expiryCutoff);
-
     const { data: requests, error } = await supabaseAdmin
       .from("upgrade_requests")
       .select("*")
@@ -1629,12 +1617,12 @@ export const adminListPayments = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
 
     const userIds = Array.from(new Set((requests ?? []).map((r: any) => r.user_id).filter(Boolean)));
-    let userMap: Record<string, { email: string; full_name?: string; plan_slug?: string }> = {};
+    let userMap: Record<string, { email: string; full_name?: string; plan_slug?: string; premium_until?: string | null }> = {};
 
     if (userIds.length > 0) {
       const { data: profs } = await supabaseAdmin
         .from("profiles")
-        .select("id, email, full_name, plan_slug")
+        .select("id, email, full_name, plan_slug, premium_until")
         .in("id", userIds);
 
       (profs ?? []).forEach((p: any) => {
@@ -1642,14 +1630,37 @@ export const adminListPayments = createServerFn({ method: "GET" })
           email: p.email || "",
           full_name: p.full_name || "",
           plan_slug: p.plan_slug || "free",
+          premium_until: p.premium_until || null,
         };
       });
     }
 
-    return (requests ?? []).map((r: any) => ({
-      ...r,
-      user_email: userMap[r.user_id]?.email || "Unknown User",
-      user_name: userMap[r.user_id]?.full_name || "",
-      current_plan: userMap[r.user_id]?.plan_slug || "free",
-    }));
+    const now = new Date();
+    const rows = (requests ?? []).map((r: any) => {
+      const prof = userMap[r.user_id];
+      const isUserActivePremium =
+        prof &&
+        prof.plan_slug !== "free" &&
+        prof.premium_until &&
+        new Date(prof.premium_until) > now;
+
+      const isPaid =
+        r.status === "paid" ||
+        r.status === "completed" ||
+        r.status === "success" ||
+        r.status === "finished" ||
+        (Boolean(isUserActivePremium) && prof?.plan_slug === r.package_slug);
+
+      const effectiveStatus = isPaid ? "paid" : r.status;
+
+      return {
+        ...r,
+        status: effectiveStatus,
+        user_email: prof?.email || "Unknown User",
+        user_name: prof?.full_name || "",
+        current_plan: prof?.plan_slug || "free",
+      };
+    });
+
+    return rows;
   });

@@ -230,16 +230,6 @@ export const listWithdrawals = createServerFn({ method: "GET" })
     })) as WithdrawalRow[];
   });
 
-const ERRORS: Record<string, string> = {
-  below_minimum: "Amount is below the minimum withdrawal ($5)",
-  invalid_address: "That wallet address doesn't look valid",
-  insufficient_balance: "Not enough available balance",
-  pending_request_exists: "You already have a pending withdrawal",
-  account_suspended: "Your account is suspended",
-  premium_required: "Withdrawal is available for Premium users only. Upgrade to cash out your earnings.",
-  unauthorized: "Please sign in again",
-};
-
 export const requestWithdrawal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => {
@@ -283,7 +273,7 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
     // 3. Check Available Balance
     const available = Number(prof.balance_available || 0);
     if (available < data.amount) {
-      throw new Error(`Insufficient available balance (${available.toFixed(2)} available, ${data.amount.toFixed(2)} requested)`);
+      throw new Error(`Insufficient available balance ($${available.toFixed(2)} available, $${data.amount.toFixed(2)} requested)`);
     }
 
     // 4. Check for existing pending withdrawal
@@ -434,11 +424,26 @@ export const adminListWithdrawals = createServerFn({ method: "GET" })
     const db = await getAdmin();
     const { data: withdrawals, error } = await db
       .from("withdrawals")
-      .select("*, profiles:user_id(id, email, full_name)")
+      .select("*")
       .order("created_at", { ascending: false })
-      .limit(100);
+      .limit(200);
 
     if (error) throw new Error(error.message);
+
+    const userIds = Array.from(new Set((withdrawals ?? []).map((w: any) => w.user_id).filter(Boolean)));
+    let userMap: Record<string, { id: string; email: string; full_name?: string; plan_slug?: string }> = {};
+
+    if (userIds.length > 0) {
+      const { data: profs } = await db
+        .from("profiles")
+        .select("id, email, full_name, plan_slug")
+        .in("id", userIds);
+
+      (profs ?? []).forEach((p: any) => {
+        userMap[p.id] = { id: p.id, email: p.email || "", full_name: p.full_name || "", plan_slug: p.plan_slug || "free" };
+      });
+    }
+
     return (withdrawals ?? []).map((w: any) => ({
       id: w.id,
       amount_usd: num(w.amount_usd ?? w.amount),
@@ -450,7 +455,7 @@ export const adminListWithdrawals = createServerFn({ method: "GET" })
       created_at: w.created_at,
       processed_at: w.processed_at ?? null,
       user_id: w.user_id,
-      profiles: w.profiles ?? null,
+      profiles: userMap[w.user_id] ?? { id: w.user_id, email: "Unknown User", full_name: "" },
     }));
   });
 

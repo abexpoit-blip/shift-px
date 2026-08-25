@@ -61,9 +61,17 @@ async function getProfileQuota(supabase: any, userId: string) {
       .maybeSingle();
 
     const plan = String(data?.plan_slug ?? "free").toLowerCase();
-    const isPremium = plan.includes("premium") || plan === "lifetime" || plan === "unlimited" || plan === "monthly" || plan === "yearly";
+    const isPremium =
+      plan.includes("premium") ||
+      plan === "lifetime" ||
+      plan === "unlimited" ||
+      plan === "monthly" ||
+      plan === "yearly";
 
     if (isPremium) {
+      if (data?.link_limit !== 1000000) {
+        await supabase.from("profiles").update({ link_limit: 1000000 }).eq("id", userId);
+      }
       return { limit: null, used: 0, clickQuota: null };
     }
 
@@ -77,6 +85,10 @@ async function getProfileQuota(supabase: any, userId: string) {
     // Free tier: Minimum 50 links limit guaranteed for all free users
     const rawLimit = Number(data?.link_limit || 50);
     const limit = Math.max(50, rawLimit);
+
+    if (data?.link_limit !== limit) {
+      await supabase.from("profiles").update({ link_limit: limit }).eq("id", userId);
+    }
 
     return {
       limit,
