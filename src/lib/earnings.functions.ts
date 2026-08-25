@@ -98,31 +98,37 @@ export const getEarningsOverview = createServerFn({ method: "GET" })
     const all = (totalRes.data ?? []) as any[];
     const today = new Date().toISOString().slice(0, 10);
 
-    let humanClicks = all.reduce((s, r) => s + num(r.human_clicks), 0);
-    let botClicks = all.reduce((s, r) => s + num(r.bot_clicks), 0);
+    let ledgerHumans = all.reduce((s, r) => s + num(r.human_clicks), 0);
+    let ledgerBots = all.reduce((s, r) => s + num(r.bot_clicks), 0);
     let lifetimeEarned = all.reduce((s, r) => s + num(r.earnings_usd), 0);
-    let todayEarned = rows.filter((r) => r.day === today).reduce((s, r) => s + num(r.earnings_usd), 0);
-    let balanceAvailable = num(profileRes.data?.balance_available);
-    const balancePending = num(profileRes.data?.balance_pending);
-    const balanceWithdrawn = num(profileRes.data?.balance_withdrawn);
 
-    if (humanClicks === 0) {
-      const { data: userLinks } = await db.from("links").select("clicks_count, bot_clicks_count").eq("user_id", userId);
-      for (const l of userLinks ?? []) {
-        humanClicks += num(l.clicks_count);
-        botClicks += num(l.bot_clicks_count);
-      }
-      if (lifetimeEarned === 0 && humanClicks > 0) {
-        lifetimeEarned = Number(((humanClicks * settings.ratePer1k) / 1000).toFixed(4));
-      }
-      if (todayEarned === 0 && humanClicks > 0) {
-        todayEarned = lifetimeEarned;
-      }
+    const { data: userLinks } = await db.from("links").select("clicks_count, bot_clicks_count").eq("user_id", userId);
+    let linkHumanClicks = 0;
+    let linkBotClicks = 0;
+    for (const l of userLinks ?? []) {
+      linkHumanClicks += num(l.clicks_count);
+      linkBotClicks += num(l.bot_clicks_count);
     }
 
-    if (balanceAvailable === 0 && balancePending === 0 && balanceWithdrawn === 0 && lifetimeEarned > 0) {
-      balanceAvailable = lifetimeEarned;
-      await db.from("profiles").update({ balance_available: lifetimeEarned }).eq("id", userId);
+    const humanClicks = Math.max(ledgerHumans, linkHumanClicks);
+    const botClicks = Math.max(ledgerBots, linkBotClicks);
+
+    const calculatedLifetime = Number(((humanClicks * settings.ratePer1k) / 1000).toFixed(4));
+    if (lifetimeEarned < calculatedLifetime) {
+      lifetimeEarned = calculatedLifetime;
+    }
+
+    const todayHumans = rows.filter((r) => r.day === today).reduce((s, r) => s + num(r.human_clicks), 0);
+    const todayEarned = Number(((todayHumans * settings.ratePer1k) / 1000).toFixed(4));
+
+    const balanceWithdrawn = num(profileRes.data?.balance_withdrawn);
+    const balancePending = num(profileRes.data?.balance_pending);
+    const netAvailable = Math.max(0, Number((lifetimeEarned - balanceWithdrawn - balancePending).toFixed(4)));
+
+    let balanceAvailable = num(profileRes.data?.balance_available);
+    if (balanceAvailable < netAvailable) {
+      balanceAvailable = netAvailable;
+      await db.from("profiles").update({ balance_available: netAvailable }).eq("id", userId);
     }
 
     return {
@@ -135,12 +141,16 @@ export const getEarningsOverview = createServerFn({ method: "GET" })
       botClicks,
       ratePer1k: settings.ratePer1k,
       minWithdrawal: settings.minWithdrawal,
-      daily: rows.map((r) => ({
-        day: String(r.day),
-        humans: num(r.human_clicks),
-        bots: num(r.bot_clicks),
-        earnings: num(r.earnings_usd),
-      })),
+      daily: rows.map((r) => {
+        const h = num(r.human_clicks);
+        const e = num(r.earnings_usd) || Number(((h * settings.ratePer1k) / 1000).toFixed(4));
+        return {
+          day: String(r.day),
+          humans: h,
+          bots: num(r.bot_clicks),
+          earnings: e,
+        };
+      }),
     };
   });
 
