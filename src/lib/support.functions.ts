@@ -123,6 +123,39 @@ export const createSupportTicket = createServerFn({ method: "POST" })
     return row;
   });
 
+function parseTicketRow(t: any) {
+  let sub = t.subject || "Support Inquiry";
+  let msg = t.message || "";
+  let adminReply = t.admin_reply || null;
+
+  if (sub.startsWith("[") && sub.includes("]")) {
+    const endIdx = sub.indexOf("]");
+    const extractedSub = sub.slice(1, endIdx).trim();
+    const restMsg = sub.slice(endIdx + 1).trim();
+    sub = extractedSub;
+    if (!msg || msg === t.subject) {
+      msg = restMsg;
+    }
+  }
+
+  if (sub.includes("[Admin:") || sub.includes("[REPLIED:")) {
+    const adminIdx = sub.indexOf("[Admin:") !== -1 ? sub.indexOf("[Admin:") : sub.indexOf("[REPLIED:");
+    const replyText = sub.slice(adminIdx).replace(/^\[(Admin|REPLIED):\s*/, "").replace(/\]$/, "").trim();
+    sub = sub.slice(0, adminIdx).trim();
+    if (!adminReply) adminReply = replyText;
+  }
+
+  return {
+    id: t.id,
+    subject: sub || "Support Inquiry",
+    message: msg || sub,
+    status: t.status || (adminReply ? "replied" : "open"),
+    admin_reply: adminReply,
+    replied_at: t.replied_at ?? null,
+    created_at: t.created_at,
+  };
+}
+
 // ----- User: list my tickets -----
 export const listMyTickets = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -134,15 +167,7 @@ export const listMyTickets = createServerFn({ method: "GET" })
       .eq("user_id", context.userId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return (data ?? []).map((t: any) => ({
-      id: t.id,
-      subject: t.subject || "Support Ticket",
-      message: t.message || t.subject || "",
-      status: t.status || "open",
-      admin_reply: t.admin_reply ?? null,
-      replied_at: t.replied_at ?? null,
-      created_at: t.created_at,
-    }));
+    return (data ?? []).map(parseTicketRow);
   });
 
 // ----- Admin: list all tickets -----
@@ -181,11 +206,15 @@ export const adminListTickets = createServerFn({ method: "GET" })
       });
     }
 
-    return (tickets ?? []).map((t: any) => ({
-      ...t,
-      user_email: profileMap[t.user_id]?.email ?? null,
-      user_name: profileMap[t.user_id]?.full_name ?? null,
-    }));
+    return (tickets ?? []).map((t: any) => {
+      const parsed = parseTicketRow(t);
+      return {
+        ...parsed,
+        user_id: t.user_id,
+        user_email: profileMap[t.user_id]?.email ?? null,
+        user_name: profileMap[t.user_id]?.full_name ?? null,
+      };
+    });
   });
 
 // ----- Admin: reply to a ticket -----
