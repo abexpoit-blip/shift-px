@@ -229,11 +229,18 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
         : false;
 
     // Check Cloudflare for SaaS API directly
-    const { cfGetCustomHostname } = await import("@/lib/cloudflare-saas.server");
-    const cfInfo = await cfGetCustomHostname(row.domain);
-    const cfActive = cfInfo.ok && (cfInfo.data?.status === "active" || cfInfo.data?.ssl?.status === "active");
+    const { cfGetCustomHostname, cfRegisterCustomHostname } = await import("@/lib/cloudflare-saas.server");
+    let cfInfo = await cfGetCustomHostname(row.domain);
+    if (!cfInfo.ok || !cfInfo.data) {
+      await cfRegisterCustomHostname(row.domain);
+      cfInfo = await cfGetCustomHostname(row.domain);
+    }
 
-    const pointsOk = cnameOk || aOk || cfActive || txtOk;
+    const cfSslStatus = cfInfo.data?.ssl?.status || "pending_validation";
+    const cfSslActive = cfSslStatus === "active";
+    const cfHostnameActive = cfInfo.data?.status === "active";
+
+    const pointsOk = cnameOk || aOk || cfHostnameActive || txtOk;
     const provider = detectProvider(nsAnswers);
 
     const base = {
@@ -242,12 +249,23 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
       cnameTarget: cnameTarget || (aOk ? aAnswers[0] : ""),
       nameservers: nsAnswers,
       provider,
+      sslStatus: cfSslActive ? "active" : "initializing",
     };
 
     if (!pointsOk) {
       return {
         ok: false,
+        status: "pending_dns",
         message: `CNAME record not detected yet. Add a CNAME at "${row.domain}" pointing to "${CNAME_TARGET}" and try again in a few seconds.`,
+        ...base,
+      };
+    }
+
+    if (!cfSslActive && !row.verified) {
+      return {
+        ok: false,
+        status: "ssl_initializing",
+        message: "DNS is connected! Cloudflare is deploying your free SSL certificate across global edge servers (takes 1–2 mins). Please wait...",
         ...base,
       };
     }
@@ -263,7 +281,8 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
 
     return {
       ok: true,
-      message: "Domain verified and SSL active! You can now use your custom domain for links.",
+      status: "active",
+      message: "Domain verified and Cloudflare SSL is 100% active! You can now use your custom domain.",
       ...base,
     };
   });

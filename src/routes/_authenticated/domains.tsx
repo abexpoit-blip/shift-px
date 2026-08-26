@@ -472,11 +472,13 @@ function DomainCard({
 
   const cnameName = dom.domain.includes(".") && dom.domain.split(".").length > 2 ? dom.domain.split(".")[0] : "@";
 
-  return (
+    const isSslInit = !dom.verified && status?.cnameOk;
+
+    return (
     <div className="rounded-3xl bg-card border border-border/80 p-5 sm:p-6 shadow-xl space-y-4 transition-all">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${dom.verified ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"}`}>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${dom.verified ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : isSslInit ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"}`}>
             <Globe className="w-5 h-5" />
           </div>
           <div>
@@ -486,6 +488,11 @@ function DomainCard({
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold">
                   <Check className="w-3 h-3" />
                   <span>Active & SSL Ready</span>
+                </span>
+              ) : isSslInit ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 text-[11px] font-bold animate-pulse">
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                  <span>DNS Connected · Deploying SSL</span>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[11px] font-bold">
@@ -535,6 +542,18 @@ function DomainCard({
             <span>Create Short Links Now</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
+        </div>
+      ) : isSslInit ? (
+        <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-blue-400 font-bold text-sm">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              <span>DNS Connected · Cloudflare SSL Deploying...</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Your DNS record is detected! Cloudflare is deploying free Edge SSL certificates to global CDN servers. This takes ~1–2 minutes and will turn green automatically.
+            </p>
+          </div>
         </div>
       ) : null}
 
