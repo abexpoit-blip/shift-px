@@ -84,6 +84,7 @@ export function TopBar({
           .from("broadcasts")
           .select("id, title, body, created_at")
           .eq("is_active", true)
+          .not("title", "like", "PROMO:%")
           .order("created_at", { ascending: false })
           .limit(20),
         supabase.from("broadcast_reads").select("broadcast_id").eq("user_id", uid),
@@ -93,14 +94,16 @@ export function TopBar({
           (msgRes.data as
             | { id: string; title: string; body: string | null; created_at: string }[]
             | null) ?? []
-        ).map((b) => ({
-          id: b.id,
-          subject: b.title,
-          body: b.body,
-          is_broadcast: true,
-          recipient_id: null,
-          created_at: b.created_at,
-        })),
+        )
+          .filter((b) => !b.title?.startsWith("PROMO:"))
+          .map((b) => ({
+            id: b.id,
+            subject: b.title,
+            body: b.body,
+            is_broadcast: true,
+            recipient_id: null,
+            created_at: b.created_at,
+          })),
       );
       setReadIds(
         new Set(
