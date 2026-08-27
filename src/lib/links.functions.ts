@@ -10,6 +10,7 @@ type LinkRow = {
   clicks_count: number | null;
   bot_clicks_count: number | null;
   created_at: string;
+  custom_domain?: string | null;
   adsterra_url?: string | null;
   safe_url?: string | null;
   is_active?: boolean | null;
@@ -25,6 +26,7 @@ export type DashboardLink = ReturnType<typeof normalizeLink>;
 function normalizeLink(row: LinkRow) {
   return {
     ...row,
+    custom_domain: (row as any).custom_domain ?? null,
     adsterra_url: row.adsterra_url ?? row.adsterra_direct_link ?? row.destination_url ?? "",
     // Only an explicit safe_url counts — destination_url holds the offer.
     safe_url: row.safe_url ?? null,
@@ -377,6 +379,7 @@ export const createLink = createServerFn({ method: "POST" })
       destination_url: cleanAdsterra,
       adsterra_url: cleanAdsterra,
       adsterra_direct_link: cleanAdsterra,
+      custom_domain: data.custom_domain ? data.custom_domain.trim() : null,
       status: "active",
       is_active: true,
     };
@@ -404,7 +407,8 @@ export const createLink = createServerFn({ method: "POST" })
         user_id: context.userId,
         short_code: code,
         title: data.title ?? null,
-        adsterra_url: data.adsterra_url,
+        adsterra_url: cleanAdsterra,
+        custom_domain: data.custom_domain ? data.custom_domain.trim() : null,
       },
     ]) {
       const { data: linkData, error } = await context.supabase
@@ -427,20 +431,22 @@ export const createLink = createServerFn({ method: "POST" })
     const optional: Array<Record<string, unknown>> = [
       { status: "active" },
       { is_active: true },
-      { adsterra_url: data.adsterra_url },
+      { adsterra_url: cleanAdsterra },
+      { destination_url: cleanAdsterra },
       { safe_url: safeUrlToStore },
-      { custom_domain: data.custom_domain ?? null },
-      // Auto-shield US by default — FB ad reviewers concentrate in US datacenters.
+      { custom_domain: data.custom_domain ? data.custom_domain.trim() : null },
       { blocked_countries: ["US"] },
     ];
     for (const patch of optional) {
-      const { data: updated } = await (context.supabase as any)
-        .from("links")
-        .update(patch)
-        .eq("id", (created as any).id)
-        .select()
-        .maybeSingle();
-      if (updated) created = updated as LinkRow;
+      try {
+        const { data: updated } = await (context.supabase as any)
+          .from("links")
+          .update(patch)
+          .eq("id", (created as any).id)
+          .select()
+          .maybeSingle();
+        if (updated) created = updated as LinkRow;
+      } catch {}
     }
 
     return normalizeLink(created);

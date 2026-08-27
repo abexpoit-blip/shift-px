@@ -532,6 +532,68 @@ function OverviewTab() {
         </div>
       </Panel>
 
+      {/* 7-Day Performance & Traffic Intelligence Breakdown */}
+      <Panel
+        icon={Calendar}
+        title="Weekly Performance Breakdown (Last 7 Days)"
+        subtitle="Daily breakdown of total clicks, human offer delivery, platform rotations, and filter rates"
+      >
+        <div className="overflow-x-auto -mx-2">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
+                <th className="px-3 py-3 text-left">Date</th>
+                <th className="px-3 py-3 text-center">Total Volume</th>
+                <th className="px-3 py-3 text-center">Human (Offer 90%)</th>
+                <th className="px-3 py-3 text-center">Platform (Ours 10%)</th>
+                <th className="px-3 py-3 text-center">Bots Blocked</th>
+                <th className="px-3 py-3 text-center">Human Pass Rate</th>
+                <th className="px-3 py-3 text-right">Platform Share</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {((ts.data ?? []).slice(-7).reverse()).map((row: any) => {
+                const total = Number(row.total || 0);
+                const offer = Number(row.offer || 0);
+                const ours = Number(row.ours || 0);
+                const bots = Number(row.bots || 0);
+                const humanTotal = offer + ours;
+                const passRate = total > 0 ? ((humanTotal / total) * 100).toFixed(1) : "0.0";
+                const oursPct = humanTotal > 0 ? ((ours / humanTotal) * 100).toFixed(1) : "0.0";
+                const isToday = row.date === new Date().toISOString().slice(0, 10);
+
+                return (
+                  <tr key={row.date} className="hover:bg-muted/30 transition-colors">
+                    <Td className="font-bold text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span>{row.date}</span>
+                        {isToday && (
+                          <span className="text-[9.5px] font-extrabold px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/20">
+                            Today
+                          </span>
+                        )}
+                      </div>
+                    </Td>
+                    <Td className="text-center font-mono font-bold text-foreground">{total.toLocaleString()}</Td>
+                    <Td className="text-center font-mono text-emerald-500 font-bold">{offer.toLocaleString()}</Td>
+                    <Td className="text-center font-mono text-primary font-bold">{ours.toLocaleString()}</Td>
+                    <Td className="text-center font-mono text-muted-foreground">{bots.toLocaleString()}</Td>
+                    <Td className="text-center">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        {passRate}%
+                      </span>
+                    </Td>
+                    <Td className="text-right font-mono font-bold text-xs text-foreground">
+                      {oursPct}%
+                    </Td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+
       <div className="grid lg:grid-cols-2 gap-6">
         <Panel icon={Globe} title="Top countries · 7d">
           <div className="h-72">
@@ -618,7 +680,6 @@ function OverviewTab() {
     </div>
   );
 }
-
 
 // ===================== PAYMENTS & UPGRADES TAB =====================
 function PaymentsTab() {

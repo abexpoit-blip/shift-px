@@ -187,8 +187,21 @@ function LinksPage() {
   const [editingLink, setEditingLink] = useState<any>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
+  const listDomainsFn = useServerFn(listCustomDomains);
+  const customDomainsQ = useQuery({
+    queryKey: ["user-verified-custom-domains"],
+    queryFn: () => listDomainsFn(),
+    staleTime: 30_000,
+  });
+  const verifiedCustomDomains = useMemo(() => {
+    return ((customDomainsQ.data?.domains as any[]) || []).filter((d: any) => d.verified);
+  }, [customDomainsQ.data]);
+
+  const [domainFilter, setDomainFilter] = useState("all");
+  const [createDomain, setCreateDomain] = useState("adswapx.com");
+
   const createMut = useMutation({
-    mutationFn: (vars: { title?: string; adsterra_url: string }) => create({ data: vars }),
+    mutationFn: (vars: { title?: string; adsterra_url: string; custom_domain?: string }) => create({ data: vars }),
     onSuccess: () => {
       toast.success("Link created successfully!");
       setAdsterra("");
@@ -218,38 +231,30 @@ function LinksPage() {
     createMut.mutate({
       title: title.trim() || undefined,
       adsterra_url: adsterra.trim(),
+      custom_domain: createDomain !== "adswapx.com" ? createDomain : undefined,
     });
   };
-
-  const listDomainsFn = useServerFn(listCustomDomains);
-  const customDomainsQ = useQuery({
-    queryKey: ["user-verified-custom-domains"],
-    queryFn: () => listDomainsFn(),
-    staleTime: 30_000,
-  });
-  const verifiedCustomDomains = useMemo(() => {
-    return ((customDomainsQ.data?.domains as any[]) || []).filter((d: any) => d.verified);
-  }, [customDomainsQ.data]);
-
-  const [activeHost, setActiveHost] = useState("adswapx.com");
-  const effectiveHost = useMemo(() => {
-    if (activeHost === "adswapx.com") return "adswapx.com";
-    const exists = verifiedCustomDomains.some((d: any) => d.domain === activeHost);
-    return exists ? activeHost : "adswapx.com";
-  }, [activeHost, verifiedCustomDomains]);
 
   const links = dashQ.data?.links ?? [];
 
   const filtered = useMemo(() => {
+    let result = links;
+    if (domainFilter !== "all") {
+      result = result.filter((l: any) => {
+        const d = l.custom_domain || "adswapx.com";
+        return d.toLowerCase() === domainFilter.toLowerCase();
+      });
+    }
     const q = search.trim().toLowerCase();
-    if (!q) return links;
-    return links.filter(
+    if (!q) return result;
+    return result.filter(
       (l: any) =>
         (l.title ?? "").toLowerCase().includes(q) ||
         l.short_code.toLowerCase().includes(q) ||
+        (l.custom_domain ?? "").toLowerCase().includes(q) ||
         (l.adsterra_url ?? "").toLowerCase().includes(q),
     );
-  }, [links, search]);
+  }, [links, domainFilter, search]);
 
   const activeLinks = links.filter((l: any) => l.is_active).length;
 
@@ -287,28 +292,27 @@ function LinksPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Short Domain Selector / Badge */}
+            {/* Domain Filter */}
             <div className="flex items-center gap-1.5 bg-card border border-border/80 rounded-xl px-3 py-2 text-xs">
               <Globe className="w-3.5 h-3.5 text-primary shrink-0" />
-              <span className="text-muted-foreground font-bold hidden sm:inline">Domain:</span>
-              {verifiedCustomDomains.length > 0 ? (
-                <select
-                  value={effectiveHost}
-                  onChange={(e) => setActiveHost(e.target.value)}
-                  className="bg-transparent font-mono font-bold text-foreground focus:outline-none cursor-pointer"
-                >
-                  <option value="adswapx.com" className="bg-card text-foreground">
-                    adswapx.com (Primary)
+              <span className="text-muted-foreground font-bold hidden sm:inline">Filter:</span>
+              <select
+                value={domainFilter}
+                onChange={(e) => setDomainFilter(e.target.value)}
+                className="bg-transparent font-mono font-bold text-foreground focus:outline-none cursor-pointer"
+              >
+                <option value="all" className="bg-card text-foreground">
+                  All Domains ({links.length})
+                </option>
+                <option value="adswapx.com" className="bg-card text-foreground">
+                  adswapx.com (Primary)
+                </option>
+                {verifiedCustomDomains.map((d: any) => (
+                  <option key={d.id} value={d.domain} className="bg-card text-foreground">
+                    {d.domain} (Custom)
                   </option>
-                  {verifiedCustomDomains.map((d: any) => (
-                    <option key={d.id} value={d.domain} className="bg-card text-foreground">
-                      {d.domain} (Custom)
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <span className="font-mono font-bold text-foreground">adswapx.com</span>
-              )}
+                ))}
+              </select>
             </div>
 
             <div className="relative min-w-[180px] sm:min-w-[240px]">
@@ -352,7 +356,23 @@ function LinksPage() {
             </div>
 
             <form onSubmit={onSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Target Domain</label>
+                  <select
+                    value={createDomain}
+                    onChange={(e) => setCreateDomain(e.target.value)}
+                    className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2.5 text-xs sm:text-sm font-mono text-foreground focus:outline-none focus:border-primary"
+                  >
+                    <option value="adswapx.com">adswapx.com (Primary)</option>
+                    {verifiedCustomDomains.map((d: any) => (
+                      <option key={d.id} value={d.domain}>
+                        {d.domain} (Custom Verified)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Link Title (Optional)</label>
                   <input
@@ -362,6 +382,7 @@ function LinksPage() {
                     className="w-full bg-muted/40 border border-border rounded-xl px-4 py-2.5 text-xs sm:text-sm text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Destination / Offer URL *</label>
                   <input
@@ -419,7 +440,8 @@ function LinksPage() {
                   </tr>
                 ) : (
                   filtered.map((l: any) => {
-                    const shortUrl = `https://${effectiveHost}/${l.short_code}`;
+                    const linkDomain = l.custom_domain || "adswapx.com";
+                    const shortUrl = `https://${linkDomain}/${l.short_code}`;
                     const clicks = Number(l.clicks_count || 0);
                     const isHot = clicks >= 100;
 
@@ -427,7 +449,7 @@ function LinksPage() {
                       <tr key={l.id} className="hover:bg-muted/20 transition-colors">
                         {/* Campaign & URL */}
                         <td className="px-4 sm:px-6 py-4">
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             <div className="font-bold text-foreground text-sm flex items-center gap-2">
                               <span>{l.title || "Untitled Link"}</span>
                               {isHot && (
@@ -436,13 +458,17 @@ function LinksPage() {
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-xs text-primary font-semibold">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-mono font-medium px-2 py-0.5 rounded-md bg-muted border border-border/60 text-muted-foreground">
+                                <Globe className="w-3 h-3 text-primary shrink-0" />
+                                {linkDomain}
+                              </span>
+                              <span className="font-mono text-xs text-primary font-bold">
                                 /{l.short_code}
                               </span>
                               <button
                                 onClick={() => copyLink(shortUrl, l.short_code)}
-                                title="Copy Full Short URL"
+                                title={`Copy https://${linkDomain}/${l.short_code}`}
                                 className="h-6 px-2 rounded-md bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground text-[11px] font-mono flex items-center gap-1 transition-colors"
                               >
                                 {copiedCode === l.short_code ? (
