@@ -662,7 +662,7 @@ function UpgradePage() {
                     type="text"
                     value={promoInput}
                     onChange={(e) => setPromoInput(e.target.value)}
-                    placeholder="Enter coupon (e.g. Basic50)"
+                    placeholder="Enter promo code"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && promoInput.trim()) {
                         e.preventDefault();
@@ -676,7 +676,7 @@ function UpgradePage() {
                   type="button"
                   onClick={() => {
                     if (!promoInput.trim()) {
-                      toast.error("Please enter a promo code (e.g. Basic50)");
+                      toast.error("Please enter a promo code");
                       return;
                     }
                     validatePromo.mutate(promoInput);
