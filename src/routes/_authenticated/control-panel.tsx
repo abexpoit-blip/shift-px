@@ -307,20 +307,33 @@ const NAV_GROUPS: Array<{
     label: "Insights",
     items: [
       { value: "overview", label: "Overview", icon: LayoutDashboard },
-      { value: "traffic", label: "Traffic", icon: Activity },
+      { value: "traffic", label: "Traffic Live", icon: Activity },
+      { value: "leaks", label: "Leak Monitor", icon: Radar },
     ],
   },
   {
-    label: "Manage",
+    label: "Monetize & Users",
     items: [
       { value: "users", label: "Users", icon: Users },
+      { value: "payments", label: "Payments & Plans", icon: CreditCard },
+      { value: "promos", label: "Promo Coupons", icon: Tag },
+      { value: "withdrawals", label: "Withdrawals", icon: DollarSign },
+      { value: "links", label: "Link Inventory", icon: Link2 },
+    ],
+  },
+  {
+    label: "Infrastructure",
+    items: [
+      { value: "domains", label: "System Domains", icon: Globe },
+      { value: "user_domains", label: "User Domains", icon: Server },
+      { value: "errors", label: "System Errors", icon: ShieldAlert },
       { value: "maintenance", label: "Maintenance", icon: Wrench },
     ],
   },
   {
-    label: "Engage",
+    label: "Communication",
     items: [
-      { value: "support", label: "Support", icon: Inbox },
+      { value: "support", label: "Support Tickets", icon: Inbox },
       { value: "broadcasts", label: "Broadcasts", icon: Megaphone },
     ],
   },
@@ -350,7 +363,6 @@ function AdminNav({
           </div>
         </div>
       </div>
-
       <nav className="space-y-3">
         {NAV_GROUPS.map((g) => (
           <div key={g.label}>
