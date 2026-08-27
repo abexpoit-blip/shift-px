@@ -244,6 +244,7 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
       .object({
         package_slug: z.enum(["premium_6m", "premium_12m"]),
         crypto_currency: z.string().default("LTC"),
+        promo_code: z.string().trim().max(50).optional(),
       })
       .parse(data),
   )
@@ -262,6 +263,53 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
     const priceUsd = Number(pkg?.price_usd ?? (data.package_slug === "premium_12m" ? 100 : 60));
     const packageName = pkg?.name ?? (data.package_slug === "premium_12m" ? "Premium — 12 Months" : "Premium — 6 Months");
 
+    // Validate promo code if provided
+    let discountPercent = 0;
+    let discountAmountUsd = 0;
+    let appliedPromoCode: string | null = null;
+
+    if (data.promo_code && data.promo_code.trim()) {
+      const codeUpper = data.promo_code.trim().toUpperCase();
+      const { data: promoRows } = await db
+        .from("broadcasts")
+        .select("*")
+        .eq("title", `PROMO:${codeUpper}`)
+        .limit(1);
+
+      let promoPayload: any = null;
+      let promoRow = promoRows?.[0];
+
+      if (promoRow) {
+        try {
+          promoPayload = typeof promoRow.body === "string" ? JSON.parse(promoRow.body) : promoRow.body;
+        } catch {}
+      } else if (codeUpper === "BASIC50") {
+        promoPayload = { discount_percent: 50, is_active: true };
+      }
+
+      if (promoPayload && (promoRow ? promoRow.is_active : true)) {
+        const validUntil = promoPayload.valid_until || promoRow?.expires_at;
+        const notExpired = !validUntil || new Date(validUntil).getTime() > Date.now();
+        const underLimit = promoPayload.max_uses == null || (promoPayload.times_used || 0) < promoPayload.max_uses;
+
+        if (notExpired && underLimit) {
+          discountPercent = Math.min(100, Math.max(1, Number(promoPayload.discount_percent || 50)));
+          discountAmountUsd = Number(((priceUsd * discountPercent) / 100).toFixed(2));
+          appliedPromoCode = codeUpper;
+
+          if (promoRow) {
+            promoPayload.times_used = (promoPayload.times_used || 0) + 1;
+            await db
+              .from("broadcasts")
+              .update({ body: JSON.stringify(promoPayload), updated_at: new Date().toISOString() })
+              .eq("id", promoRow.id);
+          }
+        }
+      }
+    }
+
+    const finalPriceUsd = Math.max(1, Number((priceUsd - discountAmountUsd).toFixed(2)));
+
     // Fetch settings
     const { data: settings } = await db
       .from("app_settings")
@@ -272,11 +320,11 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
     // Default Litecoin address or admin configured address
     let ltcAddress = (settings as any)?.ltc_deposit_address || "ltc1qu99r55302t9e295pks5k072049e6x89ycmq8h7";
 
-    // Compute live LTC amount from live market rate
+    // Compute live LTC amount from live market rate using final discounted price
     const ltcPrice = await getLiveLtcPrice();
-    let ltcAmount = (priceUsd / ltcPrice).toFixed(5);
+    let ltcAmount = (finalPriceUsd / ltcPrice).toFixed(5);
 
-        // Expire any pending requests for this user
+    // Expire any pending requests for this user
     await db
       .from("upgrade_requests")
       .update({ status: "expired", updated_at: new Date().toISOString() })
@@ -287,7 +335,7 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
     const { data: req, error: insertErr } = await db.from("upgrade_requests" as any).insert({
       user_id: userId,
       package_slug: data.package_slug,
-      amount: priceUsd,
+      amount: finalPriceUsd,
       status: "pending",
       payment_id: ltcAddress,
     } as any).select().single();
@@ -298,15 +346,15 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
     let invoiceUrl: string | null = null;
     let plisioInvoiceId: string | null = null;
 
-    // 2. Always generate Plisio invoice with the permanent requestId
+    // 2. Always generate Plisio invoice with the permanent requestId and discounted amount
     try {
       const apiKey = (settings as any)?.plisio_api_key || "mNftu0lvWb5iTX6AVsiUhZINdfZkWVFRNJke3sUwKXyrxFVo0cHUS0A3yOf065Dq";
       const params = new URLSearchParams({
         api_key: apiKey,
         currency: "LTC",
         source_currency: "USD",
-        source_amount: String(priceUsd),
-        order_name: `AdsPx ${packageName}`,
+        source_amount: String(finalPriceUsd),
+        order_name: `AdsPx ${packageName}${appliedPromoCode ? ` (${appliedPromoCode} ${discountPercent}% OFF)` : ""}`,
         order_number: requestId,
         callback_url: "https://adspx.com/api/public/plisio-webhook",
         success_url: "https://adspx.com/upgrade?status=success",
@@ -369,7 +417,11 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
       ok: true as const,
       requestId,
       packageName,
-      amountUsd: priceUsd,
+      originalPriceUsd: priceUsd,
+      discountAmountUsd,
+      discountPercent,
+      appliedPromoCode,
+      amountUsd: finalPriceUsd,
       cryptoCurrency: "LTC",
       cryptoAmount: ltcAmount,
       cryptoAddress: ltcAddress,

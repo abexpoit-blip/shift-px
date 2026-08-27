@@ -51,6 +51,9 @@ import {
   Inbox,
   Activity,
   ShieldAlert,
+  Tag,
+  Percent,
+  XCircle,
 } from "lucide-react";
 import {
   LineChart,
@@ -74,6 +77,13 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  adminListPromoCodes,
+  adminCreatePromoCode,
+  adminDeletePromoCode,
+  adminTogglePromoCode,
+  type PromoCode,
+} from "@/lib/promo-codes.functions";
 import {
   adminStats,
   adminListUsers,
@@ -248,6 +258,9 @@ function AdminPage() {
               <TabsContent value="payments">
                 <PaymentsTab />
               </TabsContent>
+              <TabsContent value="promos">
+                <PromoCodesTab />
+              </TabsContent>
               <TabsContent value="links">
                 <LinksTab />
               </TabsContent>
@@ -301,18 +314,6 @@ const NAV_GROUPS: Array<{
     label: "Manage",
     items: [
       { value: "users", label: "Users", icon: Users },
-      { value: "payments", label: "Payments & Upgrades", icon: CreditCard },
-      { value: "links", label: "Links", icon: Link2 },
-      { value: "withdrawals", label: "Withdrawals", icon: DollarSign },
-      { value: "domains", label: "Domain pool", icon: Globe },
-      { value: "user_domains", label: "User domains", icon: Server },
-    ],
-  },
-  {
-    label: "Protect",
-    items: [
-      { value: "leaks", label: "Leak monitor", icon: Radar },
-      { value: "errors", label: "Errors", icon: ShieldAlert },
       { value: "maintenance", label: "Maintenance", icon: Wrench },
     ],
   },
@@ -980,6 +981,298 @@ function PaymentsTab() {
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </Td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+// ===================== PROMO CODES / COUPONS TAB =====================
+function PromoCodesTab() {
+  const qc = useQueryClient();
+  const listFn = useServerFn(adminListPromoCodes);
+  const createFn = useServerFn(adminCreatePromoCode);
+  const deleteFn = useServerFn(adminDeletePromoCode);
+  const toggleFn = useServerFn(adminTogglePromoCode);
+
+  const promosQuery = useQuery({
+    queryKey: ["admin-promos"],
+    queryFn: () => listFn(),
+  });
+
+  const [code, setCode] = useState("");
+  const [discountPercent, setDiscountPercent] = useState(50);
+  const [validUntil, setValidUntil] = useState("");
+  const [maxUses, setMaxUses] = useState("");
+  const [description, setDescription] = useState("");
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-promos"] });
+
+  const createMut = useMutation({
+    mutationFn: (v: {
+      code: string;
+      discount_percent: number;
+      valid_until?: string | null;
+      max_uses?: number | null;
+      description?: string;
+    }) => createFn({ data: v }),
+    onSuccess: (res) => {
+      toast.success(res.message || "Promo coupon saved!");
+      setCode("");
+      setDescription("");
+      setValidUntil("");
+      setMaxUses("");
+      invalidate();
+    },
+    onError: (err: Error) => toast.error(err.message || "Failed to create coupon"),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Promo code deleted");
+      invalidate();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const toggleMut = useMutation({
+    mutationFn: (v: { id: string; is_active: boolean }) => toggleFn({ data: v }),
+    onSuccess: () => {
+      toast.success("Status updated");
+      invalidate();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const promoList: PromoCode[] = promosQuery.data ?? [];
+
+  return (
+    <div className="space-y-6">
+      {/* Create New Promo Code Form */}
+      <Panel
+        icon={Tag}
+        title="Create New Discount Coupon"
+        subtitle="Add a promo code (e.g. Basic50, Summer30) that users can apply on package upgrades"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!code.trim()) {
+              toast.error("Please enter a coupon code");
+              return;
+            }
+            createMut.mutate({
+              code: code.trim().toUpperCase(),
+              discount_percent: Number(discountPercent),
+              valid_until: validUntil ? new Date(validUntil).toISOString() : null,
+              max_uses: maxUses ? Number(maxUses) : null,
+              description: description.trim() || undefined,
+            });
+          }}
+          className="space-y-4"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5 block">
+                Coupon Code *
+              </label>
+              <input
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""))}
+                placeholder="e.g. BASIC50"
+                required
+                className="w-full bg-card/70 border border-border rounded-xl px-4 py-2 text-xs font-mono font-bold text-[var(--foreground)] placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5 block">
+                Discount Percent (% off) *
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={discountPercent}
+                  onChange={(e) => setDiscountPercent(Math.max(1, Math.min(99, Number(e.target.value))))}
+                  required
+                  className="w-full bg-card/70 border border-border rounded-xl px-4 py-2 text-xs font-bold text-[var(--foreground)] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+                <span className="text-xs font-black text-primary">% OFF</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5 block">
+                Expiry Date (Optional)
+              </label>
+              <input
+                type="date"
+                value={validUntil}
+                onChange={(e) => setValidUntil(e.target.value)}
+                className="w-full bg-card/70 border border-border rounded-xl px-4 py-2 text-xs font-bold text-[var(--foreground)] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5 block">
+                Max Uses (Optional)
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={maxUses}
+                onChange={(e) => setMaxUses(e.target.value)}
+                placeholder="Unlimited"
+                className="w-full bg-card/70 border border-border rounded-xl px-4 py-2 text-xs font-bold text-[var(--foreground)] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5 block">
+              Description / Notes (Optional)
+            </label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="e.g. Special community discount for launch week"
+              className="w-full bg-card/70 border border-border rounded-xl px-4 py-2 text-xs text-[var(--foreground)] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button
+              type="submit"
+              disabled={createMut.isPending || !code.trim()}
+              className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)] text-primary-foreground font-bold rounded-xl px-5 shadow-glow"
+            >
+              {createMut.isPending ? "Creating…" : "+ Create Coupon"}
+            </Button>
+          </div>
+        </form>
+      </Panel>
+
+      {/* Active Promo Codes List Table */}
+      <Panel
+        icon={Percent}
+        title="Active Coupons & Promo Inventory"
+        subtitle="Manage active discounts, verify expiration, and track usage"
+      >
+        <div className="overflow-x-auto -mx-2">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
+                <th className="px-3 py-3 text-left">Coupon Code</th>
+                <th className="px-3 py-3 text-center">Discount</th>
+                <th className="px-3 py-3 text-center">Validity / Expiry</th>
+                <th className="px-3 py-3 text-center">Usage Count</th>
+                <th className="px-3 py-3 text-center">Status</th>
+                <th className="px-3 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {promoList.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-xs text-muted-foreground">
+                    No promo codes created yet. Create one above!
+                  </td>
+                </tr>
+              ) : (
+                promoList.map((p) => {
+                  const isExpired = p.valid_until && new Date(p.valid_until).getTime() < Date.now();
+                  const isLimitReached = p.max_uses !== null && p.times_used >= p.max_uses;
+
+                  return (
+                    <tr key={p.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-3 py-3 font-bold text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-primary font-black text-xs">
+                            {p.code}
+                          </span>
+                          {p.code === "BASIC50" && (
+                            <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                              System Default
+                            </span>
+                          )}
+                        </div>
+                        {p.description && (
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {p.description}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="px-3 py-3 text-center">
+                        <span className="inline-flex items-center gap-1 text-xs font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          {p.discount_percent}% OFF
+                        </span>
+                      </td>
+
+                      <td className="px-3 py-3 text-center text-xs font-semibold">
+                        {p.valid_until ? (
+                          <span className={isExpired ? "text-rose-400 font-bold" : "text-foreground"}>
+                            {new Date(p.valid_until).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                            {isExpired && " (Expired)"}
+                          </span>
+                        ) : (
+                          <span className="text-emerald-400 font-bold">Lifetime / No Expiry</span>
+                        )}
+                      </td>
+
+                      <td className="px-3 py-3 text-center font-mono text-xs font-bold text-foreground">
+                        {p.times_used} {p.max_uses ? `/ ${p.max_uses} max` : "uses"}
+                        {isLimitReached && (
+                          <span className="block text-[9px] text-rose-400 font-bold">Limit Reached</span>
+                        )}
+                      </td>
+
+                      <td className="px-3 py-3 text-center">
+                        {p.is_active && !isExpired && !isLimitReached ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            <CheckCircle2 className="h-3 w-3" /> Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                            <XCircle className="h-3 w-3" /> Disabled
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="px-3 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => toggleMut.mutate({ id: p.id, is_active: !p.is_active })}
+                            className="h-7 text-xs font-bold px-2.5"
+                          >
+                            {p.is_active ? "Disable" : "Enable"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              if (confirm(`Delete promo coupon "${p.code}"?`)) {
+                                deleteMut.mutate(p.id);
+                              }
+                            }}
+                            className="h-7 text-xs font-bold px-2 border-rose-500/30 text-rose-400 hover:bg-rose-500/10"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })

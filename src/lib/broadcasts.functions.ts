@@ -40,6 +40,7 @@ export const listActiveBroadcasts = createServerFn({ method: "GET" })
       .from("broadcasts")
       .select("id,title,body,icon,tone,is_active,created_at,expires_at")
       .eq("is_active", true)
+      .not("title", "like", "PROMO:%")
       .order("created_at", { ascending: false })
       .limit(5);
     if (error) throw new Error(error.message);
@@ -105,6 +106,7 @@ export const adminListBroadcasts = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("broadcasts")
       .select("*")
+      .not("title", "like", "PROMO:%")
       .order("created_at", { ascending: false })
       .limit(100);
     if (error) throw new Error(error.message);

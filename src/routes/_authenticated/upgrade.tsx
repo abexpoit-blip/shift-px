@@ -7,7 +7,7 @@ import {
   ExternalLink, ShieldCheck, AlertCircle, Sparkles,
   ArrowRight, Star, Shield, Globe2, Wallet,
   HelpCircle, ChevronDown, Flame, CheckCircle2,
-  XCircle, Send, QrCode
+  XCircle, Send, QrCode, Tag, Percent
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -18,6 +18,7 @@ import {
   getMyPlanStatus,
   type Package
 } from "@/lib/packages.functions";
+import { validatePromoCode } from "@/lib/promo-codes.functions";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
@@ -244,6 +245,9 @@ function InvoicePanel({
     plisioInvoiceUrl: string | null;
     expiresAt: string;
     manualMode: boolean;
+    appliedPromoCode?: string | null;
+    discountPercent?: number;
+    discountAmountUsd?: number;
   };
   onClose: () => void;
 }) {
@@ -299,9 +303,16 @@ function InvoicePanel({
               </div>
               <div>
                 <h3 className="font-black text-xl leading-none mb-1">AdsPx Instant Invoice</h3>
-                <p className="text-xs text-white/90 font-medium">
-                  {result.packageName} · <strong className="text-white">${result.amountUsd} USD</strong>
-                </p>
+                <div className="flex flex-wrap items-center gap-1.5 text-xs text-white/90 font-medium">
+                  <span>{result.packageName}</span>
+                  <span>·</span>
+                  <strong className="text-white text-sm font-black">${result.amountUsd} USD</strong>
+                  {result.appliedPromoCode && (
+                    <span className="inline-flex items-center gap-1 bg-emerald-400/25 text-emerald-200 border border-emerald-400/40 rounded-md px-2 py-0.5 text-[10px] font-black uppercase">
+                      🏷️ {result.appliedPromoCode} ({result.discountPercent}% OFF)
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <span className="rounded-full bg-emerald-400/20 border border-emerald-400/40 px-3 py-1 text-[11px] font-bold text-emerald-300 animate-pulse flex items-center gap-1.5">
@@ -397,10 +408,21 @@ function UpgradePage() {
   const listFn = useServerFn(listPackages);
   const statusFn = useServerFn(getMyPlanStatus);
   const upgradeFn = useServerFn(createUpgradeRequest);
+  const validatePromoFn = useServerFn(validatePromoCode);
 
   const [selectedSlug, setSelectedSlug] = useState<"premium_6m" | "premium_12m">("premium_12m");
   const [invoiceResult, setInvoiceResult] = useState<any>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  // Promo Code State
+  const [promoInput, setPromoInput] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<{
+    code: string;
+    discount_percent: number;
+    discount_amount_usd: number;
+    final_price_usd: number;
+    message: string;
+  } | null>(null);
 
   const { data: packages = [], isLoading: pkgsLoading } = useQuery({
     queryKey: ["packages"],
@@ -413,9 +435,48 @@ function UpgradePage() {
     queryFn: () => statusFn(),
   });
 
+  const validatePromo = useMutation({
+    mutationFn: (code: string) =>
+      validatePromoFn({ data: { code, package_slug: selectedSlug } }),
+    onSuccess: (res) => {
+      setAppliedPromo(res);
+      toast.success(res.message);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Invalid promo code");
+    },
+  });
+
+  // When changing package, re-sync the discount amount
+  useEffect(() => {
+    if (appliedPromo) {
+      const basePrice = selectedSlug === "premium_12m" ? 100 : 60;
+      const discount = Number(((basePrice * appliedPromo.discount_percent) / 100).toFixed(2));
+      const finalPrice = Math.max(0, Number((basePrice - discount).toFixed(2)));
+      setAppliedPromo((prev) =>
+        prev
+          ? {
+              ...prev,
+              discount_amount_usd: discount,
+              final_price_usd: finalPrice,
+            }
+          : null,
+      );
+    }
+  }, [selectedSlug]);
+
+  const basePriceUsd = selectedSlug === "premium_12m" ? 100 : 60;
+  const finalPriceUsd = appliedPromo ? appliedPromo.final_price_usd : basePriceUsd;
+
   const upgrade = useMutation({
     mutationFn: () =>
-      upgradeFn({ data: { package_slug: selectedSlug, crypto_currency: "LTC" } }),
+      upgradeFn({
+        data: {
+          package_slug: selectedSlug,
+          crypto_currency: "LTC",
+          promo_code: appliedPromo?.code,
+        },
+      }),
     onSuccess: (res) => {
       setInvoiceResult(res);
     },
@@ -551,16 +612,112 @@ function UpgradePage() {
               <p className="text-xs text-muted-foreground mt-0.5">
                 Selected Plan:{" "}
                 <strong className="text-foreground">
-                  {selectedSlug === "premium_12m" ? "Premium — 12 Months ($100 USD)" : "Premium — 6 Months ($60 USD)"}
+                  {selectedSlug === "premium_12m" ? "Premium — 12 Months" : "Premium — 6 Months"}
                 </strong>
               </p>
             </div>
             <div className="text-left sm:text-right">
-              <span className="text-2xl font-black text-foreground">
-                {selectedSlug === "premium_12m" ? "$100.00" : "$60.00"} USD
-              </span>
-              <span className="text-xs text-muted-foreground block">Payable via Litecoin (LTC)</span>
+              {appliedPromo ? (
+                <div>
+                  <div className="flex items-center gap-2 justify-start sm:justify-end">
+                    <span className="text-xs font-bold text-muted-foreground line-through opacity-70">
+                      ${basePriceUsd}.00
+                    </span>
+                    <span className="text-2xl font-black text-emerald-400">
+                      ${finalPriceUsd.toFixed(2)} USD
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold text-emerald-400 block">
+                    ✨ Promo ({appliedPromo.discount_percent}% OFF) applied!
+                  </span>
+                </div>
+              ) : (
+                <div>
+                  <span className="text-2xl font-black text-foreground">
+                    ${basePriceUsd}.00 USD
+                  </span>
+                  <span className="text-xs text-muted-foreground block">Payable via Litecoin (LTC)</span>
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* Promo Code / Coupon Input Box */}
+          <div className="rounded-2xl bg-muted/40 border border-border/80 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Tag className="h-3.5 w-3.5 text-primary" /> Have a Promo Code / Coupon?
+              </label>
+              {appliedPromo && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-full animate-pulse">
+                  <CheckCircle2 className="h-3 w-3" /> {appliedPromo.discount_percent}% Discount Applied
+                </span>
+              )}
+            </div>
+
+            {!appliedPromo ? (
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={promoInput}
+                    onChange={(e) => setPromoInput(e.target.value)}
+                    placeholder="Enter coupon (e.g. Basic50)"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && promoInput.trim()) {
+                        e.preventDefault();
+                        validatePromo.mutate(promoInput);
+                      }
+                    }}
+                    className="w-full h-11 px-4 text-xs font-mono font-bold uppercase bg-background border border-border rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/60"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (!promoInput.trim()) {
+                      toast.error("Please enter a promo code (e.g. Basic50)");
+                      return;
+                    }
+                    validatePromo.mutate(promoInput);
+                  }}
+                  disabled={validatePromo.isPending || !promoInput.trim()}
+                  className="h-11 px-5 rounded-xl font-bold bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                >
+                  {validatePromo.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply Code"}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-sm">
+                    %
+                  </div>
+                  <div>
+                    <div className="text-xs font-black text-foreground flex items-center gap-2">
+                      <span className="font-mono">{appliedPromo.code}</span>
+                      <span className="text-[10px] text-emerald-400 font-extrabold uppercase bg-emerald-500/20 px-1.5 py-0.2 rounded">
+                        {appliedPromo.discount_percent}% OFF
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                      You save <strong className="text-emerald-400 font-bold">${appliedPromo.discount_amount_usd.toFixed(2)} USD</strong> on this purchase!
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppliedPromo(null);
+                    setPromoInput("");
+                    toast.info("Promo code removed");
+                  }}
+                  className="text-xs font-bold text-muted-foreground hover:text-rose-400 px-3 py-1.5 rounded-lg border border-border/80 hover:border-rose-400/40 transition-colors"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Payment Method Badge */}
@@ -593,7 +750,7 @@ function UpgradePage() {
               ) : (
                 <>
                   <Crown className="h-6 w-6 mr-3 stroke-[2.5]" />
-                  Pay ${selectedSlug === "premium_12m" ? "100" : "60"} with LTC & Upgrade
+                  Pay ${finalPriceUsd.toFixed(2)} with LTC & Upgrade
                 </>
               )}
             </Button>
