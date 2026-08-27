@@ -2349,13 +2349,13 @@ function LiveTrafficStreamPanel() {
                       {isHuman && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                           <CheckCircle2 className="w-3 h-3" />
-                          Human Offer (90%)
+                          Human Offer (95%)
                         </span>
                       )}
                       {isOurs && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-primary/10 text-primary border border-primary/25">
                           <Sparkles className="w-3 h-3" />
-                          Platform (10%)
+                          Platform (5%)
                         </span>
                       )}
                       {isSafe && (

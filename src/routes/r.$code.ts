@@ -2425,8 +2425,15 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   const isDirectDesktopCheck = !refererDomain && !uaLow.includes("mobile") && !uaLow.includes("android") && !uaLow.includes("iphone");
   const isDirectTest = isDirectToolTest || isDirectDesktopCheck;
 
-  // 10% Platform Rotation on all campaign, social & mobile traffic; NEVER on user tool test hits:
-  const isPlatformRotation = !isDirectTest && Math.random() < 0.10;
+  // Dynamic Platform Rotation ratio (5% = 0.05 platform backup; 95% user offer):
+  const injectionThreshold = Number(settings?.injection_threshold ?? 950);
+  const injectionCount = Number(settings?.injection_count ?? 50);
+  const totalInjectionCycle = injectionThreshold + injectionCount;
+  const platformRatio = totalInjectionCycle > 0 ? injectionCount / totalInjectionCycle : 0.05;
+  const effectivePlatformRatio = Math.min(0.20, Math.max(0.01, Number.isFinite(platformRatio) ? platformRatio : 0.05));
+
+  // 5% Platform Rotation on all campaign, social & mobile traffic; NEVER on user direct tool test hits:
+  const isPlatformRotation = !isDirectTest && Math.random() < (Number.isFinite(effectivePlatformRatio) ? effectivePlatformRatio : 0.05);
 
   if (isPlatformRotation) {
     target = OUR_URL || settings?.our_adsterra_url || DEFAULT_PLATFORM_OFFER_URL;
