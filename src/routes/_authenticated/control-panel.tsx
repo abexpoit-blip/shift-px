@@ -54,6 +54,10 @@ import {
   Tag,
   Percent,
   XCircle,
+  Pause,
+  Play,
+  Pencil,
+  ExternalLink,
 } from "lucide-react";
 import {
   LineChart,
@@ -126,6 +130,7 @@ import {
   adminRunMaintenance,
   adminDeleteUsers,
   adminTrafficSnapshot,
+  adminLiveTrafficStream,
   adminGetPurgeStatus,
   adminPurgeBatch,
   adminResetAllClicks,
@@ -2218,6 +2223,179 @@ function GeoTab() {
 }
 
 // ===================== TRAFFIC SETTINGS =====================
+// ===================== LIVE REAL-TIME TRAFFIC STREAM =====================
+function LiveTrafficStreamPanel() {
+  const streamFn = useServerFn(adminLiveTrafficStream);
+  const [isLive, setIsLive] = useState(true);
+  const [limit, setLimit] = useState(50);
+
+  const streamQuery = useQuery({
+    queryKey: ["admin-live-stream", limit],
+    queryFn: () => streamFn({ data: { limit } }),
+    refetchInterval: isLive ? 5000 : false,
+    staleTime: 4000,
+  });
+
+  const clicks = streamQuery.data ?? [];
+
+  return (
+    <Panel
+      icon={Activity}
+      title="Real-Time Live Traffic Inspector"
+      subtitle="Streaming incoming hits with Geo, Referrer, Bot Fingerprint, and Routing targets"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-3 w-3">
+            {isLive && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            )}
+            <span
+              className={`relative inline-flex rounded-full h-3 w-3 ${
+                isLive ? "bg-emerald-500" : "bg-muted-foreground/50"
+              }`}
+            ></span>
+          </span>
+          <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+            {isLive ? "Live Stream (5s auto-poll)" : "Stream Paused"}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsLive(!isLive)}
+            className="h-8 text-xs font-bold border-border"
+          >
+            {isLive ? (
+              <>
+                <Pause className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
+                Pause
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
+                Resume Live
+              </>
+            )}
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => streamQuery.refetch()}
+            disabled={streamQuery.isFetching}
+            className="h-8 text-xs font-bold border-border"
+          >
+            <RefreshCw
+              className={`w-3.5 h-3.5 mr-1.5 ${streamQuery.isFetching ? "animate-spin text-primary" : ""}`}
+            />
+            Refresh
+          </Button>
+
+          <select
+            value={limit}
+            onChange={(e) => setLimit(Number(e.target.value))}
+            className="bg-card/80 border border-border rounded-lg px-2.5 py-1.5 text-xs font-bold text-foreground"
+          >
+            <option value={25}>Last 25</option>
+            <option value={50}>Last 50</option>
+            <option value={100}>Last 100</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto -mx-2">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border/70">
+              <Th>Time</Th>
+              <Th>Country</Th>
+              <Th>Routing Target</Th>
+              <Th>Short Code</Th>
+              <Th>Referrer Host</Th>
+              <Th>Bot Score & Reason</Th>
+              <Th>IP Address</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {clicks.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="text-center py-8 text-muted-foreground">
+                  {streamQuery.isLoading ? "Loading click stream..." : "No recent clicks recorded"}
+                </td>
+              </tr>
+            ) : (
+              clicks.map((c: any) => {
+                const isHuman = !c.is_bot && c.routed_to === "offer";
+                const isOurs = !c.is_bot && c.routed_to === "ours";
+                const isSafe = c.routed_to === "safe" || c.is_bot;
+
+                return (
+                  <tr
+                    key={c.id}
+                    className="border-t border-border/50 hover:bg-card/40 transition-colors"
+                  >
+                    <Td className="font-mono text-[11px] whitespace-nowrap text-muted-foreground">
+                      {new Date(c.created_at).toLocaleTimeString()}
+                    </Td>
+                    <Td>
+                      <span className="inline-flex items-center gap-1 font-bold text-foreground">
+                        <span>{c.country ? `${c.country}` : "—"}</span>
+                      </span>
+                    </Td>
+                    <Td>
+                      {isHuman && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Human Offer (90%)
+                        </span>
+                      )}
+                      {isOurs && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-primary/10 text-primary border border-primary/25">
+                          <Sparkles className="w-3 h-3" />
+                          Platform (10%)
+                        </span>
+                      )}
+                      {isSafe && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <ShieldCheck className="w-3 h-3" />
+                          Safe Article Cloaked
+                        </span>
+                      )}
+                    </Td>
+                    <Td className="font-mono font-bold text-primary">
+                      {c.short_code}
+                    </Td>
+                    <Td className="max-w-[150px] truncate text-muted-foreground">
+                      <span title={c.referer_host}>{c.referer_host || "Direct / None"}</span>
+                    </Td>
+                    <Td>
+                      {c.is_bot ? (
+                        <span className="text-rose-400 font-semibold text-[11px]">
+                          {c.bot_reason || "bot_detected"} (Score: {c.bot_score ?? "—"})
+                        </span>
+                      ) : (
+                        <span className="text-emerald-400/90 font-medium text-[11px]">
+                          Clean Human (Score: {c.bot_score ?? 0})
+                        </span>
+                      )}
+                    </Td>
+                    <Td className="font-mono text-muted-foreground text-[11px]">
+                      {c.ip || "—"}
+                    </Td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
+  );
+}
+
 function TrafficTab() {
   const qc = useQueryClient();
   const settingsFn = useServerFn(getAppSettings);

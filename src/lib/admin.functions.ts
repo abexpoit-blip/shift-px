@@ -1650,3 +1650,45 @@ export const adminListPayments = createServerFn({ method: "GET" })
 
     return rows;
   });
+
+// ===== Live Real-Time Traffic Stream =====
+export const adminLiveTrafficStream = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ limit: z.number().min(10).max(200).optional().default(50) }).parse(d ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const limit = data.limit || 50;
+
+    const { data: clicks, error } = await supabaseAdmin
+      .from("clicks")
+      .select("id, link_id, ip, country, ua, is_bot, bot_reason, routed_to, created_at, referer_host, bot_score, challenge_passed")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (error) throw new Error(error.message);
+
+    // Fetch link short codes for quick reference
+    const linkIds = [...new Set((clicks ?? []).map((c: any) => c.link_id).filter(Boolean))];
+    const linkMap: Record<string, { short_code: string; title: string | null }> = {};
+    if (linkIds.length > 0) {
+      const { data: links } = await supabaseAdmin
+        .from("links")
+        .select("id, short_code, title")
+        .in("id", linkIds);
+      (links ?? []).forEach((l: any) => {
+        linkMap[l.id] = { short_code: l.short_code, title: l.title };
+      });
+    }
+
+    return (clicks ?? []).map((c: any) => {
+      const link = linkMap[c.link_id];
+      return {
+        ...c,
+        short_code: link?.short_code || "—",
+        link_title: link?.title || null,
+      };
+    });
+  });
+
