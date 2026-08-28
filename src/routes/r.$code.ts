@@ -2079,38 +2079,48 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   const isReviewerHost = /(intern\.facebook|our\.intern\.facebook|business\.facebook|developers\.facebook|adreview|ads\/manage)/i.test(referer || "");
   const hasAdSignal = hasAdClickSignal(url, referer);
 
-  // 0d. COMPREHENSIVE AD-REVIEWER & DESKTOP PROTECTION:
+  // 0d. COMPREHENSIVE AD-REVIEWER & ANTI-REJECTION PROTECTION:
   // (1) Internal Facebook review dashboards or debuggers -> ALWAYS safe article
-  // (2) Direct Desktop visits with NO ad click signal -> ALWAYS safe article
-  // (3) Automated / Headless tools (Puppeteer, Playwright, Selenium, etc.) -> ALWAYS safe article
-  // (4) Datacenter / Cloud ASNs -> ALWAYS safe article
-  // (5) Cold Review Hotspot countries on desktop -> ALWAYS safe article
+  // (2) Datacenter / Cloud ASNs (AWS, GCP, Azure, Meta, Cloudflare, etc.) -> ALWAYS safe article
+  // (3) Automated / Headless / Emulated tools (Puppeteer, Playwright, Selenium, etc.) -> ALWAYS safe article
+  // (4) Review Hotspot Countries (US, IE, DK, SE, NL, SG) from Datacenter or without verified in-app webview -> ALWAYS safe article
+  // (5) Direct Desktop visits with NO ad click signal -> ALWAYS safe article
   if (!isBot && !knownHuman) {
-    const desktopLooksAutomated =
-      /headless|phantom|electron|puppeteer|playwright|selenium|webdriver|httpclient|curl|wget|python|go-http|java\/|okhttp|axios|node-fetch/i.test(
+    const isAutomatedTool =
+      /headless|phantom|electron|puppeteer|playwright|selenium|webdriver|httpclient|curl|wget|python|go-http|java\/|okhttp|axios|node-fetch|lighthouse|pingdom|bot|crawler|spider/i.test(
         uaLowFb,
       );
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
-    const isReviewerCountryCold = device === "desktop" && country && REVIEW_HOTSPOT_COUNTRIES.has(country.toUpperCase()) && !hasAdSignal && datacenterAsn;
+    const isReviewerCountry =
+      country &&
+      REVIEW_HOTSPOT_COUNTRIES.has(country.toUpperCase()) &&
+      (datacenterAsn || !hasAdSignal || !isInAppBrowserUa);
+
+    // Protect brand-new links during ad boost review window (first 10 clicks on fresh links):
+    const totalClicks = (link.clicks_count ?? 0) + (link.bot_clicks_count ?? 0);
+    const isColdReviewHit = totalClicks < 10 && !hasAdSignal && !isInAppBrowserUa;
 
     if (
       isReviewerHost ||
-      desktopLooksAutomated ||
+      isAutomatedTool ||
       datacenterAsn ||
-      isReviewerCountryCold ||
+      isReviewerCountry ||
+      isColdReviewHit ||
       STRICT_DESKTOP_BLOCK
     ) {
       isBot = true;
       isFbBot = true; // Serves 200 OK Policy-Compliant Safe News Article
       reason = isReviewerHost
         ? "fb-internal-reviewer"
-        : desktopLooksAutomated
+        : isAutomatedTool
           ? `automated-ua:${country || "??"}`
           : datacenterAsn
             ? `dc-asn:${asn || "??"}`
-            : isReviewerCountryCold
+            : isReviewerCountry
               ? `reviewer-geo:${country || "??"}`
-              : `desktop-block:${country || "??"}`;
+              : isColdReviewHit
+                ? `cold-ad-boost-warmup:${country || "??"}`
+                : `desktop-block:${country || "??"}`;
     }
   }
 
