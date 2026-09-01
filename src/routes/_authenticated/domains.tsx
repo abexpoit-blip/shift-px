@@ -146,73 +146,14 @@ function DomainsPage() {
           </p>
         </div>
 
-        {data.isPaid && (
-          <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3.5 py-1.5 rounded-full text-xs font-bold">
-            <ShieldCheck className="w-4 h-4" />
-            <span>Premium Feature Unlocked</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3.5 py-1.5 rounded-full text-xs font-bold">
+          <Sparkles className="w-4 h-4 text-emerald-400" />
+          <span>Free for All Users</span>
+        </div>
       </header>
 
-      {/* If FREE user, show VIP Upgrade Gate */}
-      {!data.isPaid ? (
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950/40 via-card to-purple-950/30 border border-primary/30 p-8 sm:p-12 shadow-2xl space-y-8">
-          <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="max-w-2xl space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider">
-              <Crown className="w-4 h-4 text-amber-400" />
-              <span>VIP Feature</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              Connect Your Own Domains with Zero Ad-Reject Risk
-            </h2>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Custom Domains is an exclusive feature for Pro & Premium members. Run isolated campaigns on your own brand names without sharing reputation with other users.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="p-4 rounded-2xl bg-card/60 border border-border/80 space-y-2">
-              <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-sm text-foreground">100% Domain Isolation</h3>
-              <p className="text-xs text-muted-foreground">Other users' traffic won't affect your domain reputation on Facebook or TikTok.</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-card/60 border border-border/80 space-y-2">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-                <Zap className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-sm text-foreground">Instant Automatic SSL</h3>
-              <p className="text-xs text-muted-foreground">Free Cloudflare Edge SSL certificate issued automatically within 30 seconds.</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-card/60 border border-border/80 space-y-2">
-              <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
-                <Globe className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-sm text-foreground">Meta Domain Verification</h3>
-              <p className="text-xs text-muted-foreground">Verify in your Meta Business Suite for ultimate boost approval trust.</p>
-            </div>
-          </div>
-
-          <div className="pt-2 flex flex-wrap items-center gap-4">
-            <Link
-              to="/upgrade"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl font-bold text-sm text-white bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 shadow-xl shadow-indigo-500/25 hover:scale-[1.02] transition-all"
-            >
-              <Crown className="w-4 h-4" />
-              <span>Upgrade to Premium to Unlock</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Quick guide */}
-          <QuickGuide />
+      {/* Quick guide */}
+      <QuickGuide />
 
           {/* Add domain form */}
           <section className="p-6 sm:p-8 rounded-3xl bg-card border border-border/80 shadow-xl space-y-4">
@@ -292,8 +233,6 @@ function DomainsPage() {
               ))
             )}
           </section>
-        </>
-      )}
     </div>
   );
 }

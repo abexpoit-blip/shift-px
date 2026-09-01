@@ -30,26 +30,9 @@ function normalize(d: string) {
     .replace(/^www\./, "");
 }
 
-async function assertPaid(supabase: any, userId: string) {
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("plan_slug")
-    .eq("id", userId)
-    .maybeSingle();
-  const slug = (profile?.plan_slug || "free").toLowerCase();
-  const isPaid =
-    PAID_PLANS.has(slug) ||
-    slug.includes("premium") ||
-    slug.includes("pro") ||
-    slug.includes("vip") ||
-    slug === "lifetime" ||
-    slug === "yearly" ||
-    slug === "monthly";
-  if (!isPaid) {
-    throw new Error(
-      "Custom Domains is an exclusive feature for Premium members. Please upgrade your plan to connect your own domain.",
-    );
-  }
+async function assertPaid(_supabase: any, _userId: string) {
+  // Unlocked for all users (free & paid)
+  return true;
 }
 
 // --- DNS helpers (Cloudflare DoH; works in edge runtime) ---
@@ -114,22 +97,13 @@ export const listCustomDomains = createServerFn({ method: "GET" })
       .eq("id", userId)
       .maybeSingle();
     const slug = (profile?.plan_slug || "free").toLowerCase();
-    const isPaid =
-      PAID_PLANS.has(slug) ||
-      slug.includes("premium") ||
-      slug.includes("pro") ||
-      slug.includes("vip") ||
-      slug === "lifetime" ||
-      slug === "yearly" ||
-      slug === "monthly";
-
     const { data, error } = await supabase
       .from("custom_domains")
       .select("id, domain, verification_token, verified, verified_at, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return { domains: data ?? [], isPaid, planSlug: slug, cnameTarget: CNAME_TARGET };
+    return { domains: data ?? [], isPaid: true, planSlug: slug, cnameTarget: CNAME_TARGET };
   });
 
 export const addCustomDomain = createServerFn({ method: "POST" })
