@@ -113,14 +113,7 @@ export function buildAdsterraOfferUrl(
       }
     }
 
-    // SubID 5: Country + Device
-    if (!targetUrl.searchParams.has("subid5") && !targetUrl.searchParams.has("sub_id_5")) {
-      const geoDev = [attribution.country, attribution.device].filter(Boolean).join("_");
-      if (geoDev) {
-        targetUrl.searchParams.set("subid5", geoDev);
-      }
-    }
-
+    // Do not inject artificial subid5: preserving clean Adsterra link avoids subid penalty and maximizes CPM
     return targetUrl.toString();
   } catch {
     const raw = destinationUrl.trim();

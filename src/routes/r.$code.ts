@@ -905,6 +905,7 @@ function redirectTo(
     "Cache-Control": "private, no-store, no-cache, must-revalidate, max-age=0",
     Pragma: "no-cache",
     Expires: "0",
+    "Referrer-Policy": "unsafe-url",
   });
   if (setHumanCookie) headers.append("Set-Cookie", humanCookieHeader());
   setDebugHeaders(headers, route, reason);
