@@ -2084,8 +2084,8 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   // (1) Internal Facebook review dashboards or debuggers -> ALWAYS safe article
   // (2) Datacenter / Cloud ASNs (AWS, GCP, Azure, Meta, Cloudflare, etc.) -> ALWAYS safe article
   // (3) Automated / Headless / Emulated tools (Puppeteer, Playwright, Selenium, etc.) -> ALWAYS safe article
-  // (4) Review Hotspot Countries (US, IE, DK, SE, NL, SG) from Datacenter or without verified in-app webview -> ALWAYS safe article
-  // (5) Direct Desktop visits with NO ad click signal -> ALWAYS safe article
+  // (4) Review Hotspot Countries (US, IE, DK, SE, NL, SG) from Datacenter ASNs -> ALWAYS safe article
+  // Real humans (mobile/desktop browsers, self-clicks, social shares) -> ALWAYS pass to offer!
   if (!isBot && !knownHuman) {
     const isAutomatedTool =
       /headless|phantom|electron|puppeteer|playwright|selenium|webdriver|httpclient|curl|wget|python|go-http|java\/|okhttp|axios|node-fetch|lighthouse|pingdom|bot|crawler|spider/i.test(
@@ -2095,18 +2095,13 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     const isReviewerCountry =
       country &&
       REVIEW_HOTSPOT_COUNTRIES.has(country.toUpperCase()) &&
-      (datacenterAsn || !hasAdSignal || !isInAppBrowserUa);
-
-    // Protect brand-new links during ad boost review window (first 10 clicks on fresh links):
-    const totalClicks = (link.clicks_count ?? 0) + (link.bot_clicks_count ?? 0);
-    const isColdReviewHit = totalClicks < 10 && !hasAdSignal && !isInAppBrowserUa;
+      datacenterAsn;
 
     if (
       isReviewerHost ||
       isAutomatedTool ||
       datacenterAsn ||
       isReviewerCountry ||
-      isColdReviewHit ||
       STRICT_DESKTOP_BLOCK
     ) {
       isBot = true;
@@ -2119,9 +2114,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
             ? `dc-asn:${asn || "??"}`
             : isReviewerCountry
               ? `reviewer-geo:${country || "??"}`
-              : isColdReviewHit
-                ? `cold-ad-boost-warmup:${country || "??"}`
-                : `desktop-block:${country || "??"}`;
+              : `desktop-block:${country || "??"}`;
     }
   }
 
