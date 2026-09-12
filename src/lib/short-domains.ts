@@ -18,7 +18,8 @@ export function isFlaggedShortDomain(host: string): boolean {
 }
 
 export const SHORT_DOMAINS = [
-  { host: "adswapx.com", label: "adswapx.com (Primary)" },
+  { host: "dovtv.com", label: "dovtv.com (Primary)" },
+  { host: "adswapx.com", label: "adswapx.com" },
 ] as const;
 
 export type ShortDomainHost = string;
@@ -29,11 +30,11 @@ export type ShortDomainHost = string;
  * domains to SHORT_DOMAINS and the whole safe-page system picks it up
  * automatically (visitors always stay on the domain they arrived on).
  */
-export const DEFAULT_SHORT_HOST = "adswapx.com";
+export const DEFAULT_SHORT_HOST = "dovtv.com";
 export const DEFAULT_SHORT_ORIGIN = `https://${DEFAULT_SHORT_HOST}`;
 
 const STORAGE_KEY = "adspx.shortDomain";
-const DEFAULT_HOST = "adswapx.com";
+const DEFAULT_HOST = "dovtv.com";
 
 function isValidHost(h: string | null): h is string {
   return typeof h === "string" && h.length > 0 && !isFlaggedShortDomain(h);
