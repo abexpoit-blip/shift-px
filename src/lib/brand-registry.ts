@@ -27,6 +27,13 @@ export type Brand = {
 };
 
 const REGISTRY: Record<string, Brand> = {
+  "dovtv.com": {
+    name: "DovTV Digital",
+    tagline: "Inspiring stories, trends, and daily viewpoints.",
+    email: "editorial@dovtv.com",
+    city: "New York, NY",
+    host: "dovtv.com",
+  },
   "adswapx.com": {
     name: "Adswapx",
     tagline: "Everyday finds, simply delivered.",

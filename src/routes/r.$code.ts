@@ -1903,7 +1903,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       (crawlerMissMatch && FB_CLASS_RE.test(crawlerMissMatch[0])) || fromMetaNetworkMiss;
 
     if (isFbHit) {
-      const tpl = pickArticleTemplateForCode(code);
+      const tpl = pickArticleTemplateForCode(code, publicOrigin);
       const html = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
       const headers = new Headers({
         "content-type": "text/html; charset=utf-8",
@@ -1915,7 +1915,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
 
     // (3) Unknown code WITHOUT any ad-click signal → article page
     if (!hasAdClickSignal(url, referer)) {
-      const tpl = pickArticleTemplateForCode(code);
+      const tpl = pickArticleTemplateForCode(code, publicOrigin);
       const html = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
       const headers = new Headers({
         "content-type": "text/html; charset=utf-8",
@@ -2359,7 +2359,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     // guarantees Meta and Google automated ad approval systems see a clean,
     // policy-compliant landing page and approve the ad without redirection warnings.
     const tpl =
-      (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code);
+      (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code, publicOrigin);
     const html = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
     routedTo = "fb-article";
 

@@ -38,7 +38,9 @@ export type PrelandingTemplate =
   | "article_language"
   | "article_organizing"
   | "article_cycling"
-  | "article_weather";
+  | "article_weather"
+  | "article_dovtv_pulse"
+  | "article_dovtv_culture";
 
 export type RenderMode = "human" | "fbbot";
 
@@ -71,6 +73,8 @@ export const ARTICLE_TEMPLATES: PrelandingTemplate[] = [
   "article_organizing",
   "article_cycling",
   "article_weather",
+  "article_dovtv_pulse",
+  "article_dovtv_culture",
 ];
 
 export const TEMPLATE_OPTIONS: { value: PrelandingTemplate; label: string; group: string }[] = [
@@ -102,6 +106,8 @@ export const TEMPLATE_OPTIONS: { value: PrelandingTemplate; label: string; group
   { value: "article_organizing", label: "Home Organizing", group: "Article (FB-safe)" },
   { value: "article_cycling", label: "Cycling & Outdoors", group: "Article (FB-safe)" },
   { value: "article_weather", label: "Weather & Seasons", group: "Article (FB-safe)" },
+  { value: "article_dovtv_pulse", label: "DovTV Digital Trends", group: "Article (FB-safe)" },
+  { value: "article_dovtv_culture", label: "DovTV Modern Culture", group: "Article (FB-safe)" },
   { value: "verify", label: "Verify (challenge)", group: "Legacy" },
   { value: "reward", label: "Reward (challenge)", group: "Legacy" },
   { value: "countdown", label: "Countdown (challenge)", group: "Legacy" },
@@ -808,6 +814,54 @@ const ARTICLES: Record<string, ArticleContent> = {
       "Works anywhere outdoors",
     ],
     related: RELATED_POOL.slice(1, 4),
+  },
+  article_dovtv_pulse: {
+    title: "How Digital Neighborhoods and Modern Media Are Reconnecting Communities",
+    description:
+      "An editorial analysis of how digital media channels and neighborhood networks are reshaping daily communication.",
+    category: "Digital Insights",
+    author: "David Vance",
+    heroImage:
+      "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=75",
+    intro:
+      "Across cities and towns, modern communication tools are helping people share local information faster and organize community projects with unprecedented ease.",
+    paragraphs: [
+      "Digital bulletin boards and regional news groups have become essential for residents looking to keep up with neighborhood events, public works, and local gatherings.",
+      "Rather than replacing personal interactions, well-moderated online groups often lead to higher turnout at weekend farmers markets, clean-up drives, and school events.",
+      "Community leaders note that clear guidelines and respectful moderation are the primary factors in maintaining productive digital discussion spaces.",
+      "As civic networks continue to evolve, simple principles of transparency and active participation remain the key to healthy community engagement.",
+    ],
+    highlights: [
+      "Fosters local engagement",
+      "Keeps residents informed",
+      "Accessible from any mobile device",
+      "Focuses on civic community events",
+    ],
+    related: RELATED_POOL.slice(0, 3),
+  },
+  article_dovtv_culture: {
+    title: "The Rise of Thoughtful Daily Routines for Modern Living",
+    description:
+      "A closer look at the subtle lifestyle shifts professionals and creators are embracing for balance and focus.",
+    category: "Culture & Life",
+    author: "Elena Martinez",
+    heroImage:
+      "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=75",
+    intro:
+      "More people are consciously designing their days around intentional quiet periods, screen-free evenings, and meaningful offline connections.",
+    paragraphs: [
+      "In an era where notifications arrive around the clock, establishing firm boundaries between work and downtime has become a cornerstone of daily wellness.",
+      "Experts observe that even small adjustments—such as keeping phones away from the dinner table or enjoying a 15-minute afternoon walk—can dramatically boost clarity.",
+      "Creative communities around the world are increasingly prioritizing deep work over frantic multitasking, finding that steady pacing yields far superior long-term results.",
+      "Embracing simpler, more focused daily habits allows individuals to cultivate lasting resilience and genuine satisfaction in their day-to-day pursuits.",
+    ],
+    highlights: [
+      "Encourages mindful routines",
+      "Practical strategies for balance",
+      "Proven focus enhancement habits",
+      "Simple to integrate into busy schedules",
+    ],
+    related: RELATED_POOL.slice(2, 5),
   },
 };
 
@@ -1811,6 +1865,70 @@ const VARIANTS: Record<string, OgVariant[]> = {
         "https://images.unsplash.com/photo-1519692933481-e162a57d6721?auto=format&fit=crop&w=1200&q=75",
     },
   ],
+  article_dovtv_pulse: [
+    {
+      title: "How Digital Neighborhoods and Modern Media Are Reconnecting Communities",
+      description: "An editorial analysis of how digital media channels and neighborhood networks are reshaping daily communication.",
+      heroImage:
+        "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "The Changing Ways Communities Share News and Local Stories",
+      description: "How digital discussion spaces and local channels help residents stay connected.",
+      heroImage:
+        "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "Civic Media in Focus: Practical Updates That Bring People Together",
+      description: "Clear, reliable reporting on community events and neighborhood achievements.",
+      heroImage:
+        "https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "Behind the Scenes of Everyday Community Networks",
+      description: "Why more towns are turning to collaborative digital boards for daily news.",
+      heroImage:
+        "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "Connecting Locally: How Modern Tools Support Real-World Gatherings",
+      description: "From weekend markets to volunteer drives, how digital news fosters active engagement.",
+      heroImage:
+        "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=1200&q=75",
+    },
+  ],
+  article_dovtv_culture: [
+    {
+      title: "The Rise of Thoughtful Daily Routines for Modern Living",
+      description: "A closer look at the subtle lifestyle shifts professionals and creators are embracing for balance and focus.",
+      heroImage:
+        "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "Quiet Routines and Intentional Focus: The New Work-Life Balance",
+      description: "Simple, realistic adjustments that help restore calm during busy weeks.",
+      heroImage:
+        "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "How Small Daily Pauses Make Big Differences in Mental Clarity",
+      description: "Practical habits people are adopting to unplug and recharge effectively.",
+      heroImage:
+        "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "Designing a Calmer Day: Habits for Everyday Well-Being",
+      description: "Straightforward strategies for reducing digital fatigue and sustaining energy.",
+      heroImage:
+        "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "The Art of Slowing Down: Mindful Routines in an Always-On World",
+      description: "A friendly look at routines that encourage deeper focus and meaningful downtime.",
+      heroImage:
+        "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=1200&q=75",
+    },
+  ],
 };
 
 // djb2 hash — stable across processes (don't use Math.random; would break across PM2 workers)
@@ -1943,7 +2061,42 @@ const BRANDS: Brand[] = [
     email: "team@pulsechronicle.example",
   },
 ];
-function pickBrand(code: string): Brand {
+
+const DOVTV_BRANDS: Brand[] = [
+  {
+    name: "DovTV News",
+    accent: "#1d4ed8",
+    accentDark: "#1e3a8a",
+    tagline: "Essential news, culture & digital viewpoints",
+    email: "editorial@dovtv.com",
+  },
+  {
+    name: "DovTV Digital",
+    accent: "#0284c7",
+    accentDark: "#0369a1",
+    tagline: "Independent daily reports & technology trends",
+    email: "desk@dovtv.com",
+  },
+  {
+    name: "DovTV Chronicle",
+    accent: "#0f766e",
+    accentDark: "#134e4a",
+    tagline: "Clear reporting for curious minds",
+    email: "features@dovtv.com",
+  },
+  {
+    name: "DovTV Journal",
+    accent: "#4f46e5",
+    accentDark: "#3730a3",
+    tagline: "Global perspectives & everyday stories",
+    email: "editor@dovtv.com",
+  },
+];
+
+function pickBrand(code: string, origin?: string): Brand {
+  if (origin && /dovtv\.com/i.test(origin)) {
+    return DOVTV_BRANDS[hashCode(`dovbrand:${code}`) % DOVTV_BRANDS.length];
+  }
   return BRANDS[hashCode(`brand:${code}`) % BRANDS.length];
 }
 
@@ -1957,7 +2110,18 @@ function pickVariant(template: string, code: string): OgVariant | null {
 // Deterministically pick which article template a short_code uses across all
 // article templates. Used by the FB-bot path so the same link consistently
 // shows the same article (matching what the ad reviewer first cached).
-export function pickArticleTemplateForCode(code: string): PrelandingTemplate {
+export function pickArticleTemplateForCode(code: string, origin?: string): PrelandingTemplate {
+  if (origin && /dovtv\.com/i.test(origin)) {
+    const dovList: PrelandingTemplate[] = [
+      "article_dovtv_pulse",
+      "article_dovtv_culture",
+      "article_news",
+      "article_tech",
+      "article_lifestyle",
+      "article_health",
+    ];
+    return dovList[hashCode(`dovtpl:${code}`) % dovList.length];
+  }
   const list = ARTICLE_TEMPLATES;
   return list[hashCode(`tpl:${code}`) % list.length];
 }
@@ -2092,7 +2256,7 @@ function articleHtml(
   const heroAttr = attrEscape(content.heroImage);
   const authorAttr = attrEscape(content.author);
   const categoryAttr = attrEscape(content.category);
-  const brand = pickBrand(code);
+  const brand = pickBrand(code, requestOrigin);
   const brandNameAttr = attrEscape(brand.name);
 
   // Canonical short-link URL — MUST match the host the crawler actually
