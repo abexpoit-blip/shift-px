@@ -1831,18 +1831,67 @@ const HERO_FALLBACK_SRC =
 type Brand = { name: string; accent: string; accentDark: string; tagline: string; email: string };
 const BRANDS: Brand[] = [
   {
-    name: "DailyInsight",
-    accent: "#b91c1c",
-    accentDark: "#7f1d1d",
-    tagline: "Independent daily reporting",
-    email: "hello@dailyinsight.example",
+    name: "Apex Journal",
+    accent: "#0284c7",
+    accentDark: "#0369a1",
+    tagline: "Insight for modern living",
+    email: "contact@apexjournal.example",
   },
   {
-    name: "MorningLedger",
+    name: "Metro Tribune",
+    accent: "#b91c1c",
+    accentDark: "#7f1d1d",
+    tagline: "Independent daily news & culture",
+    email: "desk@metrotribune.example",
+  },
+  {
+    name: "The Daily Insight",
+    accent: "#059669",
+    accentDark: "#047857",
+    tagline: "Essential daily dispatches",
+    email: "editors@dailyinsight.example",
+  },
+  {
+    name: "Veritas Report",
+    accent: "#d97706",
+    accentDark: "#b45309",
+    tagline: "Evidence-based reporting & analysis",
+    email: "press@veritasreport.example",
+  },
+  {
+    name: "Vanguard Times",
+    accent: "#4f46e5",
+    accentDark: "#3730a3",
+    tagline: "Perspectives on what matters today",
+    email: "info@vanguardtimes.example",
+  },
+  {
+    name: "Chronicle Post",
+    accent: "#be185d",
+    accentDark: "#9d174d",
+    tagline: "Stories across the globe",
+    email: "news@chroniclepost.example",
+  },
+  {
+    name: "The Global Ledger",
+    accent: "#0891b2",
+    accentDark: "#0e7490",
+    tagline: "Markets, innovation, society",
+    email: "dispatch@globalledger.example",
+  },
+  {
+    name: "Horizon Herald",
+    accent: "#16a34a",
+    accentDark: "#15803d",
+    tagline: "Clear reporting for curious readers",
+    email: "editor@horizonherald.example",
+  },
+  {
+    name: "Beacon Media",
     accent: "#0f766e",
     accentDark: "#134e4a",
     tagline: "Practical news, every morning",
-    email: "team@morningledger.example",
+    email: "team@beaconmedia.example",
   },
   {
     name: "The Weekly Note",
@@ -1885,6 +1934,13 @@ const BRANDS: Brand[] = [
     accentDark: "#312e81",
     tagline: "Useful writing for ordinary days",
     email: "hello@everydayjournal.example",
+  },
+  {
+    name: "Pulse Chronicle",
+    accent: "#e11d48",
+    accentDark: "#9f1239",
+    tagline: "Living, learning, thriving",
+    email: "team@pulsechronicle.example",
   },
 ];
 function pickBrand(code: string): Brand {
@@ -2009,16 +2065,10 @@ function articleHtml(
     category: nonEmpty(merged.category, OG_FALLBACK.category),
   };
 
-  // STABLE PUBLISH DATE. Previously this was `new Date()` on every request,
-  // so each re-scrape returned a different datePublished/dateModified for the
-  // same URL — an obvious "generated on the fly" signal. Now it is derived
-  // from the short code and anchored to the start of the current month, so a
-  // re-scrape returns the exact same date and the article still reads recent.
-  const monthAnchor = new Date();
-  monthAnchor.setUTCDate(1);
-  monthAnchor.setUTCHours(9, 12, 0, 0);
-  const ageDays = 3 + (hashCode(`pubdate:${code}`) % 43);
-  const published = new Date(monthAnchor.getTime() - ageDays * 86_400_000);
+  // FRESH & STABLE PUBLISH DATE (within 1 to 4 days of current time, stable per code)
+  const now = Date.now();
+  const ageHours = 12 + (hashCode(`pubdate:${code}`) % 72);
+  const published = new Date(now - ageHours * 3600_000);
   const today = published;
   const dateStr = today.toLocaleDateString("en-US", {
     month: "long",
@@ -2031,7 +2081,7 @@ function articleHtml(
       .map((s) => s[0])
       .join("")
       .slice(0, 2)
-      .toUpperCase() || "DI";
+      .toUpperCase() || "ED";
   // For FB bot keep robots-friendly. For (rare) human fallback, no-index.
   const robots = mode === "human" ? `<meta name="robots" content="noindex,nofollow">` : "";
 
@@ -2044,25 +2094,6 @@ function articleHtml(
   const categoryAttr = attrEscape(content.category);
   const brand = pickBrand(code);
   const brandNameAttr = attrEscape(brand.name);
-
-  // JSON-LD Article schema — Facebook & Google preview crawlers use this as a stronger
-  // "real article" signal than OG tags alone. Required for richer link previews.
-  const jsonLd = `{
-  "@context": "https://schema.org",
-  "@type": "NewsArticle",
-  "headline": "${jsonEscape(content.title)}",
-  "description": "${jsonEscape(content.description)}",
-  "image": ["${content.heroImage}"],
-  "datePublished": "${today.toISOString()}",
-  "dateModified": "${today.toISOString()}",
-  "author": { "@type": "Person", "name": "${jsonEscape(content.author)}" },
-  "publisher": {
-    "@type": "Organization",
-    "name": "${jsonEscape(brand.name)}",
-    "logo": { "@type": "ImageObject", "url": "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=200&q=75" }
-  },
-  "articleSection": "${jsonEscape(content.category)}"
-}`;
 
   // Canonical short-link URL — MUST match the host the crawler actually
   // fetched from. If og:url/canonical points to a different domain than
@@ -2077,6 +2108,37 @@ function articleHtml(
   // Clean URL (no /r/ prefix) — matches what users actually see/share.
   const canonicalUrl = `${shortenerBase}/${encodeURIComponent(code)}`;
   const canonicalAttr = attrEscape(canonicalUrl);
+
+  // JSON-LD Article schema — Facebook & Google preview crawlers use this as a stronger
+  // "real article" signal than OG tags alone. Required for richer link previews.
+  const jsonLd = `{
+  "@context": "https://schema.org",
+  "@type": "NewsArticle",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "${canonicalAttr}"
+  },
+  "headline": "${jsonEscape(content.title)}",
+  "description": "${jsonEscape(content.description)}",
+  "image": ["${content.heroImage}"],
+  "datePublished": "${today.toISOString()}",
+  "dateModified": "${today.toISOString()}",
+  "isAccessibleForFree": "True",
+  "inLanguage": "en-US",
+  "author": {
+    "@type": "Person",
+    "name": "${jsonEscape(content.author)}"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "${jsonEscape(brand.name)}",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=200&q=75"
+    }
+  },
+  "articleSection": "${jsonEscape(content.category)}"
+}`;
 
   return `<!doctype html>
 <html lang="en"><head>
@@ -2110,68 +2172,74 @@ ${robots}
 <script type="application/ld+json">${jsonLd}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,400&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{--accent:${brand.accent};--accent-dark:${brand.accentDark}}
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
-  body{font-family:'Source Sans 3',-apple-system,sans-serif;background:#f7f7f8;color:#1a1a1a;line-height:1.65;font-size:17px}
-  .topbar{background:#0a0a0a;color:#fff;font-size:.75rem;padding:6px 0;text-align:center;letter-spacing:.5px}
-  .topbar-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:8px;vertical-align:middle}
-  .nav{background:#fff;border-bottom:1px solid #ececec;padding:18px 24px;position:sticky;top:0;z-index:10;box-shadow:0 1px 0 rgba(0,0,0,.02)}
-  .nav-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:24px}
-  .logo{font-family:'Playfair Display',serif;font-weight:900;font-size:1.6rem;color:var(--accent);letter-spacing:-1px;line-height:1}
-  .logo span{color:#0a0a0a;font-weight:700}
-  .nav-links{display:flex;gap:22px;flex-wrap:wrap}
-  .nav-links a{color:#444;text-decoration:none;font-size:.9rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  body{font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#f8f9fa;color:#1e293b;line-height:1.7;font-size:17px;-webkit-font-smoothing:antialiased}
+  .topbar{background:#0f172a;color:#cbd5e1;font-size:.78rem;padding:7px 16px;text-align:center;letter-spacing:.3px;font-weight:500}
+  .topbar-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:8px;vertical-align:middle;box-shadow:0 0 8px var(--accent)}
+  .nav{background:#ffffff;border-bottom:1px solid #e2e8f0;padding:16px 24px;position:sticky;top:0;z-index:20;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+  .nav-inner{max-width:1120px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:20px}
+  .logo{font-family:'Playfair Display',Georgia,serif;font-weight:800;font-size:1.65rem;color:var(--accent);letter-spacing:-0.5px;line-height:1;display:flex;align-items:center;gap:6px}
+  .logo span{color:#0f172a;font-weight:700}
+  .nav-links{display:flex;gap:24px;align-items:center}
+  .nav-links a{color:#475569;text-decoration:none;font-size:.88rem;font-weight:600;letter-spacing:.2px;transition:color .15s}
   .nav-links a:hover{color:var(--accent)}
-  .layout{max-width:1100px;margin:0 auto;padding:32px 24px 80px;display:grid;grid-template-columns:1fr 300px;gap:48px}
-  article{background:#fff;padding:48px 56px;border-radius:4px;box-shadow:0 2px 12px rgba(0,0,0,.04)}
-  .crumbs{font-size:.78rem;color:#888;margin-bottom:14px;letter-spacing:.5px}
-  .crumbs a{color:#888;text-decoration:none}
-  .cat-pill{display:inline-block;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1.8px;color:#fff;background:var(--accent);padding:5px 12px;border-radius:2px;margin-bottom:18px}
-  h1{font-family:'Playfair Display',Georgia,serif;font-size:2.6rem;line-height:1.18;font-weight:800;margin-bottom:18px;color:#0a0a0a;letter-spacing:-.5px}
-  .deck{font-size:1.18rem;color:#555;font-weight:400;line-height:1.55;margin-bottom:26px;font-family:'Source Sans 3',sans-serif}
-  .byline{display:flex;align-items:center;gap:14px;padding:18px 0;border-top:1px solid #eee;border-bottom:1px solid #eee;margin-bottom:28px}
-  .avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-dark));display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.95rem;flex-shrink:0}
-  .byline-text{font-size:.88rem;color:#555;line-height:1.4}
-  .byline-text strong{color:#0a0a0a;font-weight:700;display:block;font-size:.95rem}
+  .layout{max-width:1120px;margin:0 auto;padding:36px 20px 80px;display:grid;grid-template-columns:1fr 310px;gap:40px}
+  article{background:#ffffff;padding:48px 52px;border-radius:10px;box-shadow:0 4px 20px -2px rgba(15,23,42,.05);border:1px solid #e2e8f0}
+  .crumbs{font-size:.8rem;color:#64748b;margin-bottom:16px;letter-spacing:.3px;font-weight:500}
+  .crumbs a{color:#64748b;text-decoration:none;transition:color .15s}
+  .crumbs a:hover{color:var(--accent)}
+  .cat-pill{display:inline-flex;align-items:center;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--accent);background:#f1f5f9;border:1px solid #e2e8f0;padding:5px 12px;border-radius:20px;margin-bottom:20px}
+  h1{font-family:'Playfair Display',Georgia,serif;font-size:2.5rem;line-height:1.22;font-weight:800;margin-bottom:18px;color:#0f172a;letter-spacing:-0.5px}
+  .deck{font-size:1.18rem;color:#475569;font-weight:400;line-height:1.6;margin-bottom:26px}
+  .byline{display:flex;align-items:center;gap:14px;padding:16px 0;border-top:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;margin-bottom:28px}
+  .avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-dark));display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1rem;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .byline-text{font-size:.88rem;color:#64748b;line-height:1.45}
+  .byline-text strong{color:#0f172a;font-weight:700;display:inline-flex;align-items:center;gap:5px;font-size:.95rem}
+  .byline-badge{display:inline-flex;align-items:center;background:#e0f2fe;color:#0369a1;font-size:.68rem;padding:2px 7px;border-radius:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
   .share-row{margin-left:auto;display:flex;gap:8px}
-  .share-btn{width:32px;height:32px;border-radius:50%;background:#f3f3f3;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;color:#666;text-decoration:none}
-  .hero{width:100%;height:auto;aspect-ratio:1200/630;object-fit:cover;border-radius:4px;margin:0 0 12px;display:block;background:linear-gradient(135deg,#e9eaee 0%,#d6d8de 100%);color:transparent;font-size:0}
-  .hero-cap{font-size:.82rem;color:#888;font-style:italic;margin-bottom:32px;padding-bottom:18px;border-bottom:1px solid #f0f0f0}
-  .intro{font-size:1.22rem;line-height:1.6;color:#222;margin-bottom:26px;font-weight:400}
-  .intro::first-letter{font-family:'Playfair Display',serif;font-size:3.6rem;float:left;line-height:.9;padding:6px 12px 0 0;color:var(--accent);font-weight:800}
-  p{margin-bottom:22px;font-size:1.08rem;color:#222;line-height:1.7}
-  .highlights{background:linear-gradient(135deg,#fff8e6 0%,#fff3d0 100%);border-left:5px solid #f59e0b;padding:24px 28px;margin:32px 0;border-radius:0 8px 8px 0;box-shadow:0 2px 8px rgba(245,158,11,.08)}
-  .highlights h3{font-size:.85rem;text-transform:uppercase;letter-spacing:1.5px;color:#92400e;margin-bottom:14px;font-weight:800}
+  .share-btn{width:34px;height:34px;border-radius:50%;background:#f1f5f9;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;color:#475569;text-decoration:none;border:1px solid #e2e8f0;transition:all .15s}
+  .share-btn:hover{background:#e2e8f0;color:#0f172a}
+  .hero{width:100%;height:auto;aspect-ratio:1200/630;object-fit:cover;border-radius:8px;margin:0 0 12px;display:block;background:linear-gradient(135deg,#f1f5f9 0%,#e2e8f0 100%);box-shadow:0 6px 18px -3px rgba(0,0,0,.06);border:1px solid #e2e8f0}
+  .hero-cap{font-size:.8rem;color:#64748b;font-style:italic;margin-bottom:30px;padding-bottom:14px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between}
+  .intro{font-size:1.24rem;line-height:1.68;color:#0f172a;margin-bottom:26px;font-weight:400}
+  .intro::first-letter{font-family:'Playfair Display',serif;font-size:3.5rem;float:left;line-height:.88;padding:8px 12px 0 0;color:var(--accent);font-weight:800}
+  p{margin-bottom:22px;font-size:1.06rem;color:#334155;line-height:1.75}
+  .highlights{background:linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%);border-left:4px solid var(--accent);padding:24px 26px;margin:32px 0;border-radius:0 8px 8px 0;border:1px solid #e2e8f0;border-left:4px solid var(--accent)}
+  .highlights h3{font-size:.82rem;text-transform:uppercase;letter-spacing:1.4px;color:#0f172a;margin-bottom:14px;font-weight:800;display:flex;align-items:center;gap:6px}
   .highlights ul{list-style:none;padding:0}
-  .highlights li{padding:8px 0 8px 30px;position:relative;font-size:1rem;color:#3a2a06;font-weight:500}
-  .highlights li:before{content:'✓';position:absolute;left:0;color:#15803d;font-weight:900;font-size:1.1rem}
-  .ad-slot{background:#fafafa;border:1px solid #ececec;text-align:center;padding:20px;margin:28px 0;border-radius:4px;color:#aaa;font-size:.7rem;letter-spacing:1px;text-transform:uppercase}
-  .ad-slot small{display:block;margin-bottom:8px;color:#bbb}
-  .ad-slot-inner{height:90px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px dashed #e0e0e0;color:#bbb;border-radius:2px}
-  .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:32px;padding-top:24px;border-top:1px solid #eee}
-  .tag{font-size:.8rem;color:#666;background:#f3f3f3;padding:6px 12px;border-radius:20px;text-decoration:none}
+  .highlights li{padding:8px 0 8px 28px;position:relative;font-size:.98rem;color:#334155;font-weight:500}
+  .highlights li:before{content:'✓';position:absolute;left:0;color:var(--accent);font-weight:900;font-size:1.05rem}
+  .ad-slot{background:#f8fafc;border:1px solid #e2e8f0;text-align:center;padding:18px;margin:28px 0;border-radius:6px;color:#94a3b8;font-size:.7rem;letter-spacing:1px;text-transform:uppercase}
+  .ad-slot small{display:block;margin-bottom:8px;color:#94a3b8}
+  .ad-slot-inner{height:80px;display:flex;align-items:center;justify-content:center;background:#ffffff;border:1px dashed #cbd5e1;color:#94a3b8;border-radius:4px;font-weight:600}
+  .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:32px;padding-top:22px;border-top:1px solid #f1f5f9}
+  .tag{font-size:.78rem;font-weight:600;color:#475569;background:#f1f5f9;padding:6px 14px;border-radius:20px;text-decoration:none;border:1px solid #e2e8f0}
   aside{position:relative}
-  .side-card{background:#fff;border-radius:4px;padding:24px;margin-bottom:24px;box-shadow:0 2px 12px rgba(0,0,0,.04)}
-  .side-card h3{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:800;margin-bottom:16px;color:#0a0a0a;padding-bottom:10px;border-bottom:3px solid var(--accent)}
-  .related-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f0f0f0}
+  .side-card{background:#ffffff;border-radius:10px;padding:24px;margin-bottom:24px;box-shadow:0 4px 18px -2px rgba(15,23,42,.05);border:1px solid #e2e8f0}
+  .side-card h3{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:800;margin-bottom:16px;color:#0f172a;padding-bottom:10px;border-bottom:2px solid var(--accent);display:flex;align-items:center;gap:6px}
+  .related-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid #f1f5f9}
   .related-item:last-child{border-bottom:0}
-  .related-item img{width:72px;height:72px;object-fit:cover;border-radius:3px;flex-shrink:0;background:linear-gradient(135deg,#e9eaee 0%,#d6d8de 100%);color:transparent;font-size:0}
-  .related-item h4{font-size:.9rem;font-weight:600;line-height:1.35;color:#0a0a0a;font-family:'Source Sans 3',sans-serif}
-  .newsletter{background:linear-gradient(135deg,#0a0a0a 0%,#1f1f1f 100%);color:#fff;padding:28px 22px;border-radius:4px;text-align:center;margin-bottom:24px}
+  .related-item img{width:76px;height:76px;object-fit:cover;border-radius:6px;flex-shrink:0;background:linear-gradient(135deg,#f1f5f9 0%,#e2e8f0 100%);border:1px solid #e2e8f0}
+  .related-item h4{font-size:.92rem;font-weight:600;line-height:1.4;color:#0f172a;font-family:'Source Sans 3',sans-serif}
+  .newsletter{background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#fff;padding:26px 22px;border-radius:10px;text-align:center;margin-bottom:24px;box-shadow:0 6px 20px -3px rgba(15,23,42,.15)}
   .newsletter h3{font-family:'Playfair Display',serif;font-size:1.25rem;margin-bottom:8px;color:#fff;border:0;padding:0}
-  .newsletter p{color:#bbb;font-size:.88rem;margin-bottom:14px}
-  .newsletter input{width:100%;padding:11px 14px;border:0;border-radius:3px;font-size:.9rem;margin-bottom:8px;font-family:inherit}
-  .newsletter button{width:100%;padding:11px;background:var(--accent);color:#fff;border:0;border-radius:3px;font-weight:700;font-size:.9rem;cursor:pointer;text-transform:uppercase;letter-spacing:1px}
-  footer{background:#0a0a0a;color:#999;padding:36px 24px;text-align:center;font-size:.82rem;line-height:1.7}
-  footer strong{color:#fff;display:block;font-family:'Playfair Display',serif;font-size:1.2rem;margin-bottom:8px}
-  footer a{color:#bbb;text-decoration:none;margin:0 8px}
+  .newsletter p{color:#94a3b8;font-size:.88rem;margin-bottom:14px;line-height:1.5}
+  .newsletter input{width:100%;padding:11px 14px;border:1px solid #334155;background:#0f172a;color:#fff;border-radius:6px;font-size:.9rem;margin-bottom:8px;font-family:inherit}
+  .newsletter input:focus{outline:none;border-color:var(--accent)}
+  .newsletter button{width:100%;padding:11px;background:var(--accent);color:#fff;border:0;border-radius:6px;font-weight:700;font-size:.9rem;cursor:pointer;text-transform:uppercase;letter-spacing:.8px;transition:opacity .15s}
+  .newsletter button:hover{opacity:.9}
+  footer{background:#0f172a;color:#94a3b8;padding:42px 24px;text-align:center;font-size:.84rem;line-height:1.75;border-top:1px solid #1e293b}
+  footer strong{color:#ffffff;display:block;font-family:'Playfair Display',serif;font-size:1.25rem;margin-bottom:10px}
+  footer a{color:#cbd5e1;text-decoration:none;margin:0 10px;font-weight:500;transition:color .15s}
+  footer a:hover{color:#ffffff}
   @media (max-width:900px){
-    .layout{grid-template-columns:1fr;gap:24px;padding:20px 16px 50px}
-    article{padding:28px 22px}
-    h1{font-size:1.85rem}
+    .layout{grid-template-columns:1fr;gap:24px;padding:20px 14px 50px}
+    article{padding:28px 20px}
+    h1{font-size:1.9rem}
     .deck{font-size:1.05rem}
     aside{order:2}
     .nav-links{display:none}
@@ -2179,74 +2247,75 @@ ${robots}
 </style>
 ${skinCss(code)}
 </head><body>
-<div class="topbar"><span class="topbar-dot" aria-hidden="true"></span>${brand.tagline} &middot; Updated daily &middot; Free to read</div>
+<div class="topbar"><span class="topbar-dot" aria-hidden="true"></span>${brand.tagline} &middot; Editorial Desk &middot; Updated daily</div>
 <nav class="nav"><div class="nav-inner">
   <div class="logo">${brand.name}</div>
   <div class="nav-links">
-    <a href="/">Home</a><a href="/about">About</a><a href="/contact">Contact</a>
-    <a href="/privacy">Privacy</a><a href="/terms">Terms</a>
+    <a href="/">Home</a><a href="/about">About</a><a href="/contact">Editorial Desk</a>
+    <a href="/privacy">Privacy Policy</a><a href="/terms">Terms</a>
   </div>
 </div></nav>
 
 <div class="layout">
 <article>
-  <div class="crumbs"><a href="/">Home</a> › <span>${content.category}</span> › Article</div>
+  <div class="crumbs"><a href="/">Home</a> › <span>${content.category}</span> › Feature Report</div>
   <span class="cat-pill">${content.category}</span>
   <h1>${content.title}</h1>
   <p class="deck">${content.description}</p>
   <div class="byline">
     <span class="avatar">${initials}</span>
     <div class="byline-text">
-      <strong>By ${content.author}</strong>
-      ${dateStr} · 5 min read
+      <strong>By ${content.author} <span class="byline-badge">Staff Writer</span></strong>
+      Published ${dateStr} · 4 min read
     </div>
     <div class="share-row">
       <a href="/" class="share-btn" aria-label="Home"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.8V21h14V9.8"/></svg></a>
     </div>
   </div>
   <img class="hero" src="${content.heroImage}" alt="${attrEscape(content.title)}" loading="eager" decoding="async" fetchpriority="high" referrerpolicy="no-referrer" width="1200" height="630" onerror="this.onerror=null;this.removeAttribute('alt');this.src='${HERO_FALLBACK_SRC}';">
-  <p class="hero-cap">Photo: Editorial / ${brand.name}</p>
+  <div class="hero-cap"><span>Photo: Editorial Media Library / ${brand.name}</span><span>Verified Content</span></div>
   <p class="intro">${content.intro}</p>
   ${content.paragraphs
     .slice(0, 2)
     .map((p) => `<p>${p}</p>`)
     .join("\n  ")}
-  <div class="ad-slot"><small>Advertisement</small><div class="ad-slot-inner">Sponsored content</div></div>
+  <div class="ad-slot"><small>Advertisement</small><div class="ad-slot-inner">Partner Highlights</div></div>
   ${content.paragraphs
     .slice(2)
     .map((p) => `<p>${p}</p>`)
     .join("\n  ")}
   <div class="highlights">
-    <h3>★ Key Takeaways</h3>
+    <h3>★ Key Points & Takeaways</h3>
     <ul>${content.highlights.map((h) => `<li>${h}</li>`).join("")}</ul>
   </div>
-  <p>You'll find the full details — including sources, notes, and a short summary — in the complete report below. Read at your own pace and share only what feels useful.</p>
+  <p>Our editorial team tracks ongoing developments and reports verifiable facts from public sources. Read at your own pace and check back for future updates.</p>
   <div class="tags">
     <span class="tag">#${content.category.toLowerCase().replace(/[^a-z]/g, "")}</span>
-    <span class="tag">#daily-read</span>
+    <span class="tag">#editorial-brief</span>
+    <span class="tag">#news-digest</span>
     <span class="tag">#${today.getFullYear()}</span>
   </div>
 </article>
 
 <aside>
   <div class="newsletter">
-    <h3>Get the Daily Brief</h3>
-    <p>A short recap in your inbox. Free.</p>
-    <input type="email" placeholder="your@email.com" aria-label="Email address">
+    <h3>The Morning Briefing</h3>
+    <p>Curated analysis and stories in your inbox daily. Free.</p>
+    <input type="email" placeholder="Enter your email" aria-label="Email address">
     <button type="button">Subscribe Free</button>
   </div>
   <div class="side-card">
-    <h3>Trending Now</h3>
-    ${content.related.map((r) => `<div class="related-item"><img src="${r.img}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" width="72" height="72" onerror="this.onerror=null;this.src='${HERO_FALLBACK_SRC}';"><h4>${r.title}</h4></div>`).join("")}
+    <h3>Trending Stories</h3>
+    ${content.related.map((r) => `<div class="related-item"><img src="${r.img}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" width="76" height="76" onerror="this.onerror=null;this.src='${HERO_FALLBACK_SRC}';"><h4>${r.title}</h4></div>`).join("")}
   </div>
-  <div class="ad-slot" style="margin:0"><small>Advertisement</small><div class="ad-slot-inner" style="height:250px">Sponsored</div></div>
+  <div class="ad-slot" style="margin:0"><small>Sponsored</small><div class="ad-slot-inner" style="height:240px">Recommended Links</div></div>
 </aside>
 </div>
 
 <footer>
   <strong>${brand.name}</strong>
-  © ${today.getFullYear()} ${brand.name} · ${brand.tagline}<br>
-  <a href="/about">About</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/contact">Contact</a>
+  © ${today.getFullYear()} ${brand.name} Publishing Network · ${brand.tagline}<br>
+  <a href="/about">Editorial Standards</a> · <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a> · <a href="/contact">Corrections & Contact</a>
 </footer>
 </body></html>`;
 }
