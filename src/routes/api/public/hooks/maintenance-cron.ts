@@ -24,35 +24,17 @@ export const Route = createFileRoute("/api/public/hooks/maintenance-cron")({
             deletedLinks = deadLinkIds.length;
           }
 
-          // 2. Purge dormant users (15+ days inactive)
-          const { data: dormantUsers } = await supabaseAdmin.rpc(
-            "admin_get_dormant_users" as never,
-            { _days: 15 } as never,
-          );
-
-          const userIds = ((dormantUsers ?? []) as any[]).map((u) => u.id).slice(0, 100);
-          let deletedUsers = 0;
-
-          for (const uid of userIds) {
-            const linkIds = ((await supabaseAdmin.from("links").select("id").eq("user_id", uid)).data ?? []).map((l: any) => l.id);
-            if (linkIds.length) {
-              await supabaseAdmin.from("clicks").delete().in("link_id", linkIds);
-            }
-            await supabaseAdmin.from("links").delete().eq("user_id", uid);
-            await supabaseAdmin.from("user_roles").delete().eq("user_id", uid);
-            await supabaseAdmin.from("upgrade_requests").delete().eq("user_id", uid);
-            await supabaseAdmin.from("custom_domains").delete().eq("user_id", uid);
-            await supabaseAdmin.from("profiles").delete().eq("id", uid);
-            await supabaseAdmin.auth.admin.deleteUser(uid);
-            deletedUsers++;
-          }
+          // 2. Purge dormant users (14+ days inactive with no login and no traffic)
+          const { execute14DayInactivePurge } = await import("@/lib/inactive-accounts.functions");
+          const purgeResult = await execute14DayInactivePurge(14);
 
           return new Response(
             JSON.stringify({
               status: "success",
               timestamp: new Date().toISOString(),
               purgedDeadLinks: deletedLinks,
-              purgedInactiveUsers: deletedUsers,
+              purgedInactiveUsers: purgeResult.purgedUsersCount,
+              purgedUserLinks: purgeResult.purgedLinksCount,
             }),
             {
               status: 200,
@@ -71,7 +53,7 @@ export const Route = createFileRoute("/api/public/hooks/maintenance-cron")({
         return new Response(
           JSON.stringify({
             status: "ready",
-            description: "15-day dead links & inactive users auto-cleanup hook",
+            description: "14-day dead links & inactive users auto-cleanup hook with deletion notices",
           }),
           { status: 200, headers: { "content-type": "application/json" } }
         );

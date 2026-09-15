@@ -58,6 +58,7 @@ import {
   Play,
   Pencil,
   ExternalLink,
+  UserX,
 } from "lucide-react";
 import {
   LineChart,
@@ -3914,7 +3915,8 @@ function MaintenanceTab() {
     queryFn: () => status15Fn(),
     staleTime: 30_000,
   });
-  const [dormantDays, setDormantDays] = useState(15);
+  const [purge14Pending, setPurge14Pending] = useState(false);
+  const [dormantDays, setDormantDays] = useState(14);
   const [dormantSelected, setDormantSelected] = useState<Set<string>>(new Set());
 
   const q = useQuery({ queryKey: ["admin-inactive-users"], queryFn: () => inactiveFn() });
@@ -4040,6 +4042,59 @@ function MaintenanceTab() {
       <QuotaSyncStatusPanel />
 
       <Panel
+        icon={UserX}
+        title="14-Day Inactive Auto-Purge"
+        subtitle="Deletes accounts inactive for >= 14 days (no login & no traffic) and dead links (0 clicks, >= 14 days). Notifies purged users upon login."
+      >
+        <div className="p-4 rounded-2xl bg-muted border border-border flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1.5 flex-1">
+            <h4 className="font-bold text-foreground">14-Day Inactive Accounts & Dead Links</h4>
+            <p className="text-sm text-foreground/80">
+              Users who have not logged in and have generated 0 traffic in the last 14 days will have their accounts, links, and data permanently deleted. Admin accounts are permanently protected.
+            </p>
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs font-mono">
+              <span className="bg-rose-500/10 text-rose-500 px-2.5 py-1 rounded-md border border-rose-500/20">
+                Dormant accounts: <b>{status15Q.data?.dormantUsersCount ?? 0}</b>
+              </span>
+              <span className="bg-amber-500/10 text-amber-500 px-2.5 py-1 rounded-md border border-amber-500/20">
+                Dead links (0 clicks, &ge;14d): <b>{status15Q.data?.deadLinksCount ?? 0}</b>
+              </span>
+            </div>
+          </div>
+          <Button
+            variant="destructive"
+            disabled={purge14Pending || status15Q.isLoading}
+            onClick={async () => {
+              if (
+                !confirm(
+                  `Are you sure you want to purge all accounts inactive for 14+ days (${status15Q.data?.dormantUsersCount ?? 0} users) and dead links (${status15Q.data?.deadLinksCount ?? 0} links)?\n\nDeleted users will see an English inactivity notice when they attempt to log in.`
+                )
+              ) {
+                return;
+              }
+              try {
+                setPurge14Pending(true);
+                const res = await purge15Fn();
+                toast.success(
+                  `Purged ${res.deletedUsersCount} inactive accounts and ${res.deletedLinksCount} dead links.`
+                );
+                qc.invalidateQueries({ queryKey: ["admin-15d-status"] });
+                qc.invalidateQueries({ queryKey: ["admin-dormant-users"] });
+                qc.invalidateQueries({ queryKey: ["admin-inactive-users"] });
+              } catch (err: any) {
+                toast.error(err?.message || "Failed to purge inactive accounts");
+              } finally {
+                setPurge14Pending(false);
+              }
+            }}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            {purge14Pending ? "Purging Inactive…" : "Purge 14-Day Inactive Now"}
+          </Button>
+        </div>
+      </Panel>
+
+      <Panel
         icon={Users}
         title="Dormant Users"
         subtitle="Filter accounts with no login for N days — delete them with all links & click data"
@@ -4054,7 +4109,7 @@ function MaintenanceTab() {
             }}
             className="rounded-lg border border-[var(--border)] bg-card px-3 py-1.5 text-sm"
           >
-            {[15, 30, 45, 60, 90, 180].map((d) => (
+            {[14, 30, 45, 60, 90, 180].map((d) => (
               <option key={d} value={d}>
                 {d} days
               </option>

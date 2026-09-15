@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { preSignupCheck } from "@/lib/signup-protection.functions";
+import { clearInactiveNoticeFn } from "@/lib/inactive-accounts.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ function SignupPage() {
   const navigate = useNavigate();
   const router = useRouter();
   const preCheck = useServerFn(preSignupCheck);
+  const clearInactive = useServerFn(clearInactiveNoticeFn);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [telegram, setTelegram] = useState("");
@@ -57,6 +59,13 @@ function SignupPage() {
         setLoading(false);
         toast.error(error.message);
         return;
+      }
+
+      // If this email was previously purged for inactivity, clear the notice
+      try {
+        await clearInactive({ data: { email: normalizedEmail } });
+      } catch {
+        /* ignore */
       }
 
       // If user has a session, navigate to dashboard immediately

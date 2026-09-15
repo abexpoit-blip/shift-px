@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState, type FormEvent } from "react";
 
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { checkInactiveAccountStatus } from "@/lib/inactive-accounts.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,16 +18,21 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const checkInactive = useServerFn(checkInactiveAccountStatus);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [inactiveNotice, setInactiveNotice] = useState<string | null>(null);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setInactiveNotice(null);
+    const normalizedEmail = email.trim().toLowerCase();
+
     try {
       const result = await Promise.race([
-        supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password }),
+        supabase.auth.signInWithPassword({ email: normalizedEmail, password }),
         new Promise<never>((_, reject) => {
           window.setTimeout(
             () => reject(new Error("The login server took too long to respond. Please try again.")),
@@ -34,6 +41,21 @@ function LoginPage() {
         }),
       ]);
       if (result.error || !result.data.session) {
+        // Check if account was deleted due to 14 days of inactivity
+        try {
+          const inactiveCheck = await checkInactive({ data: { email: normalizedEmail } });
+          if (inactiveCheck?.isDeleted) {
+            const msg =
+              inactiveCheck.message ||
+              "Your account has been deleted due to 14 days of inactivity (no login or traffic sent).";
+            setInactiveNotice(msg);
+            toast.error(msg, { duration: 8000 });
+            return;
+          }
+        } catch {
+          // fail-open to normal error message
+        }
+
         toast.error(result.error?.message ?? "Login failed");
         return;
       }
@@ -71,6 +93,22 @@ function LoginPage() {
           <p className="text-sm text-muted-foreground mb-6">
             Sign in to your AdsPx account to keep earning.
           </p>
+
+          {inactiveNotice && (
+            <div className="mb-6 p-4 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-400 text-sm leading-relaxed animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="font-semibold text-rose-300 mb-1 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+                Account Inactive & Purged
+              </div>
+              <p className="text-xs text-rose-200/90">{inactiveNotice}</p>
+              <div className="mt-3 pt-2.5 border-t border-rose-500/20 text-xs text-muted-foreground flex items-center justify-between">
+                <span>Want to start fresh?</span>
+                <Link to="/signup" className="text-primary font-semibold hover:underline">
+                  Create new account →
+                </Link>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
