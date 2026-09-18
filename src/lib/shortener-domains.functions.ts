@@ -46,9 +46,9 @@ export const getPrimaryShortenerDomain = createServerFn({ method: "GET" })
       const safe = (alt ?? [])
         .map((r: any) => r.domain as string)
         .find((d: string) => !isFlaggedShortDomain(d));
-      return { domain: safe ?? "adswapx.com" };
+      return { domain: safe ?? "dovtv.com" };
     }
-    return { domain: primary };
+    return { domain: primary || "dovtv.com" };
   });
 
 export const listShortenerDomains = createServerFn({ method: "GET" })

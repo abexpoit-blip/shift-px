@@ -51,7 +51,7 @@ const REGISTRY: Record<string, Brand> = {
 };
 
 /** Our own shortener host is the fallback identity — never another domain's brand. */
-const DEFAULT_BRAND: Brand = REGISTRY["adswapx.com"];
+const DEFAULT_BRAND: Brand = REGISTRY["dovtv.com"] || REGISTRY["adswapx.com"];
 
 function hostOf(origin: string): string {
   try {

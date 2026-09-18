@@ -489,9 +489,13 @@ export const deleteLink = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const context = await getRequestAuth();
     await assertNotBanned(context.supabase, context.userId);
+
+    // Fetch short_code BEFORE deleting so we can bust the redirect cache.
+    // Without this, deleted links keep serving traffic from Redis/L1 cache
+    // for up to 5 minutes after deletion — a critical revenue & safety bug.
     const { data: link, error: lookupError } = await (context.supabase as any)
       .from("links")
-      .select("id")
+      .select("id, short_code")
       .eq("id", data.id)
       .eq("user_id", context.userId)
       .maybeSingle();
@@ -500,6 +504,13 @@ export const deleteLink = createServerFn({ method: "POST" })
 
     const { error } = await (context.supabase as any).from("links").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    // Evict from all cache layers immediately so traffic stops.
+    if (link.short_code) {
+      const { invalidateLinkCache } = await import("@/lib/link-cache.server");
+      await invalidateLinkCache(link.short_code);
+    }
+
     return { ok: true };
   });
 

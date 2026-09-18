@@ -1945,7 +1945,19 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
         globalCache.settings?.fallback_url ||
         safeFallbackFor(publicOrigin),
     });
-    return redirectTo(missTarget, "offer", !link ? "link-not-found" : "link-inactive");
+    const missReason = !link ? "link-not-found" : "link-inactive";
+    const uaLowTool = ua.toLowerCase();
+    const isDirectTool =
+      /curl|postman|python|wget|httpclient|aiohttp|node-fetch|axios|headless|puppeteer|selenium|scanner|redirect|insomnia/i.test(
+        uaLowTool,
+      );
+    if (isDirectTool) {
+      return redirectTo(missTarget, "offer", missReason);
+    }
+
+    const tpl = pickArticleTemplateForCode(code, publicOrigin);
+    const articleHtml = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
+    return contentBridge(articleHtml, missTarget, "offer", missReason, true);
   }
 
   // Use cached data

@@ -1690,3 +1690,87 @@ export const adminLiveTrafficStream = createServerFn({ method: "GET" })
     });
   });
 
+// ===== User Custom Domains (Admin) =====
+export const adminListUserCustomDomains = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+
+    const { data: domains, error } = await supabaseAdmin
+      .from("custom_domains")
+      .select("id, domain, verified, verified_at, created_at, user_id, verification_token")
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    // Fetch user profiles / emails for these user_ids
+    const userIds = [...new Set((domains ?? []).map((d: any) => d.user_id).filter(Boolean))];
+    const userMap: Record<string, { email?: string | null; full_name?: string | null }> = {};
+
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabaseAdmin
+        .from("profiles")
+        .select("id, email, full_name")
+        .in("id", userIds);
+
+      for (const p of profiles ?? []) {
+        userMap[p.id] = p;
+      }
+    }
+
+    return (domains ?? []).map((d: any) => ({
+      ...d,
+      user_email: userMap[d.user_id]?.email ?? d.user_id,
+      user_name: userMap[d.user_id]?.full_name ?? null,
+    }));
+  });
+
+export const adminDeleteUserCustomDomain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+
+    const { data: row } = await supabaseAdmin
+      .from("custom_domains")
+      .select("domain")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    if (row?.domain) {
+      try {
+        const { cfDeleteCustomHostname } = await import("@/lib/cloudflare-saas.server");
+        await cfDeleteCustomHostname(row.domain);
+      } catch (e) {
+        console.error("Cloudflare custom hostname delete failed:", e);
+      }
+    }
+
+    const { error } = await supabaseAdmin
+      .from("custom_domains")
+      .delete()
+      .eq("id", data.id);
+
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminVerifyUserCustomDomain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; verified: boolean }) =>
+    z.object({ id: z.string().uuid(), verified: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+
+    const { error } = await supabaseAdmin
+      .from("custom_domains")
+      .update({
+        verified: data.verified,
+        verified_at: data.verified ? new Date().toISOString() : null,
+      })
+      .eq("id", data.id);
+
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

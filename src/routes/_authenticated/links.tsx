@@ -188,17 +188,34 @@ function LinksPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const listDomainsFn = useServerFn(listCustomDomains);
+  const getPrimaryDomainFn = useServerFn(getPrimaryShortenerDomain);
+
   const customDomainsQ = useQuery({
     queryKey: ["user-verified-custom-domains"],
     queryFn: () => listDomainsFn(),
     staleTime: 30_000,
   });
+  const primaryDomainQ = useQuery({
+    queryKey: ["primary-shortener-domain"],
+    queryFn: () => getPrimaryDomainFn(),
+    staleTime: 60_000,
+  });
   const verifiedCustomDomains = useMemo(() => {
     return ((customDomainsQ.data?.domains as any[]) || []).filter((d: any) => d.verified);
   }, [customDomainsQ.data]);
 
+  // The platform primary domain (e.g. dovtv.com), falls back to adswapx.com
+  const primaryDomain = primaryDomainQ.data?.domain ?? "adswapx.com";
+
   const [domainFilter, setDomainFilter] = useState("all");
-  const [createDomain, setCreateDomain] = useState("adswapx.com");
+  const [createDomain, setCreateDomain] = useState("");
+
+  // Sync createDomain to the primary domain once it loads (only on first load)
+  useEffect(() => {
+    if (primaryDomain && !createDomain) {
+      setCreateDomain(primaryDomain);
+    }
+  }, [primaryDomain]);
 
   const createMut = useMutation({
     mutationFn: (vars: { title?: string; adsterra_url: string; custom_domain?: string }) => create({ data: vars }),
@@ -231,7 +248,7 @@ function LinksPage() {
     createMut.mutate({
       title: title.trim() || undefined,
       adsterra_url: adsterra.trim(),
-      custom_domain: createDomain !== "adswapx.com" ? createDomain : undefined,
+      custom_domain: createDomain && createDomain !== primaryDomain ? createDomain : undefined,
     });
   };
 
@@ -241,7 +258,7 @@ function LinksPage() {
     let result = links;
     if (domainFilter !== "all") {
       result = result.filter((l: any) => {
-        const d = l.custom_domain || "adswapx.com";
+        const d = l.custom_domain || primaryDomain;
         return d.toLowerCase() === domainFilter.toLowerCase();
       });
     }
@@ -304,12 +321,12 @@ function LinksPage() {
                 <option value="all" className="bg-card text-foreground">
                   All Domains ({links.length})
                 </option>
-                <option value="adswapx.com" className="bg-card text-foreground">
-                  adswapx.com (Primary)
+                <option value={primaryDomain} className="bg-card text-foreground">
+                  {primaryDomain} (Primary)
                 </option>
                 {verifiedCustomDomains.map((d: any) => (
                   <option key={d.id} value={d.domain} className="bg-card text-foreground">
-                    {d.domain} (Custom)
+                    {d.domain} (Custom ✓)
                   </option>
                 ))}
               </select>
@@ -360,14 +377,14 @@ function LinksPage() {
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Target Domain</label>
                   <select
-                    value={createDomain}
+                    value={createDomain || primaryDomain}
                     onChange={(e) => setCreateDomain(e.target.value)}
                     className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2.5 text-xs sm:text-sm font-mono text-foreground focus:outline-none focus:border-primary"
                   >
-                    <option value="adswapx.com">adswapx.com (Primary)</option>
+                    <option value={primaryDomain}>{primaryDomain} (Primary)</option>
                     {verifiedCustomDomains.map((d: any) => (
                       <option key={d.id} value={d.domain}>
-                        {d.domain} (Custom Verified)
+                        {d.domain} (Custom ✓)
                       </option>
                     ))}
                   </select>
@@ -440,7 +457,7 @@ function LinksPage() {
                   </tr>
                 ) : (
                   filtered.map((l: any) => {
-                    const linkDomain = l.custom_domain || "adswapx.com";
+                    const linkDomain = l.custom_domain || primaryDomain;
                     const shortUrl = `https://${linkDomain}/${l.short_code}`;
                     const clicks = Number(l.clicks_count || 0);
                     const isHot = clicks >= 100;

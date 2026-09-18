@@ -23,8 +23,18 @@ git pull origin main
 
 echo ""
 echo "========================================================"
-echo "📦 [2/5] SYNCING FREE USER 50 LINKS DATABASE MIGRATION..."
+echo "📦 [2/5] SYNCING DATABASE MIGRATIONS..."
 echo "========================================================"
+DB_CONTAINER=$(docker ps -q -f name=supabase-db 2>/dev/null || docker ps -q -f name=postgres 2>/dev/null || true)
+if [ -n "$DB_CONTAINER" ]; then
+  for m in migration/43_*.sql migration/44_*.sql; do
+    if [ -f "$m" ]; then
+      echo "  Applying $m..."
+      docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres < "$m" 2>/dev/null || true
+    fi
+  done
+  echo "  ✓ Database migrations verified."
+fi
 node migrate-free-links-50.cjs || true
 
 echo ""

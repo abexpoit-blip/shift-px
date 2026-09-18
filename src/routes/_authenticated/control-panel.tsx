@@ -59,6 +59,8 @@ import {
   Pencil,
   ExternalLink,
   UserX,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import {
   LineChart,
@@ -137,6 +139,9 @@ import {
   adminResetAllClicks,
   adminTestQuotaSync,
   adminQuotaSyncStatus,
+  adminListUserCustomDomains,
+  adminDeleteUserCustomDomain,
+  adminVerifyUserCustomDomain,
 } from "@/lib/admin.functions";
 import { startImpersonation } from "@/lib/impersonation";
 import { getAppSettings, updateAppSettings } from "@/lib/app-settings.functions";
@@ -3029,96 +3034,171 @@ function DomainsTab() {
 
 function UserDomainsTab() {
   const qc = useQueryClient();
-  const detailFn = useServerFn(adminUserDetail);
+  const listFn = useServerFn(adminListUserCustomDomains);
+  const delFn = useServerFn(adminDeleteUserCustomDomain);
+  const verifyFn = useServerFn(adminVerifyUserCustomDomain);
 
-  // We can just query custom_domains directly since we are admin
+  const [search, setSearch] = useState("");
+
   const q = useQuery({
     queryKey: ["admin-user-custom-domains"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("custom_domains")
-        .select(
-          `
-          id, domain, verified, created_at, user_id,
-          profiles ( email )
-        `,
-        )
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => listFn(),
+    staleTime: 15_000,
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-user-custom-domains"] });
 
   const delMut = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("custom_domains").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => delFn({ data: { id } }),
     onSuccess: () => {
-      toast.success("Deleted");
+      toast.success("Domain deleted successfully");
       invalidate();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message || "Failed to delete domain"),
   });
 
-  const domains = q.data ?? [];
+  const verifyMut = useMutation({
+    mutationFn: (vars: { id: string; verified: boolean }) => verifyFn({ data: vars }),
+    onSuccess: (_, vars) => {
+      toast.success(vars.verified ? "Domain marked as Verified" : "Domain marked as Pending");
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to update domain status"),
+  });
+
+  const allDomains: any[] = q.data ?? [];
+  const domains = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return allDomains;
+    return allDomains.filter(
+      (d) =>
+        (d.domain || "").toLowerCase().includes(term) ||
+        (d.user_email || "").toLowerCase().includes(term) ||
+        (d.user_name || "").toLowerCase().includes(term) ||
+        (d.user_id || "").toLowerCase().includes(term),
+    );
+  }, [allDomains, search]);
 
   return (
     <Panel
       icon={Globe}
       title="User Custom Domains"
-      subtitle="Manage and monitor domains added by users"
+      subtitle={`Manage and monitor all custom domains added by platform users (${allDomains.length} total)`}
     >
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <p className="text-xs text-[var(--muted-foreground)]">
+          All custom domains registered by users are listed here. You can monitor verification status or manually verify/delete any domain.
+        </p>
+        <div className="flex items-center gap-2">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search domain or user..."
+            className="w-56 h-8 text-xs bg-[var(--card)]"
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => invalidate()}
+            disabled={q.isFetching}
+            className="h-8"
+            title="Refresh domains"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${q.isFetching ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
+      </div>
       <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-card/70">
         <table className="w-full text-sm">
           <thead className="bg-[var(--muted)] text-[var(--muted-foreground)]">
             <tr>
-              <th className="text-left px-4 py-3">Domain</th>
-              <th className="text-left px-4 py-3">Owner</th>
-              <th className="text-left px-4 py-3">Status</th>
-              <th className="text-left px-4 py-3">Created</th>
-              <th className="text-right px-4 py-3">Actions</th>
+              <th className="text-left px-4 py-3 font-semibold">Domain</th>
+              <th className="text-left px-4 py-3 font-semibold">Owner / Account</th>
+              <th className="text-left px-4 py-3 font-semibold">Status</th>
+              <th className="text-left px-4 py-3 font-semibold">Created</th>
+              <th className="text-right px-4 py-3 font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
-            {domains.length === 0 ? (
+            {q.isLoading ? (
               <tr>
                 <td colSpan={5} className="p-8 text-center text-[var(--muted-foreground)]">
-                  No user domains yet.
+                  <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-primary" />
+                  Loading user domains...
+                </td>
+              </tr>
+            ) : domains.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="p-8 text-center text-[var(--muted-foreground)]">
+                  {search ? "No user domains match your search." : "No user custom domains added yet."}
                 </td>
               </tr>
             ) : (
               domains.map((d: any) => (
-                <tr key={d.id} className="hover:bg-[var(--muted)]">
-                  <td className="px-4 py-3 font-mono font-semibold text-[var(--foreground)]">
-                    {d.domain}
+                <tr key={d.id} className="hover:bg-[var(--muted)]/50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-primary shrink-0" />
+                      <span className="font-mono font-bold text-[var(--foreground)]">{d.domain}</span>
+                    </div>
                   </td>
-                  <td className="px-4 py-3 text-xs text-[var(--muted-foreground)]">
-                    {(d.profiles as any)?.email ?? d.user_id}
+                  <td className="px-4 py-3 text-xs">
+                    <div className="font-medium text-[var(--foreground)]">{d.user_email || d.user_id}</div>
+                    {d.user_name && (
+                      <div className="text-[11px] text-[var(--muted-foreground)]">{d.user_name}</div>
+                    )}
                   </td>
                   <td className="px-4 py-3">
-                    {d.verified ? (
-                      <Pill>Verified</Pill>
-                    ) : (
-                      <span className="text-xs text-foreground font-semibold">Pending</span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => verifyMut.mutate({ id: d.id, verified: !d.verified })}
+                      disabled={verifyMut.isPending}
+                      title="Click to toggle verification status"
+                      className="cursor-pointer focus:outline-none"
+                    >
+                      {d.verified ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold hover:bg-emerald-500/25 transition-all">
+                          <Check className="w-3 h-3" />
+                          <span>Verified</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold hover:bg-amber-500/25 transition-all">
+                          <AlertCircle className="w-3 h-3" />
+                          <span>Pending DNS</span>
+                        </span>
+                      )}
+                    </button>
                   </td>
                   <td className="px-4 py-3 text-xs text-[var(--muted-foreground)]">
                     {new Date(d.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        if (confirm(`Delete user domain ${d.domain}?`)) delMut.mutate(d.id);
-                      }}
-                      className="border-rose-300 text-rose-600"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => verifyMut.mutate({ id: d.id, verified: !d.verified })}
+                        disabled={verifyMut.isPending}
+                        title={d.verified ? "Mark as Pending" : "Force Verify Domain"}
+                        className="h-7 text-xs px-2"
+                      >
+                        {d.verified ? "Unverify" : "Verify"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to delete user domain "${d.domain}"?`)) {
+                            delMut.mutate(d.id);
+                          }
+                        }}
+                        disabled={delMut.isPending}
+                        className="h-7 w-7 p-0 border-rose-300 text-rose-600 hover:bg-rose-500/10"
+                        title="Delete domain"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))
