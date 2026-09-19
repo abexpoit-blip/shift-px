@@ -265,6 +265,9 @@ const DATACENTER_ASNS = new Set([
   // Tencent Cloud
   "132203", "45090",
   // Major Hosting / VPN / Proxy Networks
+  "25198",  // ZetServers (Dublin Ireland reviewer proxy network)
+  "12876",  // Scaleway
+  "31898",  // Oracle Cloud
   "9009",   // M247
   "29073",  // Ecatel
   "51167",  // Contabo
@@ -280,6 +283,12 @@ const DATACENTER_ASNS = new Set([
   "47583",  // Hostinger
   "197695", // Serverius
   "206216", // Dedipath
+  "208312", // HostRoyale
+  "197540", // Serverion
+  "202425", // IP Volume
+  "39351",  // 31173 Services (Mullvad)
+  "50360",  // TamHost
+  "49453",  // Global Telehost
 ]);
 
 // Multi-link velocity threshold: same IP hitting N+ distinct short_codes
@@ -2116,10 +2125,17 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
         uaLowFb,
       );
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
+    const cUpper = (country || "").toUpperCase();
+    // Review Hub Countries: IE (Ireland - Dublin EMEA HQ), DK (Denmark), SE (Sweden), NL (Netherlands), SG (Singapore)
+    // When traffic from these review hub countries has FB In-App Browser, FB referer, or datacenter ASN, it is an ad reviewer.
+    const isEmeaReviewer =
+      cUpper !== "" &&
+      (cUpper === "IE" || cUpper === "DK" || cUpper === "SE" || cUpper === "NL" || cUpper === "SG") &&
+      (datacenterAsn || uaLowFb.includes("fb_iab") || uaLowFb.includes("fbav") || referer.includes("facebook") || !referer);
+
     const isReviewerCountry =
-      country &&
-      REVIEW_HOTSPOT_COUNTRIES.has(country.toUpperCase()) &&
-      datacenterAsn;
+      isEmeaReviewer ||
+      (cUpper === "US" && (datacenterAsn || isReviewerHost));
 
     if (
       isReviewerHost ||
