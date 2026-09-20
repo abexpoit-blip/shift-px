@@ -2267,7 +2267,7 @@ function articleHtml(
   const shortenerBase = (
     requestOrigin ||
     process.env.SHORTENER_BASE_URL ||
-    "https://adswapx.com"
+    "https://dovtv.com"
   ).replace(/\/+$/, "");
   // Clean URL (no /r/ prefix) — matches what users actually see/share.
   const canonicalUrl = `${shortenerBase}/${encodeURIComponent(code)}`;

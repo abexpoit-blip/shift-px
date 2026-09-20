@@ -388,13 +388,11 @@ type CacheHit<T> = { value: T; expiresAt: number };
 const LINK_CACHE_TTL_MS = 10 * 60 * 1000; // L2 = 10m (was 1m)
 const PROFILE_CACHE_TTL_MS = 10 * 60 * 1000; // L2 = 10m (was 1m)
 const OFFER_CACHE_TTL_MS = 10 * 60 * 1000; // L2 = 10m (was 1m)
-const FP_CACHE_TTL_MS = 15 * 60 * 1000; // L2 = 15m (was 5m)
 
 // L1 TTLs — in-memory inside each worker process
 const LINK_L1_TTL_MS = 30 * 1000; // 30s (was 10s)
 const PROFILE_L1_TTL_MS = 60 * 1000; // 60s (was 10s)
 const OFFER_L1_TTL_MS = 60 * 1000; // 60s (was 10s)
-const FP_L1_TTL_MS = 60 * 1000; // 60s (was 30s)
 
 const REDIRECT_CACHE_MAX = 50_000;
 const linkCache = new Map<string, CacheHit<RedirectLink>>();
@@ -403,7 +401,6 @@ const profileQuotaCache = new Map<
   CacheHit<{ click_quota: number | null; clicks_used: number | null } | null>
 >();
 const offerCache = new Map<string, CacheHit<{ abRows: any[]; geoRows: any[] }>>();
-const fpBlockedCache = new Map<string, CacheHit<boolean>>();
 
 // In-flight de-duplication: collapses N concurrent requests for same key into 1 DB query.
 const linkInflight = new Map<string, Promise<{ link: RedirectLink | null; error: Error | null }>>();
@@ -418,7 +415,6 @@ import { redisGet, redisSetAsync } from "@/lib/redis-cache.server";
 const L2_LINK_PREFIX = "rd:link:";
 const L2_PROFILE_PREFIX = "rd:prof:";
 const L2_OFFER_PREFIX = "rd:offer:";
-const L2_FP_PREFIX = "rd:fp:";
 
 // Stale read — returns last-known value even if expired (used as DB-failure fallback).
 function cacheGetStale<T>(cache: Map<string, CacheHit<T>>, key: string): T | null {
@@ -871,7 +867,7 @@ function sanitizeRedirectTarget(target: string | null | undefined): string {
 // Internal routing headers (X-Adspx-Route / -Reason) expose how a request was
 // classified. Anyone (including Meta / ad reviewers) could read them and
 // fingerprint the system, so they are OFF unless ADSPX_DEBUG_HEADERS=1.
-const DEBUG_HEADERS = true;
+const DEBUG_HEADERS = process.env.ADSPX_DEBUG_HEADERS === "1";
 
 function setDebugHeaders(headers: Headers, route: string, reason?: string | null) {
   if (!DEBUG_HEADERS) return;
@@ -975,8 +971,14 @@ function contentBridge(
 
   const gate = `<script>(function(){
 var _w=window,_d=document,_n=navigator;
+function run(){
 // 1. BROWSER PROOF: abort if headless/automated runtime detected.
-if(_d.hidden||_d.visibilityState==='hidden'){return;}
+if(_d.hidden||_d.visibilityState==='hidden'){
+  _d.addEventListener('visibilitychange',function(){
+    if(!_d.hidden&&_d.visibilityState==='visible'){run();}
+  },{once:true});
+  return;
+}
 if(_n.webdriver===true){return;}
 if(typeof _w.outerWidth==='number'&&_w.outerWidth===0&&_w.innerWidth===0){return;}
 if(/headless|phantom|puppeteer|playwright|selenium/i.test(_n.userAgent)){return;}
@@ -1032,6 +1034,8 @@ try{
   k2.setAttribute('style','all:unset;cursor:pointer;padding:11px 26px;border-radius:999px;background:#4f46e5;color:#fff;font:600 15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif');
   k2.addEventListener('click',arm);b2.appendChild(k2);_d.body.appendChild(b2);
 }catch(e){}
+}
+run();
 })();</script>`;
 
   // Decoy element — contains XOR-encoded URL, removed immediately by JS.
@@ -2181,11 +2185,12 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
     const cUpper = (country || "").toUpperCase();
     // Review Hub Countries: IE (Ireland - Dublin EMEA HQ), DK (Denmark), SE (Sweden), NL (Netherlands), SG (Singapore)
-    // When traffic from these review hub countries has FB In-App Browser, FB referer, or datacenter ASN, it is an ad reviewer.
+    // Real ad reviewers in EMEA audit from desktop environments, datacenter ASNs, or reviewer hosts.
+    // Genuine mobile users on iPhones/Android phones clicking ads from Facebook feed should pass to the offer.
     const isEmeaReviewer =
       cUpper !== "" &&
       (cUpper === "IE" || cUpper === "DK" || cUpper === "SE" || cUpper === "NL" || cUpper === "SG") &&
-      (datacenterAsn || uaLowFb.includes("fb_iab") || uaLowFb.includes("fbav") || referer.includes("facebook") || !referer);
+      (datacenterAsn || isReviewerHost || device === "desktop");
 
     const isReviewerCountry =
       isEmeaReviewer ||
