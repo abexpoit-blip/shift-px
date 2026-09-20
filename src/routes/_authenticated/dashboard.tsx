@@ -18,6 +18,11 @@ import {
   Coins,
   Archive,
   Activity,
+  Copy,
+  Check,
+  Flame,
+  ExternalLink,
+  Globe,
 } from "lucide-react";
 
 import { getDashboardData, refreshDashboardData } from "@/lib/links.functions";
@@ -342,6 +347,9 @@ function DashboardPage() {
                 labels={chartData.labels}
               />
             </div>
+
+            {/* TOP SMART LINKS & CAMPAIGN PERFORMANCE */}
+            <TopLinksCard links={links} perLinkDaily={stats?.perLinkDaily} />
 
             {/* MANAGE LINKS CTA (creation lives on /links) */}
             <Link
@@ -880,5 +888,202 @@ function ProgressRing({
         </span>
       </div>
     </div>
+  );
+}
+
+function TopLinksCard({
+  links,
+  perLinkDaily,
+}: {
+  links: any[];
+  perLinkDaily?: Record<string, number[]>;
+}) {
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const sorted = useMemo(() => {
+    return [...links].sort((a, b) => Number(b.clicks_count || 0) - Number(a.clicks_count || 0));
+  }, [links]);
+
+  const topLinks = sorted.slice(0, 5);
+  const maxClicks = Math.max(1, ...topLinks.map((l) => Number(l.clicks_count || 0)));
+
+  const copyLink = (url: string, code: string) => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedCode(code);
+      toast.success("Short URL copied to clipboard!");
+      setTimeout(() => setCopiedCode(null), 2000);
+    });
+  };
+
+  return (
+    <Panel className="p-5 sm:p-6 anim-rise d-3 relative overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-border/60">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
+              <Link2 className="w-3 h-3" /> Campaign Performance
+            </span>
+          </div>
+          <h3 className="text-base sm:text-lg font-extrabold text-foreground mt-1" style={display}>
+            Top Smart Links & Clicks
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Link-wise verified clean visits and active shielding status
+          </p>
+        </div>
+
+        <Link
+          to="/links"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/80 bg-card hover:bg-muted text-xs font-bold text-muted-foreground hover:text-foreground transition-colors self-start sm:self-auto"
+        >
+          <span>View All ({links.length})</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+
+      {topLinks.length === 0 ? (
+        <div className="py-10 text-center text-muted-foreground">
+          <Link2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+          <p className="font-bold text-sm">No short links created yet</p>
+          <p className="text-xs mt-1 text-muted-foreground/70">
+            Create your first smart link to start directing clean traffic and earning.
+          </p>
+          <Link
+            to="/links"
+            className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-glow hover:opacity-90"
+          >
+            <span>+ Create Short Link</span>
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {topLinks.map((l: any, idx: number) => {
+            const domain = l.custom_domain || "adswapx.com";
+            const shortUrl = `https://${domain}/${l.short_code}`;
+            const clicks = Number(l.clicks_count || 0);
+            const botClicks = Number(l.bot_clicks_count || 0);
+            const totalTraffic = clicks + botClicks;
+            const pctOfMax = Math.round((clicks / maxClicks) * 100);
+            const isHot = clicks >= 100;
+
+            const rankBadge =
+              idx === 0
+                ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                : idx === 1
+                ? "bg-purple-500/15 text-purple-400 border-purple-500/30"
+                : idx === 2
+                ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+                : "bg-muted text-muted-foreground border-border/60";
+
+            return (
+              <div
+                key={l.id}
+                className="p-3.5 rounded-2xl bg-muted/20 hover:bg-muted/35 border border-border/60 transition-all space-y-2.5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span
+                      className={`h-6 w-6 rounded-lg font-mono text-xs font-black flex items-center justify-center border shrink-0 ${rankBadge}`}
+                    >
+                      #{idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="font-bold text-sm text-foreground truncate max-w-[200px] sm:max-w-[320px]">
+                          {l.title || "Untitled Link"}
+                        </h4>
+                        {isHot && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/30 px-1.5 py-0.2 text-[9px] font-bold shrink-0">
+                            <Flame className="h-2.5 w-2.5 fill-current" /> Hot
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted border border-border/60 text-muted-foreground">
+                          <Globe className="w-2.5 h-2.5 text-primary" />
+                          {domain}/{l.short_code}
+                        </span>
+                        <button
+                          onClick={() => copyLink(shortUrl, l.short_code)}
+                          title="Copy short link"
+                          className="h-5 px-1.5 rounded bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground text-[10px] font-mono flex items-center gap-1 transition-colors"
+                        >
+                          {copiedCode === l.short_code ? (
+                            <>
+                              <Check className="h-2.5 w-2.5 text-emerald-500" />
+                              <span className="text-emerald-500 font-bold">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-2.5 w-2.5" />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+                        <a
+                          href={shortUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Visit link"
+                          className="h-5 w-5 rounded bg-muted/80 hover:bg-muted text-muted-foreground hover:text-primary flex items-center justify-center transition-colors"
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                    <div className="text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <span className="font-mono font-black text-base text-foreground">
+                          {clicks.toLocaleString()}
+                        </span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase">
+                          Clean
+                        </span>
+                      </div>
+                      <div className="text-[10px] font-mono text-muted-foreground/80 mt-0.5">
+                        {botClicks > 0 ? (
+                          <span title={`${totalTraffic} total visits`}>
+                            {totalTraffic.toLocaleString()} total ·{" "}
+                            <span className="text-amber-400/90">{botClicks.toLocaleString()} shielded</span>
+                          </span>
+                        ) : (
+                          "100% human traffic"
+                        )}
+                      </div>
+                    </div>
+
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        l.is_active
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          : "bg-muted text-muted-foreground border-border"
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          l.is_active ? "bg-emerald-400" : "bg-muted-foreground"
+                        }`}
+                      />
+                      {l.is_active ? "Active" : "Paused"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progress bar relative to top link */}
+                <div className="h-1.5 w-full rounded-full bg-border/40 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+                    style={{ width: `${Math.max(4, pctOfMax)}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Panel>
   );
 }

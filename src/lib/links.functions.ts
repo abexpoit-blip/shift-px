@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getRequestAuth } from "@/lib/request-auth.server";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 type LinkRow = {
   id: string;
@@ -39,7 +40,9 @@ async function selectLinks(
   supabase: any,
   userId?: string,
 ): Promise<{ data: DashboardLink[] | null; error: { message: string } | null }> {
-  let query = supabase
+  // Use supabaseAdmin to guarantee complete unmasked column access for the user's links
+  const client = supabaseAdmin || supabase;
+  let query = client
     .from("links")
     .select("*")
     .order("created_at", { ascending: false });
@@ -234,7 +237,70 @@ async function computeDashboardPayload(
       Array.isArray(arr) && arr.length === 7 ? arr.map(Number) : new Array(7).fill(0);
   }
 
-    const clicksByDay: Record<string, number> = {};
+  // Real-time link-wise click count reconciliation & 7-day sparkline generation
+  if (linkIds.length > 0) {
+    try {
+      const { data: clickRows } = await supabaseAdmin
+        .from("clicks")
+        .select("link_id, is_bot, created_at")
+        .in("link_id", linkIds);
+
+      if (clickRows && clickRows.length > 0) {
+        const counts: Record<string, { human: number; bot: number; days: number[] }> = {};
+        for (const id of linkIds) {
+          counts[id] = { human: 0, bot: 0, days: new Array(7).fill(0) };
+        }
+
+        const nowMs = Date.now();
+        const oneDayMs = 86400000;
+
+        for (const c of clickRows) {
+          const entry = counts[c.link_id];
+          if (!entry) continue;
+          if (c.is_bot) {
+            entry.bot += 1;
+          } else {
+            entry.human += 1;
+            if (c.created_at) {
+              const diffDays = Math.floor((nowMs - new Date(c.created_at).getTime()) / oneDayMs);
+              if (diffDays >= 0 && diffDays < 7) {
+                const idx = 6 - diffDays;
+                if (idx >= 0 && idx < 7) entry.days[idx] += 1;
+              }
+            }
+          }
+        }
+
+        for (const l of links) {
+          const live = counts[l.id];
+          if (live) {
+            const currentHuman = Number(l.clicks_count ?? 0);
+            const currentBot = Number(l.bot_clicks_count ?? 0);
+            const bestHuman = Math.max(currentHuman, live.human);
+            const bestBot = Math.max(currentBot, live.bot);
+
+            if (bestHuman !== currentHuman || bestBot !== currentBot) {
+              l.clicks_count = bestHuman;
+              l.bot_clicks_count = bestBot;
+              // Asynchronously heal database so numbers persist permanently
+              void supabaseAdmin
+                .from("links")
+                .update({ clicks_count: bestHuman, bot_clicks_count: bestBot })
+                .eq("id", l.id);
+            }
+            // Use live days sparkline if available
+            if (live.days.some((n) => n > 0)) {
+              perLinkDaily[l.id] = live.days;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[dashboard] live link clicks reconciliation warning:", e);
+    }
+  }
+
+  const clicksByDay: Record<string, number> = {};
   const totalLifetimeClicks = links.reduce((s: number, l: any) => s + Number(l.clicks_count ?? 0), 0);
 
   for (let i = 29; i >= 0; i--) {
