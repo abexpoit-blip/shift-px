@@ -302,6 +302,13 @@ async function computeDashboardPayload(
 
   const clicksByDay: Record<string, number> = {};
   const totalLifetimeClicks = links.reduce((s: number, l: any) => s + Number(l.clicks_count ?? 0), 0);
+  if (profileRes.data && totalLifetimeClicks > Number(profileRes.data.clicks_used ?? 0)) {
+    profileRes.data.clicks_used = totalLifetimeClicks;
+    void supabaseAdmin
+      .from("profiles")
+      .update({ clicks_used: totalLifetimeClicks })
+      .eq("id", context.userId);
+  }
 
   for (let i = 29; i >= 0; i--) {
     const k = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);

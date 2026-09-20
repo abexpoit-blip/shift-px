@@ -72,7 +72,25 @@ SET clicks_used = GREATEST(COALESCE(p.clicks_used, 0), uc.total_user_clicks)
 FROM user_clicks uc
 WHERE p.id = uc.user_id;
 
--- 5. Clear dashboard cache so users see fresh counts immediately
+-- 5. Sync today's daily_stats with verified clicks
+WITH today_clicks AS (
+  SELECT
+    link_id,
+    CURRENT_DATE AS day,
+    COUNT(*) FILTER (WHERE NOT is_bot)::integer AS human_clicks,
+    COUNT(*) FILTER (WHERE is_bot)::integer AS bot_clicks
+  FROM public.clicks
+  WHERE created_at >= CURRENT_DATE
+  GROUP BY link_id
+)
+INSERT INTO public.daily_stats (link_id, day, human_clicks, bot_clicks)
+SELECT link_id, day, human_clicks, bot_clicks
+FROM today_clicks
+ON CONFLICT (link_id, day) DO UPDATE
+SET human_clicks = GREATEST(public.daily_stats.human_clicks, EXCLUDED.human_clicks),
+    bot_clicks = GREATEST(public.daily_stats.bot_clicks, EXCLUDED.bot_clicks);
+
+-- 6. Clear dashboard cache so users see fresh counts immediately
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'dashboard_cache') THEN
