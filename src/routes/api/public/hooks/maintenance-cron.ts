@@ -28,6 +28,11 @@ export const Route = createFileRoute("/api/public/hooks/maintenance-cron")({
           const { execute14DayInactivePurge } = await import("@/lib/inactive-accounts.functions");
           const purgeResult = await execute14DayInactivePurge(14);
 
+          // 3. Prune dedupe table (older than 2 hours) to keep DB compact
+          try {
+            await supabaseAdmin.rpc("prune_click_event_dedupe" as never);
+          } catch {}
+
           return new Response(
             JSON.stringify({
               status: "success",
