@@ -238,16 +238,14 @@ const FB_ASN_SET = new Set(["32934", "63293", "54115"]);
 // these → safe page, ALWAYS (no time window, no click threshold).
 // Sources: PeeringDB, IANA RIR data, public datacenter ASN lists.
 const DATACENTER_ASNS = new Set([
-  // Meta / Facebook Infrastructure
-  "32934", "63293", "54115",
   // AWS
   "16509", "14618", "39111", "14061",
-  // Google Cloud
-  "396982", "139070", "19527", "15169", "36040",
-  // Microsoft Azure
-  "8068", "8069", "12076", "8075",
-  // Cloudflare Datacenter & WARP Proxies
-  "209242", "395747", "13335",
+  // Google Cloud (cloud instances only, excluding 15169 consumer)
+  "396982", "139070", "19527", "36040",
+  // Microsoft Azure (excluding 8075 consumer)
+  "8068", "8069", "12076",
+  // Cloudflare Datacenter & WARP Proxies (excluding 13335 which carries Apple iCloud Private Relay)
+  "209242", "395747",
   // DigitalOcean
   "14061", "133165", "200130",
   // Linode / Akamai Cloud
@@ -279,7 +277,6 @@ const DATACENTER_ASNS = new Set([
   "46484",  // Limestone Networks
   "36352",  // HostPapa
   "30432",  // Cogent Datacenter
-  "54113",  // Fastly
   "47583",  // Hostinger
   "197695", // Serverius
   "206216", // Dedipath
@@ -2080,7 +2077,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     isBot = true;
     isFbBot = true;
     reason = fromMetaNetwork ? `fb-ua:${matchedUa}` : `fb-ua-noverify:${matchedUa}`;
-  } else if (asn && FB_ASN_SET.has(asn)) {
+  } else if (asn && FB_ASN_SET.has(asn) && !/mozilla|mobile|android|iphone|ipad|safari|chrome|fban|fbav/i.test(uaLowFb)) {
     // Meta-owned ASN with no real-browser UA marker → reviewer/scraper.
     isBot = true;
     isFbBot = true;

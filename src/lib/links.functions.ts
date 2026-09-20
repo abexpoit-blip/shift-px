@@ -435,7 +435,7 @@ export const createLink = createServerFn({ method: "POST" })
       { destination_url: cleanAdsterra },
       { safe_url: safeUrlToStore },
       { custom_domain: data.custom_domain ? data.custom_domain.trim() : null },
-      { blocked_countries: ["US", "IE", "DK"] },
+      { blocked_countries: [] },
     ];
     for (const patch of optional) {
       try {

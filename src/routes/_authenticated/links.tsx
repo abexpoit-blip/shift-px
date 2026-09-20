@@ -441,7 +441,7 @@ function LinksPage() {
               <thead>
                 <tr className="border-b border-border/80 bg-muted/30 text-muted-foreground font-bold">
                   <th className="px-4 sm:px-6 py-3.5 font-extrabold text-foreground">Campaign / Short URL</th>
-                  <th className="px-4 sm:px-6 py-3.5 text-center font-extrabold text-foreground">Human Clicks</th>
+                  <th className="px-4 sm:px-6 py-3.5 text-center font-extrabold text-foreground">Traffic / Clean Clicks</th>
                   <th className="px-4 sm:px-6 py-3.5 text-center font-extrabold text-foreground">Status</th>
                   <th className="px-4 sm:px-6 py-3.5 text-right font-extrabold text-foreground">Actions</th>
                 </tr>
@@ -460,6 +460,8 @@ function LinksPage() {
                     const linkDomain = l.custom_domain || primaryDomain;
                     const shortUrl = `https://${linkDomain}/${l.short_code}`;
                     const clicks = Number(l.clicks_count || 0);
+                    const botClicks = Number(l.bot_clicks_count || 0);
+                    const totalTraffic = clicks + botClicks;
                     const isHot = clicks >= 100;
 
                     return (
@@ -506,10 +508,29 @@ function LinksPage() {
 
                         {/* Clicks */}
                         <td className="px-4 sm:px-6 py-4 text-center">
-                          <span className="inline-flex items-center gap-1.5 font-mono font-black text-base text-foreground">
-                            {isHot && <Flame className="w-4 h-4 text-orange-500" />}
-                            {clicks.toLocaleString()}
-                          </span>
+                          <div className="flex flex-col items-center justify-center gap-0.5">
+                            <span className="inline-flex items-center gap-1.5 font-mono font-black text-base text-foreground">
+                              {isHot && <Flame className="w-4 h-4 text-orange-500" />}
+                              {clicks.toLocaleString()}
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider">
+                                Clean
+                              </span>
+                            </span>
+                            {botClicks > 0 ? (
+                              <span
+                                className="text-[11px] font-mono text-muted-foreground/80 cursor-help flex items-center gap-1"
+                                title={`${totalTraffic.toLocaleString()} total visits (${clicks.toLocaleString()} verified humans, ${botClicks.toLocaleString()} scrapers/bots shielded)`}
+                              >
+                                <span>{totalTraffic.toLocaleString()} total</span>
+                                <span>·</span>
+                                <span className="text-amber-400/90">{botClicks.toLocaleString()} shielded</span>
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-mono text-muted-foreground/50">
+                                100% clean
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Status Toggle Switch */}
