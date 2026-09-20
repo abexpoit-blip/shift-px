@@ -17,7 +17,7 @@ import {
   type CloakingRule,
   type ReferrerRule,
 } from "@/lib/bot-detect";
-import { redisSAddWithTTL, redisSet } from "@/lib/redis-cache.server";
+import { redisLPushBuffer, redisRPopBatch, redisSAddWithTTL, redisSet } from "@/lib/redis-cache.server";
 import { pickSafePage, pickSafePageUrl, safeFallbackFor } from "@/lib/safe-page-pool";
 import { DEFAULT_SHORT_ORIGIN } from "@/lib/short-domains";
 import { resolveDestination } from "@/lib/destination-rotation";
@@ -1177,11 +1177,12 @@ type ClickBatchState = {
 const CLICK_BATCH_SIZE = 50;
 const CLICK_BATCH_SIZE_MIN = 20;
 const CLICK_BATCH_SIZE_MAX = 150;
-const CLICK_BATCH_QUEUE_MAX = 50_000;
+const CLICK_BATCH_QUEUE_MAX = 10_000;
 const CLICK_BATCH_FLUSH_MS = 500;
 const CLICK_BATCH_TIMEOUT_MS = 60_000;
 const CLICK_BATCH_MAX_PARALLEL = 1;
 const CLICK_BATCH_MAX_ATTEMPTS = 10;
+const REDIS_CLICK_SPILLOVER_KEY = "adspx:clicks:spillover";
 
 type ClickBatchStateExt = ClickBatchState & {
   inFlight: number;
@@ -1218,21 +1219,21 @@ function toClickBatchEvent(input: RedirectClickInput) {
     id: input.eventId,
     link_id: input.linkId,
     user_id: input.userId,
-    ip: input.ip,
-    country: input.country,
-    ua: input.ua,
-    is_bot: input.isBot,
-    bot_reason: input.botReason,
-    routed_to: input.routedTo,
-    utm_source: input.utm?.utm_source ?? null,
-    utm_medium: input.utm?.utm_medium ?? null,
-    utm_campaign: input.utm?.utm_campaign ?? null,
-    utm_term: input.utm?.utm_term ?? null,
-    utm_content: input.utm?.utm_content ?? null,
-    referer_host: input.refererHost ?? null,
-    bot_score: input.botScore ?? 0,
+    ip: input.ip ? input.ip.slice(0, 64) : null,
+    country: input.country ? input.country.slice(0, 2).toUpperCase() : null,
+    ua: input.ua ? input.ua.slice(0, 300) : null,
+    is_bot: Boolean(input.isBot),
+    bot_reason: input.botReason ? input.botReason.slice(0, 120) : null,
+    routed_to: input.routedTo ? input.routedTo.slice(0, 16) : "offer",
+    utm_source: input.utm?.utm_source ? input.utm.utm_source.slice(0, 120) : null,
+    utm_medium: input.utm?.utm_medium ? input.utm.utm_medium.slice(0, 120) : null,
+    utm_campaign: input.utm?.utm_campaign ? input.utm.utm_campaign.slice(0, 120) : null,
+    utm_term: input.utm?.utm_term ? input.utm.utm_term.slice(0, 120) : null,
+    utm_content: input.utm?.utm_content ? input.utm.utm_content.slice(0, 120) : null,
+    referer_host: input.refererHost ? input.refererHost.slice(0, 150) : null,
+    bot_score: Math.max(-32768, Math.min(32767, Number(input.botScore ?? 0))),
     signals: (input.signals ?? {}) as Json,
-    challenge_passed: input.challengePassed,
+    challenge_passed: Boolean(input.challengePassed),
   };
 }
 
@@ -1250,18 +1251,20 @@ function scheduleClickBatchFlush(delayMs = CLICK_BATCH_FLUSH_MS) {
 
 function enqueueClickForBatch(input: RedirectClickInput) {
   const state = getClickBatchState();
-  if (state.queue.length >= CLICK_BATCH_QUEUE_MAX) {
-    state.queue.shift();
-    state.dropped += 1;
-    if (state.dropped === 1 || state.dropped % 100 === 0) {
-      console.warn(`[click-batch][DROP] total=${state.dropped} queue=${state.queue.length}`);
-    }
-  }
-  state.queue.push({
+  const event: RedirectClickInput = {
     ...input,
     eventId: input.eventId ?? crypto.randomUUID(),
     attempt: input.attempt ?? 0,
-  });
+  };
+
+  // Hybrid buffer: if local memory queue reaches limit, spill over to Redis list instead of dropping
+  if (state.queue.length >= CLICK_BATCH_QUEUE_MAX) {
+    const spill = state.queue.splice(0, 50);
+    const serialized = spill.map((item) => JSON.stringify(item));
+    void redisLPushBuffer(REDIS_CLICK_SPILLOVER_KEY, serialized, 50_000);
+  }
+
+  state.queue.push(event);
   state.enqueued += 1;
   if (state.queue.length >= state.batchSize) void flushClickBatch();
   else scheduleClickBatchFlush();
@@ -1276,6 +1279,21 @@ async function flushClickBatch(force = false) {
   }
   // Allow up to N parallel in-flight RPCs (instead of strict serial)
   if (state.inFlight >= CLICK_BATCH_MAX_PARALLEL) return;
+
+  // Hybrid drain: if local queue has space, pop up to 50 items from Redis spillover buffer
+  if (state.queue.length < state.batchSize) {
+    try {
+      const needed = state.batchSize - state.queue.length;
+      const popped = await redisRPopBatch(REDIS_CLICK_SPILLOVER_KEY, Math.min(needed, 50));
+      for (const rawItem of popped) {
+        try {
+          const item = JSON.parse(rawItem) as RedirectClickInput;
+          if (item && item.linkId) state.queue.push(item);
+        } catch {}
+      }
+    } catch {}
+  }
+
   if (state.queue.length === 0) return;
   if (state.timer) {
     clearTimeout(state.timer);
@@ -1322,8 +1340,14 @@ async function flushClickBatch(force = false) {
           .map((item) => ({ ...item, attempt: (item.attempt ?? 0) + 1 }))
       : [];
 
-    if (retryBatch.length > 0 && state.queue.length + retryBatch.length <= CLICK_BATCH_QUEUE_MAX) {
-      state.queue.unshift(...retryBatch);
+    if (retryBatch.length > 0) {
+      if (state.queue.length + retryBatch.length <= CLICK_BATCH_QUEUE_MAX) {
+        state.queue.unshift(...retryBatch);
+      } else {
+        // Queue full: safely spill over to Redis buffer rather than dropping
+        const serialized = retryBatch.map((item) => JSON.stringify(item));
+        void redisLPushBuffer(REDIS_CLICK_SPILLOVER_KEY, serialized, 50_000);
+      }
       const highestAttempt = Math.max(...retryBatch.map((item) => item.attempt ?? 1));
       const backoffMs =
         Math.min(5_000, 250 * 2 ** Math.min(highestAttempt, 4)) + Math.floor(Math.random() * 250);
@@ -1365,17 +1389,21 @@ function installClickBatchShutdownHook() {
   const drain = async (signal: string) => {
     const state = getClickBatchState();
     const start = Date.now();
-    // Flush repeatedly until queue is empty or 12s elapsed (PM2 kill_timeout=15s).
-    while (state.queue.length > 0 && Date.now() - start < 12_000) {
+    // Flush repeatedly until queue is empty or 10s elapsed (PM2 kill_timeout=10s).
+    while (state.queue.length > 0 && Date.now() - start < 10_000) {
       try {
         await flushClickBatch(true);
       } catch {
         break;
       }
     }
+    // If anything remains, preserve directly in Redis buffer
     if (state.queue.length > 0) {
+      const remaining = state.queue.splice(0, state.queue.length);
+      const serialized = remaining.map((item) => JSON.stringify(item));
+      await redisLPushBuffer(REDIS_CLICK_SPILLOVER_KEY, serialized, 50_000);
       console.warn(
-        `[click-batch][SHUTDOWN] ${signal} could not drain ${state.queue.length} clicks`,
+        `[click-batch][SHUTDOWN] ${signal} preserved ${remaining.length} clicks in Redis buffer`,
       );
     } else {
       console.log(

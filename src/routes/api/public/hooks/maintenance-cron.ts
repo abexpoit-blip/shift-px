@@ -33,6 +33,15 @@ export const Route = createFileRoute("/api/public/hooks/maintenance-cron")({
             await supabaseAdmin.rpc("prune_click_event_dedupe" as never);
           } catch {}
 
+          // 4. Hybrid storage maintenance: archive lifetime stats, rollup dimensions to click_dim_daily, and batched prune old raw clicks (> 7 days)
+          let hybridPurgeRun = false;
+          try {
+            await supabaseAdmin.rpc("maintenance_purge_old_clicks" as never);
+            hybridPurgeRun = true;
+          } catch (mErr) {
+            console.warn("[maintenance-cron] maintenance_purge_old_clicks note:", mErr);
+          }
+
           return new Response(
             JSON.stringify({
               status: "success",
@@ -40,6 +49,7 @@ export const Route = createFileRoute("/api/public/hooks/maintenance-cron")({
               purgedDeadLinks: deletedLinks,
               purgedInactiveUsers: purgeResult.purgedUsersCount,
               purgedUserLinks: purgeResult.purgedLinksCount,
+              hybridPurgeRun,
             }),
             {
               status: 200,

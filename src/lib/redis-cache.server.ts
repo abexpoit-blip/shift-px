@@ -164,3 +164,60 @@ export async function redisSAddWithTTL(
     return 0;
   }
 }
+
+// Push items to a Redis list buffer (capped to maxLen to avoid unbounded growth)
+export async function redisLPushBuffer(
+  key: string,
+  items: string[],
+  maxLen = 50_000,
+): Promise<number> {
+  const c = getReadyClient();
+  if (!c || items.length === 0) return 0;
+  try {
+    const pipeline = c.multi();
+    pipeline.lpush(key, ...items);
+    pipeline.ltrim(key, 0, maxLen - 1);
+    pipeline.expire(key, 86400); // 24h retention
+    const results = await pipeline.exec();
+    if (!results) return 0;
+    const len = results[0]?.[1];
+    return typeof len === "number" ? len : 0;
+  } catch (err) {
+    handleRedisErr("lpush_buffer", err);
+    return 0;
+  }
+}
+
+// Pop up to count items from the tail of a Redis list buffer
+export async function redisRPopBatch(key: string, count: number): Promise<string[]> {
+  const c = getReadyClient();
+  if (!c || count <= 0) return [];
+  try {
+    const pipeline = c.multi();
+    pipeline.lrange(key, -count, -1);
+    pipeline.ltrim(key, 0, -(count + 1));
+    const results = await pipeline.exec();
+    if (!results) return [];
+    const items = results[0]?.[1];
+    if (Array.isArray(items)) {
+      return items as string[];
+    }
+    return [];
+  } catch (err) {
+    handleRedisErr("rpop_batch", err);
+    return [];
+  }
+}
+
+// Get the current length of a Redis list
+export async function redisLLen(key: string): Promise<number> {
+  const c = getReadyClient();
+  if (!c) return 0;
+  try {
+    return await c.llen(key);
+  } catch (err) {
+    handleRedisErr("llen", err);
+    return 0;
+  }
+}
+
