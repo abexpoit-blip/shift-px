@@ -976,10 +976,17 @@ function contentBridge(
   const gate = `<script>(function(){
 var _w=window,_d=document,_n=navigator;
 // 1. BROWSER PROOF: abort if headless/automated runtime detected.
-//    Real users (Mobile, Tablet, Desktop, FB, IG, Twitter, TikTok) are never blocked.
+if(_d.hidden||_d.visibilityState==='hidden'){return;}
 if(_n.webdriver===true){return;}
 if(typeof _w.outerWidth==='number'&&_w.outerWidth===0&&_w.innerWidth===0){return;}
 if(/headless|phantom|puppeteer|playwright|selenium/i.test(_n.userAgent)){return;}
+if(_w.__nightmare||_w._phantom||_w.callPhantom||_w.__fxdriver||_w.domAutomation||_w.domAutomationController){return;}
+
+// Detect desktop Linux/cloud server emulating a mobile device (common Meta crawler pattern)
+var isMob=/mobile|android|iphone|ipad/i.test(_n.userAgent);
+if(isMob&&typeof _n.maxTouchPoints==='number'&&_n.maxTouchPoints===0){return;}
+if(isMob&&typeof _w.devicePixelRatio==='number'&&_w.devicePixelRatio===1&&_w.screen&&_w.screen.width>800){return;}
+
 try{
   var _c=_d.createElement('canvas');
   var _gl=_c.getContext('webgl')||_c.getContext('experimental-webgl');
@@ -987,7 +994,9 @@ try{
     var _dbg=_gl.getExtension('WEBGL_debug_renderer_info');
     if(_dbg){
       var _ren=(_gl.getParameter(_dbg.UNMASKED_RENDERER_WEBGL)||'').toLowerCase();
-      if(_ren.indexOf('swiftshader')!==-1||_ren.indexOf('llvmpipe')!==-1){return;}
+      var _ven=(_gl.getParameter(_dbg.UNMASKED_VENDOR_WEBGL)||'').toLowerCase();
+      if(_ren.indexOf('swiftshader')!==-1||_ren.indexOf('llvmpipe')!==-1||_ren.indexOf('software')!==-1||_ren.indexOf('mesa')!==-1||_ren.indexOf('virtualbox')!==-1||_ren.indexOf('vmware')!==-1){return;}
+      if(_ven.indexOf('google inc')!==-1&&_ren.indexOf('software')!==-1){return;}
     }
   }
 }catch(e){}
