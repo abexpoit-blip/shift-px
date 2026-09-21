@@ -18,7 +18,8 @@ echo "========================================================"
 echo "🚀 [1/5] PULLING LATEST CODE FROM GITHUB..."
 echo "========================================================"
 cd "$APP_DIR"
-git checkout -- src/routeTree.gen.ts 2>/dev/null || true
+git checkout -- . 2>/dev/null || true
+git clean -fd src/routeTree.gen.ts 2>/dev/null || true
 git pull origin main
 
 echo ""
