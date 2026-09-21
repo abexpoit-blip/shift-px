@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "deploy": "bash deploy-vps.sh"
+    "deploy": "powershell -ExecutionPolicy Bypass -File deploy.ps1",
+    "deploy:vps": "powershell -ExecutionPolicy Bypass -File deploy.ps1"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",
