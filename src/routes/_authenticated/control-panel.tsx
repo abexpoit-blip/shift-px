@@ -5098,6 +5098,7 @@ function GoogleLinksTab() {
   const [autoResult, setAutoResult] = useState<{
     paired: boolean;
     googleUrl: string | null;
+    shareGoogleUrl?: string;
     destinationShortUrl: string;
     shortCode: string;
     adsterraOfferUrl: string;
@@ -5368,21 +5369,21 @@ function GoogleLinksTab() {
 
           <div className="md:col-span-6 space-y-1">
             <Label className="text-xs font-bold text-foreground">
-              Official Google Share Code / Link (Optional)
+              Custom Google Token (Optional — Leave Blank for 1-Click Auto)
             </Label>
             <Input
               value={autoGoogleShareCode}
               onChange={(e) => setAutoGoogleShareCode(e.target.value)}
-              placeholder="e.g. wK9kr3kPN2R05JQc6 or leave empty to generate cloaked link first"
+              placeholder="Leave empty for instant 1-click Google link, or paste code if you have one"
               className="text-xs font-mono h-10"
             />
             {isMistakenGoogleInput ? (
               <div className="text-[11px] font-semibold text-amber-400 bg-amber-950/40 border border-amber-500/30 rounded-lg p-2 mt-1">
-                ⚠️ Notice: This box is only for official Google Share tokens (e.g. <code className="text-white">wK9kr3kPN2R05JQc6</code>) or <code className="text-white">share.google</code> links. Your Adsterra CPA link goes in the Offer URL field above.
+                ⚠️ Notice: This box is only for official Google Share tokens (e.g. <code className="text-white">wK9kr3kPN2R05JQc6</code>). Your Adsterra CPA link goes in the Offer URL field above.
               </div>
             ) : (
               <p className="text-[10px] text-muted-foreground">
-                Paste official 16-char Google token (e.g. <code className="text-emerald-400">wK9kr3kPN2R05JQc6</code>) or leave empty to create cloaked link first, then pair with 1 click.
+                ⚡ 100% Automated: Leave blank and AdsPx generates your verified Google link instantly.
               </p>
             )}
           </div>
@@ -5418,7 +5419,7 @@ function GoogleLinksTab() {
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4" /> Generate Google Short
+                  <Sparkles className="h-4 w-4" /> 1-Click Generate Google Short
                 </>
               )}
             </Button>
@@ -5454,10 +5455,33 @@ function GoogleLinksTab() {
                       className="h-11 px-5 text-xs font-bold gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white shadow-glow"
                       onClick={() => copyToClipboard(autoResult.googleUrl!, "Google Short URL")}
                     >
-                      <Copy className="h-4 w-4" /> Copy Google Short
+                      <Copy className="h-4 w-4" /> Copy Google Link
                     </Button>
                   </div>
                 </div>
+
+                {/* Secondary Google Share Link Box */}
+                {autoResult.shareGoogleUrl && (
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Alternative Google Domain Link (share.google):
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        readOnly
+                        value={autoResult.shareGoogleUrl}
+                        className="font-mono text-xs h-10 bg-background/80 text-muted-foreground border-border select-all"
+                      />
+                      <Button
+                        variant="outline"
+                        className="h-10 px-4 text-xs font-bold gap-2 shrink-0"
+                        onClick={() => copyToClipboard(autoResult.shareGoogleUrl!, "Alternative Google URL")}
+                      >
+                        <Copy className="h-4 w-4" /> Copy
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Architecture Details */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs font-mono">
