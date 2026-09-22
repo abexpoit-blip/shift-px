@@ -186,6 +186,23 @@ export const adminTraceRedirect = createServerFn({ method: "POST" })
         "External domain: Make sure domain reputation and DNS configuration are clean.";
     }
 
+    // Update latency & hops in registry if this URL is already stored
+    try {
+      const store = loadStore();
+      const existingIdx = store.links.findIndex(
+        (l) => l.google_url === targetUrl || l.google_url === targetUrl.replace(/\/$/, "")
+      );
+      if (existingIdx >= 0) {
+        store.links[existingIdx].latency_ms = totalLatency;
+        store.links[existingIdx].hops_count = hops.length;
+        store.links[existingIdx].last_tested_at = new Date().toISOString();
+        store.links[existingIdx].status = hops.some((h) => h.error) ? "error" : "active";
+        saveStore(store);
+      }
+    } catch {
+      // Non-critical: don't fail the trace if registry update fails
+    }
+
     return {
       initialUrl: targetUrl,
       finalUrl: lastHop,

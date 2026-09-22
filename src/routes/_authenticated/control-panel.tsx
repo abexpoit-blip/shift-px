@@ -5076,14 +5076,36 @@ function GoogleLinksTab() {
   const [googleInputUrl, setGoogleInputUrl] = useState("");
   const [destUrl, setDestUrl] = useState("");
   const [notes, setNotes] = useState("");
+  const [linkMode, setLinkMode] = useState<"inhouse_share" | "inhouse_script">("inhouse_share");
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [showAppsScriptGuide, setShowAppsScriptGuide] = useState(false);
 
   const copyToClipboard = (text: string, label: string = "Link") => {
-    navigator.clipboard.writeText(text);
-    setCopiedText(text);
-    toast.success(`${label} copied to clipboard!`);
-    setTimeout(() => setCopiedText(null), 2500);
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).catch(() => {
+          // fallback
+          const el = document.createElement("textarea");
+          el.value = text;
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand("copy");
+          document.body.removeChild(el);
+        });
+      } else {
+        const el = document.createElement("textarea");
+        el.value = text;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+      }
+      setCopiedText(text);
+      toast.success(`${label} copied to clipboard!`);
+      setTimeout(() => setCopiedText(null), 2500);
+    } catch {
+      toast.error("Clipboard not available");
+    }
   };
 
   const traceMut = useMutation({
@@ -5098,9 +5120,9 @@ function GoogleLinksTab() {
   });
 
   const registerMut = useMutation({
-    mutationFn: (data: { googleUrl: string; destinationUrl: string; notes?: string }) =>
+    mutationFn: (data: { googleUrl: string; destinationUrl: string; notes?: string; mode?: "inhouse_share" | "inhouse_script" }) =>
       registerFn({ data }),
-    onSuccess: (res) => {
+    onSuccess: () => {
       toast.success("In-House Google Short registered successfully!");
       setGoogleInputUrl("");
       setDestUrl("");
@@ -5123,9 +5145,11 @@ function GoogleLinksTab() {
     },
   });
 
+  // Reactive: updates when destUrl changes so the copied code has the correct URL
+  const effectiveScriptUrl = destUrl.trim() || "https://adswapx.com";
   const sampleAppsScriptCode = `function doGet(e) {
   // 100% In-House Google Redirector on script.google.com (DA 100)
-  var target = e.parameter.to || "${destUrl || 'https://adswapx.com'}";
+  var target = e.parameter.to || "${effectiveScriptUrl}";
   return HtmlService.createHtmlOutput(
     '<!DOCTYPE html><html><head>' +
     '<meta http-equiv="refresh" content="0;url=' + target + '">' +
@@ -5453,7 +5477,34 @@ function GoogleLinksTab() {
             />
           </div>
 
-          <div className="flex justify-end pt-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            {/* Mode selector */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-foreground mr-1">Link Type:</span>
+              <button
+                type="button"
+                onClick={() => setLinkMode("inhouse_share")}
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
+                  linkMode === "inhouse_share"
+                    ? "bg-primary text-primary-foreground border-primary shadow-glow"
+                    : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
+                }`}
+              >
+                📱 Google Share (Android)
+              </button>
+              <button
+                type="button"
+                onClick={() => setLinkMode("inhouse_script")}
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
+                  linkMode === "inhouse_script"
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-glow"
+                    : "bg-transparent text-muted-foreground border-border hover:border-emerald-500/50"
+                }`}
+              >
+                🔗 Google Script (script.google.com)
+              </button>
+            </div>
+
             <Button
               className="h-10 px-6 text-xs font-bold gap-2 shadow-glow"
               disabled={!googleInputUrl.trim() || !destUrl.trim() || registerMut.isPending}
@@ -5462,6 +5513,7 @@ function GoogleLinksTab() {
                   googleUrl: googleInputUrl.trim(),
                   destinationUrl: destUrl.trim(),
                   notes: notes.trim() || undefined,
+                  mode: linkMode,
                 })
               }
             >
@@ -5575,9 +5627,16 @@ function GoogleLinksTab() {
                           size="sm"
                           variant="outline"
                           className="h-7 text-[11px] px-2.5"
+                          disabled={traceMut.isPending}
                           onClick={() => {
-                            setTraceUrl(link.google_url);
-                            traceMut.mutate(link.google_url);
+                            // Only update the tracer input if it's empty or idle
+                            if (!traceUrl.trim()) setTraceUrl(link.google_url);
+                            traceMut.mutate(link.google_url, {
+                              onSuccess: () => {
+                                // After trace, refresh the registry to show updated latency
+                                queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
+                              },
+                            });
                           }}
                         >
                           Re-Trace
