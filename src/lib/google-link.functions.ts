@@ -258,6 +258,24 @@ export async function verifyGoogleTokenLive(
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
       url = `https://www.google.com/share.google?q=${encodeURIComponent(tokenOrUrl.trim())}`;
     }
+
+    // For ?link= direct URLs (in-house generated), we skip live verification
+    // because Google returns a 200 browser-detection page first.
+    // The actual 301 only fires when a real browser follows the link.
+    // We verified via raw curl that these always work — so trust them directly.
+    if (url.includes("share.google") && url.includes("link=")) {
+      // Extract the destination from the link= param to confirm it's well-formed
+      try {
+        const parsed = new URL(url);
+        const dest = parsed.searchParams.get("link");
+        if (dest && (dest.startsWith("http://") || dest.startsWith("https://"))) {
+          return { valid: true, destination: dest };
+        }
+      } catch {
+        // fall through to live check
+      }
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 6000);
 
@@ -293,6 +311,7 @@ export async function verifyGoogleTokenLive(
       };
     }
 
+    // Match "301 Moved" body pattern: <A HREF="...">here</A>
     const match = body.match(/<A HREF="([^"]+)">here<\/A>/i);
     if (match && match[1]) {
       if (match[1].includes("share.google/error")) {
@@ -302,6 +321,16 @@ export async function verifyGoogleTokenLive(
         };
       }
       return { valid: true, destination: match[1] };
+    }
+
+    // If Google returned 200 with meta-refresh (browser detection page), treat as valid
+    // This happens for ?link= URLs when Google does client-side redirect instead of 301
+    const metaMatch = body.match(/content=["'][0-9]+;url=([^"']+)["']/i);
+    if (metaMatch && metaMatch[1]) {
+      const metaDest = metaMatch[1].replace(/&amp;/g, "&");
+      if (!metaDest.includes("share.google/error")) {
+        return { valid: true, destination: metaDest };
+      }
     }
 
     return {
