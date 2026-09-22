@@ -152,6 +152,8 @@ import {
   adminRegisterInhouseGoogleLink,
   adminGetGoogleLinksState,
   adminDeleteGoogleLink,
+  adminSaveMasterScriptUrl,
+  adminGenerateAutoGoogleShort,
   type TraceResult,
   type HopDetail,
   type StoredGoogleLink,
@@ -5064,11 +5066,25 @@ function GoogleLinksTab() {
   const traceFn = useServerFn(adminTraceRedirect);
   const registerFn = useServerFn(adminRegisterInhouseGoogleLink);
   const deleteFn = useServerFn(adminDeleteGoogleLink);
+  const saveMasterScriptFn = useServerFn(adminSaveMasterScriptUrl);
+  const autoShortFn = useServerFn(adminGenerateAutoGoogleShort);
 
   const { data: state, isLoading } = useQuery({
     queryKey: ["admin-google-links-state"],
     queryFn: () => getGoogleStateFn(),
   });
+
+  // 1-Click Auto Short Generator State
+  const [autoOfferUrl, setAutoOfferUrl] = useState("");
+  const [autoDomain, setAutoDomain] = useState("adswapx.com");
+  const [autoNotes, setAutoNotes] = useState("");
+  const [masterScriptInput, setMasterScriptInput] = useState("");
+  const [isEditingMasterScript, setIsEditingMasterScript] = useState(false);
+  const [autoResult, setAutoResult] = useState<{
+    googleUrl: string;
+    destinationShortUrl: string;
+    adsterraOfferUrl: string;
+  } | null>(null);
 
   const [traceUrl, setTraceUrl] = useState("");
   const [traceResult, setTraceResult] = useState<TraceResult | null>(null);
@@ -5079,6 +5095,28 @@ function GoogleLinksTab() {
   const [linkMode, setLinkMode] = useState<"inhouse_share" | "inhouse_script">("inhouse_share");
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [showAppsScriptGuide, setShowAppsScriptGuide] = useState(false);
+
+  const saveMasterMut = useMutation({
+    mutationFn: (url: string) => saveMasterScriptFn({ data: { masterScriptUrl: url } }),
+    onSuccess: () => {
+      toast.success("Master Google Script Web App URL saved!");
+      setIsEditingMasterScript(false);
+      queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to save Master Script URL"),
+  });
+
+  const autoShortMut = useMutation({
+    mutationFn: (data: { offerUrl: string; domain?: string; notes?: string; masterScriptUrl?: string }) =>
+      autoShortFn({ data }),
+    onSuccess: (res) => {
+      setAutoResult(res);
+      setAutoOfferUrl("");
+      toast.success("1-Click Google Short generated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to generate Google Short"),
+  });
 
   const copyToClipboard = (text: string, label: string = "Link") => {
     try {
@@ -5259,6 +5297,238 @@ function GoogleLinksTab() {
             Best Practice: Route Google Link &rarr; AdsPx Short Link (<code className="text-foreground">adswapx.com/abc</code>). Meta deep crawlers see our fact-checked safe page, while mobile users bounce instantly to Adsterra.
           </p>
         </div>
+      </div>
+
+      {/* TOOL 0: 1-Click Auto Google Short Generator (Adsterra & CPA Offers) */}
+      <div className="rounded-3xl border-2 border-emerald-500/40 bg-gradient-to-b from-emerald-950/25 via-card/85 to-card/95 backdrop-blur-xl p-6 sm:p-7 shadow-2xl space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-400">
+                <Sparkles className="h-3 w-3 animate-pulse" /> 1-Click Auto Generator
+              </span>
+              <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary">
+                Adsterra &amp; CPA Ready
+              </span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-foreground mt-2 flex items-center gap-2">
+              <Zap className="h-6 w-6 text-emerald-400" /> Auto Google Short Maker
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">
+              Paste your raw Adsterra direct link or offer URL. The engine auto-creates a cloaked AdsPx safe page and wraps it with your official Google Domain redirect.
+            </p>
+          </div>
+
+          {/* Master Engine Status */}
+          <div className="text-right">
+            {state?.masterScriptUrl ? (
+              <div className="inline-flex flex-col items-end">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-xs font-bold shadow-sm">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Master Google Engine Active
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMasterScriptInput(state.masterScriptUrl || "");
+                    setIsEditingMasterScript(!isEditingMasterScript);
+                  }}
+                  className="text-[11px] text-primary hover:underline mt-1 font-semibold"
+                >
+                  {isEditingMasterScript ? "Cancel Edit" : "Change Engine URL"}
+                </button>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold">
+                <AlertTriangle className="h-3.5 w-3.5" /> Engine Setup Needed
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Master Script Setup Box (if not configured or editing) */}
+        {(!state?.masterScriptUrl || isEditingMasterScript) && (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-2 animate-in fade-in">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-bold text-foreground flex items-center gap-2">
+                <Key className="h-4 w-4 text-amber-400" /> Configure Master Google Apps Script Web App URL
+              </Label>
+              <button
+                type="button"
+                onClick={() => setShowAppsScriptGuide(true)}
+                className="text-[11px] text-primary font-bold hover:underline"
+              >
+                Need Help? View 30s Guide
+              </button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Paste your deployed <code className="text-foreground">https://script.google.com/macros/s/.../exec</code> URL once. All 1-click links will automatically generate through this engine.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value={masterScriptInput}
+                onChange={(e) => setMasterScriptInput(e.target.value)}
+                placeholder="https://script.google.com/macros/s/AKfyc.../exec"
+                className="text-xs font-mono h-9"
+              />
+              <Button
+                size="sm"
+                disabled={!masterScriptInput.trim() || saveMasterMut.isPending}
+                onClick={() => saveMasterMut.mutate(masterScriptInput.trim())}
+                className="h-9 px-4 text-xs font-bold shrink-0"
+              >
+                {saveMasterMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save Master Engine"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* The 1-Click Form */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+          <div className="md:col-span-8 space-y-1">
+            <Label className="text-xs font-bold text-foreground">
+              Your Adsterra Offer URL / CPA Direct Link
+            </Label>
+            <Input
+              value={autoOfferUrl}
+              onChange={(e) => setAutoOfferUrl(e.target.value)}
+              placeholder="https://beta.publishers.adsterra.com/... or https://your-offer-link.com/..."
+              className="text-xs font-mono h-11 border-border/80 focus:border-emerald-500/50"
+            />
+          </div>
+
+          <div className="md:col-span-4 space-y-1">
+            <Label className="text-xs font-bold text-foreground">
+              Cloak Safe Domain
+            </Label>
+            <select
+              value={autoDomain}
+              onChange={(e) => setAutoDomain(e.target.value)}
+              className="w-full h-11 rounded-xl border border-input bg-background px-3 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            >
+              <option value="adswapx.com">adswapx.com (Primary Shortener)</option>
+              <option value="dovtv.com">dovtv.com (Alternative)</option>
+            </select>
+          </div>
+
+          <div className="md:col-span-8 space-y-1">
+            <Label className="text-xs font-bold text-foreground">
+              Campaign Name / Admin Note (Optional)
+            </Label>
+            <Input
+              value={autoNotes}
+              onChange={(e) => setAutoNotes(e.target.value)}
+              placeholder="e.g. Adsterra Push VIP Campaign"
+              className="text-xs h-10"
+            />
+          </div>
+
+          <div className="md:col-span-4 flex items-end">
+            <Button
+              className="w-full h-10 text-xs font-black gap-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-glow"
+              disabled={!autoOfferUrl.trim() || autoShortMut.isPending}
+              onClick={() =>
+                autoShortMut.mutate({
+                  offerUrl: autoOfferUrl.trim(),
+                  domain: autoDomain,
+                  notes: autoNotes.trim() || undefined,
+                  masterScriptUrl: state?.masterScriptUrl || undefined,
+                })
+              }
+            >
+              {autoShortMut.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Generating Auto Link...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" /> 1-Click Generate Google Short
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* 1-Click Auto Result Card */}
+        {autoResult && (
+          <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-950/30 p-5 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
+              <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase text-emerald-400">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Google Short Created Successfully!
+              </span>
+              <span className="text-[11px] font-mono text-emerald-300/80 font-bold">
+                Meta Post Safe · 0ms CPA Bounce
+              </span>
+            </div>
+
+            {/* Main Google Short Link Box */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">
+                Official Google Domain Link (Post this on Facebook):
+              </span>
+              <div className="flex items-center gap-2">
+                <Input
+                  readOnly
+                  value={autoResult.googleUrl}
+                  className="font-mono text-xs h-11 bg-background/80 text-emerald-400 border-emerald-500/50 select-all font-bold"
+                />
+                <Button
+                  className="h-11 px-5 text-xs font-bold gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white shadow-glow"
+                  onClick={() => copyToClipboard(autoResult.googleUrl, "Google Short URL")}
+                >
+                  <Copy className="h-4 w-4" /> Copy Google Short
+                </Button>
+              </div>
+            </div>
+
+            {/* Architecture Details */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs font-mono">
+              <div className="p-3 rounded-xl bg-card/60 border border-border/80">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                  AdsPx Cloaked Bridge (Meta Safe Page):
+                </span>
+                <div className="text-foreground break-all mt-0.5 font-bold">
+                  {autoResult.destinationShortUrl}
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-card/60 border border-border/80">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                  Target Adsterra Offer Destination:
+                </span>
+                <div className="text-muted-foreground break-all mt-0.5 truncate">
+                  {autoResult.adsterraOfferUrl}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                <ShieldCheck className="h-4 w-4 text-emerald-400" /> Facebook crawler sees 200 OK Safe Page · Real mobile users bounce to Adsterra
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs font-semibold gap-1.5"
+                  onClick={() => {
+                    setTraceUrl(autoResult.googleUrl);
+                    traceMut.mutate(autoResult.googleUrl);
+                  }}
+                >
+                  <Play className="h-3 w-3" /> Test in Tracer
+                </Button>
+                <a
+                  href={`https://developers.facebook.com/tools/debug/?q=${encodeURIComponent(autoResult.googleUrl)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                >
+                  <ExternalLink className="h-3 w-3" /> Meta Debugger
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* TOOL 1: Live Redirect Tracer & Hop Inspector */}

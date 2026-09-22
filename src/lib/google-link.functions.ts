@@ -39,6 +39,7 @@ export interface StoredGoogleLink {
 }
 
 interface GoogleLinksStore {
+  masterScriptUrl?: string;
   links: StoredGoogleLink[];
 }
 
@@ -50,7 +51,10 @@ function loadStore(): GoogleLinksStore {
     if (fs.existsSync(STORAGE_FILE)) {
       const content = fs.readFileSync(STORAGE_FILE, "utf8");
       const parsed = JSON.parse(content);
-      return { links: Array.isArray(parsed.links) ? parsed.links : [] };
+      return {
+        masterScriptUrl: typeof parsed.masterScriptUrl === "string" ? parsed.masterScriptUrl : undefined,
+        links: Array.isArray(parsed.links) ? parsed.links : [],
+      };
     }
   } catch (err) {
     console.error("[google-link] Failed to read storage file:", err);
@@ -268,10 +272,136 @@ export const adminRegisterInhouseGoogleLink = createServerFn({ method: "POST" })
     };
   });
 
+export const adminSaveMasterScriptUrl = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        masterScriptUrl: z.string().url("Must be a valid script.google.com URL"),
+      })
+      .parse(d)
+  )
+  .handler(async ({ data }) => {
+    await assertAdminRole();
+    const store = loadStore();
+    store.masterScriptUrl = data.masterScriptUrl.trim();
+    saveStore(store);
+    return { success: true, masterScriptUrl: store.masterScriptUrl };
+  });
+
+export const adminGenerateAutoGoogleShort = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        offerUrl: z.string().min(1, "Adsterra or Offer URL is required"),
+        domain: z.string().optional().default("adswapx.com"),
+        notes: z.string().optional(),
+        masterScriptUrl: z.string().optional(),
+      })
+      .parse(d)
+  )
+  .handler(async ({ data }) => {
+    const userId = await assertAdminRole();
+    const store = loadStore();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let cleanOffer = data.offerUrl.trim();
+    if (!/^https?:\/\//i.test(cleanOffer)) {
+      cleanOffer = "https://" + cleanOffer;
+    }
+
+    let destinationShortUrl = "";
+
+    // Check if input is already an AdsPx short URL
+    const isExistingShortener =
+      cleanOffer.includes("adswapx.com/") ||
+      cleanOffer.includes("dovtv.com/") ||
+      cleanOffer.includes("localhost:");
+
+    if (isExistingShortener) {
+      destinationShortUrl = cleanOffer;
+    } else {
+      // Auto-create an AdsPx cloaked short link for this Adsterra offer!
+      const chars = "abcdefghijkmnpqrstuvwxyz23456789";
+      let code = "";
+      for (let attempt = 0; attempt < 10; attempt++) {
+        code = "";
+        for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+        const { data: existing } = await supabaseAdmin
+          .from("links")
+          .select("id")
+          .eq("short_code", code)
+          .maybeSingle();
+        if (!existing) break;
+      }
+
+      const selectedDomain = (data.domain || "adswapx.com").trim().replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+      const { error: insertErr } = await supabaseAdmin.from("links").insert({
+        user_id: userId,
+        short_code: code,
+        title: data.notes || "Google Short Campaign",
+        destination_url: cleanOffer,
+        adsterra_url: cleanOffer,
+        adsterra_direct_link: cleanOffer,
+        status: "active",
+        is_active: true,
+      });
+
+      if (insertErr) {
+        console.error("[google-link] Failed to auto-create short link:", insertErr);
+        throw new Error("Failed to auto-create cloaked AdsPx link: " + insertErr.message);
+      }
+
+      destinationShortUrl = `https://${selectedDomain}/${code}`;
+    }
+
+    // Construct the Google URL
+    const activeScriptUrl = data.masterScriptUrl?.trim() || store.masterScriptUrl || "";
+    if (!activeScriptUrl) {
+      throw new Error(
+        "Master Google Script Web App URL is not configured yet. Please enter your script.google.com Web App URL (takes 30s) or paste it in the setup box."
+      );
+    }
+
+    // Ensure it's a valid script.google.com URL
+    if (!activeScriptUrl.includes("script.google.com")) {
+      throw new Error("Master Google Script URL must be from script.google.com");
+    }
+
+    const separator = activeScriptUrl.includes("?") ? "&" : "?";
+    const googleUrl = `${activeScriptUrl}${separator}to=${encodeURIComponent(destinationShortUrl)}`;
+
+    const nowIso = new Date().toISOString();
+    const newEntry: StoredGoogleLink = {
+      id: "gs_" + Math.random().toString(36).slice(2, 9),
+      original_url: destinationShortUrl,
+      google_url: googleUrl,
+      mode: "inhouse_script",
+      status: "active",
+      created_at: nowIso,
+      last_tested_at: nowIso,
+      hops_count: 2,
+      notes: data.notes || "1-Click Auto Shortened",
+    };
+
+    store.links.unshift(newEntry);
+    if (store.links.length > 50) store.links = store.links.slice(0, 50);
+    saveStore(store);
+
+    return {
+      success: true,
+      googleUrl,
+      destinationShortUrl,
+      adsterraOfferUrl: cleanOffer,
+      entry: newEntry,
+    };
+  });
+
 export const adminGetGoogleLinksState = createServerFn({ method: "GET" }).handler(async () => {
   await assertAdminRole();
   const store = loadStore();
   return {
+    masterScriptUrl: store.masterScriptUrl || "",
     links: store.links,
   };
 });
