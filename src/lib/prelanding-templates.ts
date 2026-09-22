@@ -2147,7 +2147,21 @@ function cleanHost(origin?: string): string {
 function getApexDomain(host: string): string {
   const parts = host.split(".").filter(Boolean);
   if (parts.length <= 2) return host;
+  const twoPartTlds = new Set(["co", "com", "net", "org", "gov", "edu", "ac"]);
+  if (parts.length >= 3 && twoPartTlds.has(parts[parts.length - 2])) {
+    return parts.slice(-3).join(".");
+  }
   return parts.slice(-2).join(".");
+}
+
+function getDomainBaseName(host: string): string {
+  const parts = host.split(".").filter(Boolean);
+  if (parts.length <= 1) return host;
+  const twoPartTlds = new Set(["co", "com", "net", "org", "gov", "edu", "ac"]);
+  if (parts.length >= 3 && twoPartTlds.has(parts[parts.length - 2])) {
+    return parts[parts.length - 3];
+  }
+  return parts[parts.length - 2];
 }
 
 function titleCase(str: string): string {
@@ -2162,7 +2176,7 @@ function titleCase(str: string): string {
 
 function generateCustomDomainBrand(host: string, code: string): Brand {
   const apex = getApexDomain(host);
-  const baseName = apex.split(".")[0] || "Daily";
+  const baseName = getDomainBaseName(host);
   const formattedName = titleCase(baseName);
   const h = hashCode(`custombrand:${host}:${code}`);
 

@@ -84,21 +84,50 @@ function hashStr(s: string): number {
   return h;
 }
 
+function getDomainParts(host: string): { apex: string; brandName: string } {
+  const clean = host.replace(/^www\./i, "").toLowerCase();
+  const parts = clean.split(".").filter(Boolean);
+  if (parts.length <= 1) return { apex: clean, brandName: clean };
+
+  const twoPartTlds = new Set(["co", "com", "net", "org", "gov", "edu", "ac"]);
+  let apex = clean;
+  let rawName = parts[0];
+
+  if (parts.length >= 3 && twoPartTlds.has(parts[parts.length - 2])) {
+    apex = parts.slice(-3).join(".");
+    rawName = parts[parts.length - 3];
+  } else if (parts.length >= 2) {
+    apex = parts.slice(-2).join(".");
+    rawName = parts[parts.length - 2];
+  }
+
+  const brandName = rawName
+    .replace(/[-_]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+
+  return { apex, brandName: brandName || "Daily" };
+}
+
 function autoBrand(host: string): Brand {
-  const label = host.split(".")[0] || host;
-  const name = label.charAt(0).toUpperCase() + label.slice(1);
+  const { apex, brandName } = getDomainParts(host);
   const h = hashStr(host);
   return {
-    name,
+    name: brandName,
     tagline: AUTO_TAGLINES[h % AUTO_TAGLINES.length],
-    email: `hello@${host}`,
-    host,
+    email: `contact@${apex}`,
+    host: apex,
     city: AUTO_CITIES[(h >>> 3) % AUTO_CITIES.length],
   };
 }
 
 export function brandForOrigin(origin: string): Brand {
   const host = hostOf(origin);
+  if (host.includes("dovtv.com")) return REGISTRY["dovtv.com"];
+  if (host.includes("adswapx.com")) return REGISTRY["adswapx.com"];
   if (REGISTRY[host]) return REGISTRY[host];
   if (host && host.includes(".")) return autoBrand(host);
   return DEFAULT_BRAND;
