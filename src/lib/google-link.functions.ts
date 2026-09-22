@@ -216,11 +216,108 @@ export const adminTraceRedirect = createServerFn({ method: "POST" })
     };
   });
 
+export function extractGoogleToken(input: string): { token?: string; error?: string } {
+  const trimmed = input.trim();
+  if (!trimmed) return {};
+
+  // If user pasted a full URL
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.hostname.includes("google.com") && parsed.pathname.includes("share.google")) {
+        const q = parsed.searchParams.get("q");
+        if (q) return { token: q.trim() };
+      } else if (parsed.hostname.includes("share.google")) {
+        const code = parsed.pathname.replace(/^\/+/, "").split("/")[0];
+        if (code) return { token: code.trim() };
+      } else {
+        return {
+          error: `The Google Code field cannot be an offer URL (${parsed.hostname}). Paste your Adsterra link in the Offer URL box, and paste an official Google token (e.g. wK9kr3kPN2R05JQc6) or share.google link here.`,
+        };
+      }
+    } catch {
+      return { error: "Invalid URL format." };
+    }
+  }
+
+  // Check if raw token is alphanumeric/dash/underscore (typically 6-32 chars)
+  if (/^[a-zA-Z0-9_-]{4,64}$/.test(trimmed)) {
+    return { token: trimmed };
+  }
+
+  return {
+    error: "Invalid Google Share token format. Expected an alphanumeric code (e.g. wK9kr3kPN2R05JQc6) or a share.google link.",
+  };
+}
+
+export async function verifyGoogleTokenLive(
+  token: string
+): Promise<{ valid: boolean; destination?: string; error?: string }> {
+  try {
+    const url = `https://www.google.com/share.google?q=${encodeURIComponent(token)}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    const res = await fetch(url, {
+      method: "GET",
+      redirect: "manual",
+      signal: controller.signal,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+    });
+    clearTimeout(timeout);
+
+    const location = res.headers.get("location") || "";
+    if (location.includes("share.google/error")) {
+      return {
+        valid: false,
+        error: "Google returned https://share.google/error: This token does not exist in Google's database.",
+      };
+    }
+
+    if (res.status >= 300 && res.status < 400 && location) {
+      return { valid: true, destination: location };
+    }
+
+    const body = await res.text();
+    if (body.includes("share.google/error")) {
+      return {
+        valid: false,
+        error: "Google returned https://share.google/error: Unregistered token.",
+      };
+    }
+
+    const match = body.match(/<A HREF="([^"]+)">here<\/A>/i);
+    if (match && match[1]) {
+      if (match[1].includes("share.google/error")) {
+        return {
+          valid: false,
+          error: "Google returned https://share.google/error: Unregistered token.",
+        };
+      }
+      return { valid: true, destination: match[1] };
+    }
+
+    return {
+      valid: false,
+      error: "Google did not return a valid 301 redirect for this token.",
+    };
+  } catch (err: any) {
+    return {
+      valid: false,
+      error: err.name === "AbortError" ? "Google verification timed out (>6s)" : err.message,
+    };
+  }
+}
+
 export const adminRegisterInhouseGoogleLink = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z
       .object({
-        googleUrl: z.string().min(5, "Must be a valid Google URL or share code"),
+        googleUrl: z.string().min(3, "Must be a valid Google URL or share code"),
         destinationUrl: z.string().url("Must be a valid destination URL"),
         mode: z.enum(["inhouse_share", "inhouse_script"]).default("inhouse_share"),
         notes: z.string().optional(),
@@ -232,17 +329,20 @@ export const adminRegisterInhouseGoogleLink = createServerFn({ method: "POST" })
 
     let cleanGoogleUrl = data.googleUrl.trim();
 
-    // If user provided a raw code e.g. "wK9kr3kPN2R05JQc6", format it
-    if (!cleanGoogleUrl.startsWith("http://") && !cleanGoogleUrl.startsWith("https://")) {
-      cleanGoogleUrl = `https://www.google.com/share.google?q=${cleanGoogleUrl}`;
-    } else if (cleanGoogleUrl.includes("share.google/") && !cleanGoogleUrl.includes("?q=")) {
-      try {
-        const parsed = new URL(cleanGoogleUrl);
-        const code = parsed.pathname.replace(/^\/+/, "").split("/")[0];
-        if (code) {
-          cleanGoogleUrl = `https://www.google.com/share.google?q=${code}`;
-        }
-      } catch {}
+    if (data.mode === "inhouse_share") {
+      const parsedToken = extractGoogleToken(cleanGoogleUrl);
+      if (parsedToken.error || !parsedToken.token) {
+        throw new Error(parsedToken.error || "Invalid Google Share token or URL");
+      }
+      const token = parsedToken.token;
+
+      // Live verify token against Google servers
+      const verify = await verifyGoogleTokenLive(token);
+      if (!verify.valid) {
+        throw new Error(`Google Verification Failed: ${verify.error}`);
+      }
+
+      cleanGoogleUrl = `https://www.google.com/share.google?q=${encodeURIComponent(token)}`;
     }
 
     const store = loadStore();
@@ -307,7 +407,7 @@ export const adminGenerateAutoGoogleShort = createServerFn({ method: "POST" })
         shortCode = parsed.pathname.replace(/^\/+/, "").split("/")[0] || "";
       } catch {}
     } else {
-      // Auto-create an AdsPx cloaked short link for this Adsterra offer!
+      // Auto-create an AdsPx cloaked short link for this Adsterra offer
       const chars = "abcdefghijkmnpqrstuvwxyz23456789";
       let code = "";
       for (let attempt = 0; attempt < 10; attempt++) {
@@ -344,26 +444,95 @@ export const adminGenerateAutoGoogleShort = createServerFn({ method: "POST" })
       destinationShortUrl = `https://${selectedDomain}/${code}`;
     }
 
-    // Google Share Link generation:
-    // Format: https://www.google.com/share.google?q=CODE
-    let rawCode = (data.googleShareCode || "").trim();
-    if (!rawCode) {
-      // If no custom Google App share code provided, generate a clean Google format token
-      rawCode = shortCode || Math.random().toString(36).slice(2, 10);
-    } else if (rawCode.includes("share.google?q=")) {
-      try {
-        const parsed = new URL(rawCode);
-        rawCode = parsed.searchParams.get("q") || rawCode;
-      } catch {}
-    } else if (rawCode.includes("share.google/")) {
-      try {
-        const parsed = new URL(rawCode);
-        rawCode = parsed.pathname.replace(/^\/+/, "").split("/")[0] || rawCode;
-      } catch {}
+    // Check if user passed a Google Share code/link
+    const rawGoogleInput = (data.googleShareCode || "").trim();
+
+    if (rawGoogleInput) {
+      const parsedToken = extractGoogleToken(rawGoogleInput);
+      if (parsedToken.error || !parsedToken.token) {
+        throw new Error(parsedToken.error || "Invalid Google Share token or URL");
+      }
+
+      const token = parsedToken.token;
+
+      // Live verification against Google servers
+      const verify = await verifyGoogleTokenLive(token);
+      if (!verify.valid) {
+        throw new Error(`Google Verification Failed: ${verify.error}`);
+      }
+
+      const officialGoogleUrl = `https://www.google.com/share.google?q=${encodeURIComponent(token)}`;
+      const nowIso = new Date().toISOString();
+
+      const newEntry: StoredGoogleLink = {
+        id: "gs_" + Math.random().toString(36).slice(2, 9),
+        original_url: destinationShortUrl,
+        google_url: officialGoogleUrl,
+        mode: "inhouse_share",
+        status: "active",
+        created_at: nowIso,
+        last_tested_at: nowIso,
+        hops_count: 2,
+        notes: data.notes || "AdsPx Google Share",
+      };
+
+      store.links.unshift(newEntry);
+      if (store.links.length > 50) store.links = store.links.slice(0, 50);
+      saveStore(store);
+
+      return {
+        success: true,
+        paired: true,
+        googleUrl: officialGoogleUrl,
+        destinationShortUrl,
+        shortCode,
+        adsterraOfferUrl: cleanOffer,
+        entry: newEntry,
+        message: "Google Share link verified and paired successfully!",
+      };
     }
 
-    const officialGoogleUrl = `https://www.google.com/share.google?q=${encodeURIComponent(rawCode)}`;
+    // If no Google token provided yet:
+    // We return the created AdsPx cloaked link so the user can easily share it on Android Google App
+    return {
+      success: true,
+      paired: false,
+      googleUrl: null,
+      destinationShortUrl,
+      shortCode,
+      adsterraOfferUrl: cleanOffer,
+      entry: null,
+      message: "Step 1 complete! AdsPx cloaked link created. Now pair with official Google Share.",
+    };
+  });
 
+export const adminVerifyAndPairGoogleToken = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        shortCode: z.string().min(1, "Short code is required"),
+        googleInput: z.string().min(1, "Google token or link is required"),
+        notes: z.string().optional(),
+      })
+      .parse(d)
+  )
+  .handler(async ({ data }) => {
+    await assertAdminRole();
+    const tokenRes = extractGoogleToken(data.googleInput);
+    if (tokenRes.error || !tokenRes.token) {
+      throw new Error(tokenRes.error || "Invalid Google token or link");
+    }
+    const token = tokenRes.token;
+
+    const verifyRes = await verifyGoogleTokenLive(token);
+    if (!verifyRes.valid) {
+      throw new Error(`Google Verification Failed: ${verifyRes.error}`);
+    }
+
+    const officialGoogleUrl = `https://www.google.com/share.google?q=${encodeURIComponent(token)}`;
+    const destinationShortUrl = `https://adswapx.com/${data.shortCode.trim()}`;
+
+    const store = loadStore();
     const nowIso = new Date().toISOString();
     const newEntry: StoredGoogleLink = {
       id: "gs_" + Math.random().toString(36).slice(2, 9),
@@ -385,7 +554,7 @@ export const adminGenerateAutoGoogleShort = createServerFn({ method: "POST" })
       success: true,
       googleUrl: officialGoogleUrl,
       destinationShortUrl,
-      adsterraOfferUrl: cleanOffer,
+      verifiedDestination: verifyRes.destination,
       entry: newEntry,
     };
   });

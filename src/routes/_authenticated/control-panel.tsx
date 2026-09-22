@@ -153,6 +153,7 @@ import {
   adminGetGoogleLinksState,
   adminDeleteGoogleLink,
   adminGenerateAutoGoogleShort,
+  adminVerifyAndPairGoogleToken,
   type TraceResult,
   type HopDetail,
   type StoredGoogleLink,
@@ -5066,11 +5067,28 @@ function GoogleLinksTab() {
   const registerFn = useServerFn(adminRegisterInhouseGoogleLink);
   const deleteFn = useServerFn(adminDeleteGoogleLink);
   const autoShortFn = useServerFn(adminGenerateAutoGoogleShort);
+  const verifyAndPairFn = useServerFn(adminVerifyAndPairGoogleToken);
+  const listDomainsFn = useServerFn(listShortenerDomains);
 
   const { data: state, isLoading } = useQuery({
     queryKey: ["admin-google-links-state"],
     queryFn: () => getGoogleStateFn(),
   });
+
+  // Dynamic domains query so admin can choose any active domain added to the platform
+  const domainsQ = useQuery({
+    queryKey: ["sd-list"],
+    queryFn: () => listDomainsFn(),
+    staleTime: 30_000,
+  });
+
+  const availableDomains = useMemo(() => {
+    const fromDb = (domainsQ.data?.domains ?? [])
+      .filter((d: any) => d.is_active)
+      .map((d: any) => d.domain);
+    const combined = ["adswapx.com", ...fromDb, "dovtv.com"];
+    return Array.from(new Set(combined.filter(Boolean)));
+  }, [domainsQ.data]);
 
   // 1-Click Auto Short Generator State (AdsPx Branding + adswapx.com)
   const [autoOfferUrl, setAutoOfferUrl] = useState("");
@@ -5078,10 +5096,15 @@ function GoogleLinksTab() {
   const [autoDomain, setAutoDomain] = useState("adswapx.com");
   const [autoNotes, setAutoNotes] = useState("");
   const [autoResult, setAutoResult] = useState<{
-    googleUrl: string;
+    paired: boolean;
+    googleUrl: string | null;
     destinationShortUrl: string;
+    shortCode: string;
     adsterraOfferUrl: string;
+    message?: string;
   } | null>(null);
+
+  const [step2Token, setStep2Token] = useState("");
 
   const [traceUrl, setTraceUrl] = useState("");
   const [traceResult, setTraceResult] = useState<TraceResult | null>(null);
@@ -5096,21 +5119,45 @@ function GoogleLinksTab() {
   const autoShortMut = useMutation({
     mutationFn: (data: { offerUrl: string; googleShareCode?: string; domain?: string; notes?: string }) =>
       autoShortFn({ data }),
-    onSuccess: (res) => {
+    onSuccess: (res: any) => {
       setAutoResult(res);
       setAutoOfferUrl("");
       setAutoGoogleShareCode("");
-      toast.success("AdsPx Google Share Link generated successfully!");
+      if (res.paired) {
+        toast.success("AdsPx Google Share Link generated & verified successfully!");
+      } else {
+        toast.success("AdsPx cloaked link created! Ready to pair with Google Share.");
+      }
       queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
     },
     onError: (err: any) => toast.error(err.message || "Failed to generate Google Short"),
+  });
+
+  const verifyAndPairMut = useMutation({
+    mutationFn: (data: { shortCode: string; googleInput: string; notes?: string }) =>
+      verifyAndPairFn({ data }),
+    onSuccess: (res: any) => {
+      setAutoResult({
+        paired: true,
+        googleUrl: res.googleUrl,
+        destinationShortUrl: res.destinationShortUrl,
+        shortCode: autoResult?.shortCode || "",
+        adsterraOfferUrl: autoResult?.adsterraOfferUrl || "",
+        message: "Google Share link verified & paired successfully!",
+      });
+      setStep2Token("");
+      toast.success("Google Share link verified & paired successfully!");
+      queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Google verification failed");
+    },
   });
 
   const copyToClipboard = (text: string, label: string = "Link") => {
     try {
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text).catch(() => {
-          // fallback
           const el = document.createElement("textarea");
           el.value = text;
           document.body.appendChild(el);
@@ -5200,6 +5247,11 @@ function GoogleLinksTab() {
   ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }`;
 
+  const isMistakenGoogleInput =
+    autoGoogleShareCode &&
+    /^https?:\/\//i.test(autoGoogleShareCode) &&
+    !autoGoogleShareCode.includes("google");
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -5219,7 +5271,7 @@ function GoogleLinksTab() {
               AdsPx <span className="text-gradient">Google Shorts</span>
             </h2>
             <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-              Official Google App Shortcuts (<code className="text-emerald-400 font-mono">www.google.com/share.google?q=CODE</code>) paired with AdsPx cloaked shortener (<code className="text-emerald-400 font-mono">adswapx.com</code>). Zero traffic stealing, 0ms click delay.
+              Official Google App Shortcuts (<code className="text-emerald-400 font-mono">www.google.com/share.google?q=CODE</code>) paired with AdsPx cloaked shortener. Zero traffic stealing, 0ms click delay.
             </p>
           </div>
         </div>
@@ -5237,7 +5289,7 @@ function GoogleLinksTab() {
         </div>
         <div className="rounded-2xl border border-border/80 bg-card/70 p-4 shadow-md">
           <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-emerald-400">
-            <Zap className="h-4 w-4" /> 2. Zero Traffic Loss (<code className="text-foreground">adswapx.com</code>)
+            <Zap className="h-4 w-4" /> 2. Zero Traffic Loss (<code className="text-foreground">{autoDomain}</code>)
           </div>
           <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
             Unlike 3rd party shorteners that steal clicks or use slow iframes, our Nitro engine delivers direct HTTP 301 bounces with <strong className="text-foreground">&lt;50ms</strong> latency straight to your Adsterra direct link.
@@ -5262,14 +5314,14 @@ function GoogleLinksTab() {
                 <Sparkles className="h-3 w-3 animate-pulse" /> 1-Click Auto Shortener
               </span>
               <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary">
-                Brand: AdsPx · Domain: adswapx.com
+                Brand: AdsPx · Active Domain: {autoDomain}
               </span>
             </div>
             <h3 className="text-xl sm:text-2xl font-black text-foreground mt-2 flex items-center gap-2">
               <Zap className="h-6 w-6 text-emerald-400" /> Google Share Link Maker
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">
-              Paste your Adsterra CPA direct link. AdsPx will generate a cloaked <strong className="text-foreground">adswapx.com</strong> link and format it into an official <strong className="text-foreground">google.com/share.google</strong> URL ready for Facebook posts!
+              Paste your Adsterra CPA direct link. AdsPx will generate a cloaked <strong className="text-foreground">{autoDomain}</strong> link and pair it with an official <strong className="text-foreground">google.com/share.google</strong> URL ready for Facebook posts!
             </p>
           </div>
 
@@ -5296,31 +5348,43 @@ function GoogleLinksTab() {
 
           <div className="md:col-span-4 space-y-1">
             <Label className="text-xs font-bold text-foreground">
-              Cloak Domain
+              Cloak Domain (Select from Active Domains)
             </Label>
             <select
               value={autoDomain}
               onChange={(e) => setAutoDomain(e.target.value)}
               className="w-full h-11 rounded-xl border border-input bg-background px-3 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
-              <option value="adswapx.com">adswapx.com (Primary Shortener)</option>
-              <option value="dovtv.com">dovtv.com (Alternative)</option>
+              {availableDomains.map((d) => (
+                <option key={d} value={d}>
+                  {d} {d === "adswapx.com" ? "(Primary)" : ""}
+                </option>
+              ))}
             </select>
+            <p className="text-[10px] text-muted-foreground">
+              Any custom domain added in the Domains tab will appear here.
+            </p>
           </div>
 
           <div className="md:col-span-6 space-y-1">
             <Label className="text-xs font-bold text-foreground">
-              Custom Google App Share Code / Link (Optional)
+              Official Google Share Code / Link (Optional)
             </Label>
             <Input
               value={autoGoogleShareCode}
               onChange={(e) => setAutoGoogleShareCode(e.target.value)}
-              placeholder="e.g. wK9kr3kPN2R05JQc6 or leave empty for auto-generated code"
+              placeholder="e.g. wK9kr3kPN2R05JQc6 or leave empty to generate cloaked link first"
               className="text-xs font-mono h-10"
             />
-            <p className="text-[10px] text-muted-foreground">
-              If you have a code from Android Google App Share, paste it here. Or leave empty for auto-generated Google token.
-            </p>
+            {isMistakenGoogleInput ? (
+              <div className="text-[11px] font-semibold text-amber-400 bg-amber-950/40 border border-amber-500/30 rounded-lg p-2 mt-1">
+                ⚠️ Notice: This box is only for official Google Share tokens (e.g. <code className="text-white">wK9kr3kPN2R05JQc6</code>) or <code className="text-white">share.google</code> links. Your Adsterra CPA link goes in the Offer URL field above.
+              </div>
+            ) : (
+              <p className="text-[10px] text-muted-foreground">
+                Paste official 16-char Google token (e.g. <code className="text-emerald-400">wK9kr3kPN2R05JQc6</code>) or leave empty to create cloaked link first, then pair with 1 click.
+              </p>
+            )}
           </div>
 
           <div className="md:col-span-3 space-y-1">
@@ -5354,7 +5418,7 @@ function GoogleLinksTab() {
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4" /> 1-Click Generate Google Short
+                  <Sparkles className="h-4 w-4" /> Generate Google Short
                 </>
               )}
             </Button>
@@ -5364,82 +5428,160 @@ function GoogleLinksTab() {
         {/* 1-Click Auto Result Card */}
         {autoResult && (
           <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-950/30 p-5 space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
-              <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase text-emerald-400">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Google Short Created Successfully!
-              </span>
-              <span className="text-[11px] font-mono text-emerald-300/80 font-bold">
-                Meta Post Safe · 0ms CPA Bounce
-              </span>
-            </div>
+            {autoResult.paired && autoResult.googleUrl ? (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase text-emerald-400">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Google Short Verified &amp; Active!
+                  </span>
+                  <span className="text-[11px] font-mono text-emerald-300/80 font-bold">
+                    Official Google DA 100 · 0ms CPA Bounce
+                  </span>
+                </div>
 
-            {/* Main Google Short Link Box */}
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">
-                Official Google Domain Link (Post this on Facebook):
-              </span>
-              <div className="flex items-center gap-2">
-                <Input
-                  readOnly
-                  value={autoResult.googleUrl}
-                  className="font-mono text-xs h-11 bg-background/80 text-emerald-400 border-emerald-500/50 select-all font-bold"
-                />
-                <Button
-                  className="h-11 px-5 text-xs font-bold gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white shadow-glow"
-                  onClick={() => copyToClipboard(autoResult.googleUrl, "Google Short URL")}
-                >
-                  <Copy className="h-4 w-4" /> Copy Google Short
-                </Button>
-              </div>
-            </div>
+                {/* Main Google Short Link Box */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">
+                    Official Google Domain Link (Post this on Facebook):
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      readOnly
+                      value={autoResult.googleUrl}
+                      className="font-mono text-xs h-11 bg-background/80 text-emerald-400 border-emerald-500/50 select-all font-bold"
+                    />
+                    <Button
+                      className="h-11 px-5 text-xs font-bold gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white shadow-glow"
+                      onClick={() => copyToClipboard(autoResult.googleUrl!, "Google Short URL")}
+                    >
+                      <Copy className="h-4 w-4" /> Copy Google Short
+                    </Button>
+                  </div>
+                </div>
 
-            {/* Architecture Details */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs font-mono">
-              <div className="p-3 rounded-xl bg-card/60 border border-border/80">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-                  AdsPx Cloaked Bridge (Meta Safe Page):
-                </span>
-                <div className="text-foreground break-all mt-0.5 font-bold">
-                  {autoResult.destinationShortUrl}
+                {/* Architecture Details */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs font-mono">
+                  <div className="p-3 rounded-xl bg-card/60 border border-border/80">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                      AdsPx Cloaked Bridge (Meta Safe Page):
+                    </span>
+                    <div className="text-foreground break-all mt-0.5 font-bold">
+                      {autoResult.destinationShortUrl}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-card/60 border border-border/80">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                      Target Adsterra Offer Destination:
+                    </span>
+                    <div className="text-muted-foreground break-all mt-0.5 truncate">
+                      {autoResult.adsterraOfferUrl}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <ShieldCheck className="h-4 w-4 text-emerald-400" /> Facebook crawler sees 200 OK Safe Page · Real mobile users bounce to Adsterra
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs font-semibold gap-1.5"
+                      onClick={() => {
+                        setTraceUrl(autoResult.googleUrl!);
+                        traceMut.mutate(autoResult.googleUrl!);
+                      }}
+                    >
+                      <Play className="h-3 w-3" /> Test in Tracer
+                    </Button>
+                    <a
+                      href={`https://developers.facebook.com/tools/debug/?q=${encodeURIComponent(autoResult.googleUrl)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                    >
+                      <ExternalLink className="h-3 w-3" /> Meta Debugger
+                    </a>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* 2-Step Pairing Wizard when no Google Code was entered initially */
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase text-emerald-400">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Step 1 Complete: AdsPx Cloaked Link is Active!
+                  </span>
+                  <span className="text-[11px] font-mono text-emerald-300/80 font-bold">
+                    Now Connect with Official Google Share
+                  </span>
+                </div>
+
+                {/* Step 1 Details */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Your Cloaked Link on {autoDomain}:
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      readOnly
+                      value={autoResult.destinationShortUrl}
+                      className="font-mono text-xs h-10 bg-background/80 text-foreground border-border select-all font-bold"
+                    />
+                    <Button
+                      variant="outline"
+                      className="h-10 px-4 text-xs font-bold gap-2 shrink-0"
+                      onClick={() => copyToClipboard(autoResult.destinationShortUrl, "Cloaked Short Link")}
+                    >
+                      <Copy className="h-4 w-4" /> Copy Link
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Step 2 Pairing Box */}
+                <div className="rounded-xl border border-primary/30 bg-primary/10 p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-primary">
+                    <Sparkles className="h-4 w-4" /> Step 2: Connect with Official Google Share (DA 100 on Facebook)
+                  </div>
+                  <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside leading-relaxed">
+                    <li>Open your link (<code className="text-foreground font-mono">{autoResult.destinationShortUrl}</code>) on your Android phone in the <strong>Google App</strong> or <strong>Chrome</strong>.</li>
+                    <li>Tap the <strong>Share</strong> icon and select <strong>Copy Link</strong> (Google App will auto-shorten it).</li>
+                    <li>Paste the resulting Google link or 16-character code below and click verify:</li>
+                  </ol>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                    <Input
+                      value={step2Token}
+                      onChange={(e) => setStep2Token(e.target.value)}
+                      placeholder="Paste e.g. wK9kr3kPN2R05JQc6 or https://share.google/..."
+                      className="text-xs font-mono h-10 bg-background"
+                    />
+                    <Button
+                      className="w-full sm:w-auto h-10 px-6 text-xs font-bold gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white shadow-glow"
+                      disabled={!step2Token.trim() || verifyAndPairMut.isPending}
+                      onClick={() =>
+                        verifyAndPairMut.mutate({
+                          shortCode: autoResult.shortCode,
+                          googleInput: step2Token.trim(),
+                        })
+                      }
+                    >
+                      {verifyAndPairMut.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" /> Verifying with Google...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-4 w-4" /> Verify with Google &amp; Connect Link
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
-              <div className="p-3 rounded-xl bg-card/60 border border-border/80">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-                  Target Adsterra Offer Destination:
-                </span>
-                <div className="text-muted-foreground break-all mt-0.5 truncate">
-                  {autoResult.adsterraOfferUrl}
-                </div>
-              </div>
-            </div>
-
-            {/* Action Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                <ShieldCheck className="h-4 w-4 text-emerald-400" /> Facebook crawler sees 200 OK Safe Page · Real mobile users bounce to Adsterra
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 text-xs font-semibold gap-1.5"
-                  onClick={() => {
-                    setTraceUrl(autoResult.googleUrl);
-                    traceMut.mutate(autoResult.googleUrl);
-                  }}
-                >
-                  <Play className="h-3 w-3" /> Test in Tracer
-                </Button>
-                <a
-                  href={`https://developers.facebook.com/tools/debug/?q=${encodeURIComponent(autoResult.googleUrl)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                >
-                  <ExternalLink className="h-3 w-3" /> Meta Debugger
-                </a>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>
