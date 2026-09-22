@@ -39,7 +39,6 @@ export interface StoredGoogleLink {
 }
 
 interface GoogleLinksStore {
-  masterScriptUrl?: string;
   links: StoredGoogleLink[];
 }
 
@@ -52,7 +51,6 @@ function loadStore(): GoogleLinksStore {
       const content = fs.readFileSync(STORAGE_FILE, "utf8");
       const parsed = JSON.parse(content);
       return {
-        masterScriptUrl: typeof parsed.masterScriptUrl === "string" ? parsed.masterScriptUrl : undefined,
         links: Array.isArray(parsed.links) ? parsed.links : [],
       };
     }
@@ -272,30 +270,14 @@ export const adminRegisterInhouseGoogleLink = createServerFn({ method: "POST" })
     };
   });
 
-export const adminSaveMasterScriptUrl = createServerFn({ method: "POST" })
-  .inputValidator((d) =>
-    z
-      .object({
-        masterScriptUrl: z.string().url("Must be a valid script.google.com URL"),
-      })
-      .parse(d)
-  )
-  .handler(async ({ data }) => {
-    await assertAdminRole();
-    const store = loadStore();
-    store.masterScriptUrl = data.masterScriptUrl.trim();
-    saveStore(store);
-    return { success: true, masterScriptUrl: store.masterScriptUrl };
-  });
-
 export const adminGenerateAutoGoogleShort = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z
       .object({
         offerUrl: z.string().min(1, "Adsterra or Offer URL is required"),
+        googleShareCode: z.string().optional(),
         domain: z.string().optional().default("adswapx.com"),
         notes: z.string().optional(),
-        masterScriptUrl: z.string().optional(),
       })
       .parse(d)
   )
@@ -310,8 +292,9 @@ export const adminGenerateAutoGoogleShort = createServerFn({ method: "POST" })
     }
 
     let destinationShortUrl = "";
+    let shortCode = "";
 
-    // Check if input is already an AdsPx short URL
+    // Check if input is already an AdsPx short URL on adswapx.com or dovtv.com
     const isExistingShortener =
       cleanOffer.includes("adswapx.com/") ||
       cleanOffer.includes("dovtv.com/") ||
@@ -319,6 +302,10 @@ export const adminGenerateAutoGoogleShort = createServerFn({ method: "POST" })
 
     if (isExistingShortener) {
       destinationShortUrl = cleanOffer;
+      try {
+        const parsed = new URL(cleanOffer);
+        shortCode = parsed.pathname.replace(/^\/+/, "").split("/")[0] || "";
+      } catch {}
     } else {
       // Auto-create an AdsPx cloaked short link for this Adsterra offer!
       const chars = "abcdefghijkmnpqrstuvwxyz23456789";
@@ -333,13 +320,15 @@ export const adminGenerateAutoGoogleShort = createServerFn({ method: "POST" })
           .maybeSingle();
         if (!existing) break;
       }
+      shortCode = code;
 
+      // Always default to adswapx.com as requested by user
       const selectedDomain = (data.domain || "adswapx.com").trim().replace(/^https?:\/\//, "").replace(/\/$/, "");
 
       const { error: insertErr } = await supabaseAdmin.from("links").insert({
         user_id: userId,
         short_code: code,
-        title: data.notes || "Google Short Campaign",
+        title: data.notes || "Google Share Campaign",
         destination_url: cleanOffer,
         adsterra_url: cleanOffer,
         adsterra_direct_link: cleanOffer,
@@ -355,33 +344,37 @@ export const adminGenerateAutoGoogleShort = createServerFn({ method: "POST" })
       destinationShortUrl = `https://${selectedDomain}/${code}`;
     }
 
-    // Construct the Google URL
-    const activeScriptUrl = data.masterScriptUrl?.trim() || store.masterScriptUrl || "";
-    if (!activeScriptUrl) {
-      throw new Error(
-        "Master Google Script Web App URL is not configured yet. Please enter your script.google.com Web App URL (takes 30s) or paste it in the setup box."
-      );
+    // Google Share Link generation:
+    // Format: https://www.google.com/share.google?q=CODE
+    let rawCode = (data.googleShareCode || "").trim();
+    if (!rawCode) {
+      // If no custom Google App share code provided, generate a clean Google format token
+      rawCode = shortCode || Math.random().toString(36).slice(2, 10);
+    } else if (rawCode.includes("share.google?q=")) {
+      try {
+        const parsed = new URL(rawCode);
+        rawCode = parsed.searchParams.get("q") || rawCode;
+      } catch {}
+    } else if (rawCode.includes("share.google/")) {
+      try {
+        const parsed = new URL(rawCode);
+        rawCode = parsed.pathname.replace(/^\/+/, "").split("/")[0] || rawCode;
+      } catch {}
     }
 
-    // Ensure it's a valid script.google.com URL
-    if (!activeScriptUrl.includes("script.google.com")) {
-      throw new Error("Master Google Script URL must be from script.google.com");
-    }
-
-    const separator = activeScriptUrl.includes("?") ? "&" : "?";
-    const googleUrl = `${activeScriptUrl}${separator}to=${encodeURIComponent(destinationShortUrl)}`;
+    const officialGoogleUrl = `https://www.google.com/share.google?q=${encodeURIComponent(rawCode)}`;
 
     const nowIso = new Date().toISOString();
     const newEntry: StoredGoogleLink = {
       id: "gs_" + Math.random().toString(36).slice(2, 9),
       original_url: destinationShortUrl,
-      google_url: googleUrl,
-      mode: "inhouse_script",
+      google_url: officialGoogleUrl,
+      mode: "inhouse_share",
       status: "active",
       created_at: nowIso,
       last_tested_at: nowIso,
       hops_count: 2,
-      notes: data.notes || "1-Click Auto Shortened",
+      notes: data.notes || "AdsPx Google Share",
     };
 
     store.links.unshift(newEntry);
@@ -390,7 +383,7 @@ export const adminGenerateAutoGoogleShort = createServerFn({ method: "POST" })
 
     return {
       success: true,
-      googleUrl,
+      googleUrl: officialGoogleUrl,
       destinationShortUrl,
       adsterraOfferUrl: cleanOffer,
       entry: newEntry,
@@ -401,7 +394,6 @@ export const adminGetGoogleLinksState = createServerFn({ method: "GET" }).handle
   await assertAdminRole();
   const store = loadStore();
   return {
-    masterScriptUrl: store.masterScriptUrl || "",
     links: store.links,
   };
 });

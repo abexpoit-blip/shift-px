@@ -152,7 +152,6 @@ import {
   adminRegisterInhouseGoogleLink,
   adminGetGoogleLinksState,
   adminDeleteGoogleLink,
-  adminSaveMasterScriptUrl,
   adminGenerateAutoGoogleShort,
   type TraceResult,
   type HopDetail,
@@ -5066,7 +5065,6 @@ function GoogleLinksTab() {
   const traceFn = useServerFn(adminTraceRedirect);
   const registerFn = useServerFn(adminRegisterInhouseGoogleLink);
   const deleteFn = useServerFn(adminDeleteGoogleLink);
-  const saveMasterScriptFn = useServerFn(adminSaveMasterScriptUrl);
   const autoShortFn = useServerFn(adminGenerateAutoGoogleShort);
 
   const { data: state, isLoading } = useQuery({
@@ -5074,12 +5072,11 @@ function GoogleLinksTab() {
     queryFn: () => getGoogleStateFn(),
   });
 
-  // 1-Click Auto Short Generator State
+  // 1-Click Auto Short Generator State (AdsPx Branding + adswapx.com)
   const [autoOfferUrl, setAutoOfferUrl] = useState("");
+  const [autoGoogleShareCode, setAutoGoogleShareCode] = useState("");
   const [autoDomain, setAutoDomain] = useState("adswapx.com");
   const [autoNotes, setAutoNotes] = useState("");
-  const [masterScriptInput, setMasterScriptInput] = useState("");
-  const [isEditingMasterScript, setIsEditingMasterScript] = useState(false);
   const [autoResult, setAutoResult] = useState<{
     googleUrl: string;
     destinationShortUrl: string;
@@ -5096,23 +5093,14 @@ function GoogleLinksTab() {
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [showAppsScriptGuide, setShowAppsScriptGuide] = useState(false);
 
-  const saveMasterMut = useMutation({
-    mutationFn: (url: string) => saveMasterScriptFn({ data: { masterScriptUrl: url } }),
-    onSuccess: () => {
-      toast.success("Master Google Script Web App URL saved!");
-      setIsEditingMasterScript(false);
-      queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
-    },
-    onError: (err: any) => toast.error(err.message || "Failed to save Master Script URL"),
-  });
-
   const autoShortMut = useMutation({
-    mutationFn: (data: { offerUrl: string; domain?: string; notes?: string; masterScriptUrl?: string }) =>
+    mutationFn: (data: { offerUrl: string; googleShareCode?: string; domain?: string; notes?: string }) =>
       autoShortFn({ data }),
     onSuccess: (res) => {
       setAutoResult(res);
       setAutoOfferUrl("");
-      toast.success("1-Click Google Short generated successfully!");
+      setAutoGoogleShareCode("");
+      toast.success("AdsPx Google Share Link generated successfully!");
       queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
     },
     onError: (err: any) => toast.error(err.message || "Failed to generate Google Short"),
@@ -5221,70 +5209,20 @@ function GoogleLinksTab() {
           <div>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">
-                <Sparkles className="h-3 w-3" /> 100% In-House Engine · Zero Third-Party Dependency
+                <Sparkles className="h-3 w-3" /> AdsPx In-House Google Engine · Zero 3rd Party
               </span>
               <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary">
                 Google Official DA 100
               </span>
             </div>
             <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-[var(--foreground)]">
-              Google <span className="text-gradient">Shorts</span>
+              AdsPx <span className="text-gradient">Google Shorts</span>
             </h2>
             <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-              Official Google App URL Shortcuts (<code className="text-emerald-400 font-mono">share.google</code> / <code className="text-emerald-400 font-mono">google.com/share.google</code>) &amp; Google Script Bridges. Bypasses Facebook domain filters with zero click delay.
+              Official Google App Shortcuts (<code className="text-emerald-400 font-mono">www.google.com/share.google?q=CODE</code>) paired with AdsPx cloaked shortener (<code className="text-emerald-400 font-mono">adswapx.com</code>). Zero traffic stealing, 0ms click delay.
             </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowAppsScriptGuide(!showAppsScriptGuide)}
-              className="gap-2 border-border/80 text-xs font-semibold"
-            >
-              <Key className="h-3.5 w-3.5 text-primary" />
-              {showAppsScriptGuide ? "Hide Script Guide" : "Free Apps Script Engine"}
-            </Button>
           </div>
         </div>
-
-        {/* Free Apps Script Engine Modal / Drawer */}
-        {showAppsScriptGuide && (
-          <div className="mt-4 rounded-2xl border border-primary/30 bg-card/90 p-4 shadow-lg animate-in fade-in slide-in-from-top-2 space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-foreground flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-emerald-400" /> Free In-House Google Script Redirect Engine
-              </h4>
-              <button
-                onClick={() => setShowAppsScriptGuide(false)}
-                className="text-muted-foreground hover:text-foreground text-xs"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              You can create your own permanent, unlimited Google domain links hosted directly on <strong className="text-foreground">script.google.com</strong> (100% official Google server) without paying any third-party service:
-            </p>
-            <ol className="text-[11px] text-muted-foreground space-y-1 list-decimal list-inside">
-              <li>Open <a href="https://script.google.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">script.google.com</a> with any Google/Gmail account.</li>
-              <li>Click <strong>New project</strong> and paste the 5-line script below.</li>
-              <li>Click <strong>Deploy &rarr; New deployment &rarr; Web app</strong> (Access: Anyone).</li>
-              <li>Copy the generated <code className="text-emerald-400">https://script.google.com/macros/s/.../exec</code> URL and use it directly on Facebook!</li>
-            </ol>
-            <div className="relative">
-              <pre className="p-3 bg-muted/70 rounded-xl text-[11px] font-mono overflow-x-auto text-foreground border border-border">
-                {sampleAppsScriptCode}
-              </pre>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => copyToClipboard(sampleAppsScriptCode, "Script code")}
-                className="absolute top-2 right-2 h-7 text-xs px-2.5"
-              >
-                <Copy className="h-3 w-3 mr-1" /> Copy Code
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* In-House Architecture Insight Cards */}
@@ -5294,109 +5232,53 @@ function GoogleLinksTab() {
             <ShieldCheck className="h-4 w-4" /> 1. Meta Post Whitelist
           </div>
           <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            Meta’s automated post scanner inspects the root domain. Because links start with <strong className="text-foreground">www.google.com</strong>, <strong className="text-foreground">share.google</strong>, or <strong className="text-foreground">script.google.com</strong>, Facebook never flags them as spam.
+            Facebook’s post validator inspects the root domain. Because links start with <strong className="text-foreground">www.google.com/share.google</strong> (DA 100), Meta never flags your posts as spam or rejects them.
           </p>
         </div>
         <div className="rounded-2xl border border-border/80 bg-card/70 p-4 shadow-md">
           <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-emerald-400">
-            <Zap className="h-4 w-4" /> 2. Zero Traffic Loss (&lt;300ms)
+            <Zap className="h-4 w-4" /> 2. Zero Traffic Loss (<code className="text-foreground">adswapx.com</code>)
           </div>
           <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            Unlike Google Sites which requires a manual button click (losing 20-30% of traffic), Google App Shortcuts execute an instant HTTP 301 redirect directly from Google Web Server (<code className="text-foreground">gws</code>).
+            Unlike 3rd party shorteners that steal clicks or use slow iframes, our Nitro engine delivers direct HTTP 301 bounces with <strong className="text-foreground">&lt;50ms</strong> latency straight to your Adsterra direct link.
           </p>
         </div>
         <div className="rounded-2xl border border-border/80 bg-card/70 p-4 shadow-md">
           <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-purple-400">
-            <Crown className="h-4 w-4" /> 3. AdsPx In-House Cloaking
+            <Crown className="h-4 w-4" /> 3. AdsPx Deep Bot Shield
           </div>
           <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            Best Practice: Route Google Link &rarr; AdsPx Short Link (<code className="text-foreground">adswapx.com/abc</code>). Meta deep crawlers see our fact-checked safe page, while mobile users bounce instantly to Adsterra.
+            Facebook bots following the Google redirect are served a 200 OK fact-checked news article with matching OpenGraph tags. Real mobile visitors bypass straight to the Adsterra CPA offer.
           </p>
         </div>
       </div>
 
-      {/* TOOL 0: 1-Click Auto Google Short Generator (Adsterra & CPA Offers) */}
+      {/* TOOL 0: AdsPx 1-Click Auto Google Short Generator (Adsterra & CPA Offers) */}
       <div className="rounded-3xl border-2 border-emerald-500/40 bg-gradient-to-b from-emerald-950/25 via-card/85 to-card/95 backdrop-blur-xl p-6 sm:p-7 shadow-2xl space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-400">
-                <Sparkles className="h-3 w-3 animate-pulse" /> 1-Click Auto Generator
+                <Sparkles className="h-3 w-3 animate-pulse" /> 1-Click Auto Shortener
               </span>
               <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary">
-                Adsterra &amp; CPA Ready
+                Brand: AdsPx · Domain: adswapx.com
               </span>
             </div>
             <h3 className="text-xl sm:text-2xl font-black text-foreground mt-2 flex items-center gap-2">
-              <Zap className="h-6 w-6 text-emerald-400" /> Auto Google Short Maker
+              <Zap className="h-6 w-6 text-emerald-400" /> Google Share Link Maker
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">
-              Paste your raw Adsterra direct link or offer URL. The engine auto-creates a cloaked AdsPx safe page and wraps it with your official Google Domain redirect.
+              Paste your Adsterra CPA direct link. AdsPx will generate a cloaked <strong className="text-foreground">adswapx.com</strong> link and format it into an official <strong className="text-foreground">google.com/share.google</strong> URL ready for Facebook posts!
             </p>
           </div>
 
-          {/* Master Engine Status */}
           <div className="text-right">
-            {state?.masterScriptUrl ? (
-              <div className="inline-flex flex-col items-end">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-xs font-bold shadow-sm">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Master Google Engine Active
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMasterScriptInput(state.masterScriptUrl || "");
-                    setIsEditingMasterScript(!isEditingMasterScript);
-                  }}
-                  className="text-[11px] text-primary hover:underline mt-1 font-semibold"
-                >
-                  {isEditingMasterScript ? "Cancel Edit" : "Change Engine URL"}
-                </button>
-              </div>
-            ) : (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold">
-                <AlertTriangle className="h-3.5 w-3.5" /> Engine Setup Needed
-              </div>
-            )}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-xs font-bold shadow-sm">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> 100% In-House Clean Engine
+            </div>
           </div>
         </div>
-
-        {/* Master Script Setup Box (if not configured or editing) */}
-        {(!state?.masterScriptUrl || isEditingMasterScript) && (
-          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-2 animate-in fade-in">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-bold text-foreground flex items-center gap-2">
-                <Key className="h-4 w-4 text-amber-400" /> Configure Master Google Apps Script Web App URL
-              </Label>
-              <button
-                type="button"
-                onClick={() => setShowAppsScriptGuide(true)}
-                className="text-[11px] text-primary font-bold hover:underline"
-              >
-                Need Help? View 30s Guide
-              </button>
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Paste your deployed <code className="text-foreground">https://script.google.com/macros/s/.../exec</code> URL once. All 1-click links will automatically generate through this engine.
-            </p>
-            <div className="flex gap-2">
-              <Input
-                value={masterScriptInput}
-                onChange={(e) => setMasterScriptInput(e.target.value)}
-                placeholder="https://script.google.com/macros/s/AKfyc.../exec"
-                className="text-xs font-mono h-9"
-              />
-              <Button
-                size="sm"
-                disabled={!masterScriptInput.trim() || saveMasterMut.isPending}
-                onClick={() => saveMasterMut.mutate(masterScriptInput.trim())}
-                className="h-9 px-4 text-xs font-bold shrink-0"
-              >
-                {saveMasterMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save Master Engine"}
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* The 1-Click Form */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
@@ -5414,7 +5296,7 @@ function GoogleLinksTab() {
 
           <div className="md:col-span-4 space-y-1">
             <Label className="text-xs font-bold text-foreground">
-              Cloak Safe Domain
+              Cloak Domain
             </Label>
             <select
               value={autoDomain}
@@ -5426,34 +5308,49 @@ function GoogleLinksTab() {
             </select>
           </div>
 
-          <div className="md:col-span-8 space-y-1">
+          <div className="md:col-span-6 space-y-1">
             <Label className="text-xs font-bold text-foreground">
-              Campaign Name / Admin Note (Optional)
+              Custom Google App Share Code / Link (Optional)
+            </Label>
+            <Input
+              value={autoGoogleShareCode}
+              onChange={(e) => setAutoGoogleShareCode(e.target.value)}
+              placeholder="e.g. wK9kr3kPN2R05JQc6 or leave empty for auto-generated code"
+              className="text-xs font-mono h-10"
+            />
+            <p className="text-[10px] text-muted-foreground">
+              If you have a code from Android Google App Share, paste it here. Or leave empty for auto-generated Google token.
+            </p>
+          </div>
+
+          <div className="md:col-span-3 space-y-1">
+            <Label className="text-xs font-bold text-foreground">
+              Campaign Label (Optional)
             </Label>
             <Input
               value={autoNotes}
               onChange={(e) => setAutoNotes(e.target.value)}
-              placeholder="e.g. Adsterra Push VIP Campaign"
+              placeholder="e.g. Adsterra VIP 1"
               className="text-xs h-10"
             />
           </div>
 
-          <div className="md:col-span-4 flex items-end">
+          <div className="md:col-span-3 flex items-end">
             <Button
               className="w-full h-10 text-xs font-black gap-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-glow"
               disabled={!autoOfferUrl.trim() || autoShortMut.isPending}
               onClick={() =>
                 autoShortMut.mutate({
                   offerUrl: autoOfferUrl.trim(),
+                  googleShareCode: autoGoogleShareCode.trim() || undefined,
                   domain: autoDomain,
                   notes: autoNotes.trim() || undefined,
-                  masterScriptUrl: state?.masterScriptUrl || undefined,
                 })
               }
             >
               {autoShortMut.isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Generating Auto Link...
+                  <Loader2 className="h-4 w-4 animate-spin" /> Generating...
                 </>
               ) : (
                 <>
