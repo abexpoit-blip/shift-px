@@ -68,7 +68,12 @@ export function buildAdsterraOfferUrl(
   if (!destinationUrl) return destinationUrl;
 
   try {
-    const raw = destinationUrl.trim();
+    let raw = destinationUrl.trim();
+    // Auto-fix accidentally doubled/concatenated URLs (e.g. "https://abc.com/offerhttps://abc.com/offer")
+    const secondHttpIdx = raw.indexOf("http", 4);
+    if (secondHttpIdx !== -1) {
+      raw = raw.slice(0, secondHttpIdx).trim();
+    }
     const normalizedDest = /^https?:\/\//i.test(raw) ? raw : "https://" + raw;
     const targetUrl = new URL(normalizedDest);
 
