@@ -149,12 +149,12 @@ import {
 } from "@/lib/admin.functions";
 import {
   adminTraceRedirect,
-  adminGenerateGoogleLink,
+  adminRegisterInhouseGoogleLink,
   adminGetGoogleLinksState,
-  adminSaveGoogleApiKey,
   adminDeleteGoogleLink,
   type TraceResult,
   type HopDetail,
+  type StoredGoogleLink,
 } from "@/lib/google-link.functions";
 import { startImpersonation } from "@/lib/impersonation";
 import { getAppSettings, updateAppSettings } from "@/lib/app-settings.functions";
@@ -5062,8 +5062,7 @@ function GoogleLinksTab() {
   const queryClient = useQueryClient();
   const getGoogleStateFn = useServerFn(adminGetGoogleLinksState);
   const traceFn = useServerFn(adminTraceRedirect);
-  const generateFn = useServerFn(adminGenerateGoogleLink);
-  const saveKeyFn = useServerFn(adminSaveGoogleApiKey);
+  const registerFn = useServerFn(adminRegisterInhouseGoogleLink);
   const deleteFn = useServerFn(adminDeleteGoogleLink);
 
   const { data: state, isLoading } = useQuery({
@@ -5071,16 +5070,14 @@ function GoogleLinksTab() {
     queryFn: () => getGoogleStateFn(),
   });
 
-  const [traceUrl, setTraceUrl] = useState(
-    "https://www.google.com/share.google?q=wK9kr3kPN2R05JQc6"
-  );
+  const [traceUrl, setTraceUrl] = useState("");
   const [traceResult, setTraceResult] = useState<TraceResult | null>(null);
 
+  const [googleInputUrl, setGoogleInputUrl] = useState("");
   const [destUrl, setDestUrl] = useState("");
   const [notes, setNotes] = useState("");
-  const [showKeyConfig, setShowKeyConfig] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState("");
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [showAppsScriptGuide, setShowAppsScriptGuide] = useState(false);
 
   const copyToClipboard = (text: string, label: string = "Link") => {
     navigator.clipboard.writeText(text);
@@ -5094,50 +5091,48 @@ function GoogleLinksTab() {
     onSuccess: (res) => {
       setTraceResult(res);
       toast.success("Redirect chain traced successfully!");
-      queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to trace URL redirect");
     },
   });
 
-  const genMut = useMutation({
-    mutationFn: (data: { destinationUrl: string; notes?: string }) =>
-      generateFn({ data }),
+  const registerMut = useMutation({
+    mutationFn: (data: { googleUrl: string; destinationUrl: string; notes?: string }) =>
+      registerFn({ data }),
     onSuccess: (res) => {
-      toast.success("Google Link created successfully!");
+      toast.success("In-House Google Short registered successfully!");
+      setGoogleInputUrl("");
       setDestUrl("");
       setNotes("");
       queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
     },
     onError: (err: any) => {
-      toast.error(err.message || "Failed to generate Google Link");
-    },
-  });
-
-  const saveKeyMut = useMutation({
-    mutationFn: (apiKey: string) => saveKeyFn({ data: { apiKey } }),
-    onSuccess: () => {
-      toast.success("Gshort API key saved!");
-      setShowKeyConfig(false);
-      setApiKeyInput("");
-      queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
-    },
-    onError: (err: any) => {
-      toast.error(err.message || "Failed to save API key");
+      toast.error(err.message || "Failed to register Google Short");
     },
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteFn({ data: { id } }),
     onSuccess: () => {
-      toast.success("Link deleted from history");
+      toast.success("Link deleted from in-house registry");
       queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete link");
     },
   });
+
+  const sampleAppsScriptCode = `function doGet(e) {
+  // 100% In-House Google Redirector on script.google.com (DA 100)
+  var target = e.parameter.to || "${destUrl || 'https://adswapx.com'}";
+  return HtmlService.createHtmlOutput(
+    '<!DOCTYPE html><html><head>' +
+    '<meta http-equiv="refresh" content="0;url=' + target + '">' +
+    '<script>location.replace("' + target + '");<\\/script>' +
+    '</head><body><p>Redirecting to secure article...</p></body></html>'
+  );
+}`;
 
   return (
     <div className="space-y-6">
@@ -5148,106 +5143,80 @@ function GoogleLinksTab() {
           <div>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">
-                <Sparkles className="h-3 w-3" /> Internal Lab · Testing Mode
+                <Sparkles className="h-3 w-3" /> 100% In-House Engine · Zero Third-Party Dependency
               </span>
               <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary">
-                DA 100 Post Whitelist
+                Google Official DA 100
               </span>
             </div>
             <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-[var(--foreground)]">
               Google <span className="text-gradient">Shorts</span>
             </h2>
             <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-              Official Google App URL Shortcuts (<code className="text-emerald-400 font-mono">share.google</code> / <code className="text-emerald-400 font-mono">google.com/share.google</code>). Bypasses Facebook domain filters with zero click delay.
+              Official Google App URL Shortcuts (<code className="text-emerald-400 font-mono">share.google</code> / <code className="text-emerald-400 font-mono">google.com/share.google</code>) &amp; Google Script Bridges. Bypasses Facebook domain filters with zero click delay.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowKeyConfig(!showKeyConfig)}
+              onClick={() => setShowAppsScriptGuide(!showAppsScriptGuide)}
               className="gap-2 border-border/80 text-xs font-semibold"
             >
               <Key className="h-3.5 w-3.5 text-primary" />
-              {state?.hasApiKey ? "API Key Configured" : "Setup Gshort API Key"}
+              {showAppsScriptGuide ? "Hide Script Guide" : "Free Apps Script Engine"}
             </Button>
           </div>
         </div>
 
-        {/* API Key Drawer/Inline Modal */}
-        {showKeyConfig && (
-          <div className="mt-4 rounded-2xl border border-primary/30 bg-card/90 p-4 shadow-lg animate-in fade-in slide-in-from-top-2">
+        {/* Free Apps Script Engine Modal / Drawer */}
+        {showAppsScriptGuide && (
+          <div className="mt-4 rounded-2xl border border-primary/30 bg-card/90 p-4 shadow-lg animate-in fade-in slide-in-from-top-2 space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold text-foreground flex items-center gap-2">
-                <Key className="h-4 w-4 text-primary" /> Gshort.net Partner API Key
+                <Sparkles className="h-4 w-4 text-emerald-400" /> Free In-House Google Script Redirect Engine
               </h4>
               <button
-                onClick={() => setShowKeyConfig(false)}
+                onClick={() => setShowAppsScriptGuide(false)}
                 className="text-muted-foreground hover:text-foreground text-xs"
               >
                 ✕
               </button>
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Gshort.net automates the generation of official <code className="text-emerald-400">google.com/share.google</code> links. You can obtain an API key from Gshort.net Developer API settings.
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              You can create your own permanent, unlimited Google domain links hosted directly on <strong className="text-foreground">script.google.com</strong> (100% official Google server) without paying any third-party service:
             </p>
-            <div className="mt-3 flex gap-2">
-              <Input
-                type="password"
-                placeholder={state?.maskedApiKey || "Paste your Gshort API Bearer Key..."}
-                value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
-                className="text-xs h-9"
-              />
+            <ol className="text-[11px] text-muted-foreground space-y-1 list-decimal list-inside">
+              <li>Open <a href="https://script.google.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">script.google.com</a> with any Google/Gmail account.</li>
+              <li>Click <strong>New project</strong> and paste the 5-line script below.</li>
+              <li>Click <strong>Deploy &rarr; New deployment &rarr; Web app</strong> (Access: Anyone).</li>
+              <li>Copy the generated <code className="text-emerald-400">https://script.google.com/macros/s/.../exec</code> URL and use it directly on Facebook!</li>
+            </ol>
+            <div className="relative">
+              <pre className="p-3 bg-muted/70 rounded-xl text-[11px] font-mono overflow-x-auto text-foreground border border-border">
+                {sampleAppsScriptCode}
+              </pre>
               <Button
                 size="sm"
-                className="h-9 px-4 text-xs font-bold shrink-0"
-                disabled={!apiKeyInput.trim() || saveKeyMut.isPending}
-                onClick={() => saveKeyMut.mutate(apiKeyInput.trim())}
+                variant="outline"
+                onClick={() => copyToClipboard(sampleAppsScriptCode, "Script code")}
+                className="absolute top-2 right-2 h-7 text-xs px-2.5"
               >
-                {saveKeyMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save Key"}
+                <Copy className="h-3 w-3 mr-1" /> Copy Code
               </Button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Behind the Scenes: How Gshort Works A-Z */}
-      <div className="rounded-3xl border border-emerald-500/30 bg-emerald-500/5 p-5 shadow-lg space-y-3">
-        <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-emerald-400">
-          <Info className="h-4 w-4" /> Behind The Scenes: How Google Shorts Works A-Z
-        </div>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          Gshort.net does not own Google’s servers. They run a background worker queue (<code className="text-foreground">queued &rarr; processing &rarr; ready</code>) that automates Android Google App share sessions. When a destination URL is passed, the worker opens it in the Android Google App, triggers the native share intent, catches the generated <code className="text-foreground">https://share.google/CODE</code> shortcut, and converts it into <code className="text-foreground">https://www.google.com/share.google?q=CODE</code>.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-          <div className="rounded-xl border border-border/80 bg-card/80 p-3 text-xs space-y-1">
-            <strong className="text-foreground flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-primary" /> Option A: Automated via Gshort API
-            </strong>
-            <p className="text-muted-foreground text-[11px]">
-              Requires a Gshort API key (from their $50/100k links plan or trial). Instant generation directly through our Admin UI.
-            </p>
-          </div>
-          <div className="rounded-xl border border-border/80 bg-card/80 p-3 text-xs space-y-1">
-            <strong className="text-foreground flex items-center gap-1.5">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Option B: 100% Free Android Generation
-            </strong>
-            <p className="text-muted-foreground text-[11px]">
-              Open your AdsPx link on your Android Google App &rarr; Tap 3 dots &rarr; Share &rarr; Copy Link. Paste the generated Google URL into our Tracer to verify and pair it with your campaign.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Architecture Insight Cards */}
+      {/* In-House Architecture Insight Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-2xl border border-border/80 bg-card/70 p-4 shadow-md">
           <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-primary">
             <ShieldCheck className="h-4 w-4" /> 1. Meta Post Whitelist
           </div>
           <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            Meta’s automated post scanner reviews the root domain. Because links start with <strong className="text-foreground">www.google.com</strong> or <strong className="text-foreground">share.google</strong>, Facebook never flags them as suspicious or spam.
+            Meta’s automated post scanner inspects the root domain. Because links start with <strong className="text-foreground">www.google.com</strong>, <strong className="text-foreground">share.google</strong>, or <strong className="text-foreground">script.google.com</strong>, Facebook never flags them as spam.
           </p>
         </div>
         <div className="rounded-2xl border border-border/80 bg-card/70 p-4 shadow-md">
@@ -5260,7 +5229,7 @@ function GoogleLinksTab() {
         </div>
         <div className="rounded-2xl border border-border/80 bg-card/70 p-4 shadow-md">
           <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-purple-400">
-            <Crown className="h-4 w-4" /> 3. AdsPx Hybrid Shield
+            <Crown className="h-4 w-4" /> 3. AdsPx In-House Cloaking
           </div>
           <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
             Best Practice: Route Google Link &rarr; AdsPx Short Link (<code className="text-foreground">adswapx.com/abc</code>). Meta deep crawlers see our fact-checked safe page, while mobile users bounce instantly to Adsterra.
@@ -5289,7 +5258,7 @@ function GoogleLinksTab() {
             <Input
               value={traceUrl}
               onChange={(e) => setTraceUrl(e.target.value)}
-              placeholder="https://www.google.com/share.google?q=..."
+              placeholder="Paste any Google Link to inspect (e.g. https://www.google.com/share.google?q=... or https://share.google/...)"
               className="text-xs font-mono h-10 pr-8"
             />
             {traceUrl && (
@@ -5427,34 +5396,51 @@ function GoogleLinksTab() {
         )}
       </div>
 
-      {/* TOOL 2: Google Link Generator (Gshort Partner API) */}
+      {/* TOOL 2: In-House Google Shorts Pairer & Register */}
       <div className="rounded-3xl border border-border/80 bg-card/70 backdrop-blur-xl p-6 shadow-xl space-y-4">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">
-            Generator Engine
+            In-House Pairing Engine
           </span>
           <h3 className="text-lg font-extrabold text-foreground flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-emerald-400" /> Create Google Share Link
+            <Sparkles className="h-5 w-5 text-emerald-400" /> Register &amp; Pair In-House Google Short
           </h3>
           <p className="text-xs text-muted-foreground">
-            Generate a new <code className="text-emerald-400">google.com/share.google?q=...</code> link. Points to your AdsPx short URL or direct offer URL.
+            Pair your AdsPx short link (<code className="text-emerald-400">adswapx.com/your-code</code>) with any official Google Short URL or code.
           </p>
         </div>
 
         <div className="space-y-3">
-          <div>
-            <Label className="text-xs font-bold text-foreground">
-              Destination URL (Your AdsPx Link or Offer)
-            </Label>
-            <Input
-              value={destUrl}
-              onChange={(e) => setDestUrl(e.target.value)}
-              placeholder="https://adswapx.com/abc or https://dovtv.com/xyz"
-              className="text-xs font-mono h-10 mt-1"
-            />
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Tip: Using your AdsPx domain (<code className="text-foreground">https://adswapx.com/your-code</code>) ensures Facebook bots see your fact-checked safe page while real mobile traffic hits Adsterra.
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs font-bold text-foreground">
+                Google Short URL or Code
+              </Label>
+              <Input
+                value={googleInputUrl}
+                onChange={(e) => setGoogleInputUrl(e.target.value)}
+                placeholder="e.g. wK9kr3kPN2R05JQc6 or https://share.google/..."
+                className="text-xs font-mono h-10 mt-1"
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Generated from Android Google App Share or Google Script Web App.
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-xs font-bold text-foreground">
+                Target AdsPx Link or Offer Destination
+              </Label>
+              <Input
+                value={destUrl}
+                onChange={(e) => setDestUrl(e.target.value)}
+                placeholder="https://adswapx.com/abc or https://dovtv.com/xyz"
+                className="text-xs font-mono h-10 mt-1"
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                All real traffic will flow safely to this destination.
+              </p>
+            </div>
           </div>
 
           <div>
@@ -5462,36 +5448,30 @@ function GoogleLinksTab() {
             <Input
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. VIP Ad Campaign Test #1"
+              placeholder="e.g. High-Volume FB Ad Campaign #1"
               className="text-xs h-9 mt-1"
             />
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="text-xs text-muted-foreground">
-              {state?.hasApiKey ? (
-                <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Gshort API Key Ready ({state.maskedApiKey})
-                </span>
-              ) : (
-                <span className="text-amber-400 font-semibold flex items-center gap-1.5">
-                  <AlertTriangle className="h-3.5 w-3.5" /> Please configure your Gshort API Key first
-                </span>
-              )}
-            </div>
-
+          <div className="flex justify-end pt-2">
             <Button
               className="h-10 px-6 text-xs font-bold gap-2 shadow-glow"
-              disabled={!destUrl.trim() || genMut.isPending}
-              onClick={() => genMut.mutate({ destinationUrl: destUrl.trim(), notes: notes.trim() || undefined })}
+              disabled={!googleInputUrl.trim() || !destUrl.trim() || registerMut.isPending}
+              onClick={() =>
+                registerMut.mutate({
+                  googleUrl: googleInputUrl.trim(),
+                  destinationUrl: destUrl.trim(),
+                  notes: notes.trim() || undefined,
+                })
+              }
             >
-              {genMut.isPending ? (
+              {registerMut.isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Generating Google Link...
+                  <Loader2 className="h-4 w-4 animate-spin" /> Registering In-House Link...
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-3.5 w-3.5" /> Generate Google Link
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Save &amp; Activate Google Short
                 </>
               )}
             </Button>
@@ -5504,24 +5484,24 @@ function GoogleLinksTab() {
         <div className="flex items-center justify-between">
           <div>
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-              Registry
+              In-House Registry
             </span>
             <h3 className="text-lg font-extrabold text-foreground flex items-center gap-2">
-              <Link2 className="h-5 w-5 text-primary" /> Stored Google Links History
+              <Link2 className="h-5 w-5 text-primary" /> Active Google Shorts Directory
             </h3>
           </div>
           <div className="text-xs font-mono text-muted-foreground">
-            Total Saved: {state?.links?.length || 0}
+            Total In-House Links: {state?.links?.length || 0}
           </div>
         </div>
 
         {isLoading ? (
           <div className="py-8 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading Google links...
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading Google Shorts...
           </div>
         ) : !state?.links || state.links.length === 0 ? (
           <div className="py-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-2xl">
-            No Google links stored yet. Use the tracer or generator above to inspect or create links.
+            No Google Shorts registered yet. Pair your first Google link above or inspect a redirect chain.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-border">
@@ -5529,7 +5509,7 @@ function GoogleLinksTab() {
               <thead className="bg-muted/60 text-muted-foreground font-semibold border-b border-border">
                 <tr>
                   <th className="p-3">Google Short Link</th>
-                  <th className="p-3">Destination</th>
+                  <th className="p-3">AdsPx Destination</th>
                   <th className="p-3">Mode</th>
                   <th className="p-3">Status</th>
                   <th className="p-3">Latency</th>
@@ -5572,7 +5552,7 @@ function GoogleLinksTab() {
                     </td>
                     <td className="p-3">
                       <span className="rounded bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[10px] font-bold uppercase">
-                        {link.mode}
+                        {link.mode === "inhouse_share" ? "Google Share" : link.mode === "inhouse_script" ? "Google Script" : "Tracer"}
                       </span>
                     </td>
                     <td className="p-3">
