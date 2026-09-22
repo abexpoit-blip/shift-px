@@ -333,7 +333,7 @@ const NAV_GROUPS: Array<{
   {
     label: "Growth & Cloaking Labs",
     items: [
-      { value: "google_links", label: "Google Link Lab", icon: Sparkles },
+      { value: "google_links", label: "Google Shorts", icon: Sparkles },
     ],
   },
   {
@@ -5148,14 +5148,14 @@ function GoogleLinksTab() {
           <div>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">
-                <Sparkles className="h-3 w-3" /> Experimental Lab · Internal Only
+                <Sparkles className="h-3 w-3" /> Internal Lab · Testing Mode
               </span>
               <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary">
-                DA 100 Whitelist
+                DA 100 Post Whitelist
               </span>
             </div>
             <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-[var(--foreground)]">
-              Google Link <span className="text-gradient">Bridge & Inspector</span>
+              Google <span className="text-gradient">Shorts</span>
             </h2>
             <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
               Official Google App URL Shortcuts (<code className="text-emerald-400 font-mono">share.google</code> / <code className="text-emerald-400 font-mono">google.com/share.google</code>). Bypasses Facebook domain filters with zero click delay.
@@ -5210,6 +5210,34 @@ function GoogleLinksTab() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Behind the Scenes: How Gshort Works A-Z */}
+      <div className="rounded-3xl border border-emerald-500/30 bg-emerald-500/5 p-5 shadow-lg space-y-3">
+        <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-emerald-400">
+          <Info className="h-4 w-4" /> Behind The Scenes: How Google Shorts Works A-Z
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Gshort.net does not own Google’s servers. They run a background worker queue (<code className="text-foreground">queued &rarr; processing &rarr; ready</code>) that automates Android Google App share sessions. When a destination URL is passed, the worker opens it in the Android Google App, triggers the native share intent, catches the generated <code className="text-foreground">https://share.google/CODE</code> shortcut, and converts it into <code className="text-foreground">https://www.google.com/share.google?q=CODE</code>.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+          <div className="rounded-xl border border-border/80 bg-card/80 p-3 text-xs space-y-1">
+            <strong className="text-foreground flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5 text-primary" /> Option A: Automated via Gshort API
+            </strong>
+            <p className="text-muted-foreground text-[11px]">
+              Requires a Gshort API key (from their $50/100k links plan or trial). Instant generation directly through our Admin UI.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/80 bg-card/80 p-3 text-xs space-y-1">
+            <strong className="text-foreground flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Option B: 100% Free Android Generation
+            </strong>
+            <p className="text-muted-foreground text-[11px]">
+              Open your AdsPx link on your Android Google App &rarr; Tap 3 dots &rarr; Share &rarr; Copy Link. Paste the generated Google URL into our Tracer to verify and pair it with your campaign.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Architecture Insight Cards */}
