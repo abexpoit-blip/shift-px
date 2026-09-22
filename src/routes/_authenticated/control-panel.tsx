@@ -5189,11 +5189,27 @@ function GoogleLinksTab() {
   // 100% In-House Google Redirector on script.google.com (DA 100)
   var target = e.parameter.to || "${effectiveScriptUrl}";
   return HtmlService.createHtmlOutput(
-    '<!DOCTYPE html><html><head>' +
-    '<meta http-equiv="refresh" content="0;url=' + target + '">' +
-    '<script>location.replace("' + target + '");<\\/script>' +
-    '</head><body><p>Redirecting to secure article...</p></body></html>'
-  );
+    '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+    '<title>Redirecting...</title>' +
+    '<script>' +
+    'try { window.top.location.href = "' + target + '"; } catch(e) {}' +
+    '</script>' +
+    '<style>' +
+    'body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#090d16;color:#fff;}' +
+    '.card{text-align:center;padding:28px;background:#111827;border-radius:16px;border:1px solid #374151;max-width:360px;}' +
+    '.btn{display:inline-block;margin-top:16px;padding:12px 24px;background:#10b981;color:#fff;text-decoration:none;border-radius:10px;font-weight:bold;font-size:14px;}' +
+    '</style>' +
+    '</head><body>' +
+    '<div class="card">' +
+    '<p style="font-size:14px;opacity:0.8;">Redirecting to content...</p>' +
+    '<a id="btn" class="btn" href="' + target + '" target="_top">Click here to continue &rarr;</a>' +
+    '</div>' +
+    '<script>' +
+    'try { window.top.location.href = "' + target + '"; } catch(e) {}' +
+    'setTimeout(function(){ try { document.getElementById("btn").click(); } catch(e) {} }, 50);' +
+    '</script>' +
+    '</body></html>'
+  ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }`;
 
   return (
