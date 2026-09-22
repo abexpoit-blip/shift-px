@@ -1946,123 +1946,132 @@ const HERO_FALLBACK_SRC =
 
 // Publisher brand rotation — deterministic per short_code. Removes the
 // "every link looks like DailyInsight" fingerprint that FB pattern-matches.
-type Brand = { name: string; accent: string; accentDark: string; tagline: string; email: string };
-const BRANDS: Brand[] = [
+export type Brand = {
+  name: string;
+  accent: string;
+  accentDark: string;
+  tagline: string;
+  email: string;
+};
+
+export const BRANDS: Brand[] = [
   {
     name: "Apex Journal",
     accent: "#0284c7",
     accentDark: "#0369a1",
     tagline: "Insight for modern living",
-    email: "contact@apexjournal.example",
+    email: "contact@apexjournal.com",
   },
   {
     name: "Metro Tribune",
     accent: "#b91c1c",
     accentDark: "#7f1d1d",
     tagline: "Independent daily news & culture",
-    email: "desk@metrotribune.example",
+    email: "desk@metrotribune.com",
   },
   {
     name: "The Daily Insight",
     accent: "#059669",
     accentDark: "#047857",
     tagline: "Essential daily dispatches",
-    email: "editors@dailyinsight.example",
+    email: "editors@dailyinsight.com",
   },
   {
     name: "Veritas Report",
     accent: "#d97706",
     accentDark: "#b45309",
     tagline: "Evidence-based reporting & analysis",
-    email: "press@veritasreport.example",
+    email: "press@veritasreport.com",
   },
   {
     name: "Vanguard Times",
     accent: "#4f46e5",
     accentDark: "#3730a3",
     tagline: "Perspectives on what matters today",
-    email: "info@vanguardtimes.example",
+    email: "info@vanguardtimes.com",
   },
   {
     name: "Chronicle Post",
     accent: "#be185d",
     accentDark: "#9d174d",
     tagline: "Stories across the globe",
-    email: "news@chroniclepost.example",
+    email: "news@chroniclepost.com",
   },
   {
     name: "The Global Ledger",
     accent: "#0891b2",
     accentDark: "#0e7490",
     tagline: "Markets, innovation, society",
-    email: "dispatch@globalledger.example",
+    email: "dispatch@globalledger.com",
   },
   {
     name: "Horizon Herald",
     accent: "#16a34a",
     accentDark: "#15803d",
     tagline: "Clear reporting for curious readers",
-    email: "editor@horizonherald.example",
+    email: "editor@horizonherald.com",
   },
   {
     name: "Beacon Media",
     accent: "#0f766e",
     accentDark: "#134e4a",
     tagline: "Practical news, every morning",
-    email: "team@beaconmedia.example",
+    email: "team@beaconmedia.com",
   },
   {
     name: "The Weekly Note",
     accent: "#1d4ed8",
     accentDark: "#1e3a8a",
     tagline: "Clear reporting, honest tone",
-    email: "editor@weeklynote.example",
+    email: "editor@weeklynote.com",
   },
   {
     name: "OpenDesk Review",
     accent: "#7c3aed",
     accentDark: "#4c1d95",
     tagline: "Everyday stories that matter",
-    email: "desk@opendeskreview.example",
+    email: "desk@opendeskreview.com",
   },
   {
     name: "SignalPost",
     accent: "#c2410c",
     accentDark: "#7c2d12",
     tagline: "Signal over noise",
-    email: "contact@signalpost.example",
+    email: "contact@signalpost.com",
   },
   {
     name: "The Quiet Column",
     accent: "#065f46",
     accentDark: "#064e3b",
     tagline: "Slow reporting, plain language",
-    email: "notes@quietcolumn.example",
+    email: "notes@quietcolumn.com",
   },
   {
     name: "Northside Reader",
     accent: "#9d174d",
     accentDark: "#701a35",
     tagline: "Local stories, told simply",
-    email: "mail@northsidereader.example",
+    email: "mail@northsidereader.com",
   },
   {
     name: "Everyday Journal",
     accent: "#4338ca",
     accentDark: "#312e81",
     tagline: "Useful writing for ordinary days",
-    email: "hello@everydayjournal.example",
+    email: "hello@everydayjournal.com",
   },
   {
     name: "Pulse Chronicle",
     accent: "#e11d48",
     accentDark: "#9f1239",
     tagline: "Living, learning, thriving",
-    email: "team@pulsechronicle.example",
+    email: "team@pulsechronicle.com",
   },
 ];
 
-const DOVTV_BRANDS: Brand[] = [
+// Primary Shortener 1: dovtv.com
+// Angle: Entertainment, Streaming, Movies, Sports, Pop Culture & Media
+export const DOVTV_BRANDS: Brand[] = [
   {
     name: "DovTV News",
     accent: "#1d4ed8",
@@ -2071,33 +2080,152 @@ const DOVTV_BRANDS: Brand[] = [
     email: "editorial@dovtv.com",
   },
   {
-    name: "DovTV Digital",
-    accent: "#0284c7",
-    accentDark: "#0369a1",
-    tagline: "Independent daily reports & technology trends",
-    email: "desk@dovtv.com",
+    name: "DovTV Entertainment",
+    accent: "#e11d48",
+    accentDark: "#9f1239",
+    tagline: "Streaming, cinema, culture & creator spotlights",
+    email: "media@dovtv.com",
   },
   {
-    name: "DovTV Chronicle",
-    accent: "#0f766e",
-    accentDark: "#134e4a",
-    tagline: "Clear reporting for curious minds",
-    email: "features@dovtv.com",
+    name: "DovTV Sports Dispatch",
+    accent: "#059669",
+    accentDark: "#047857",
+    tagline: "Live analysis, sports coverage & athlete stories",
+    email: "sports@dovtv.com",
   },
   {
-    name: "DovTV Journal",
+    name: "DovTV Digital Journal",
     accent: "#4f46e5",
     accentDark: "#3730a3",
-    tagline: "Global perspectives & everyday stories",
-    email: "editor@dovtv.com",
+    tagline: "Independent daily reports & trending culture",
+    email: "desk@dovtv.com",
   },
 ];
 
-function pickBrand(code: string, origin?: string): Brand {
-  if (origin && /dovtv\.com/i.test(origin)) {
+// Primary Shortener 2: adswapx.com
+// Angle: Digital Trends, Tech, Finance, Business & Career, Modern Lifestyle
+export const ADSWAPX_BRANDS: Brand[] = [
+  {
+    name: "AdSwapX Daily Journal",
+    accent: "#4f46e5",
+    accentDark: "#3730a3",
+    tagline: "Independent analysis, digital economy & modern business",
+    email: "editorial@adswapx.com",
+  },
+  {
+    name: "AdSwapX Tech Review",
+    accent: "#0284c7",
+    accentDark: "#0369a1",
+    tagline: "In-depth reporting on modern tech, AI & digital tools",
+    email: "desk@adswapx.com",
+  },
+  {
+    name: "AdSwapX Global Media",
+    accent: "#0d9488",
+    accentDark: "#0f766e",
+    tagline: "Global perspectives, finance & modern market insights",
+    email: "press@adswapx.com",
+  },
+  {
+    name: "AdSwapX Chronicle",
+    accent: "#7c3aed",
+    accentDark: "#5b21b6",
+    tagline: "Curated technology trends & future lifestyles",
+    email: "editor@adswapx.com",
+  },
+];
+
+function cleanHost(origin?: string): string {
+  if (!origin) return "";
+  return origin
+    .replace(/^https?:\/\//i, "")
+    .split(/[:/]/)[0]
+    .trim()
+    .toLowerCase();
+}
+
+function getApexDomain(host: string): string {
+  const parts = host.split(".").filter(Boolean);
+  if (parts.length <= 2) return host;
+  return parts.slice(-2).join(".");
+}
+
+function titleCase(str: string): string {
+  return str
+    .replace(/[-_]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function generateCustomDomainBrand(host: string, code: string): Brand {
+  const apex = getApexDomain(host);
+  const baseName = apex.split(".")[0] || "Daily";
+  const formattedName = titleCase(baseName);
+  const h = hashCode(`custombrand:${host}:${code}`);
+
+  const isSports = /sport|cricket|football|match|game|score|ball/i.test(host);
+  const isHealth = /beauty|natural|health|wellness|fit|diet|care/i.test(host);
+  const isTech = /tech|lab|cloud|swap|byte|data|code/i.test(host);
+  const isMedia = /movie|cinema|film|stream|watch|play|tv|vibe|music|song|viral/i.test(host);
+
+  let accent = "#0284c7";
+  let accentDark = "#0369a1";
+  let suffix = "Journal";
+  let tagline = "Independent reporting, daily features & verified news";
+
+  if (isSports) {
+    accent = "#059669";
+    accentDark = "#047857";
+    suffix = ["Sports Dispatch", "Athletic Journal", "Match Chronicle", "Sports Review"][h % 4];
+    tagline = "Sports coverage, match highlights & athletic news";
+  } else if (isHealth) {
+    accent = "#e11d48";
+    accentDark = "#9f1239";
+    suffix = ["Wellness Journal", "Living & Health", "Daily Chronicle", "Lifestyle Review"][h % 4];
+    tagline = "Natural wellness, lifestyle insights & healthy living";
+  } else if (isTech) {
+    accent = "#2563eb";
+    accentDark = "#1e40af";
+    suffix = ["Tech Review", "Digital Chronicle", "Innovation Post", "Global Desk"][h % 4];
+    tagline = "Technology analysis, digital insights & innovations";
+  } else if (isMedia) {
+    accent = "#7c3aed";
+    accentDark = "#5b21b6";
+    suffix = ["Media Desk", "Entertainment Review", "Pulse Chronicle", "Culture Weekly"][h % 4];
+    tagline = "Streaming, culture, media & daily features";
+  } else {
+    suffix = ["Journal", "Daily Post", "Chronicle", "Media Desk"][h % 4];
+    tagline = "Essential daily dispatches & verified reporting";
+  }
+
+  return {
+    name: `${formattedName} ${suffix}`,
+    accent,
+    accentDark,
+    tagline,
+    email: `editorial@${apex}`,
+  };
+}
+
+export function pickBrand(code: string, origin?: string): Brand {
+  const host = cleanHost(origin);
+  if (host.includes("dovtv.com")) {
     return DOVTV_BRANDS[hashCode(`dovbrand:${code}`) % DOVTV_BRANDS.length];
   }
-  return BRANDS[hashCode(`brand:${code}`) % BRANDS.length];
+  if (host.includes("adswapx.com")) {
+    return ADSWAPX_BRANDS[hashCode(`adswapxbrand:${code}`) % ADSWAPX_BRANDS.length];
+  }
+  if (host && host !== "localhost" && !host.startsWith("127.") && !host.startsWith("109.205.")) {
+    return generateCustomDomainBrand(host, code);
+  }
+  const brand = BRANDS[hashCode(`brand:${code}`) % BRANDS.length];
+  return {
+    ...brand,
+    email: host ? `editorial@${getApexDomain(host)}` : `editorial@dovtv.com`,
+  };
 }
 
 // Deterministically pick OG variant for this short_code. Same code → same variant.
@@ -2111,18 +2239,85 @@ function pickVariant(template: string, code: string): OgVariant | null {
 // article templates. Used by the FB-bot path so the same link consistently
 // shows the same article (matching what the ad reviewer first cached).
 export function pickArticleTemplateForCode(code: string, origin?: string): PrelandingTemplate {
-  if (origin && /dovtv\.com/i.test(origin)) {
+  const host = cleanHost(origin);
+
+  if (host.includes("dovtv.com")) {
     const dovList: PrelandingTemplate[] = [
+      "article_sports",
+      "article_movies",
+      "article_music",
+      "article_celebrity",
       "article_dovtv_pulse",
       "article_dovtv_culture",
-      "article_news",
-      "article_tech",
       "article_lifestyle",
-      "article_health",
+      "article_news",
     ];
     return dovList[hashCode(`dovtpl:${code}`) % dovList.length];
   }
-  const list = ARTICLE_TEMPLATES;
+
+  if (host.includes("adswapx.com")) {
+    const adswapxList: PrelandingTemplate[] = [
+      "article_news",
+      "article_tech",
+      "article_finance",
+      "article_business",
+      "article_lifestyle",
+      "article_science",
+      "article_education",
+    ];
+    return adswapxList[hashCode(`adswapxtpl:${code}`) % adswapxList.length];
+  }
+
+  if (host) {
+    if (/sport|cricket|football|match|game|score|ball/i.test(host)) {
+      const list: PrelandingTemplate[] = [
+        "article_sports",
+        "article_fitness",
+        "article_cycling",
+        "article_news",
+      ];
+      return list[hashCode(`sporttpl:${code}`) % list.length];
+    }
+    if (/beauty|natural|health|wellness|fit|diet|care/i.test(host)) {
+      const list: PrelandingTemplate[] = [
+        "article_health",
+        "article_lifestyle",
+        "article_fitness",
+        "article_cooking",
+        "article_gardening",
+      ];
+      return list[hashCode(`healthtpl:${code}`) % list.length];
+    }
+    if (/tech|lab|cloud|swap|byte|data|code/i.test(host)) {
+      const list: PrelandingTemplate[] = [
+        "article_tech",
+        "article_science",
+        "article_finance",
+        "article_business",
+      ];
+      return list[hashCode(`techtpl:${code}`) % list.length];
+    }
+    if (/movie|cinema|film|stream|watch|play|tv|vibe|music|song|viral/i.test(host)) {
+      const list: PrelandingTemplate[] = [
+        "article_movies",
+        "article_music",
+        "article_celebrity",
+        "article_dovtv_culture",
+        "article_dovtv_pulse",
+      ];
+      return list[hashCode(`movietpl:${code}`) % list.length];
+    }
+  }
+
+  const list: PrelandingTemplate[] = [
+    "article_news",
+    "article_lifestyle",
+    "article_tech",
+    "article_health",
+    "article_sports",
+    "article_travel",
+    "article_science",
+  ];
   return list[hashCode(`tpl:${code}`) % list.length];
 }
 
@@ -2377,9 +2572,9 @@ ${robots}
   .highlights ul{list-style:none;padding:0}
   .highlights li{padding:8px 0 8px 28px;position:relative;font-size:.98rem;color:#334155;font-weight:500}
   .highlights li:before{content:'✓';position:absolute;left:0;color:var(--accent);font-weight:900;font-size:1.05rem}
-  .ad-slot{background:#f8fafc;border:1px solid #e2e8f0;text-align:center;padding:18px;margin:28px 0;border-radius:6px;color:#94a3b8;font-size:.7rem;letter-spacing:1px;text-transform:uppercase}
-  .ad-slot small{display:block;margin-bottom:8px;color:#94a3b8}
-  .ad-slot-inner{height:80px;display:flex;align-items:center;justify-content:center;background:#ffffff;border:1px dashed #cbd5e1;color:#94a3b8;border-radius:4px;font-weight:600}
+  .fact-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:20px 22px;margin:28px 0}
+  .fact-header{display:flex;align-items:center;gap:8px;color:#166534;font-size:.92rem;font-weight:700;margin-bottom:6px}
+  .fact-box p{margin:0;font-size:.92rem;color:#14532d;line-height:1.55}
   .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:32px;padding-top:22px;border-top:1px solid #f1f5f9}
   .tag{font-size:.78rem;font-weight:600;color:#475569;background:#f1f5f9;padding:6px 14px;border-radius:20px;text-decoration:none;border:1px solid #e2e8f0}
   aside{position:relative}
@@ -2411,11 +2606,11 @@ ${robots}
 </style>
 ${skinCss(code)}
 </head><body>
-<div class="topbar"><span class="topbar-dot" aria-hidden="true"></span>${brand.tagline} &middot; Editorial Desk &middot; Updated daily</div>
+<div class="topbar"><span class="topbar-dot" aria-hidden="true"></span>${brand.tagline} &middot; Verified Newsroom &middot; Updated daily</div>
 <nav class="nav"><div class="nav-inner">
   <div class="logo">${brand.name}</div>
   <div class="nav-links">
-    <a href="/">Home</a><a href="/about">About</a><a href="/contact">Editorial Desk</a>
+    <a href="/">Home</a><a href="/about">About Us</a><a href="/contact">Editorial Desk</a>
     <a href="/privacy">Privacy Policy</a><a href="/terms">Terms</a>
   </div>
 </div></nav>
@@ -2429,21 +2624,27 @@ ${skinCss(code)}
   <div class="byline">
     <span class="avatar">${initials}</span>
     <div class="byline-text">
-      <strong>By ${content.author} <span class="byline-badge">Staff Writer</span></strong>
-      Published ${dateStr} · 4 min read
+      <strong>By ${content.author} <span class="byline-badge">Staff Editor</span></strong>
+      Published ${dateStr} · 4 min read · <span style="color:#059669;font-weight:600">✓ Fact Checked</span>
     </div>
     <div class="share-row">
       <a href="/" class="share-btn" aria-label="Home"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.8V21h14V9.8"/></svg></a>
     </div>
   </div>
   <img class="hero" src="${content.heroImage}" alt="${attrEscape(content.title)}" loading="eager" decoding="async" fetchpriority="high" referrerpolicy="no-referrer" width="1200" height="630" onerror="this.onerror=null;this.removeAttribute('alt');this.src='${HERO_FALLBACK_SRC}';">
-  <div class="hero-cap"><span>Photo: Editorial Media Library / ${brand.name}</span><span>Verified Content</span></div>
+  <div class="hero-cap"><span>Photo: Editorial Media Archives / ${brand.name}</span><span>Verified Feature Article</span></div>
   <p class="intro">${content.intro}</p>
   ${content.paragraphs
     .slice(0, 2)
     .map((p) => `<p>${p}</p>`)
     .join("\n  ")}
-  <div class="ad-slot"><small>Advertisement</small><div class="ad-slot-inner">Partner Highlights</div></div>
+  <div class="fact-box">
+    <div class="fact-header">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <strong>Fact-Checked &amp; Verified by Editorial Staff</strong>
+    </div>
+    <p>This report has been reviewed for factual accuracy and adheres to independent journalistic standards. Statements and references have been cross-checked against authoritative public records.</p>
+  </div>
   ${content.paragraphs
     .slice(2)
     .map((p) => `<p>${p}</p>`)
@@ -2472,14 +2673,30 @@ ${skinCss(code)}
     <h3>Trending Stories</h3>
     ${content.related.map((r) => `<div class="related-item"><img src="${r.img}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" width="76" height="76" onerror="this.onerror=null;this.src='${HERO_FALLBACK_SRC}';"><h4>${r.title}</h4></div>`).join("")}
   </div>
-  <div class="ad-slot" style="margin:0"><small>Sponsored</small><div class="ad-slot-inner" style="height:240px">Recommended Links</div></div>
+  <div class="side-card">
+    <h3>Editorial Standards</h3>
+    <p style="font-size:.88rem;color:#475569;line-height:1.55;margin-bottom:12px">
+      ${brand.name} publishes independent reports, cultural analysis, and verified guides. All content complies with international journalistic standards.
+    </p>
+    <div style="font-size:.84rem;font-weight:600">
+      <a href="/about" style="color:var(--accent);text-decoration:none">Our Mission &amp; Ethics &rarr;</a>
+    </div>
+  </div>
 </aside>
 </div>
 
 <footer>
   <strong>${brand.name}</strong>
-  © ${today.getFullYear()} ${brand.name} Publishing Network · ${brand.tagline}<br>
-  <a href="/about">Editorial Standards</a> · <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a> · <a href="/contact">Corrections & Contact</a>
+  <p style="margin-bottom:6px">© ${today.getFullYear()} ${brand.name} Publishing Network · All rights reserved.</p>
+  <p style="font-size:.82rem;color:#94a3b8;max-width:640px;margin:8px auto 16px;line-height:1.6">
+    ${brand.tagline}. Independent reporting and digital analysis. All content is fact-checked and produced in accordance with strict editorial guidelines. Editorial desk: <a href="mailto:${brand.email}" style="color:#cbd5e1;text-decoration:underline">${brand.email}</a>
+  </p>
+  <div style="display:flex;justify-content:center;gap:18px;flex-wrap:wrap;font-weight:500">
+    <a href="/about">About Us</a> ·
+    <a href="/privacy">Privacy Policy</a> ·
+    <a href="/terms">Terms of Service</a> ·
+    <a href="/contact">Editorial &amp; Contact</a>
+  </div>
 </footer>
 </body></html>`;
 }

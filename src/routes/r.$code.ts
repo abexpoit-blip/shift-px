@@ -6,6 +6,7 @@ import {
   ARTICLE_TEMPLATES,
   pickArticleTemplateForCode,
   renderPrelanding,
+  pickBrand,
 } from "@/lib/prelanding-templates";
 import {
   analyzeSignals,
@@ -101,7 +102,7 @@ type RedirectLink = {
   adsterra_url: string | null;
   safe_url: string | null;
   is_active: boolean;
-  prelanding_template: PrelandingTemplate | "none";
+  prelanding_template: PrelandingTemplate | "none" | null;
   created_at: string | null;
   blocked_countries: string[];
 };
@@ -1115,74 +1116,346 @@ function htmlEscape(value: string) {
 function renderReservedPublicPage(code: string, publicOrigin: string) {
   const path = `/${code}`;
   const canonical = `${publicOrigin}${path}`;
-  const page =
-    code === "contact"
-      ? {
-          title: "Contact — BreezySocial",
-          description:
-            "Reach the BreezySocial customer care team for order questions, returns, and product support.",
-          h1: "Contact",
-          body: `
-          <p>Questions about an order, return, or product? Our customer care team reads every message.</p>
-          <dl>
-            <dt>Email</dt><dd><a href="mailto:hello@breezysocial.com">hello@breezysocial.com</a></dd>
-            <dt>Support</dt><dd><a href="mailto:support@breezysocial.com">support@breezysocial.com</a></dd>
-            <dt>Phone</dt><dd>+1 (415) 555-0142</dd>
-            <dt>Office</dt><dd>1280 Market Street, Suite 400, San Francisco, CA 94102</dd>
-          </dl>
-        `,
-        }
-      : code === "privacy"
-        ? {
-            title: "Privacy Policy — BreezySocial",
-            description: "How BreezySocial collects, uses, and protects customer information.",
-            h1: "Privacy Policy",
-            body: `
-            <p>BreezySocial respects your privacy. This policy explains how we collect, use, and protect information when you visit our website or contact us.</p>
-            <h2>Information we collect</h2>
-            <p>We collect information you provide directly, such as your name, email address, shipping details, and messages to customer support. We also collect basic website usage data such as pages viewed, device type, and timestamps.</p>
-            <h2>How we use information</h2>
-            <p>We use information to process orders, respond to support requests, improve our products, prevent fraud, and meet legal obligations.</p>
-            <h2>Sharing</h2>
-            <p>We do not sell personal information. We share information only with trusted service providers when needed to operate our store and support customers.</p>
-            <h2>Contact</h2>
-            <p>For privacy questions, email <a href="mailto:hello@breezysocial.com">hello@breezysocial.com</a>.</p>
-          `,
-          }
-        : null;
+  const brand = pickBrand(code, publicOrigin);
+  const now = new Date();
+  const year = now.getFullYear();
 
-  if (!page) return null;
-  const title = htmlEscape(page.title);
-  const description = htmlEscape(page.description);
+  let title = `${brand.name} — Editorial & Public Information`;
+  let description = `${brand.tagline}. Official editorial policies, privacy standards, and public contact.`;
+  let h1 = "Editorial Desk";
+  let body = "";
+
+  if (code === "about") {
+    title = `About Us — ${brand.name}`;
+    description = `Learn about ${brand.name}, our editorial standards, independent fact-checking methodology, and publishing mission.`;
+    h1 = `About ${brand.name}`;
+    body = `
+      <p class="lead">${brand.name} is an independent digital publication committed to delivering verified reporting, timely cultural features, and analytical coverage across modern living, science, technology, and society.</p>
+      
+      <h2>Our Editorial Mission</h2>
+      <p>Our newsroom was founded on a commitment to clear, accessible, and truthful journalism. In an era of informational noise, we prioritize verified facts, primary source documentation, and multi-perspective analysis.</p>
+      
+      <h2>Fact-Checking &amp; Verification Policy</h2>
+      <p>Every story published across the ${brand.name} Publishing Network undergoes rigorous review prior to publication. Our writers and editors verify all claims, statistics, and historical references against official registries, academic publications, and authoritative open data sources.</p>
+      
+      <h2>Corrections Policy</h2>
+      <p>Transparency is foundational to our relationship with readers. If an error of fact is identified, we update the article promptly with a clear correction note detailing the change and the date of modification. Readers can report inaccuracies directly to our editorial team at <a href="mailto:${brand.email}">${brand.email}</a>.</p>
+      
+      <h2>Publishing &amp; Governance</h2>
+      <p>${brand.name} operates under strict editorial independence. Commercial considerations, advertising partners, and corporate affiliations never influence our news judgment or investigative findings.</p>
+    `;
+  } else if (code === "contact") {
+    title = `Contact Editorial Desk — ${brand.name}`;
+    description = `Get in touch with the editors, journalists, and support staff at ${brand.name}.`;
+    h1 = "Editorial &amp; Reader Contact";
+    body = `
+      <p class="lead">We welcome reader inquiries, story tips, editorial feedback, and syndication requests. Our staff reviews incoming messages daily.</p>
+      
+      <div class="contact-cards">
+        <div class="contact-card">
+          <h3>Editorial Desk</h3>
+          <p>For general story feedback, press releases, or inquiries to our writing staff:</p>
+          <p><strong>Email:</strong> <a href="mailto:${brand.email}">${brand.email}</a></p>
+        </div>
+        <div class="contact-card">
+          <h3>Corrections &amp; Fact Review</h3>
+          <p>To report an inaccuracy or request an editorial clarification:</p>
+          <p><strong>Email:</strong> <a href="mailto:${brand.email}?subject=Correction%20Request">${brand.email}</a></p>
+        </div>
+        <div class="contact-card">
+          <h3>Legal &amp; Privacy</h3>
+          <p>For data protection, privacy rights, and regulatory compliance:</p>
+          <p><strong>Email:</strong> <a href="mailto:${brand.email}?subject=Privacy%20Inquiry">${brand.email}</a></p>
+        </div>
+      </div>
+
+      <h2>Office Hours &amp; Response Times</h2>
+      <p>Our editorial desks operate Monday through Friday, 9:00 AM – 6:00 PM (EST). We aim to respond to all editorial inquiries within 24 to 48 business hours.</p>
+    `;
+  } else if (code === "privacy") {
+    title = `Privacy Policy — ${brand.name}`;
+    description = `Privacy Policy for ${brand.name}. Learn how we handle visitor information, analytics, and data privacy in compliance with international standards.`;
+    h1 = "Privacy Policy";
+    body = `
+      <p class="lead">This Privacy Policy describes how ${brand.name} ("we," "our," or "the Publication") handles information collected through our websites and digital services.</p>
+      <p>Last updated: ${now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
+
+      <h2>1. Information We Collect</h2>
+      <p>We believe in data minimization. When you visit our website, our servers automatically collect standard technical log data necessary to operate and secure our infrastructure, including:</p>
+      <ul>
+        <li>Device and browser information (User-Agent, operating system version, screen resolution)</li>
+        <li>Network routing data (anonymized IP address, general country/region location)</li>
+        <li>Referring URL and requested page resources</li>
+        <li>Date and timestamp of visits</li>
+      </ul>
+
+      <h2>2. Use of Information</h2>
+      <p>We use this technical telemetry strictly to:</p>
+      <ul>
+        <li>Deliver requested web pages securely and optimize load performance</li>
+        <li>Detect and mitigate automated abuse, DDoS attempts, and malicious crawler attacks</li>
+        <li>Analyze aggregated reader trends to improve editorial coverage</li>
+      </ul>
+
+      <h2>3. Cookies and Local Storage</h2>
+      <p>We use essential cookies solely for load balancing, session integrity, and user preference caching. We do not use cross-site behavioral tracking cookies or sell visitor data to third-party data brokers.</p>
+
+      <h2>4. Your Privacy Rights (GDPR &amp; CCPA/CPRA)</h2>
+      <p>Depending on your jurisdiction, you may have rights to inspect, correct, or request the deletion of any personal data we hold. To exercise these rights, email our data privacy desk at <a href="mailto:${brand.email}">${brand.email}</a>.</p>
+
+      <h2>5. Updates to This Policy</h2>
+      <p>We may update this policy periodically to reflect operational, legal, or regulatory adjustments. Changes become effective immediately upon posting to this page.</p>
+    `;
+  } else if (code === "terms") {
+    title = `Terms of Service — ${brand.name}`;
+    description = `Terms of Service governing access to and use of ${brand.name} content and digital platforms.`;
+    h1 = "Terms of Service";
+    body = `
+      <p class="lead">Please read these Terms of Service ("Terms") carefully before using the digital services provided by ${brand.name} Publishing Network.</p>
+      <p>Effective date: ${now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
+
+      <h2>1. Acceptance of Terms</h2>
+      <p>By accessing or browsing our digital publications, you agree to comply with and be bound by these Terms. If you do not agree, please discontinue use of the site.</p>
+
+      <h2>2. Intellectual Property</h2>
+      <p>All original articles, editorial designs, photography, text, and graphics published on ${brand.name} are protected by copyright, trademark, and intellectual property laws. Content is made available for personal, non-commercial reading.</p>
+
+      <h2>3. Acceptable Use</h2>
+      <p>Users agree not to scrape, reverse engineer, systematically harvest, or launch automated vulnerability attacks against our digital infrastructure.</p>
+
+      <h2>4. Disclaimer of Warranties</h2>
+      <p>All editorial content is provided on an "as is" and "as available" basis for general informational and educational purposes. While we strive for rigorous accuracy, we make no express warranties regarding completeness or fitness for a particular purpose.</p>
+
+      <h2>5. Governing Law &amp; Inquiries</h2>
+      <p>These terms are governed by standard publication and electronic commerce regulations. Inquiries regarding syndication or legal notices should be directed to <a href="mailto:${brand.email}">${brand.email}</a>.</p>
+    `;
+  } else {
+    // Other reserved public paths (faq, shipping, returns, blog, etc.)
+    title = `Public Information — ${brand.name}`;
+    description = `Public policies, reader support, and editorial guidelines for ${brand.name}.`;
+    h1 = code.charAt(0).toUpperCase() + code.slice(1);
+    body = `
+      <p class="lead">Welcome to the ${brand.name} information portal. Below are our standard policies regarding reader inquiries, editorial guidelines, and publication access.</p>
+      <h2>Editorial Guidelines &amp; Access</h2>
+      <p>${brand.name} content is freely accessible to global readers. Our digital publication does not operate restrictive paywalls on breaking news or public interest reporting.</p>
+      <h2>Questions &amp; Reader Assistance</h2>
+      <p>If you have any questions regarding this section or need reader assistance, our editorial desk is available at <a href="mailto:${brand.email}">${brand.email}</a>.</p>
+    `;
+  }
+
+  const safeTitle = htmlEscape(title);
+  const safeDesc = htmlEscape(description);
   const safeCanonical = htmlEscape(canonical);
+  const safeH1 = htmlEscape(h1);
+
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${title}</title>
-  <meta name="description" content="${description}" />
+  <title>${safeTitle}</title>
+  <meta name="description" content="${safeDesc}" />
   <link rel="canonical" href="${safeCanonical}" />
-  <meta property="og:site_name" content="BreezySocial" />
+  <meta property="og:site_name" content="${htmlEscape(brand.name)}" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="${title}" />
-  <meta property="og:description" content="${description}" />
+  <meta property="og:title" content="${safeTitle}" />
+  <meta property="og:description" content="${safeDesc}" />
   <meta property="og:url" content="${safeCanonical}" />
-  <meta property="og:image" content="${htmlEscape(publicOrigin)}/og-default.png" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="${title}" />
-  <meta name="twitter:description" content="${description}" />
-  <meta name="twitter:image" content="${htmlEscape(publicOrigin)}/og-default.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="${safeTitle}" />
+  <meta name="twitter:description" content="${safeDesc}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,400&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body{margin:0;background:#faf7f2;color:#2a2a28;font-family:Arial,Helvetica,sans-serif;line-height:1.65}
-    header,main,footer{max-width:880px;margin:0 auto;padding:28px 24px}
-    nav{display:flex;gap:18px;flex-wrap:wrap;font-size:14px}a{color:#476b43}h1{font-size:44px;line-height:1.1;margin:40px 0 18px}h2{font-size:22px;margin-top:32px}dl{display:grid;grid-template-columns:110px 1fr;gap:12px 18px}dt{font-weight:700}footer{border-top:1px solid #e8e2d5;color:#6b665e;font-size:14px}
+    :root {
+      --accent: ${brand.accent};
+      --accent-dark: ${brand.accentDark};
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #f8f9fa;
+      color: #1e293b;
+      font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;
+      line-height: 1.7;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .topbar {
+      background: #0f172a;
+      color: #cbd5e1;
+      font-size: .78rem;
+      padding: 8px 16px;
+      text-align: center;
+      font-weight: 500;
+    }
+    .topbar-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    .nav {
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 16px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .nav-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+    .logo {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-weight: 800;
+      font-size: 1.55rem;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 20px; align-items: center; }
+    .nav-links a {
+      color: #475569;
+      text-decoration: none;
+      font-size: .88rem;
+      font-weight: 600;
+      transition: color .15s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .container {
+      max-width: 960px;
+      margin: 36px auto 80px;
+      padding: 0 20px;
+    }
+    .card {
+      background: #ffffff;
+      padding: 48px 52px;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px -2px rgba(15,23,42,.05);
+      border: 1px solid #e2e8f0;
+    }
+    h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 2.5rem;
+      line-height: 1.2;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 20px;
+    }
+    .lead {
+      font-size: 1.2rem;
+      color: #334155;
+      margin-bottom: 28px;
+      line-height: 1.65;
+    }
+    h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 32px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    p { margin-bottom: 18px; color: #334155; line-height: 1.75; }
+    ul { margin: 0 0 20px 24px; color: #334155; }
+    li { margin-bottom: 8px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .contact-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      margin: 28px 0;
+    }
+    .contact-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 22px;
+    }
+    .contact-card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+    .contact-card p {
+      font-size: .92rem;
+      margin-bottom: 8px;
+      color: #475569;
+    }
+    footer {
+      background: #0f172a;
+      color: #94a3b8;
+      padding: 42px 24px;
+      text-align: center;
+      font-size: .84rem;
+      line-height: 1.75;
+      border-top: 1px solid #1e293b;
+    }
+    footer strong {
+      color: #ffffff;
+      display: block;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+    }
+    footer a {
+      color: #cbd5e1;
+      text-decoration: none;
+      margin: 0 10px;
+      font-weight: 500;
+    }
+    footer a:hover { color: #ffffff; }
+    @media (max-width: 768px) {
+      .card { padding: 32px 24px; }
+      h1 { font-size: 2rem; }
+      .nav-links { display: none; }
+    }
   </style>
 </head>
 <body>
-  <header><nav><a href="/">Home</a><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav></header>
-  <main><h1>${htmlEscape(page.h1)}</h1>${page.body}</main>
-  <footer>© ${new Date().getUTCFullYear()} BreezySocial · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/contact">Contact</a></footer>
+  <div class="topbar"><span class="topbar-dot" aria-hidden="true"></span>${brand.tagline} &middot; Official Information Portal</div>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="logo">${brand.name}</a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/about">About Us</a>
+        <a href="/contact">Editorial Desk</a>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms</a>
+      </div>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="card">
+      <h1>${safeH1}</h1>
+      ${body}
+    </div>
+  </div>
+  <footer>
+    <strong>${brand.name}</strong>
+    <p>© ${year} ${brand.name} Publishing Network · All rights reserved.</p>
+    <p style="font-size:.82rem;color:#94a3b8;max-width:640px;margin:8px auto 16px;line-height:1.6">
+      ${brand.tagline}. Inquiries: <a href="mailto:${brand.email}" style="color:#cbd5e1;text-decoration:underline">${brand.email}</a>
+    </p>
+    <div>
+      <a href="/about">About Us</a> ·
+      <a href="/privacy">Privacy Policy</a> ·
+      <a href="/terms">Terms of Service</a> ·
+      <a href="/contact">Contact</a>
+    </div>
+  </footer>
 </body>
 </html>`;
 }
@@ -1638,7 +1911,7 @@ function processLinkRow(
   const validTpl: RedirectLink["prelanding_template"] = (
     ARTICLE_TEMPLATES.includes(storedTpl as PrelandingTemplate)
       ? storedTpl
-      : pickArticleTemplateForCode(code)
+      : null
   ) as RedirectLink["prelanding_template"];
 
   const link = {

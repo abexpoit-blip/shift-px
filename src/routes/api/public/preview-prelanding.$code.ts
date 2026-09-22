@@ -66,9 +66,9 @@ export const Route = createFileRoute("/api/public/preview-prelanding/$code")({
             const stored = (data?.prelanding_template as string | null) || "";
             template = ARTICLE_TEMPLATES.includes(stored as PrelandingTemplate)
               ? (stored as PrelandingTemplate)
-              : pickArticleTemplateForCode(code);
+              : pickArticleTemplateForCode(code, origin);
           } catch {
-            template = pickArticleTemplateForCode(code);
+            template = pickArticleTemplateForCode(code, origin);
           }
         }
 
