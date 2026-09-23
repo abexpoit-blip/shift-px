@@ -40,6 +40,7 @@ import {
   Zap,
   Globe,
 } from "lucide-react";
+import { GoogleGIcon } from "@/components/GoogleGIcon";
 
 type NavChild = { title: string; to: string; search?: Record<string, string>; icon: any };
 type NavGroup = { label: string; items: (NavChild & { children?: NavChild[] })[] };
@@ -98,6 +99,7 @@ function AppSidebar({ isAdmin, balance }: { isAdmin: boolean; balance: number })
       items: [
         { title: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
         { title: "Links", to: "/links", icon: LinkIcon },
+        { title: "Google Shorts", to: "/google-shorts", icon: GoogleGIcon },
         { title: "Custom Domains", to: "/domains", icon: Globe },
         { title: "Statistics", to: "/statistics", icon: BarChart3 },
         { title: "Leaderboard", to: "/leaderboard", icon: Trophy },

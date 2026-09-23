@@ -28,7 +28,7 @@ echo "📦 [2/5] SYNCING DATABASE MIGRATIONS..."
 echo "========================================================"
 DB_CONTAINER=$(docker ps -q -f name=supabase-db 2>/dev/null || docker ps -q -f name=postgres 2>/dev/null || true)
 if [ -n "$DB_CONTAINER" ]; then
-  for m in migration/43_*.sql migration/44_*.sql migration/45_*.sql migration/46_*.sql; do
+  for m in migration/43_*.sql migration/44_*.sql migration/45_*.sql migration/46_*.sql migration/47_*.sql; do
     if [ -f "$m" ]; then
       echo "  Applying $m..."
       docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres < "$m" 2>/dev/null || true

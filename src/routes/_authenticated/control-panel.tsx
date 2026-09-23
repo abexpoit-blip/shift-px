@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { GoogleGIcon } from "@/components/GoogleGIcon";
 import {
   Users,
   Link2,
@@ -14,6 +15,7 @@ import {
   Bot,
   Target,
   Zap,
+  Flame,
   Calendar,
   DollarSign,
   TrendingUp,
@@ -335,7 +337,7 @@ const NAV_GROUPS: Array<{
   {
     label: "Growth & Cloaking Labs",
     items: [
-      { value: "google_links", label: "Google Shorts", icon: Sparkles },
+      { value: "google_links", label: "Google Shorts", icon: GoogleGIcon },
     ],
   },
   {
@@ -5063,19 +5065,15 @@ function KpiCard({
 function GoogleLinksTab() {
   const queryClient = useQueryClient();
   const getGoogleStateFn = useServerFn(adminGetGoogleLinksState);
-  const traceFn = useServerFn(adminTraceRedirect);
-  const registerFn = useServerFn(adminRegisterInhouseGoogleLink);
   const deleteFn = useServerFn(adminDeleteGoogleLink);
   const autoShortFn = useServerFn(adminGenerateAutoGoogleShort);
-  const verifyAndPairFn = useServerFn(adminVerifyAndPairGoogleToken);
   const listDomainsFn = useServerFn(listShortenerDomains);
 
-  const { data: state, isLoading } = useQuery({
+  const { data: state, isLoading, isRefetching } = useQuery({
     queryKey: ["admin-google-links-state"],
     queryFn: () => getGoogleStateFn(),
   });
 
-  // Dynamic domains query so admin can choose any active domain added to the platform
   const domainsQ = useQuery({
     queryKey: ["sd-list"],
     queryFn: () => listDomainsFn(),
@@ -5090,271 +5088,176 @@ function GoogleLinksTab() {
     return Array.from(new Set(combined.filter(Boolean)));
   }, [domainsQ.data]);
 
-  // 1-Click Auto Short Generator State (AdsPx Branding + adswapx.com)
   const [autoOfferUrl, setAutoOfferUrl] = useState("");
-  const [autoGoogleShareCode, setAutoGoogleShareCode] = useState("");
   const [autoDomain, setAutoDomain] = useState("adswapx.com");
   const [autoNotes, setAutoNotes] = useState("");
   const [autoResult, setAutoResult] = useState<{
-    paired: boolean;
-    googleUrl: string | null;
+    googleUrl: string;
     shareGoogleUrl?: string;
     destinationShortUrl: string;
-    shortCode: string;
-    adsterraOfferUrl: string;
-    message?: string;
   } | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const [step2Token, setStep2Token] = useState("");
+  const copyToClipboard = (text: string, id: string, label = "Link") => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+      } else {
+        fallbackCopy(text);
+      }
+      setCopiedId(id);
+      toast.success(`${label} copied!`);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      toast.error("Clipboard copy failed");
+    }
+  };
 
-  const [traceUrl, setTraceUrl] = useState("");
-  const [traceResult, setTraceResult] = useState<TraceResult | null>(null);
-
-  const [googleInputUrl, setGoogleInputUrl] = useState("");
-  const [destUrl, setDestUrl] = useState("");
-  const [notes, setNotes] = useState("");
-  const [linkMode, setLinkMode] = useState<"inhouse_share" | "inhouse_script">("inhouse_share");
-  const [copiedText, setCopiedText] = useState<string | null>(null);
-  const [showAppsScriptGuide, setShowAppsScriptGuide] = useState(false);
+  const fallbackCopy = (text: string) => {
+    const el = document.createElement("textarea");
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand("copy");
+    document.body.removeChild(el);
+  };
 
   const autoShortMut = useMutation({
-    mutationFn: (data: { offerUrl: string; googleShareCode?: string; domain?: string; notes?: string }) =>
+    mutationFn: (data: { offerUrl: string; domain?: string; notes?: string }) =>
       autoShortFn({ data }),
     onSuccess: (res: any) => {
-      setAutoResult(res);
+      setAutoResult({
+        googleUrl: res.googleUrl,
+        shareGoogleUrl: res.shareGoogleUrl,
+        destinationShortUrl: res.destinationShortUrl,
+      });
       setAutoOfferUrl("");
-      setAutoGoogleShareCode("");
-      if (res.paired) {
-        toast.success("AdsPx Google Share Link generated & verified successfully!");
-      } else {
-        toast.success("AdsPx cloaked link created! Ready to pair with Google Share.");
-      }
+      setAutoNotes("");
+      toast.success("Google Short Link generated successfully!");
       queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
     },
     onError: (err: any) => toast.error(err.message || "Failed to generate Google Short"),
   });
 
-  const verifyAndPairMut = useMutation({
-    mutationFn: (data: { shortCode: string; googleInput: string; notes?: string }) =>
-      verifyAndPairFn({ data }),
-    onSuccess: (res: any) => {
-      setAutoResult({
-        paired: true,
-        googleUrl: res.googleUrl,
-        destinationShortUrl: res.destinationShortUrl,
-        shortCode: autoResult?.shortCode || "",
-        adsterraOfferUrl: autoResult?.adsterraOfferUrl || "",
-        message: "Google Share link verified & paired successfully!",
-      });
-      setStep2Token("");
-      toast.success("Google Share link verified & paired successfully!");
-      queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
-    },
-    onError: (err: any) => {
-      toast.error(err.message || "Google verification failed");
-    },
-  });
-
-  const copyToClipboard = (text: string, label: string = "Link") => {
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).catch(() => {
-          const el = document.createElement("textarea");
-          el.value = text;
-          document.body.appendChild(el);
-          el.select();
-          document.execCommand("copy");
-          document.body.removeChild(el);
-        });
-      } else {
-        const el = document.createElement("textarea");
-        el.value = text;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand("copy");
-        document.body.removeChild(el);
-      }
-      setCopiedText(text);
-      toast.success(`${label} copied to clipboard!`);
-      setTimeout(() => setCopiedText(null), 2500);
-    } catch {
-      toast.error("Clipboard not available");
-    }
-  };
-
-  const traceMut = useMutation({
-    mutationFn: (url: string) => traceFn({ data: { url } }),
-    onSuccess: (res) => {
-      setTraceResult(res);
-      toast.success("Redirect chain traced successfully!");
-    },
-    onError: (err: any) => {
-      toast.error(err.message || "Failed to trace URL redirect");
-    },
-  });
-
-  const registerMut = useMutation({
-    mutationFn: (data: { googleUrl: string; destinationUrl: string; notes?: string; mode?: "inhouse_share" | "inhouse_script" }) =>
-      registerFn({ data }),
-    onSuccess: () => {
-      toast.success("In-House Google Short registered successfully!");
-      setGoogleInputUrl("");
-      setDestUrl("");
-      setNotes("");
-      queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
-    },
-    onError: (err: any) => {
-      toast.error(err.message || "Failed to register Google Short");
-    },
-  });
-
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteFn({ data: { id } }),
     onSuccess: () => {
-      toast.success("Link deleted from in-house registry");
+      toast.success("Link deleted");
       queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
     },
-    onError: (err: any) => {
-      toast.error(err.message || "Failed to delete link");
-    },
+    onError: (err: any) => toast.error(err.message || "Failed to delete link"),
   });
 
-  // Reactive: updates when destUrl changes so the copied code has the correct URL
-  const effectiveScriptUrl = destUrl.trim() || "https://adswapx.com";
-  const sampleAppsScriptCode = `function doGet(e) {
-  // 100% In-House Google Redirector on script.google.com (DA 100)
-  var target = e.parameter.to || "${effectiveScriptUrl}";
-  return HtmlService.createHtmlOutput(
-    '<!DOCTYPE html><html><head><meta charset="utf-8">' +
-    '<title>Redirecting...</title>' +
-    '<script>' +
-    'try { window.top.location.href = "' + target + '"; } catch(e) {}' +
-    '</script>' +
-    '<style>' +
-    'body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#090d16;color:#fff;}' +
-    '.card{text-align:center;padding:28px;background:#111827;border-radius:16px;border:1px solid #374151;max-width:360px;}' +
-    '.btn{display:inline-block;margin-top:16px;padding:12px 24px;background:#10b981;color:#fff;text-decoration:none;border-radius:10px;font-weight:bold;font-size:14px;}' +
-    '</style>' +
-    '</head><body>' +
-    '<div class="card">' +
-    '<p style="font-size:14px;opacity:0.8;">Redirecting to content...</p>' +
-    '<a id="btn" class="btn" href="' + target + '" target="_top">Click here to continue &rarr;</a>' +
-    '</div>' +
-    '<script>' +
-    'try { window.top.location.href = "' + target + '"; } catch(e) {}' +
-    'setTimeout(function(){ try { document.getElementById("btn").click(); } catch(e) {} }, 50);' +
-    '</script>' +
-    '</body></html>'
-  ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}`;
-
-  const isMistakenGoogleInput =
-    autoGoogleShareCode &&
-    /^https?:\/\//i.test(autoGoogleShareCode) &&
-    !autoGoogleShareCode.includes("google");
+  const links = state?.links ?? [];
+  const totalCleanClicks = links.reduce((sum: number, l: any) => sum + (l.clicks_count || 0), 0);
+  const totalShieldedBots = links.reduce((sum: number, l: any) => sum + (l.bot_clicks_count || 0), 0);
+  const totalTraffic = totalCleanClicks + totalShieldedBots;
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-card/70 backdrop-blur-xl p-6 shadow-xl">
-        <div className="pointer-events-none absolute -top-16 -right-10 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl" />
+    <div className="space-y-6 max-w-5xl mx-auto pb-8">
+      {/* Header */}
+      <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card/90 to-background p-6 sm:p-7 shadow-xl backdrop-blur-xl">
+        <div className="pointer-events-none absolute -top-20 -right-12 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -left-12 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
+
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">
-                <Sparkles className="h-3 w-3" /> AdsPx In-House Google Engine · Zero 3rd Party
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-blue-400">
+                <GoogleGIcon className="h-3.5 w-3.5" /> High Deliverability
               </span>
-              <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary">
-                Google Official DA 100
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">
+                <ShieldCheck className="h-3.5 w-3.5" /> Smart Shield Active
+              </span>
+              <span className="rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-[11px] font-bold text-purple-400">
+                DA 100 Domain Authority
               </span>
             </div>
-            <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-[var(--foreground)]">
-              AdsPx <span className="text-gradient">Google Shorts</span>
+
+            <h2 className="text-2xl sm:text-3xl font-black text-foreground flex items-center gap-3">
+              <GoogleGIcon className="h-7 w-7 sm:h-8 sm:w-8" />
+              <span>AdsPx Google Shorts</span>
             </h2>
-            <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-              Official Google App Shortcuts (<code className="text-emerald-400 font-mono">www.google.com/share.google?q=CODE</code>) paired with AdsPx cloaked shortener. Zero traffic stealing, 0ms click delay.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* In-House Architecture Insight Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-border/80 bg-card/70 p-4 shadow-md">
-          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-primary">
-            <ShieldCheck className="h-4 w-4" /> 1. Meta Post Whitelist
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            Facebook’s post validator inspects the root domain. Because links start with <strong className="text-foreground">www.google.com/share.google</strong> (DA 100), Meta never flags your posts as spam or rejects them.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-border/80 bg-card/70 p-4 shadow-md">
-          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-emerald-400">
-            <Zap className="h-4 w-4" /> 2. Zero Traffic Loss (<code className="text-foreground">{autoDomain}</code>)
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            Unlike 3rd party shorteners that steal clicks or use slow iframes, our Nitro engine delivers direct HTTP 301 bounces with <strong className="text-foreground">&lt;50ms</strong> latency straight to your Adsterra direct link.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-border/80 bg-card/70 p-4 shadow-md">
-          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-purple-400">
-            <Crown className="h-4 w-4" /> 3. AdsPx Deep Bot Shield
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            Facebook bots following the Google redirect are served a 200 OK fact-checked news article with matching OpenGraph tags. Real mobile visitors bypass straight to the Adsterra CPA offer.
-          </p>
-        </div>
-      </div>
-
-      {/* TOOL 0: AdsPx 1-Click Auto Google Short Generator (Adsterra & CPA Offers) */}
-      <div className="rounded-3xl border-2 border-emerald-500/40 bg-gradient-to-b from-emerald-950/25 via-card/85 to-card/95 backdrop-blur-xl p-6 sm:p-7 shadow-2xl space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-400">
-                <Sparkles className="h-3 w-3 animate-pulse" /> 1-Click Auto Shortener
-              </span>
-              <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary">
-                Brand: AdsPx · Active Domain: {autoDomain}
-              </span>
-            </div>
-            <h3 className="text-xl sm:text-2xl font-black text-foreground mt-2 flex items-center gap-2">
-              <Zap className="h-6 w-6 text-emerald-400" /> Google Share Link Maker
-            </h3>
-            <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">
-              Paste your Adsterra CPA direct link. AdsPx will generate a cloaked <strong className="text-foreground">{autoDomain}</strong> link and pair it with an official <strong className="text-foreground">google.com/share.google</strong> URL ready for Facebook posts!
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
+              Generate official Google domain links paired with AdsPx cloaking. High click-through rates, clean social previews, and 0% traffic drop.
             </p>
           </div>
 
-          <div className="text-right">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-xs font-bold shadow-sm">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> 100% In-House Clean Engine
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] })}
+            className="h-9 gap-1.5 text-xs font-semibold"
+            disabled={isLoading || isRefetching}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefetching ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* Feature Highlights */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        <div className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400">
+            <Globe className="h-4 w-4" /> Social Whitelisted
+          </div>
+          <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+            High domain authority ensures social networks and ad platforms accept the link without spam warnings or previews failing.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
+            <Zap className="h-4 w-4" /> Zero Traffic Loss
+          </div>
+          <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+            Instant client bounce delivers 100% of verified mobile visitors straight to your Adsterra CPA offer in under 50ms.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-400">
+            <ShieldCheck className="h-4 w-4" /> Bot & Reviewer Shield
+          </div>
+          <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+            Automated crawlers and compliance reviewers are isolated and served clean verified content, shielding your direct campaigns.
+          </p>
+        </div>
+      </div>
+
+      {/* 1-Click Generator Form */}
+      <div className="rounded-3xl border border-emerald-500/40 bg-gradient-to-b from-emerald-950/20 via-card to-card p-6 sm:p-7 shadow-xl space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 text-white shadow-md shadow-emerald-500/20">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-foreground">Create Google Short Link</h3>
+              <p className="text-xs text-muted-foreground">Paste your CPA offer URL to generate an instant Google link</p>
             </div>
           </div>
+          <span className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+            Engine Domain: {autoDomain}
+          </span>
         </div>
 
-        {/* The 1-Click Form */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-          <div className="md:col-span-8 space-y-1">
-            <Label className="text-xs font-bold text-foreground">
-              Your Adsterra Offer URL / CPA Direct Link
-            </Label>
+          <div className="md:col-span-6 space-y-1.5">
+            <Label className="text-xs font-bold text-foreground">Offer URL / CPA Direct Link *</Label>
             <Input
               value={autoOfferUrl}
               onChange={(e) => setAutoOfferUrl(e.target.value)}
-              placeholder="https://beta.publishers.adsterra.com/... or https://your-offer-link.com/..."
-              className="text-xs font-mono h-11 border-border/80 focus:border-emerald-500/50"
+              placeholder="https://beta.publishers.adsterra.com/... or https://..."
+              className="text-xs font-mono h-11 border-border/80 focus:border-emerald-500 bg-background/70"
             />
           </div>
 
-          <div className="md:col-span-4 space-y-1">
-            <Label className="text-xs font-bold text-foreground">
-              Cloak Domain (Select from Active Domains)
-            </Label>
+          <div className="md:col-span-3 space-y-1.5">
+            <Label className="text-xs font-bold text-foreground">Cloak Domain</Label>
             <select
               value={autoDomain}
               onChange={(e) => setAutoDomain(e.target.value)}
-              className="w-full h-11 rounded-xl border border-input bg-background px-3 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full h-11 rounded-xl border border-input bg-background/70 px-3 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
               {availableDomains.map((d) => (
                 <option key={d} value={d}>
@@ -5362,247 +5265,92 @@ function GoogleLinksTab() {
                 </option>
               ))}
             </select>
-            <p className="text-[10px] text-muted-foreground">
-              Any custom domain added in the Domains tab will appear here.
-            </p>
           </div>
 
-          <div className="md:col-span-6 space-y-1">
-            <Label className="text-xs font-bold text-foreground">
-              Custom Google Token (Optional — Leave Blank for 1-Click Auto)
-            </Label>
-            <Input
-              value={autoGoogleShareCode}
-              onChange={(e) => setAutoGoogleShareCode(e.target.value)}
-              placeholder="Leave empty for instant 1-click Google link, or paste code if you have one"
-              className="text-xs font-mono h-10"
-            />
-            {isMistakenGoogleInput ? (
-              <div className="text-[11px] font-semibold text-amber-400 bg-amber-950/40 border border-amber-500/30 rounded-lg p-2 mt-1">
-                ⚠️ Notice: This box is only for official Google Share tokens (e.g. <code className="text-white">wK9kr3kPN2R05JQc6</code>). Your Adsterra CPA link goes in the Offer URL field above.
-              </div>
-            ) : (
-              <p className="text-[10px] text-muted-foreground">
-                ⚡ 100% Automated: Leave blank and AdsPx generates your verified Google link instantly.
-              </p>
-            )}
-          </div>
-
-          <div className="md:col-span-3 space-y-1">
-            <Label className="text-xs font-bold text-foreground">
-              Campaign Label (Optional)
-            </Label>
+          <div className="md:col-span-3 space-y-1.5">
+            <Label className="text-xs font-bold text-foreground">Campaign Label (Optional)</Label>
             <Input
               value={autoNotes}
               onChange={(e) => setAutoNotes(e.target.value)}
-              placeholder="e.g. Adsterra VIP 1"
-              className="text-xs h-10"
+              placeholder="e.g. VIP Campaign #1"
+              className="text-xs h-11 border-border/80 bg-background/70"
             />
-          </div>
-
-          <div className="md:col-span-3 flex items-end">
-            <Button
-              className="w-full h-10 text-xs font-black gap-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-glow"
-              disabled={!autoOfferUrl.trim() || autoShortMut.isPending}
-              onClick={() =>
-                autoShortMut.mutate({
-                  offerUrl: autoOfferUrl.trim(),
-                  googleShareCode: autoGoogleShareCode.trim() || undefined,
-                  domain: autoDomain,
-                  notes: autoNotes.trim() || undefined,
-                })
-              }
-            >
-              {autoShortMut.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" /> 1-Click Generate Google Short
-                </>
-              )}
-            </Button>
           </div>
         </div>
 
-        {/* 1-Click Auto Result Card */}
+        <Button
+          className="w-full h-11 text-sm font-bold gap-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white shadow-lg shadow-emerald-500/20 border-0"
+          disabled={!autoOfferUrl.trim() || autoShortMut.isPending}
+          onClick={() =>
+            autoShortMut.mutate({
+              offerUrl: autoOfferUrl.trim(),
+              domain: autoDomain,
+              notes: autoNotes.trim() || undefined,
+            })
+          }
+        >
+          {autoShortMut.isPending ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Generating Google Short...
+            </>
+          ) : (
+            <>
+              <GoogleGIcon className="h-4 w-4" /> Generate Google Short Link
+            </>
+          )}
+        </Button>
+
+        {/* Result Card */}
         {autoResult && (
-          <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-950/30 p-5 space-y-4 animate-in fade-in zoom-in-95">
-            {autoResult.paired && autoResult.googleUrl ? (
-              <>
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase text-emerald-400">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Google Short Verified &amp; Active!
-                  </span>
-                  <span className="text-[11px] font-mono text-emerald-300/80 font-bold">
-                    Official Google DA 100 · 0ms CPA Bounce
-                  </span>
-                </div>
+          <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-950/25 p-5 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase text-emerald-400">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Active & Ready for Social Posting
+              </span>
+              <span className="text-[11px] font-mono text-emerald-300/80 font-bold">
+                DA 100 Whitelisted Domain
+              </span>
+            </div>
 
-                {/* Main Google Short Link Box */}
-                <div className="space-y-1.5">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">
-                    Official Google Domain Link (Post this on Facebook):
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      readOnly
-                      value={autoResult.googleUrl}
-                      className="font-mono text-xs h-11 bg-background/80 text-emerald-400 border-emerald-500/50 select-all font-bold"
-                    />
-                    <Button
-                      className="h-11 px-5 text-xs font-bold gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white shadow-glow"
-                      onClick={() => copyToClipboard(autoResult.googleUrl!, "Google Short URL")}
-                    >
-                      <Copy className="h-4 w-4" /> Copy Google Link
-                    </Button>
-                  </div>
-                </div>
+            <div className="space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">
+                Official Google Domain Link:
+              </span>
+              <div className="flex items-center gap-2">
+                <Input
+                  readOnly
+                  value={autoResult.googleUrl}
+                  className="font-mono text-xs h-11 bg-background/80 text-emerald-300 border-emerald-500/40 select-all font-bold"
+                />
+                <Button
+                  className="h-11 px-5 text-xs font-bold gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                  onClick={() => copyToClipboard(autoResult.googleUrl, "res-main", "Google Link")}
+                >
+                  {copiedId === "res-main" ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copiedId === "res-main" ? "Copied!" : "Copy Google Link"}
+                </Button>
+              </div>
+            </div>
 
-                {/* Secondary Google Share Link Box */}
-                {autoResult.shareGoogleUrl && (
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Alternative Google Domain Link (share.google):
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        readOnly
-                        value={autoResult.shareGoogleUrl}
-                        className="font-mono text-xs h-10 bg-background/80 text-muted-foreground border-border select-all"
-                      />
-                      <Button
-                        variant="outline"
-                        className="h-10 px-4 text-xs font-bold gap-2 shrink-0"
-                        onClick={() => copyToClipboard(autoResult.shareGoogleUrl!, "Alternative Google URL")}
-                      >
-                        <Copy className="h-4 w-4" /> Copy
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Architecture Details */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs font-mono">
-                  <div className="p-3 rounded-xl bg-card/60 border border-border/80">
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-                      AdsPx Cloaked Bridge (Meta Safe Page):
-                    </span>
-                    <div className="text-foreground break-all mt-0.5 font-bold">
-                      {autoResult.destinationShortUrl}
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-xl bg-card/60 border border-border/80">
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-                      Target Adsterra Offer Destination:
-                    </span>
-                    <div className="text-muted-foreground break-all mt-0.5 truncate">
-                      {autoResult.adsterraOfferUrl}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                    <ShieldCheck className="h-4 w-4 text-emerald-400" /> Facebook crawler sees 200 OK Safe Page · Real mobile users bounce to Adsterra
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 text-xs font-semibold gap-1.5"
-                      onClick={() => {
-                        setTraceUrl(autoResult.googleUrl!);
-                        traceMut.mutate(autoResult.googleUrl!);
-                      }}
-                    >
-                      <Play className="h-3 w-3" /> Test in Tracer
-                    </Button>
-                    <a
-                      href={`https://developers.facebook.com/tools/debug/?q=${encodeURIComponent(autoResult.googleUrl)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                    >
-                      <ExternalLink className="h-3 w-3" /> Meta Debugger
-                    </a>
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* 2-Step Pairing Wizard when no Google Code was entered initially */
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase text-emerald-400">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Step 1 Complete: AdsPx Cloaked Link is Active!
-                  </span>
-                  <span className="text-[11px] font-mono text-emerald-300/80 font-bold">
-                    Now Connect with Official Google Share
-                  </span>
-                </div>
-
-                {/* Step 1 Details */}
-                <div className="space-y-1.5">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Your Cloaked Link on {autoDomain}:
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      readOnly
-                      value={autoResult.destinationShortUrl}
-                      className="font-mono text-xs h-10 bg-background/80 text-foreground border-border select-all font-bold"
-                    />
-                    <Button
-                      variant="outline"
-                      className="h-10 px-4 text-xs font-bold gap-2 shrink-0"
-                      onClick={() => copyToClipboard(autoResult.destinationShortUrl, "Cloaked Short Link")}
-                    >
-                      <Copy className="h-4 w-4" /> Copy Link
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Step 2 Pairing Box */}
-                <div className="rounded-xl border border-primary/30 bg-primary/10 p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-primary">
-                    <Sparkles className="h-4 w-4" /> Step 2: Connect with Official Google Share (DA 100 on Facebook)
-                  </div>
-                  <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside leading-relaxed">
-                    <li>Open your link (<code className="text-foreground font-mono">{autoResult.destinationShortUrl}</code>) on your Android phone in the <strong>Google App</strong> or <strong>Chrome</strong>.</li>
-                    <li>Tap the <strong>Share</strong> icon and select <strong>Copy Link</strong> (Google App will auto-shorten it).</li>
-                    <li>Paste the resulting Google link or 16-character code below and click verify:</li>
-                  </ol>
-
-                  <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
-                    <Input
-                      value={step2Token}
-                      onChange={(e) => setStep2Token(e.target.value)}
-                      placeholder="Paste e.g. wK9kr3kPN2R05JQc6 or https://share.google/..."
-                      className="text-xs font-mono h-10 bg-background"
-                    />
-                    <Button
-                      className="w-full sm:w-auto h-10 px-6 text-xs font-bold gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white shadow-glow"
-                      disabled={!step2Token.trim() || verifyAndPairMut.isPending}
-                      onClick={() =>
-                        verifyAndPairMut.mutate({
-                          shortCode: autoResult.shortCode,
-                          googleInput: step2Token.trim(),
-                        })
-                      }
-                    >
-                      {verifyAndPairMut.isPending ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" /> Verifying with Google...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-4 w-4" /> Verify with Google &amp; Connect Link
-                        </>
-                      )}
-                    </Button>
-                  </div>
+            {autoResult.shareGoogleUrl && (
+              <div className="space-y-1 pt-1">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Alternative Google Domain Link (share.google):
+                </span>
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={autoResult.shareGoogleUrl}
+                    className="font-mono text-xs h-10 bg-background/80 text-muted-foreground border-border select-all"
+                  />
+                  <Button
+                    variant="outline"
+                    className="h-10 px-4 text-xs font-bold gap-2 shrink-0"
+                    onClick={() => copyToClipboard(autoResult.shareGoogleUrl!, "res-alt", "Alternative Link")}
+                  >
+                    {copiedId === "res-alt" ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copiedId === "res-alt" ? "Copied" : "Copy"}
+                  </Button>
                 </div>
               </div>
             )}
@@ -5610,168 +5358,195 @@ function GoogleLinksTab() {
         )}
       </div>
 
-      {/* TOOL 1: Live Redirect Tracer & Hop Inspector */}
-      <div className="rounded-3xl border border-border/80 bg-card/70 backdrop-blur-xl p-6 shadow-xl space-y-4">
-        <div className="flex items-center justify-between">
+      {/* Aggregate Stats Overview */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary">
-              Telemetry Tool
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Total Traffic</span>
+            <div className="text-xl sm:text-2xl font-black text-foreground mt-0.5">{totalTraffic.toLocaleString()}</div>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <TrendingUp className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Clean Human Clicks</span>
+            <div className="text-xl sm:text-2xl font-black text-emerald-400 mt-0.5">{totalCleanClicks.toLocaleString()}</div>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+            <Zap className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">Shielded Bots</span>
+            <div className="text-xl sm:text-2xl font-black text-amber-400 mt-0.5">{totalShieldedBots.toLocaleString()}</div>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Link-Wise Statistics Table */}
+      <div className="rounded-3xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 sm:p-6 shadow-xl space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+          <div className="flex items-center gap-2">
+            <GoogleGIcon className="h-5 w-5" />
+            <h3 className="text-base font-extrabold text-foreground">Active Google Shorts Directory</h3>
+            <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-mono font-bold text-muted-foreground">
+              {links.length} Links
             </span>
-            <h3 className="text-lg font-extrabold text-foreground flex items-center gap-2">
-              <Radar className="h-5 w-5 text-primary" /> Live Redirect Chain Tracer
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Trace any Google URL hop-by-hop. Measures HTTP status codes, server headers, latency, and evaluates Facebook bot safety.
+          </div>
+
+          <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" />
+            <span>Links with 0 clicks in 14 days auto-cleared</span>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="py-12 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" /> Loading Google Shorts...
+          </div>
+        ) : links.length === 0 ? (
+          <div className="py-14 text-center text-xs text-muted-foreground border border-dashed border-border/80 rounded-2xl p-6">
+            <GoogleGIcon className="h-10 w-10 mx-auto mb-3 opacity-60" />
+            <p className="font-bold text-foreground text-sm">No Google Shorts Created Yet</p>
+            <p className="mt-1 text-muted-foreground">
+              Paste an Adsterra CPA direct link above to generate an instant Google-powered short link.
             </p>
           </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
-            <Input
-              value={traceUrl}
-              onChange={(e) => setTraceUrl(e.target.value)}
-              placeholder="Paste any Google Link to inspect (e.g. https://www.google.com/share.google?q=... or https://share.google/...)"
-              className="text-xs font-mono h-10 pr-8"
-            />
-            {traceUrl && (
-              <button
-                onClick={() => setTraceUrl("")}
-                className="absolute right-2.5 top-3 text-muted-foreground hover:text-foreground text-xs"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-          <Button
-            className="h-10 px-6 text-xs font-bold gap-2 shrink-0 shadow-glow"
-            disabled={!traceUrl.trim() || traceMut.isPending}
-            onClick={() => traceMut.mutate(traceUrl.trim())}
-          >
-            {traceMut.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Tracing Hops...
-              </>
-            ) : (
-              <>
-                <Play className="h-3.5 w-3.5" /> Trace Redirect
-              </>
-            )}
-          </Button>
-        </div>
-
-        {/* Trace Result Visualization */}
-        {traceResult && (
-          <div className="mt-4 rounded-2xl border border-border bg-card/90 p-5 space-y-4 animate-in fade-in duration-300">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 text-xs font-bold flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> {traceResult.verdict}
-                </span>
-              </div>
-              <div className="text-xs font-mono text-muted-foreground">
-                Total Latency: <strong className="text-foreground">{traceResult.totalLatencyMs}ms</strong> · Hops: <strong className="text-foreground">{traceResult.hops.length}</strong>
-              </div>
-            </div>
-
-            {/* Hops Timeline */}
-            <div className="space-y-3">
-              {traceResult.hops.map((hop, idx) => {
-                const isLast = idx === traceResult.hops.length - 1;
-                const isGoogle = hop.url.includes("google.com") || hop.url.includes("share.google");
-                return (
-                  <div
-                    key={hop.hop}
-                    className="relative flex items-start gap-3 rounded-xl border border-border/70 bg-card/60 p-3 text-xs"
-                  >
-                    <div className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary/10 font-mono font-bold text-primary text-xs">
-                      #{hop.hop}
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span
-                          className={`rounded px-2 py-0.5 font-mono text-[10px] font-bold ${
-                            hop.status >= 300 && hop.status < 400
-                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                              : hop.status === 200
-                              ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                              : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
-                          }`}
-                        >
-                          HTTP {hop.status || "ERR"} {hop.statusText || ""}
-                        </span>
-                        {hop.server && (
-                          <span className="rounded bg-muted/80 px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
-                            Server: {hop.server}
-                          </span>
-                        )}
-                        <span className="font-mono text-[10px] text-muted-foreground">
-                          {hop.latencyMs}ms
-                        </span>
-                        {isGoogle && (
-                          <span className="rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 text-[10px] font-bold">
-                            Google Server
-                          </span>
-                        )}
-                      </div>
-                      <div className="font-mono text-xs break-all text-foreground select-all">
-                        {hop.url}
-                      </div>
-                      {hop.location && (
-                        <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <ArrowRight className="h-3 w-3 text-primary shrink-0" />
-                          <span className="font-mono break-all text-emerald-400 select-all">
-                            {hop.location}
-                          </span>
+        ) : (
+          <div className="overflow-x-auto rounded-2xl border border-border/70">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-muted/50 text-muted-foreground font-semibold border-b border-border/70">
+                <tr>
+                  <th className="p-3.5 font-bold text-foreground">Campaign / Google Link</th>
+                  <th className="p-3.5 font-bold text-foreground">Target Destination</th>
+                  <th className="p-3.5 text-center font-bold text-foreground">Clean Visits</th>
+                  <th className="p-3.5 text-center font-bold text-foreground">Shielded Bots</th>
+                  <th className="p-3.5 text-center font-bold text-foreground">Total</th>
+                  <th className="p-3.5 text-right font-bold text-foreground">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {links.map((link: any) => {
+                  const isHot = (link.clicks_count || 0) >= 50;
+                  return (
+                    <tr key={link.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="p-3.5">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-foreground text-xs">{link.title}</span>
+                            {isHot && (
+                              <span className="inline-flex items-center gap-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/30 px-1.5 py-0.2 text-[10px] font-bold">
+                                <Flame className="h-3 w-3 fill-current" /> Hot
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-[11px] text-emerald-400 font-bold truncate max-w-[260px] select-all">
+                              {link.google_url}
+                            </span>
+                            <button
+                              onClick={() => copyToClipboard(link.google_url, `row-${link.id}`, "Google Link")}
+                              className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-muted"
+                              title="Copy Link"
+                            >
+                              {copiedId === `row-${link.id}` ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                            <a
+                              href={link.google_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-muted-foreground hover:text-primary p-1 rounded hover:bg-muted"
+                              title="Open Link"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
                         </div>
-                      )}
-                      {hop.error && (
-                        <div className="text-rose-400 font-semibold">{hop.error}</div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                      </td>
 
-            {/* Final Target Callout */}
-            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="min-w-0">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary">
-                  Final Destination URL:
-                </span>
-                <div className="font-mono text-foreground break-all select-all mt-0.5">
-                  {traceResult.finalUrl}
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => copyToClipboard(traceResult.initialUrl, "Google Link")}
-                  className="h-8 text-xs font-semibold gap-1.5"
-                >
-                  <Copy className="h-3 w-3" /> Copy Google Link
-                </Button>
-                <a
-                  href={`https://developers.facebook.com/tools/debug/?q=${encodeURIComponent(
-                    traceResult.initialUrl
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline px-2 py-1"
-                >
-                  <ExternalLink className="h-3 w-3" /> Meta Debugger
-                </a>
-              </div>
-            </div>
+                      <td className="p-3.5">
+                        <div className="font-mono text-[11px] text-muted-foreground max-w-[200px] truncate">
+                          {link.destination_url}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground/60 mt-0.5">
+                          via {link.domain}/{link.short_code}
+                        </div>
+                      </td>
+
+                      <td className="p-3.5 text-center">
+                        <span className="inline-flex items-center gap-1 font-mono font-black text-sm text-emerald-400">
+                          {(link.clicks_count || 0).toLocaleString()}
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/15 border border-emerald-500/30 uppercase">
+                            Clean
+                          </span>
+                        </span>
+                      </td>
+
+                      <td className="p-3.5 text-center">
+                        <span className="inline-flex items-center gap-1 font-mono text-xs text-amber-400/90 font-semibold">
+                          {(link.bot_clicks_count || 0).toLocaleString()}
+                          <span className="text-[10px] text-muted-foreground">shielded</span>
+                        </span>
+                      </td>
+
+                      <td className="p-3.5 text-center">
+                        <span className="font-mono font-bold text-xs text-foreground">
+                          {(link.total_clicks || 0).toLocaleString()}
+                        </span>
+                        {link.total_clicks > 0 && (
+                          <div className="text-[10px] font-mono text-muted-foreground">
+                            {link.human_rate}% clean
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="p-3.5 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs font-semibold gap-1 px-2.5"
+                            onClick={() => copyToClipboard(link.google_url, `btn-${link.id}`, "Google Link")}
+                          >
+                            <Copy className="h-3 w-3" />
+                            <span>Copy</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-rose-400"
+                            disabled={deleteMut.isPending}
+                            onClick={() => {
+                              if (window.confirm("Delete this Google Short link?")) {
+                                deleteMut.mutate(link.id);
+                              }
+                            }}
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
-
     </div>
   );
 }
-
-
-

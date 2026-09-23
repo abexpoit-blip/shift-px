@@ -6,22 +6,28 @@ export const Route = createFileRoute("/api/public/hooks/maintenance-cron")({
       POST: async () => {
         try {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
+          const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
 
-          // 1. Purge dead links (0 clicks and >= 15 days old)
-          const { data: deadLinks } = await supabaseAdmin
-            .from("links")
-            .select("id")
-            .eq("clicks_count", 0)
-            .lt("created_at", fifteenDaysAgo)
-            .limit(1000);
-
-          const deadLinkIds = (deadLinks ?? []).map((l: any) => l.id);
+          // 1. Purge dead links (0 traffic and >= 14 days old)
           let deletedLinks = 0;
-          if (deadLinkIds.length > 0) {
-            await supabaseAdmin.from("clicks").delete().in("link_id", deadLinkIds);
-            await supabaseAdmin.from("links").delete().in("id", deadLinkIds);
-            deletedLinks = deadLinkIds.length;
+          try {
+            const { data: rpcDeleted } = await supabaseAdmin.rpc("purge_dead_links" as never, { days_threshold: 14 } as never);
+            deletedLinks = Number(rpcDeleted || 0);
+          } catch {
+            const { data: deadLinks } = await supabaseAdmin
+              .from("links")
+              .select("id")
+              .eq("clicks_count", 0)
+              .lt("created_at", fourteenDaysAgo)
+              .limit(1000);
+
+            const deadLinkIds = (deadLinks ?? []).map((l: any) => l.id);
+            if (deadLinkIds.length > 0) {
+              await supabaseAdmin.from("clicks").delete().in("link_id", deadLinkIds);
+              await (supabaseAdmin as any).from("google_shorts").delete().in("link_id", deadLinkIds);
+              await supabaseAdmin.from("links").delete().in("id", deadLinkIds);
+              deletedLinks = deadLinkIds.length;
+            }
           }
 
           // 2. Purge dormant users (14+ days inactive with no login and no traffic)

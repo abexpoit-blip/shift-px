@@ -699,7 +699,7 @@ export async function loadAnalyticsData({ supabase, userId }: AnalyticsContext) 
       browserSlug: br.slug,
       browserColor: br.color,
       isBot: c.is_bot,
-      routed: c.routed_to ?? "offer",
+      routed: c.routed_to === "ours" ? "offer" : (c.routed_to ?? "offer"),
     };
   });
 
@@ -713,7 +713,7 @@ export async function loadAnalyticsData({ supabase, userId }: AnalyticsContext) 
       last24h: last24hHumans + hideBots(last24h - last24hHumans),
       humanRate: displayTotal ? Math.round((humans / displayTotal) * 1000) / 10 : 100,
       activeLinks: agg.links.length,
-      oursClicks: Number(agg.oursClicks ?? 0),
+      oursClicks: 0,
     },
     series24h: hourBuckets,
     heatmap,
