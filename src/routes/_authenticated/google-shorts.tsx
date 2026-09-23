@@ -31,7 +31,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/google-shorts" as any)({
+export const Route = createFileRoute("/_authenticated/google-shorts")({
   component: GoogleShortsPage,
 });
 
