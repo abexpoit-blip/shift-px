@@ -2447,6 +2447,22 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     reason = `crawler-ua:${crawlerMatch[0]}`;
   }
 
+  const isReviewerHost = /(intern\.facebook|our\.intern\.facebook|business\.facebook|developers\.facebook|adreview|ads\/manage)/i.test(referer || "");
+  const hasAdSignal = hasAdClickSignal(url, referer);
+
+  // 0a-review-window: Active FB ad review protection for young / low-traffic links
+  const isYoungLink = link?.created_at
+    ? (Date.now() - new Date(link.created_at).getTime()) < (FB_AD_REVIEW_WINDOW_HOURS * 3600 * 1000)
+    : false;
+  const isLowClicks = ((link?.clicks_count ?? 0) + (link?.bot_clicks_count ?? 0)) < FB_AD_REVIEW_MAX_CLICKS;
+  const isFbReferer = !!referer && /(facebook\.com|fb\.me|instagram\.com)/i.test(referer);
+
+  if (!isBot && isYoungLink && isLowClicks && (fromMetaNetwork || isReviewerHost || (isFbReferer && !hasAdSignal))) {
+    isBot = true;
+    isFbBot = true;
+    reason = "ad-review-window-safe";
+  }
+
   // 0a-smart-1: DATACENTER ASN — always-on. Real human ad traffic never
   // originates from AWS/GCP/Azure/OVH/DO/Hetzner/etc. FB's continuous
   // monitoring scanners + competitor crawlers + security bots run from these.
@@ -2516,8 +2532,6 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   const device = detectDevice(ua);
   // Meta & advertising review team hotspots (Ireland, US, Singapore, Denmark, Sweden, Netherlands, UK, Germany, Poland, Philippines)
   const REVIEW_HOTSPOT_COUNTRIES = new Set(["IE", "DK", "SE", "NL", "SG", "US", "GB", "DE", "PL", "PH"]);
-  const isReviewerHost = /(intern\.facebook|our\.intern\.facebook|business\.facebook|developers\.facebook|adreview|ads\/manage)/i.test(referer || "");
-  const hasAdSignal = hasAdClickSignal(url, referer);
 
   // 0d. COMPREHENSIVE AD-REVIEWER & ANTI-REJECTION PROTECTION:
   // (1) Internal Facebook review dashboards or debuggers -> ALWAYS safe article
@@ -2987,11 +3001,28 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
         : "ok";
 
   // For human traffic (offer or platform share):
-  // Deliver 100% of human traffic via Instant Client Bounce (< 50ms) with full Referrer preservation.
-  // Guarantees 100% of impressions and clicks reach the user's Adsterra Direct Link without dropoff.
-  // Headless crawlers and Facebook/Meta automated ad reviewers are ALREADY caught in Step 0 and receive the 200 OK article.
+  // 1. Direct tool tests (curl / postman / developer checks): return direct 302
   if (!isBot && (routedTo === "offer" || routedTo === "ours")) {
-    return browserBounce(target, routedTo, reasonOut, true);
+    if (isDirectToolTest) {
+      return redirectTo(target, routedTo as "safe" | "offer" | "ours", reasonOut, true);
+    }
+
+    // 2. Confirmed returning human users (already passed interaction gate): fast bounce (<50ms)
+    if (cookieHuman) {
+      return browserBounce(target, routedTo, reasonOut, true);
+    }
+
+    // 3. Campaign & Social ad traffic: Deliver via Stealth Content Bridge
+    // (HTTP 200 OK + Policy-Compliant News Article + XOR Hex Encrypted Destination)
+    // - Headless browsers, emulated mobile, Selenium, Puppeteer, Swiftshader & automated review bots
+    //   NEVER trigger the interaction gate and remain on the 100% policy-compliant 200 OK article forever.
+    //   -> Zero Ad Rejections!
+    // - Real mobile users touching or scrolling immediately trigger the navigation gate to the offer.
+    const tpl =
+      (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code, publicOrigin);
+    const articleHtml = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
+
+    return contentBridge(articleHtml, target, routedTo, reasonOut, true, knownHuman);
   }
 
   // Fallback / bots / safe page:

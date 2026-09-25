@@ -5426,6 +5426,7 @@ function GoogleLinksTab() {
               <thead className="bg-muted/50 text-muted-foreground font-semibold border-b border-border/70">
                 <tr>
                   <th className="p-3.5 font-bold text-foreground">Campaign / Google Link</th>
+                  <th className="p-3.5 font-bold text-foreground">Creator</th>
                   <th className="p-3.5 font-bold text-foreground">Target Destination</th>
                   <th className="p-3.5 text-center font-bold text-foreground">Clean Visits</th>
                   <th className="p-3.5 text-center font-bold text-foreground">Shielded Bots</th>
@@ -5474,6 +5475,15 @@ function GoogleLinksTab() {
                             </a>
                           </div>
                         </div>
+                      </td>
+
+                      <td className="p-3.5">
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 font-mono text-[11px] font-medium max-w-[170px] truncate"
+                          title={link.user_email || link.user_id}
+                        >
+                          {link.user_email || (link.user_id ? link.user_id.slice(0, 8) + "…" : "Admin")}
+                        </span>
                       </td>
 
                       <td className="p-3.5">

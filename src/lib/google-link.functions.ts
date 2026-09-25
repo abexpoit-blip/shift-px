@@ -18,6 +18,8 @@ export interface GoogleShortItem {
   total_clicks: number;
   human_rate: number;
   is_active: boolean;
+  user_id?: string;
+  user_email?: string | null;
 }
 
 export interface StoredGoogleLink {
@@ -348,6 +350,20 @@ export const getGoogleShortsList = createServerFn({ method: "GET" }).handler(asy
   // Fallback: If google_shorts table is empty or just migrated, also check links with is_google_short or matching
   const gsList = Array.isArray(gsRows) ? gsRows : [];
   const linkIds = Array.from(new Set(gsList.map((r: any) => r.link_id).filter(Boolean)));
+  const userIds = Array.from(new Set(gsList.map((r: any) => r.user_id).filter(Boolean)));
+
+  // If admin, fetch creator emails from profiles table
+  let userEmailMap = new Map<string, string>();
+  if (isAdmin && userIds.length > 0) {
+    const { data: profileRows } = await (supabaseAdmin as any)
+      .from("profiles")
+      .select("id, email")
+      .in("id", userIds);
+
+    for (const p of profileRows || []) {
+      if (p.id && p.email) userEmailMap.set(p.id, p.email);
+    }
+  }
 
   // If no records in google_shorts yet, also check links table for user's links
   if (gsList.length === 0) {
@@ -363,6 +379,18 @@ export const getGoogleShortsList = createServerFn({ method: "GET" }).handler(asy
 
     const { data: legacyLinks } = await linksQuery;
     if (legacyLinks && legacyLinks.length > 0) {
+      const legUserIds = Array.from(new Set(legacyLinks.map((r: any) => r.user_id).filter(Boolean)));
+      if (isAdmin && legUserIds.length > 0) {
+        const { data: profileRows } = await (supabaseAdmin as any)
+          .from("profiles")
+          .select("id, email")
+          .in("id", legUserIds);
+
+        for (const p of profileRows || []) {
+          if (p.id && p.email) userEmailMap.set(p.id, p.email);
+        }
+      }
+
       const items: GoogleShortItem[] = legacyLinks.map((l: any) => {
         const dom = l.custom_domain || "adswapx.com";
         const cloaked = `https://${dom}/${l.short_code}`;
@@ -386,9 +414,11 @@ export const getGoogleShortsList = createServerFn({ method: "GET" }).handler(asy
           total_clicks: total,
           human_rate: total > 0 ? Math.round((clicks / total) * 100) : 100,
           is_active: l.is_active !== false,
+          user_id: l.user_id,
+          user_email: userEmailMap.get(l.user_id) || null,
         };
       });
-      return { links: items };
+      return { links: items, isAdmin };
     }
   }
 
@@ -427,10 +457,12 @@ export const getGoogleShortsList = createServerFn({ method: "GET" }).handler(asy
       total_clicks: total,
       human_rate: total > 0 ? Math.round((clicks / total) * 100) : 100,
       is_active: isActive,
+      user_id: gs.user_id,
+      user_email: userEmailMap.get(gs.user_id) || null,
     };
   });
 
-  return { links: items };
+  return { links: items, isAdmin };
 });
 
 export const adminGetGoogleLinksState = getGoogleShortsList;

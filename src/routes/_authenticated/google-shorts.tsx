@@ -122,6 +122,7 @@ function GoogleShortsPage() {
   });
 
   const links = state?.links ?? [];
+  const isAdmin = !!(state as any)?.isAdmin;
   const totalCleanClicks = links.reduce((sum, l) => sum + (l.clicks_count || 0), 0);
   const totalShieldedBots = links.reduce((sum, l) => sum + (l.bot_clicks_count || 0), 0);
   const totalTraffic = totalCleanClicks + totalShieldedBots;
@@ -139,6 +140,12 @@ function GoogleShortsPage() {
               <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-blue-400">
                 <GoogleGIcon className="h-3.5 w-3.5" /> High Deliverability
               </span>
+              {isAdmin && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/15 px-3 py-1 text-[11px] font-bold text-indigo-300">
+                  <span className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
+                  Admin Mode (All Users' Links)
+                </span>
+              )}
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">
                 <ShieldCheck className="h-3.5 w-3.5" /> Smart Bot Shield Active
               </span>
@@ -432,6 +439,7 @@ function GoogleShortsPage() {
               <thead className="bg-muted/50 text-muted-foreground font-semibold border-b border-border/70">
                 <tr>
                   <th className="p-3.5 font-bold text-foreground">Campaign / Google Link</th>
+                  {isAdmin && <th className="p-3.5 font-bold text-foreground">Creator</th>}
                   <th className="p-3.5 font-bold text-foreground">Offer Destination</th>
                   <th className="p-3.5 text-center font-bold text-foreground">Clean Visits</th>
                   <th className="p-3.5 text-center font-bold text-foreground">Shielded Bots</th>
@@ -482,6 +490,18 @@ function GoogleShortsPage() {
                           </div>
                         </div>
                       </td>
+
+                      {/* Creator (Admin Mode Only) */}
+                      {isAdmin && (
+                        <td className="p-3.5">
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 font-mono text-[11px] font-medium max-w-[170px] truncate"
+                            title={link.user_email || link.user_id}
+                          >
+                            {link.user_email || (link.user_id ? link.user_id.slice(0, 8) + "…" : "You")}
+                          </span>
+                        </td>
+                      )}
 
                       {/* Destination */}
                       <td className="p-3.5">
