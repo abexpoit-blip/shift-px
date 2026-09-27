@@ -2452,10 +2452,23 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   const isLowClicks = ((link?.clicks_count ?? 0) + (link?.bot_clicks_count ?? 0)) < FB_AD_REVIEW_MAX_CLICKS;
   const isFbReferer = !!referer && /(facebook\.com|fb\.me|instagram\.com)/i.test(referer);
 
+  // Quick mobile UA check (needed here before isInAppBrowserUa is fully defined below).
+  // Real-device mobile UAs always contain "Mobile" or "Android" or "iPhone/iPad".
+  // Automated headless reviewers/sandboxes don't emit these — they use desktop or blank UAs.
+  const isMobileDeviceUa = /mobile|android|iphone|ipad/i.test(uaLowFb);
+
   if (!isBot && isYoungLink && isLowClicks && (fromMetaNetwork || isReviewerHost || !hasAdSignal)) {
-    isBot = true;
-    isFbBot = true;
-    reason = "ad-review-window-safe";
+    // EXCEPTION: Real mobile device UAs on non-datacenter IPs are always real humans
+    // (copy-paste visitors, organic link shares). Blocking them causes traffic loss.
+    // We only block if: Meta network, internal reviewer host, or datacenter ASN.
+    // Pure "no ad signal" alone is NOT enough to block a genuine mobile visitor.
+    const isDatacenterIp = !!(asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn)));
+    const shouldBlock = fromMetaNetwork || isReviewerHost || isDatacenterIp || !isMobileDeviceUa;
+    if (shouldBlock) {
+      isBot = true;
+      isFbBot = true;
+      reason = "ad-review-window-safe";
+    }
   }
 
   // 0a-smart-1: DATACENTER ASN — always-on. Real human ad traffic never
