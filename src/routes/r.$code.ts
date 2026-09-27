@@ -367,6 +367,10 @@ const AD_CLICK_PARAMS = [
   "utm_source",
   "utm_campaign",
   "ref",
+  // Owner preview bypass: append ?_p=1 to see offer on any device
+  // Example: https://adswapx.com/zuaj68?_p=1
+  "_p",
+  "_preview",
 ];
 const SOCIAL_REFERRER_RE =
   /(facebook|fb\.me|fbcdn|instagram|messenger|whatsapp|tiktok|t\.co|twitter|x\.com|snapchat|pinterest|google|bing|yandex)\./i;
