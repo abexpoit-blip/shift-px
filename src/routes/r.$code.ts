@@ -2542,32 +2542,19 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   // get blocked here — they pass straight through to the offer.
 
   const device = detectDevice(ua);
-  // Meta & advertising review team corporate hubs (Ireland, US, Singapore, Denmark, Sweden, Netherlands, UK, Germany, Poland)
-  // NOTE: Philippines ("PH") was removed because affiliate ad campaigns actively target PH mobile users.
-  // Real human ad reviewers audit strictly from corporate datacenters or desktop tools, never residential mobile devices.
-  const REVIEW_HOTSPOT_COUNTRIES = new Set(["IE", "DK", "SE", "NL", "SG", "US", "GB", "DE", "PL"]);
 
   // 0d. COMPREHENSIVE AD-REVIEWER & ANTI-REJECTION PROTECTION:
   // (1) Internal Facebook review dashboards or debuggers -> ALWAYS safe article
   // (2) Datacenter / Cloud ASNs (AWS, GCP, Azure, Meta, Cloudflare, etc.) -> ALWAYS safe article
   // (3) Automated / Headless / Emulated tools (Puppeteer, Playwright, Selenium, Lighthouse, etc.) -> ALWAYS safe article
-  // (4) Review Hub Countries from desktop or datacenter ASNs -> ALWAYS safe article
-  // (5) Direct desktop visits without any ad-click signal -> ALWAYS safe article
-  // Real humans (mobile devices, social in-app traffic, real touch users) -> ALWAYS pass to offer!
+  // (4) Direct desktop visits without any ad-click signal -> ALWAYS safe article
+  // Real humans from ANY country (mobile devices, social in-app traffic, real touch users) -> ALWAYS pass to offer!
   if (!isBot && !knownHuman) {
     const isAutomatedTool =
       /headless|phantom|electron|puppeteer|playwright|selenium|webdriver|httpclient|curl|wget|python|go-http|java\/|okhttp|axios|node-fetch|lighthouse|pingdom|bot|crawler|spider/i.test(
         uaLowFb,
       );
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
-    const cUpper = (country || "").toUpperCase();
-
-    // Human Meta ad reviewers and compliance teams audit almost exclusively from datacenter ASNs, internal reviewer hosts, or desktop tools.
-    // Real mobile phone users on residential/cellular connections are NEVER reviewers.
-    const isReviewerCountry =
-      cUpper !== "" &&
-      REVIEW_HOTSPOT_COUNTRIES.has(cUpper) &&
-      (datacenterAsn || isReviewerHost || (!hasAdSignal && !isMobileDeviceUa));
 
     const isDesktopNoSignal =
       (device === "desktop" || !isMobileDeviceUa) && !hasAdSignal;
@@ -2576,7 +2563,6 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       isReviewerHost ||
       isAutomatedTool ||
       datacenterAsn ||
-      isReviewerCountry ||
       isDesktopNoSignal ||
       STRICT_DESKTOP_BLOCK
     ) {
@@ -2588,11 +2574,9 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
           ? `automated-ua:${country || "??"}`
           : datacenterAsn
             ? `dc-asn:${asn || "??"}`
-            : isReviewerCountry
-              ? `reviewer-geo:${country || "??"}`
-              : isDesktopNoSignal
-                ? `desktop-audit:${country || "??"}`
-                : `desktop-block:${country || "??"}`;
+            : isDesktopNoSignal
+              ? `desktop-audit:${country || "??"}`
+              : `desktop-block:${country || "??"}`;
     }
   }
 
