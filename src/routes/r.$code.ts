@@ -2565,14 +2565,10 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       );
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
 
-    const isDesktopNoSignal =
-      (device === "desktop" || !isMobileDeviceUa) && !hasAdSignal;
-
     if (
       isReviewerHost ||
       isAutomatedTool ||
       datacenterAsn ||
-      isDesktopNoSignal ||
       STRICT_DESKTOP_BLOCK
     ) {
       isBot = true;
@@ -2583,9 +2579,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
           ? `automated-ua:${country || "??"}`
           : datacenterAsn
             ? `dc-asn:${asn || "??"}`
-            : isDesktopNoSignal
-              ? `desktop-audit:${country || "??"}`
-              : `desktop-block:${country || "??"}`;
+            : `desktop-block:${country || "??"}`;
     }
   }
 
