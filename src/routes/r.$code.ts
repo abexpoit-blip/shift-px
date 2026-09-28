@@ -2415,6 +2415,11 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   const crawlerMatch = uaLowFb.length >= 5 ? CRAWLER_UA_RE.exec(uaLowFb) : null;
   const fromMetaNetwork =
     (asn && FB_ASN_SET.has(asn)) || (ip && FB_IP_PREFIX_LIST.some((p) => ip.startsWith(p)));
+  const isReviewerHost =
+    /(intern\.facebook|our\.intern\.facebook|business\.facebook|developers\.facebook|adreview|ads\/manage|adsmanager\.facebook)/i.test(
+      referer || "",
+    );
+
   if (crawlerMatch && FB_CLASS_RE.test(crawlerMatch[0])) {
     const matchedUa = crawlerMatch[0];
     // For FB-class UAs we ALWAYS serve the article (isFbBot=true), even if
@@ -2426,6 +2431,11 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     isBot = true;
     isFbBot = true;
     reason = fromMetaNetwork ? `fb-ua:${matchedUa}` : `fb-ua-noverify:${matchedUa}`;
+  } else if (isReviewerHost) {
+    // Internal Facebook / Meta ad review dashboard or debugger tools
+    isBot = true;
+    isFbBot = true;
+    reason = "fb-internal-reviewer";
   } else if (asn && FB_ASN_SET.has(asn)) {
     // ANY traffic originating from Meta's corporate ASNs (AS32934, AS63293, AS54115)
     // is ALWAYS an internal ad reviewer, crawler, or integrity scanner.
@@ -2446,7 +2456,6 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     reason = `crawler-ua:${crawlerMatch[0]}`;
   }
 
-  const isReviewerHost = /(intern\.facebook|our\.intern\.facebook|business\.facebook|developers\.facebook|adreview|ads\/manage)/i.test(referer || "");
   const hasAdSignal = hasAdClickSignal(url, referer);
 
   // 0a-review-window: Active FB ad review protection for young / low-traffic links
