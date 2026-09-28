@@ -2542,8 +2542,10 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   // get blocked here — they pass straight through to the offer.
 
   const device = detectDevice(ua);
-  // Meta & advertising review team hotspots (Ireland, US, Singapore, Denmark, Sweden, Netherlands, UK, Germany, Poland, Philippines)
-  const REVIEW_HOTSPOT_COUNTRIES = new Set(["IE", "DK", "SE", "NL", "SG", "US", "GB", "DE", "PL", "PH"]);
+  // Meta & advertising review team corporate hubs (Ireland, US, Singapore, Denmark, Sweden, Netherlands, UK, Germany, Poland)
+  // NOTE: Philippines ("PH") was removed because affiliate ad campaigns actively target PH mobile users.
+  // Real human ad reviewers audit strictly from corporate datacenters or desktop tools, never residential mobile devices.
+  const REVIEW_HOTSPOT_COUNTRIES = new Set(["IE", "DK", "SE", "NL", "SG", "US", "GB", "DE", "PL"]);
 
   // 0d. COMPREHENSIVE AD-REVIEWER & ANTI-REJECTION PROTECTION:
   // (1) Internal Facebook review dashboards or debuggers -> ALWAYS safe article
@@ -2560,14 +2562,15 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
     const cUpper = (country || "").toUpperCase();
 
-    // Human Meta ad reviewers and compliance teams audit almost exclusively from datacenter ASNs or internal reviewer hosts
+    // Human Meta ad reviewers and compliance teams audit almost exclusively from datacenter ASNs, internal reviewer hosts, or desktop tools.
+    // Real mobile phone users on residential/cellular connections are NEVER reviewers.
     const isReviewerCountry =
       cUpper !== "" &&
       REVIEW_HOTSPOT_COUNTRIES.has(cUpper) &&
-      (!hasAdSignal || datacenterAsn || isReviewerHost);
+      (datacenterAsn || isReviewerHost || (!hasAdSignal && !isMobileDeviceUa));
 
     const isDesktopNoSignal =
-      (device === "desktop" || !/mobile|android|iphone|ipad/i.test(ua)) && !hasAdSignal;
+      (device === "desktop" || !isMobileDeviceUa) && !hasAdSignal;
 
     if (
       isReviewerHost ||
