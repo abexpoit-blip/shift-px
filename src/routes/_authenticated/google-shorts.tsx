@@ -7,6 +7,7 @@ import {
   generateGoogleShort,
   getGoogleShortsList,
   deleteGoogleShort,
+  verifyGoogleTokenLiveFn,
   type GoogleShortItem,
 } from "@/lib/google-link.functions";
 import { listShortenerDomains } from "@/lib/shortener-domains.functions";
@@ -29,6 +30,12 @@ import {
   Clock,
   ArrowUpRight,
   TrendingUp,
+  Code2,
+  Info,
+  KeyRound,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/google-shorts")({
@@ -41,6 +48,7 @@ function GoogleShortsPage() {
   const generateFn = useServerFn(generateGoogleShort);
   const deleteFn = useServerFn(deleteGoogleShort);
   const listDomainsFn = useServerFn(listShortenerDomains);
+  const verifyTokenFn = useServerFn(verifyGoogleTokenLiveFn);
 
   const { data: state, isLoading, isRefetching } = useQuery({
     queryKey: ["user-google-shorts-list"],
@@ -61,9 +69,20 @@ function GoogleShortsPage() {
     return Array.from(new Set(combined.filter(Boolean)));
   }, [domainsQ.data]);
 
+  // Modes: "token" (Clean q=) | "apps_script" (Script Engine) | "fast" (In-house link=)
+  const [generatorMode, setGeneratorMode] = useState<"token" | "apps_script" | "fast">("token");
   const [offerUrl, setOfferUrl] = useState("");
   const [domain, setDomain] = useState("adswapx.com");
   const [label, setLabel] = useState("");
+  const [googleTokenInput, setGoogleTokenInput] = useState("");
+  const [isVerifyingToken, setIsVerifyingToken] = useState(false);
+  const [tokenVerificationResult, setTokenVerificationResult] = useState<{
+    valid?: boolean;
+    destination?: string;
+    error?: string;
+  } | null>(null);
+  const [showAndroidGuide, setShowAndroidGuide] = useState(false);
+
   const [result, setResult] = useState<{
     googleUrl: string;
     shareGoogleUrl?: string;
@@ -95,9 +114,34 @@ function GoogleShortsPage() {
     document.body.removeChild(el);
   };
 
+  const handleVerifyToken = async (val: string) => {
+    const input = val.trim();
+    if (!input) return;
+    setIsVerifyingToken(true);
+    setTokenVerificationResult(null);
+    try {
+      const res = await verifyTokenFn({ data: { tokenOrUrl: input } });
+      setTokenVerificationResult(res);
+      if (res.valid) {
+        toast.success("Google Token verified! Live 301 confirmed.");
+      } else {
+        toast.error(res.error || "Token returned error on Google");
+      }
+    } catch (err: any) {
+      setTokenVerificationResult({ valid: false, error: err.message || "Verification request failed" });
+      toast.error("Verification failed");
+    } finally {
+      setIsVerifyingToken(false);
+    }
+  };
+
   const generateMut = useMutation({
-    mutationFn: (data: { offerUrl: string; domain?: string; notes?: string }) =>
-      generateFn({ data }),
+    mutationFn: (data: {
+      offerUrl: string;
+      domain?: string;
+      notes?: string;
+      googleShareCode?: string;
+    }) => generateFn({ data }),
     onSuccess: (res: any) => {
       setResult({
         googleUrl: res.googleUrl,
@@ -106,6 +150,8 @@ function GoogleShortsPage() {
       });
       setOfferUrl("");
       setLabel("");
+      setGoogleTokenInput("");
+      setTokenVerificationResult(null);
       toast.success("Google Short Link generated successfully!");
       queryClient.invalidateQueries({ queryKey: ["user-google-shorts-list"] });
     },
@@ -217,7 +263,7 @@ function GoogleShortsPage() {
         </div>
       </div>
 
-      {/* 1-Click Generator Form */}
+      {/* Generator Form with Mode Selector */}
       <div className="rounded-3xl border border-emerald-500/40 bg-gradient-to-b from-emerald-950/20 via-card to-card p-6 sm:p-7 shadow-xl space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
           <div className="flex items-center gap-3">
@@ -226,12 +272,85 @@ function GoogleShortsPage() {
             </div>
             <div>
               <h2 className="text-lg font-black text-foreground">Create Google Short Link</h2>
-              <p className="text-xs text-muted-foreground">Paste your destination CPA offer to generate a Google-powered link</p>
+              <p className="text-xs text-muted-foreground">Select your mode and paste your destination CPA offer</p>
             </div>
           </div>
           <div className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
             Active Engine: {domain}
           </div>
+        </div>
+
+        {/* Mode Selector Tabs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-muted/40 p-1.5 rounded-2xl border border-border/60">
+          <button
+            type="button"
+            onClick={() => setGeneratorMode("token")}
+            className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+              generatorMode === "token"
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <GoogleGIcon className="h-3.5 w-3.5" />
+              <span>Clean Token (q=)</span>
+            </div>
+            <span className="text-[10px] opacity-80 font-normal mt-0.5">Zero Subdomain (Best for Reels)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setGeneratorMode("apps_script")}
+            className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+              generatorMode === "apps_script"
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <Code2 className="h-3.5 w-3.5" />
+              <span>Apps Script Engine</span>
+            </div>
+            <span className="text-[10px] opacity-80 font-normal mt-0.5">100% Free script.google</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setGeneratorMode("fast")}
+            className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+              generatorMode === "fast"
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5" />
+              <span>Instant In-House</span>
+            </div>
+            <span className="text-[10px] opacity-80 font-normal mt-0.5">1-Click (link=)</span>
+          </button>
+        </div>
+
+        {/* Mode Descriptions */}
+        <div className="rounded-xl bg-background/60 border border-border/60 p-3 text-xs text-muted-foreground flex items-start gap-2.5">
+          <Info className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+          {generatorMode === "token" && (
+            <div>
+              <strong className="text-foreground">Clean Google Token Mode (Recommended for Facebook):</strong> Generates an opaque link like{" "}
+              <code className="text-emerald-400 font-mono">https://www.google.com/share.google?q=pqATPUPG...</code> with ZERO subdomains in the URL. Facebook text scanners treat it 100% as a pure Google URL.
+            </div>
+          )}
+          {generatorMode === "apps_script" && (
+            <div>
+              <strong className="text-foreground">Google Apps Script Engine (100% Free & In-House):</strong> Deploy our 3-line Google Apps Script on your Google account. Yields a pure <code className="text-emerald-400 font-mono">https://script.google.com/macros/s/.../exec</code> URL with 0 subdomains and 100% Google domain trust.
+            </div>
+          )}
+          {generatorMode === "fast" && (
+            <div>
+              <strong className="text-foreground">Instant In-House Mode:</strong> Generates{" "}
+              <code className="text-emerald-400 font-mono">https://www.google.com/share.google?link=https://{domain}/...</code> with 1-click without needing external tokens.
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
@@ -277,14 +396,146 @@ function GoogleShortsPage() {
           </div>
         </div>
 
+        {/* Clean Token Mode Specific Fields */}
+        {generatorMode === "token" && (
+          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/15 p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Label className="text-xs font-black text-foreground flex items-center gap-1.5">
+                <KeyRound className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Google Share Token or URL (`q=` or `share.google/`)*</span>
+              </Label>
+
+              <button
+                type="button"
+                onClick={() => setShowAndroidGuide(!showAndroidGuide)}
+                className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+              >
+                <span>How to get free token in 5 seconds</span>
+                {showAndroidGuide ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+
+            {showAndroidGuide && (
+              <div className="rounded-xl border border-emerald-500/20 bg-background/80 p-3.5 text-xs text-muted-foreground space-y-2 animate-in fade-in duration-200">
+                <p className="font-bold text-emerald-400">3 Easy Steps to get a 100% Free Official Google Token:</p>
+                <ol className="list-decimal list-inside space-y-1 text-foreground/90 pl-1">
+                  <li>Open your phone's <strong>Google App</strong> or <strong>Chrome</strong>.</li>
+                  <li>Open your cloaked link (or any short URL) and tap the <strong>Share</strong> button.</li>
+                  <li>Choose <strong>Copy link</strong> ➔ Google will give you a <code className="font-mono text-emerald-400">share.google?q=...</code> link. Paste it below!</li>
+                </ol>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <Input
+                value={googleTokenInput}
+                onChange={(e) => {
+                  setGoogleTokenInput(e.target.value);
+                  setTokenVerificationResult(null);
+                }}
+                placeholder="e.g. pqATPUPGq8j0jZDLI or https://www.google.com/share.google?q=pqATPUPG..."
+                className="text-xs font-mono h-11 border-border/80 focus:border-emerald-500 bg-background/90"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 px-4 text-xs font-semibold gap-1.5 shrink-0"
+                disabled={!googleTokenInput.trim() || isVerifyingToken}
+                onClick={() => handleVerifyToken(googleTokenInput)}
+              >
+                {isVerifyingToken ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Verifying...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Verify Live
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {tokenVerificationResult && (
+              <div
+                className={`rounded-xl p-2.5 text-xs flex items-center gap-2 ${
+                  tokenVerificationResult.valid
+                    ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
+                    : "bg-rose-500/10 border border-rose-500/30 text-rose-400"
+                }`}
+              >
+                {tokenVerificationResult.valid ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    <span>Token is live on Google! Redirect target: {tokenVerificationResult.destination}</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>{tokenVerificationResult.error || "Token returned error on Google"}</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Google Apps Script Mode Specific Fields */}
+        {generatorMode === "apps_script" && (
+          <div className="rounded-2xl border border-purple-500/30 bg-purple-950/15 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-black text-foreground flex items-center gap-1.5">
+                <Code2 className="h-3.5 w-3.5 text-purple-400" />
+                <span>Google Apps Script Code (3-line Free Engine)</span>
+              </Label>
+              <button
+                type="button"
+                onClick={() =>
+                  copyToClipboard(
+                    `function doGet(e) {\n  return HtmlService.createHtmlOutput('<script>location.replace("https://${domain}/YOUR_CODE");</script>');\n}`,
+                    "script-copy",
+                    "Google Script"
+                  )
+                }
+                className="text-[11px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1"
+              >
+                <Copy className="h-3.5 w-3.5" />
+                <span>Copy Script Code</span>
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-purple-500/20 bg-background/80 p-3 text-xs font-mono text-purple-300 space-y-1">
+              <div>// In script.google.com ➔ New Project ➔ paste:</div>
+              <div>{"function doGet(e) {"}</div>
+              <div>{`  return HtmlService.createHtmlOutput('<script>location.replace("https://${domain}/YOUR_CODE");</script>');`}</div>
+              <div>{"}"}</div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-foreground">Your Deployed Apps Script Web App URL *</Label>
+              <Input
+                value={googleTokenInput}
+                onChange={(e) => setGoogleTokenInput(e.target.value)}
+                placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+                className="text-xs font-mono h-11 border-border/80 focus:border-purple-500 bg-background/90"
+              />
+            </div>
+          </div>
+        )}
+
         <Button
           className="w-full h-11 text-sm font-bold gap-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white shadow-lg shadow-emerald-500/20 border-0"
-          disabled={!offerUrl.trim() || generateMut.isPending}
+          disabled={
+            !offerUrl.trim() ||
+            generateMut.isPending ||
+            (generatorMode === "token" && !googleTokenInput.trim()) ||
+            (generatorMode === "apps_script" && !googleTokenInput.trim())
+          }
           onClick={() =>
             generateMut.mutate({
               offerUrl: offerUrl.trim(),
               domain,
               notes: label.trim() || undefined,
+              googleShareCode: generatorMode === "fast" ? undefined : (googleTokenInput.trim() || undefined),
             })
           }
         >
