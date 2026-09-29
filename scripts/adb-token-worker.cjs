@@ -150,9 +150,9 @@ async function generateTokenViaAdb(slotCode) {
   await new Promise((r) => setTimeout(r, 1500));
 
   // Extract from logcat or clipboard
-  const logcat = runAdb("logcat -d -t 60 | grep -iE 'share\\.google|q='");
+  const logcat = runAdb("logcat -d -t 100") || "";
   if (logcat) {
-    const match = logcat.match(/q=([a-zA-Z0-9_-]{8,64})/);
+    const match = logcat.match(/[?&]q=([a-zA-Z0-9_-]{8,64})/i) || logcat.match(/share\.google\/([a-zA-Z0-9_-]{8,64})/i);
     if (match && match[1]) {
       const extractedToken = match[1];
       log(`Captured token from logcat: ${extractedToken}`);
