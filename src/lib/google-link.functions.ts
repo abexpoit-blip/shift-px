@@ -194,7 +194,6 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
         googleShareCode: z.string().optional(),
         domain: z.string().optional().default("adswapx.com"),
         notes: z.string().optional(),
-        gshortApiKey: z.string().optional(),
       })
       .parse(d)
   )
@@ -276,53 +275,12 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
       destinationShortUrl = `https://${selectedDomain}/${code}`;
     }
 
-    // Check if Gshort API key provided to automatically generate clean q= link
+    // In-House Google URL Routing
     const rawGoogleInput = (data.googleShareCode || "").trim();
-    let automatedGoogleUrl = "";
-    if (data.gshortApiKey && data.gshortApiKey.trim() && !rawGoogleInput) {
-      try {
-        const gres = await fetch("https://gshort.net/api/v1/links", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${data.gshortApiKey.trim()}`,
-            "Content-Type": "application/json",
-            "Idempotency-Key": `adspx-${shortCode}-${Date.now()}`,
-          },
-          body: JSON.stringify({
-            destination_url: destinationShortUrl,
-          }),
-        });
-        if (gres.ok) {
-          const gdata = await gres.json();
-          if (gdata?.googleShareUrl) {
-            automatedGoogleUrl = gdata.googleShareUrl;
-          } else if (gdata?.link?.googleShareUrl) {
-            automatedGoogleUrl = gdata.link.googleShareUrl;
-          } else if (gdata?.shortUrl) {
-            automatedGoogleUrl = gdata.shortUrl;
-          }
-        } else {
-          const errText = await gres.text();
-          console.warn("[google-link] Gshort API response:", gres.status, errText);
-        }
-      } catch (gApiErr: any) {
-        console.warn("[google-link] Gshort API call failed:", gApiErr.message);
-      }
-    }
-
-    // Generate Google short URLs
     let officialGoogleUrl = "";
     let shareGoogleAltUrl = "";
 
-    if (automatedGoogleUrl) {
-      officialGoogleUrl = automatedGoogleUrl;
-      const parsedToken = extractGoogleToken(automatedGoogleUrl);
-      if (parsedToken.token && !parsedToken.scriptUrl) {
-        shareGoogleAltUrl = `https://share.google/${encodeURIComponent(parsedToken.token)}`;
-      } else {
-        shareGoogleAltUrl = automatedGoogleUrl;
-      }
-    } else if (rawGoogleInput) {
+    if (rawGoogleInput) {
       const parsedToken = extractGoogleToken(rawGoogleInput);
       if (parsedToken.error || !parsedToken.token) {
         throw new Error(parsedToken.error || "Invalid Google Share token or URL");

@@ -5093,18 +5093,12 @@ function GoogleLinksTab() {
     return Array.from(new Set(combined.filter(Boolean)));
   }, [domainsQ.data]);
 
-  // Modes: "token" (Clean q=) | "fast" (In-house link=) | "gshort" (Partner API) | "apps_script" (Script Engine)
-  const [generatorMode, setGeneratorMode] = useState<"token" | "fast" | "gshort" | "apps_script">("token");
+  // Modes: "token" (Clean q=) | "apps_script" (Script Engine) | "fast" (In-house link=)
+  const [generatorMode, setGeneratorMode] = useState<"token" | "apps_script" | "fast">("token");
   const [autoOfferUrl, setAutoOfferUrl] = useState("");
   const [autoDomain, setAutoDomain] = useState("adswapx.com");
   const [autoNotes, setAutoNotes] = useState("");
   const [googleTokenInput, setGoogleTokenInput] = useState("");
-  const [gshortApiKey, setGshortApiKey] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("adspx_gshort_api_key") || "";
-    }
-    return "";
-  });
   const [isVerifyingToken, setIsVerifyingToken] = useState(false);
   const [tokenVerificationResult, setTokenVerificationResult] = useState<{
     valid?: boolean;
@@ -5165,20 +5159,12 @@ function GoogleLinksTab() {
     }
   };
 
-  const handleGshortKeyChange = (key: string) => {
-    setGshortApiKey(key);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("adspx_gshort_api_key", key.trim());
-    }
-  };
-
   const autoShortMut = useMutation({
     mutationFn: (data: {
       offerUrl: string;
       domain?: string;
       notes?: string;
       googleShareCode?: string;
-      gshortApiKey?: string;
     }) => autoShortFn({ data }),
     onSuccess: (res: any) => {
       setAutoResult({
@@ -5233,7 +5219,7 @@ function GoogleLinksTab() {
 
             <h2 className="text-2xl sm:text-3xl font-black text-foreground flex items-center gap-3">
               <GoogleGIcon className="h-7 w-7 sm:h-8 sm:w-8" />
-              <span>AdsPx Google Shorts</span>
+              <span>AdsPx Google Shorts (In-House Engine)</span>
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
               Generate official Google domain links paired with AdsPx cloaking. High click-through rates, clean social previews, zero subdomains in URL, and 0% traffic drop.
@@ -5290,7 +5276,7 @@ function GoogleLinksTab() {
             </div>
             <div>
               <h3 className="text-base font-black text-foreground">Create Google Short Link</h3>
-              <p className="text-xs text-muted-foreground">Select your generation mode and paste your CPA offer URL</p>
+              <p className="text-xs text-muted-foreground">Select your in-house mode and paste your CPA offer URL</p>
             </div>
           </div>
           <span className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
@@ -5299,11 +5285,11 @@ function GoogleLinksTab() {
         </div>
 
         {/* Mode Selector Tabs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-muted/40 p-1.5 rounded-2xl border border-border/60">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-muted/40 p-1.5 rounded-2xl border border-border/60">
           <button
             type="button"
             onClick={() => setGeneratorMode("token")}
-            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
               generatorMode === "token"
                 ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
@@ -5313,45 +5299,13 @@ function GoogleLinksTab() {
               <GoogleGIcon className="h-3.5 w-3.5" />
               <span>Clean Token (q=)</span>
             </div>
-            <span className="text-[10px] opacity-80 font-normal mt-0.5">Zero Subdomain (Best)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setGeneratorMode("fast")}
-            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all ${
-              generatorMode === "fast"
-                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-            }`}
-          >
-            <div className="flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5" />
-              <span>Instant In-House</span>
-            </div>
-            <span className="text-[10px] opacity-80 font-normal mt-0.5">1-Click (link=)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setGeneratorMode("gshort")}
-            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all ${
-              generatorMode === "gshort"
-                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-            }`}
-          >
-            <div className="flex items-center gap-1.5">
-              <Rocket className="h-3.5 w-3.5" />
-              <span>Gshort Partner API</span>
-            </div>
-            <span className="text-[10px] opacity-80 font-normal mt-0.5">Auto Background</span>
+            <span className="text-[10px] opacity-80 font-normal mt-0.5">Zero Subdomain (Best for Reels)</span>
           </button>
 
           <button
             type="button"
             onClick={() => setGeneratorMode("apps_script")}
-            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
               generatorMode === "apps_script"
                 ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
@@ -5362,6 +5316,22 @@ function GoogleLinksTab() {
               <span>Apps Script Engine</span>
             </div>
             <span className="text-[10px] opacity-80 font-normal mt-0.5">100% Free script.google</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setGeneratorMode("fast")}
+            className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+              generatorMode === "fast"
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5" />
+              <span>Instant In-House</span>
+            </div>
+            <span className="text-[10px] opacity-80 font-normal mt-0.5">1-Click (link=)</span>
           </button>
         </div>
 
@@ -5374,20 +5344,15 @@ function GoogleLinksTab() {
               <code className="text-emerald-400 font-mono">https://www.google.com/share.google?q=pqATPUPG...</code> with ZERO subdomains in the query string. Facebook text scanners treat it 100% as a pure Google URL.
             </div>
           )}
+          {generatorMode === "apps_script" && (
+            <div>
+              <strong className="text-foreground">Google Apps Script Engine (100% Free & In-House):</strong> Deploy our 3-line Google Apps Script on your Google account. Yields a pure <code className="text-emerald-400 font-mono">https://script.google.com/macros/s/.../exec</code> URL with 0 subdomains and 100% Google domain trust.
+            </div>
+          )}
           {generatorMode === "fast" && (
             <div>
               <strong className="text-foreground">Instant In-House Mode:</strong> Generates{" "}
               <code className="text-emerald-400 font-mono">https://www.google.com/share.google?link=https://{autoDomain}/...</code> with 1-click without needing external tokens.
-            </div>
-          )}
-          {generatorMode === "gshort" && (
-            <div>
-              <strong className="text-foreground">Gshort Partner API Mode:</strong> Connects to Gshort API via your private key to automatically create and fetch the Google <code className="text-emerald-400 font-mono">?q=</code> token in the background.
-            </div>
-          )}
-          {generatorMode === "apps_script" && (
-            <div>
-              <strong className="text-foreground">Google Apps Script Engine:</strong> Deploy a 3-line Google Apps Script on your Google account. Yields a pure <code className="text-emerald-400 font-mono">https://script.google.com/macros/s/.../exec</code> URL with 0 subdomains and 100% Google domain trust.
             </div>
           )}
         </div>
@@ -5513,26 +5478,6 @@ function GoogleLinksTab() {
           </div>
         )}
 
-        {/* Gshort Partner API Mode Specific Fields */}
-        {generatorMode === "gshort" && (
-          <div className="rounded-2xl border border-blue-500/30 bg-blue-950/15 p-4 space-y-3">
-            <Label className="text-xs font-black text-foreground flex items-center gap-1.5">
-              <KeyRound className="h-3.5 w-3.5 text-blue-400" />
-              <span>Gshort Partner API Key (Saved in browser)*</span>
-            </Label>
-            <Input
-              type="password"
-              value={gshortApiKey}
-              onChange={(e) => handleGshortKeyChange(e.target.value)}
-              placeholder="Paste your Gshort API Bearer Key (e.g. gsh_live_...)"
-              className="text-xs font-mono h-11 border-border/80 focus:border-blue-500 bg-background/90"
-            />
-            <p className="text-[11px] text-muted-foreground">
-              Your API key is securely stored in your browser's local storage and used exclusively to call Gshort API to fetch official Google tokens in the background.
-            </p>
-          </div>
-        )}
-
         {/* Google Apps Script Mode Specific Fields */}
         {generatorMode === "apps_script" && (
           <div className="rounded-2xl border border-purple-500/30 bg-purple-950/15 p-4 space-y-3">
@@ -5580,7 +5525,6 @@ function GoogleLinksTab() {
             !autoOfferUrl.trim() ||
             autoShortMut.isPending ||
             (generatorMode === "token" && !googleTokenInput.trim()) ||
-            (generatorMode === "gshort" && !gshortApiKey.trim()) ||
             (generatorMode === "apps_script" && !googleTokenInput.trim())
           }
           onClick={() =>
@@ -5592,7 +5536,6 @@ function GoogleLinksTab() {
                 generatorMode === "token" || generatorMode === "apps_script"
                   ? googleTokenInput.trim()
                   : undefined,
-              gshortApiKey: generatorMode === "gshort" ? gshortApiKey.trim() : undefined,
             })
           }
         >
@@ -5606,11 +5549,9 @@ function GoogleLinksTab() {
               <span>
                 {generatorMode === "token"
                   ? "Generate Clean Google Token Link (?q=)"
-                  : generatorMode === "fast"
-                  ? "Generate Instant Google Link (?link=)"
-                  : generatorMode === "gshort"
-                  ? "Generate via Gshort Partner API"
-                  : "Register Google Apps Script Link"}
+                  : generatorMode === "apps_script"
+                  ? "Register Google Apps Script Link"
+                  : "Generate Instant Google Link (?link=)"}
               </span>
             </>
           )}
