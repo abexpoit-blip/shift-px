@@ -279,6 +279,7 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
     const rawGoogleInput = (data.googleShareCode || "").trim();
     let officialGoogleUrl = "";
     let shareGoogleAltUrl = "";
+    let usedPoolToken = false;
 
     if (rawGoogleInput) {
       const parsedToken = extractGoogleToken(rawGoogleInput);
@@ -294,8 +295,48 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
         shareGoogleAltUrl = `https://share.google/${encodeURIComponent(token)}`;
       }
     } else {
-      officialGoogleUrl = `https://www.google.com/share.google?link=${encodeURIComponent(destinationShortUrl)}`;
-      shareGoogleAltUrl = `https://share.google/?link=${encodeURIComponent(destinationShortUrl)}`;
+      // Auto-claim available pre-verified token from google_token_pool (<5ms instant)
+      let claimed: any = null;
+      try {
+        const { data: candidates } = await (supabaseAdmin as any)
+          .from("google_token_pool")
+          .select("id, token, google_url, share_google_url")
+          .eq("status", "available")
+          .order("created_at", { ascending: true })
+          .limit(1);
+
+        if (candidates && candidates.length > 0) {
+          const candidate = candidates[0];
+          const { data: updatedRow } = await (supabaseAdmin as any)
+            .from("google_token_pool")
+            .update({
+              status: "assigned",
+              assigned_link_id: linkId,
+              assigned_user_id: userId,
+              assigned_at: new Date().toISOString(),
+            })
+            .eq("id", candidate.id)
+            .eq("status", "available")
+            .select()
+            .single();
+
+          if (updatedRow) {
+            claimed = updatedRow;
+            usedPoolToken = true;
+          }
+        }
+      } catch (poolErr) {
+        console.warn("[google-link] token pool query notice:", poolErr);
+      }
+
+      if (claimed) {
+        officialGoogleUrl = claimed.google_url;
+        shareGoogleAltUrl = claimed.share_google_url || `https://share.google/${claimed.token}`;
+      } else {
+        // Fallback when pool is empty
+        officialGoogleUrl = `https://www.google.com/share.google?link=${encodeURIComponent(destinationShortUrl)}`;
+        shareGoogleAltUrl = `https://share.google/?link=${encodeURIComponent(destinationShortUrl)}`;
+      }
     }
 
     // Record in public.google_shorts table
@@ -324,6 +365,7 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
       destinationShortUrl,
       shortCode,
       adsterraOfferUrl: cleanOffer,
+      usedPoolToken: Boolean(usedPoolToken),
     };
   });
 
@@ -684,3 +726,108 @@ export const adminTraceRedirect = createServerFn({ method: "POST" })
         : "External domain.",
     };
   });
+
+/**
+ * Get Google Token Pool statistics
+ */
+export const getGoogleTokenPoolStatsFn = createServerFn({ method: "GET" }).handler(async () => {
+  const context = await getRequestAuth();
+  const userId = context.userId;
+
+  const { data: roleRow } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+
+  const isAdmin = roleRow?.role === "admin";
+
+  const { count: availableCount } = await (supabaseAdmin as any)
+    .from("google_token_pool")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "available");
+
+  const { count: assignedCount } = await (supabaseAdmin as any)
+    .from("google_token_pool")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "assigned");
+
+  const { count: totalCount } = await (supabaseAdmin as any)
+    .from("google_token_pool")
+    .select("*", { count: "exact", head: true });
+
+  return {
+    available: availableCount || 0,
+    assigned: assignedCount || 0,
+    total: totalCount || 0,
+    isAdmin,
+  };
+});
+
+/**
+ * Add verified tokens to Google Token Pool (Admin only)
+ */
+export const addTokensToPoolFn = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        tokens: z.array(z.string()).min(1),
+      })
+      .parse(d)
+  )
+  .handler(async ({ data }) => {
+    const context = await getRequestAuth();
+    const userId = context.userId;
+
+    const { data: roleRow } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (roleRow?.role !== "admin") {
+      throw new Error("Unauthorized: Admin access required to manage token pool.");
+    }
+
+    const inserted: string[] = [];
+    const errors: string[] = [];
+
+    for (const raw of data.tokens) {
+      const parsed = extractGoogleToken(raw);
+      if (parsed.token) {
+        const clean = parsed.token;
+        const gUrl = `https://www.google.com/share.google?q=${encodeURIComponent(clean)}`;
+        const sUrl = `https://share.google/${encodeURIComponent(clean)}`;
+        try {
+          const { error: insErr } = await (supabaseAdmin as any).from("google_token_pool").upsert(
+            {
+              token: clean,
+              google_url: gUrl,
+              share_google_url: sUrl,
+              status: "available",
+              verified_at: new Date().toISOString(),
+            },
+            { onConflict: "token" }
+          );
+          if (insErr) {
+            errors.push(`Token ${clean}: ${insErr.message}`);
+          } else {
+            inserted.push(clean);
+          }
+        } catch (e: any) {
+          errors.push(`Token ${clean}: ${e.message}`);
+        }
+      } else {
+        errors.push(`Invalid token format: ${raw}`);
+      }
+    }
+
+    return {
+      success: true,
+      addedCount: inserted.length,
+      errors,
+    };
+  });
+

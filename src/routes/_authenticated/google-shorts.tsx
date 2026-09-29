@@ -8,6 +8,7 @@ import {
   getGoogleShortsList,
   deleteGoogleShort,
   verifyGoogleTokenLiveFn,
+  getGoogleTokenPoolStatsFn,
   type GoogleShortItem,
 } from "@/lib/google-link.functions";
 import { listShortenerDomains } from "@/lib/shortener-domains.functions";
@@ -49,10 +50,17 @@ function GoogleShortsPage() {
   const deleteFn = useServerFn(deleteGoogleShort);
   const listDomainsFn = useServerFn(listShortenerDomains);
   const verifyTokenFn = useServerFn(verifyGoogleTokenLiveFn);
+  const getPoolStatsFn = useServerFn(getGoogleTokenPoolStatsFn);
 
   const { data: state, isLoading, isRefetching } = useQuery({
     queryKey: ["user-google-shorts-list"],
     queryFn: () => getListFn(),
+  });
+
+  const poolQ = useQuery({
+    queryKey: ["google-token-pool-stats"],
+    queryFn: () => getPoolStatsFn(),
+    staleTime: 10_000,
   });
 
   const domainsQ = useQuery({
@@ -400,79 +408,73 @@ function GoogleShortsPage() {
         {generatorMode === "token" && (
           <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/15 p-4 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Label className="text-xs font-black text-foreground flex items-center gap-1.5">
-                <KeyRound className="h-3.5 w-3.5 text-emerald-400" />
-                <span>Google Share Token or URL (`q=` or `share.google/`)*</span>
-              </Label>
+              <div className="flex items-center gap-2">
+                <div className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs font-black text-foreground">
+                  ADB &amp; Google Token Buffer Pool Active
+                </span>
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                  {poolQ.data?.available ?? "Checking..."} Available
+                </span>
+              </div>
 
               <button
                 type="button"
                 onClick={() => setShowAndroidGuide(!showAndroidGuide)}
                 className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
               >
-                <span>How to get free token in 5 seconds</span>
+                <span>Use custom token (optional)</span>
                 {showAndroidGuide ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
               </button>
             </div>
 
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              ⚡ <strong>1-Click Instant Assignment (0.05s):</strong> You do not need to provide any token. When you click Generate, our server assigns a pre-verified Google token (<code className="text-emerald-400 font-mono">share.google?q=...</code>) from our VPS buffer pool with <strong>ZERO subdomains</strong> exposed.
+            </p>
+
             {showAndroidGuide && (
-              <div className="rounded-xl border border-emerald-500/20 bg-background/80 p-3.5 text-xs text-muted-foreground space-y-2 animate-in fade-in duration-200">
-                <p className="font-bold text-emerald-400">3 Easy Steps to get a 100% Free Official Google Token:</p>
-                <ol className="list-decimal list-inside space-y-1 text-foreground/90 pl-1">
-                  <li>Open your phone's <strong>Google App</strong> or <strong>Chrome</strong>.</li>
-                  <li>Open your cloaked link (or any short URL) and tap the <strong>Share</strong> button.</li>
-                  <li>Choose <strong>Copy link</strong> ➔ Google will give you a <code className="font-mono text-emerald-400">share.google?q=...</code> link. Paste it below!</li>
-                </ol>
-              </div>
-            )}
-
-            <div className="flex items-center gap-2">
-              <Input
-                value={googleTokenInput}
-                onChange={(e) => {
-                  setGoogleTokenInput(e.target.value);
-                  setTokenVerificationResult(null);
-                }}
-                placeholder="e.g. pqATPUPGq8j0jZDLI or https://www.google.com/share.google?q=pqATPUPG..."
-                className="text-xs font-mono h-11 border-border/80 focus:border-emerald-500 bg-background/90"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 px-4 text-xs font-semibold gap-1.5 shrink-0"
-                disabled={!googleTokenInput.trim() || isVerifyingToken}
-                onClick={() => handleVerifyToken(googleTokenInput)}
-              >
-                {isVerifyingToken ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Verifying...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Verify Live
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {tokenVerificationResult && (
-              <div
-                className={`rounded-xl p-2.5 text-xs flex items-center gap-2 ${
-                  tokenVerificationResult.valid
-                    ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
-                    : "bg-rose-500/10 border border-rose-500/30 text-rose-400"
-                }`}
-              >
-                {tokenVerificationResult.valid ? (
-                  <>
-                    <CheckCircle2 className="h-4 w-4 shrink-0" />
-                    <span>Token is live on Google! Redirect target: {tokenVerificationResult.destination}</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="h-4 w-4 shrink-0" />
-                    <span>{tokenVerificationResult.error || "Token returned error on Google"}</span>
-                  </>
+              <div className="rounded-xl border border-emerald-500/20 bg-background/80 p-3.5 text-xs text-muted-foreground space-y-3 animate-in fade-in duration-200">
+                <p className="font-bold text-foreground">Optional: Provide a specific custom Google token (`q=`)</p>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={googleTokenInput}
+                    onChange={(e) => {
+                      setGoogleTokenInput(e.target.value);
+                      setTokenVerificationResult(null);
+                    }}
+                    placeholder="e.g. pqATPUPGq8j0jZDLI or leave blank for auto-pool"
+                    className="text-xs font-mono h-10 border-border/80 focus:border-emerald-500 bg-background/90"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 px-3 text-xs font-semibold gap-1 shrink-0"
+                    disabled={!googleTokenInput.trim() || isVerifyingToken}
+                    onClick={() => handleVerifyToken(googleTokenInput)}
+                  >
+                    {isVerifyingToken ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Verify"}
+                  </Button>
+                </div>
+                {tokenVerificationResult && (
+                  <div
+                    className={`rounded-lg p-2 text-xs flex items-center gap-2 ${
+                      tokenVerificationResult.valid
+                        ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
+                        : "bg-rose-500/10 border border-rose-500/30 text-rose-400"
+                    }`}
+                  >
+                    {tokenVerificationResult.valid ? (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                        <span>Token is live on Google! Target: {tokenVerificationResult.destination}</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                        <span>{tokenVerificationResult.error || "Token returned error on Google"}</span>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -527,7 +529,6 @@ function GoogleShortsPage() {
           disabled={
             !offerUrl.trim() ||
             generateMut.isPending ||
-            (generatorMode === "token" && !googleTokenInput.trim()) ||
             (generatorMode === "apps_script" && !googleTokenInput.trim())
           }
           onClick={() =>

@@ -160,6 +160,8 @@ import {
   adminGenerateAutoGoogleShort,
   adminVerifyAndPairGoogleToken,
   verifyGoogleTokenLiveFn,
+  getGoogleTokenPoolStatsFn,
+  addTokensToPoolFn,
   type TraceResult,
   type HopDetail,
   type StoredGoogleLink,
@@ -5073,10 +5075,32 @@ function GoogleLinksTab() {
   const autoShortFn = useServerFn(adminGenerateAutoGoogleShort);
   const listDomainsFn = useServerFn(listShortenerDomains);
   const verifyTokenFn = useServerFn(verifyGoogleTokenLiveFn);
+  const getPoolStatsFn = useServerFn(getGoogleTokenPoolStatsFn);
+  const addTokensFn = useServerFn(addTokensToPoolFn);
 
   const { data: state, isLoading, isRefetching } = useQuery({
     queryKey: ["admin-google-links-state"],
     queryFn: () => getGoogleStateFn(),
+  });
+
+  const poolQ = useQuery({
+    queryKey: ["admin-google-token-pool-stats"],
+    queryFn: () => getPoolStatsFn(),
+    staleTime: 10_000,
+  });
+
+  const [bulkTokensInput, setBulkTokensInput] = useState("");
+  const addTokensMut = useMutation({
+    mutationFn: (tokens: string[]) => addTokensFn({ data: { tokens } }),
+    onSuccess: (res: any) => {
+      toast.success(`Added ${res.addedCount} verified tokens to buffer pool!`);
+      if (res.errors && res.errors.length > 0) {
+        toast.error(`Some tokens failed: ${res.errors.join(", ")}`);
+      }
+      setBulkTokensInput("");
+      queryClient.invalidateQueries({ queryKey: ["admin-google-token-pool-stats"] });
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to add tokens"),
   });
 
   const domainsQ = useQuery({
@@ -5267,6 +5291,67 @@ function GoogleLinksTab() {
         </div>
       </div>
 
+      {/* Token Pool Buffer Manager */}
+      <div className="rounded-3xl border border-blue-500/40 bg-gradient-to-b from-blue-950/20 via-card to-card p-6 shadow-xl space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md shadow-blue-500/20">
+              <Server className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-foreground">Google Token Buffer Pool Manager</h3>
+              <p className="text-xs text-muted-foreground">Pre-verified Google tokens for sub-second zero-delay assignment</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+              {poolQ.data?.available ?? 0} Available
+            </span>
+            <span className="text-[11px] font-mono text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-full">
+              {poolQ.data?.assigned ?? 0} Assigned
+            </span>
+            <span className="text-[11px] font-mono text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-full">
+              {poolQ.data?.total ?? 0} Total
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs font-bold text-foreground">
+            Bulk Refill Pool (Paste one or more Google tokens or `share.google?q=...` URLs, one per line):
+          </Label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <textarea
+              value={bulkTokensInput}
+              onChange={(e) => setBulkTokensInput(e.target.value)}
+              placeholder={"pqATPUPGq8j0jZDLI\nhttps://www.google.com/share.google?q=abcdef123"}
+              rows={2}
+              className="w-full rounded-xl border border-input bg-background/90 px-3 py-2 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            <Button
+              type="button"
+              className="h-auto py-2.5 px-5 text-xs font-bold shrink-0 bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-500/20"
+              disabled={!bulkTokensInput.trim() || addTokensMut.isPending}
+              onClick={() => {
+                const lines = bulkTokensInput
+                  .split("\n")
+                  .map((l) => l.trim())
+                  .filter(Boolean);
+                if (lines.length > 0) addTokensMut.mutate(lines);
+              }}
+            >
+              {addTokensMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add to Pool"}
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+            <Info className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+            <span>
+              Background daemon on VPS runs <code className="text-foreground font-mono">scripts/adb-token-worker.cjs</code> to auto-refill tokens via redroid Android emulator.
+            </span>
+          </p>
+        </div>
+      </div>
+
       {/* Generator Container with Mode Selector */}
       <div className="rounded-3xl border border-emerald-500/40 bg-gradient-to-b from-emerald-950/20 via-card to-card p-6 sm:p-7 shadow-xl space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
@@ -5409,69 +5494,67 @@ function GoogleLinksTab() {
                 onClick={() => setShowAndroidGuide(!showAndroidGuide)}
                 className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
               >
-                <span>How to get free token in 5 seconds</span>
+                <span>Use custom token (optional)</span>
                 {showAndroidGuide ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
               </button>
             </div>
 
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              ⚡ <strong>1-Click Instant Assignment (0.05s):</strong> Automatically claims a pre-verified Google token (<code className="text-emerald-400 font-mono">share.google?q=...</code>) from our VPS buffer pool ({poolQ.data?.available ?? 0} available) with <strong>ZERO subdomains</strong> exposed.
+            </p>
+
             {showAndroidGuide && (
-              <div className="rounded-xl border border-emerald-500/20 bg-background/80 p-3.5 text-xs text-muted-foreground space-y-2 animate-in fade-in duration-200">
-                <p className="font-bold text-emerald-400">3 Easy Steps to get a 100% Free Official Google Token:</p>
-                <ol className="list-decimal list-inside space-y-1 text-foreground/90 pl-1">
-                  <li>Open your phone's <strong>Google App</strong> or <strong>Chrome</strong>.</li>
-                  <li>Open your cloaked link (or any short URL) and tap the <strong>Share</strong> button.</li>
-                  <li>Choose <strong>Copy link</strong> ➔ Google will give you a <code className="font-mono text-emerald-400">share.google?q=...</code> link. Paste it below!</li>
-                </ol>
-              </div>
-            )}
+              <div className="rounded-xl border border-emerald-500/20 bg-background/80 p-3.5 text-xs text-muted-foreground space-y-3 animate-in fade-in duration-200">
+                <p className="font-bold text-foreground">Optional: Provide a specific custom Google token (`q=`)</p>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={googleTokenInput}
+                    onChange={(e) => {
+                      setGoogleTokenInput(e.target.value);
+                      setTokenVerificationResult(null);
+                    }}
+                    placeholder="e.g. pqATPUPGq8j0jZDLI or leave blank for auto-pool"
+                    className="text-xs font-mono h-11 border-border/80 focus:border-emerald-500 bg-background/90"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 px-4 text-xs font-semibold gap-1.5 shrink-0"
+                    disabled={!googleTokenInput.trim() || isVerifyingToken}
+                    onClick={() => handleVerifyToken(googleTokenInput)}
+                  >
+                    {isVerifyingToken ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Verifying...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Verify Live
+                      </>
+                    )}
+                  </Button>
+                </div>
 
-            <div className="flex items-center gap-2">
-              <Input
-                value={googleTokenInput}
-                onChange={(e) => {
-                  setGoogleTokenInput(e.target.value);
-                  setTokenVerificationResult(null);
-                }}
-                placeholder="e.g. pqATPUPGq8j0jZDLI or https://www.google.com/share.google?q=pqATPUPG..."
-                className="text-xs font-mono h-11 border-border/80 focus:border-emerald-500 bg-background/90"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 px-4 text-xs font-semibold gap-1.5 shrink-0"
-                disabled={!googleTokenInput.trim() || isVerifyingToken}
-                onClick={() => handleVerifyToken(googleTokenInput)}
-              >
-                {isVerifyingToken ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Verifying...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Verify Live
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {tokenVerificationResult && (
-              <div
-                className={`rounded-xl p-2.5 text-xs flex items-center gap-2 ${
-                  tokenVerificationResult.valid
-                    ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
-                    : "bg-rose-500/10 border border-rose-500/30 text-rose-400"
-                }`}
-              >
-                {tokenVerificationResult.valid ? (
-                  <>
-                    <CheckCircle2 className="h-4 w-4 shrink-0" />
-                    <span>Token is live on Google! Redirect target: {tokenVerificationResult.destination}</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="h-4 w-4 shrink-0" />
-                    <span>{tokenVerificationResult.error || "Token returned error on Google"}</span>
-                  </>
+                {tokenVerificationResult && (
+                  <div
+                    className={`rounded-xl p-2.5 text-xs flex items-center gap-2 ${
+                      tokenVerificationResult.valid
+                        ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
+                        : "bg-rose-500/10 border border-rose-500/30 text-rose-400"
+                    }`}
+                  >
+                    {tokenVerificationResult.valid ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                        <span>Token is live on Google! Redirect target: {tokenVerificationResult.destination}</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                        <span>{tokenVerificationResult.error || "Token returned error on Google"}</span>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -5524,7 +5607,6 @@ function GoogleLinksTab() {
           disabled={
             !autoOfferUrl.trim() ||
             autoShortMut.isPending ||
-            (generatorMode === "token" && !googleTokenInput.trim()) ||
             (generatorMode === "apps_script" && !googleTokenInput.trim())
           }
           onClick={() =>
@@ -5533,9 +5615,9 @@ function GoogleLinksTab() {
               domain: autoDomain,
               notes: autoNotes.trim() || undefined,
               googleShareCode:
-                generatorMode === "token" || generatorMode === "apps_script"
+                generatorMode === "apps_script"
                   ? googleTokenInput.trim()
-                  : undefined,
+                  : (googleTokenInput.trim() || undefined),
             })
           }
         >
