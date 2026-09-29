@@ -5189,6 +5189,7 @@ function GoogleLinksTab() {
       domain?: string;
       notes?: string;
       googleShareCode?: string;
+      mode?: "token" | "apps_script" | "fast";
     }) => autoShortFn({ data }),
     onSuccess: (res: any) => {
       setAutoResult({
@@ -5503,6 +5504,18 @@ function GoogleLinksTab() {
               ⚡ <strong>1-Click Instant Assignment (0.05s):</strong> Automatically claims a pre-verified Google token (<code className="text-emerald-400 font-mono">share.google?q=...</code>) from our VPS buffer pool ({poolQ.data?.available ?? 0} available) with <strong>ZERO subdomains</strong> exposed.
             </p>
 
+            {(poolQ.data?.available ?? 0) === 0 && !googleTokenInput.trim() && (
+              <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-300 flex items-start gap-2.5">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
+                <div className="space-y-1">
+                  <p className="font-bold text-amber-200">Token Buffer Pool is empty (0 Available)</p>
+                  <p className="text-[11px] text-amber-300/90 leading-relaxed">
+                    To generate a clean token with zero subdomains, please paste a token in <strong>"Use custom token"</strong> below, refill the pool above, or switch to <strong>Apps Script Engine</strong> for 100% free pure Google links.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {showAndroidGuide && (
               <div className="rounded-xl border border-emerald-500/20 bg-background/80 p-3.5 text-xs text-muted-foreground space-y-3 animate-in fade-in duration-200">
                 <p className="font-bold text-foreground">Optional: Provide a specific custom Google token (`q=`)</p>
@@ -5607,13 +5620,15 @@ function GoogleLinksTab() {
           disabled={
             !autoOfferUrl.trim() ||
             autoShortMut.isPending ||
-            (generatorMode === "apps_script" && !googleTokenInput.trim())
+            (generatorMode === "apps_script" && !googleTokenInput.trim()) ||
+            (generatorMode === "token" && (poolQ.data?.available ?? 0) === 0 && !googleTokenInput.trim())
           }
           onClick={() =>
             autoShortMut.mutate({
               offerUrl: autoOfferUrl.trim(),
               domain: autoDomain,
               notes: autoNotes.trim() || undefined,
+              mode: generatorMode,
               googleShareCode:
                 generatorMode === "apps_script"
                   ? googleTokenInput.trim()

@@ -194,6 +194,7 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
         googleShareCode: z.string().optional(),
         domain: z.string().optional().default("adswapx.com"),
         notes: z.string().optional(),
+        mode: z.enum(["token", "apps_script", "fast"]).optional(),
       })
       .parse(d)
   )
@@ -332,8 +333,12 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
       if (claimed) {
         officialGoogleUrl = claimed.google_url;
         shareGoogleAltUrl = claimed.share_google_url || `https://share.google/${claimed.token}`;
+      } else if (data.mode === "token") {
+        throw new Error(
+          "Token Buffer Pool is currently empty (0 available). To generate a clean Google token (?q=), please add tokens to the pool, enter a custom token under 'Use custom token', or switch to Google Apps Script Engine (script.google.com)."
+        );
       } else {
-        // Fallback when pool is empty
+        // Fallback when pool is empty and not strictly in token mode
         officialGoogleUrl = `https://www.google.com/share.google?link=${encodeURIComponent(destinationShortUrl)}`;
         shareGoogleAltUrl = `https://share.google/?link=${encodeURIComponent(destinationShortUrl)}`;
       }
