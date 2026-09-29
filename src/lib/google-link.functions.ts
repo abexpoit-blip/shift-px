@@ -194,7 +194,7 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
         googleShareCode: z.string().optional(),
         domain: z.string().optional().default("adswapx.com"),
         notes: z.string().optional(),
-        mode: z.enum(["token", "apps_script", "fast"]).optional(),
+        mode: z.enum(["token", "fast"]).optional(),
       })
       .parse(d)
   )
@@ -335,7 +335,7 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
         shareGoogleAltUrl = claimed.share_google_url || `https://share.google/${claimed.token}`;
       } else if (data.mode === "token") {
         throw new Error(
-          "Token Buffer Pool is currently empty (0 available). To generate a clean Google token (?q=), please add tokens to the pool, enter a custom token under 'Use custom token', or switch to Google Apps Script Engine (script.google.com)."
+          "Token Buffer Pool is currently empty (0 available in stock). Please run the AdsPx Token Worker on your PC to refill token stock."
         );
       } else {
         // Fallback when pool is empty and not strictly in token mode

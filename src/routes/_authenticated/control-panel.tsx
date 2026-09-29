@@ -60,7 +60,6 @@ import {
   Play,
   ChevronDown,
   ChevronUp,
-  Code2,
   Pencil,
   ExternalLink,
   UserX,
@@ -5117,8 +5116,8 @@ function GoogleLinksTab() {
     return Array.from(new Set(combined.filter(Boolean)));
   }, [domainsQ.data]);
 
-  // Modes: "token" (Clean q=) | "apps_script" (Script Engine) | "fast" (In-house link=)
-  const [generatorMode, setGeneratorMode] = useState<"token" | "apps_script" | "fast">("token");
+  // Modes: "token" (Clean q=) | "fast" (In-house link=)
+  const [generatorMode, setGeneratorMode] = useState<"token" | "fast">("token");
   const [autoOfferUrl, setAutoOfferUrl] = useState("");
   const [autoDomain, setAutoDomain] = useState("adswapx.com");
   const [autoNotes, setAutoNotes] = useState("");
@@ -5189,7 +5188,7 @@ function GoogleLinksTab() {
       domain?: string;
       notes?: string;
       googleShareCode?: string;
-      mode?: "token" | "apps_script" | "fast";
+      mode?: "token" | "fast";
     }) => autoShortFn({ data }),
     onSuccess: (res: any) => {
       setAutoResult({
@@ -5264,74 +5263,98 @@ function GoogleLinksTab() {
         </div>
       </div>
 
-      {/* Feature Highlights */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-        <div className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400">
-            <Globe className="h-4 w-4" /> 100% Pure Google Domain
-          </div>
-          <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-            Clean <code>share.google?q=...</code> tokens conceal your sub-domains completely. Facebook scanners only see trusted Google infrastructure.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
-            <Zap className="h-4 w-4" /> Sub-Second Hop (30ms Touch)
-          </div>
-          <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-            Instant client bounce delivers 100% of verified mobile visitors straight to your Adsterra CPA offer with zero perception delay.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-400">
-            <ShieldCheck className="h-4 w-4" /> 0% Bot Leak Shield
-          </div>
-          <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-            Automated Meta crawlers and compliance reviewers are isolated into safe static articles. No ad disapproval or account bans.
-          </p>
-        </div>
-      </div>
-
-      {/* Token Pool Buffer Manager */}
-      <div className="rounded-3xl border border-blue-500/40 bg-gradient-to-b from-blue-950/20 via-card to-card p-6 shadow-xl space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+      {/* Google Token Slot Inventory & Stock Manager */}
+      <div className="rounded-3xl border border-blue-500/40 bg-gradient-to-b from-blue-950/20 via-card to-card p-6 shadow-xl space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md shadow-blue-500/20">
-              <Server className="h-4 w-4" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md shadow-blue-500/20">
+              <Server className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-base font-black text-foreground">Google Token Buffer Pool Manager</h3>
-              <p className="text-xs text-muted-foreground">Pre-verified Google tokens for sub-second zero-delay assignment</p>
+              <h3 className="text-base sm:text-lg font-black text-foreground flex items-center gap-2">
+                <span>Google Token Slot Stock Inventory</span>
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  (poolQ.data?.available ?? 0) > 0
+                    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                    : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                }`}>
+                  <span className={`h-2 w-2 rounded-full ${
+                    (poolQ.data?.available ?? 0) > 0 ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
+                  }`} />
+                  {(poolQ.data?.available ?? 0) > 0 ? "Stock Ready" : "Stock Empty · Run Worker"}
+                </span>
+              </h3>
+              <p className="text-xs text-muted-foreground">Real-time stock of pre-minted Google ?q= token slots for instant user shortlinks</p>
             </div>
           </div>
+
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-              {poolQ.data?.available ?? 0} Available
-            </span>
-            <span className="text-[11px] font-mono text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-full">
-              {poolQ.data?.assigned ?? 0} Assigned
-            </span>
-            <span className="text-[11px] font-mono text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-full">
-              {poolQ.data?.total ?? 0} Total
-            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["admin-google-token-pool-stats"] })}
+              className="h-8 gap-1.5 text-xs font-semibold"
+            >
+              <RefreshCw className="h-3 w-3" /> Check Stock
+            </Button>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-xs font-bold text-foreground">
-            Bulk Refill Pool (Paste one or more Google tokens or `share.google?q=...` URLs, one per line):
-          </Label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <textarea
+        {/* Stock Metrics Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Available Stock</div>
+            <div className="text-2xl sm:text-3xl font-black text-emerald-300 mt-1 font-mono">
+              {(poolQ.data?.available ?? 0).toLocaleString()}
+            </div>
+            <div className="text-[10px] text-emerald-400/80 mt-1 font-medium">Ready for instant assignment</div>
+          </div>
+
+          <div className="rounded-2xl border border-blue-500/30 bg-blue-950/20 p-4">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-blue-400">Assigned / Used</div>
+            <div className="text-2xl sm:text-3xl font-black text-blue-300 mt-1 font-mono">
+              {(poolQ.data?.assigned ?? 0).toLocaleString()}
+            </div>
+            <div className="text-[10px] text-blue-400/80 mt-1 font-medium">Paired with short links</div>
+          </div>
+
+          <div className="rounded-2xl border border-purple-500/30 bg-purple-950/20 p-4">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-purple-400">Total Minted</div>
+            <div className="text-2xl sm:text-3xl font-black text-purple-300 mt-1 font-mono">
+              {(poolQ.data?.total ?? 0).toLocaleString()}
+            </div>
+            <div className="text-[10px] text-purple-400/80 mt-1 font-medium">Lifetime tokens in pool</div>
+          </div>
+
+          <div className="rounded-2xl border border-border/80 bg-background/60 p-4">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Active Links</div>
+            <div className="text-2xl sm:text-3xl font-black text-foreground mt-1 font-mono">
+              {links.length}
+            </div>
+            <div className="text-[10px] text-muted-foreground mt-1 font-medium">Currently receiving traffic</div>
+          </div>
+        </div>
+
+        {/* Refill / PC Worker Instruction */}
+        <div className="rounded-2xl border border-border/70 bg-background/60 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Zap className="h-4 w-4 text-emerald-400 shrink-0" />
+            <span>
+              <strong className="text-foreground">Automated PC Refill:</strong> Open <code className="text-emerald-400 font-mono bg-muted/60 px-1.5 py-0.5 rounded">AdsPx_Token_Worker.bat</code> on your PC desktop to mint and auto-add tokens to this stock anytime.
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+            <Input
               value={bulkTokensInput}
               onChange={(e) => setBulkTokensInput(e.target.value)}
-              placeholder={"pqATPUPGq8j0jZDLI\nhttps://www.google.com/share.google?q=abcdef123"}
-              rows={2}
-              className="w-full rounded-xl border border-input bg-background/90 px-3 py-2 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="Or paste token / link here..."
+              className="text-xs font-mono h-8 w-full sm:w-56 bg-background/90"
             />
             <Button
               type="button"
-              className="h-auto py-2.5 px-5 text-xs font-bold shrink-0 bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-500/20"
+              size="sm"
+              className="h-8 px-3 text-xs font-bold shrink-0 bg-blue-600 hover:bg-blue-500 text-white"
               disabled={!bulkTokensInput.trim() || addTokensMut.isPending}
               onClick={() => {
                 const lines = bulkTokensInput
@@ -5341,19 +5364,13 @@ function GoogleLinksTab() {
                 if (lines.length > 0) addTokensMut.mutate(lines);
               }}
             >
-              {addTokensMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add to Pool"}
+              {addTokensMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add"}
             </Button>
           </div>
-          <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-            <Info className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-            <span>
-              Background daemon on VPS runs <code className="text-foreground font-mono">scripts/adb-token-worker.cjs</code> to auto-refill tokens via redroid Android emulator.
-            </span>
-          </p>
         </div>
       </div>
 
-      {/* Generator Container with Mode Selector */}
+      {/* Generator Container with Clean 2-Mode Selector */}
       <div className="rounded-3xl border border-emerald-500/40 bg-gradient-to-b from-emerald-950/20 via-card to-card p-6 sm:p-7 shadow-xl space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
           <div className="flex items-center gap-2.5">
@@ -5362,85 +5379,43 @@ function GoogleLinksTab() {
             </div>
             <div>
               <h3 className="text-base font-black text-foreground">Create Google Short Link</h3>
-              <p className="text-xs text-muted-foreground">Select your in-house mode and paste your CPA offer URL</p>
+              <p className="text-xs text-muted-foreground">Select link format and enter your CPA destination URL</p>
             </div>
           </div>
           <span className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-            Engine Domain: {autoDomain}
+            Stock: {(poolQ.data?.available ?? 0)} Available
           </span>
         </div>
 
-        {/* Mode Selector Tabs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-muted/40 p-1.5 rounded-2xl border border-border/60">
+        {/* Mode Selector Tabs (Clean 2-Tab: Token vs Fast) */}
+        <div className="grid grid-cols-2 gap-2 bg-muted/40 p-1.5 rounded-2xl border border-border/60">
           <button
             type="button"
             onClick={() => setGeneratorMode("token")}
-            className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
               generatorMode === "token"
                 ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
             }`}
           >
-            <div className="flex items-center gap-1.5">
-              <GoogleGIcon className="h-3.5 w-3.5" />
-              <span>Clean Token (q=)</span>
-            </div>
-            <span className="text-[10px] opacity-80 font-normal mt-0.5">Zero Subdomain (Best for Reels)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setGeneratorMode("apps_script")}
-            className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-              generatorMode === "apps_script"
-                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-            }`}
-          >
-            <div className="flex items-center gap-1.5">
-              <Code2 className="h-3.5 w-3.5" />
-              <span>Apps Script Engine</span>
-            </div>
-            <span className="text-[10px] opacity-80 font-normal mt-0.5">100% Free script.google</span>
+            <GoogleGIcon className="h-3.5 w-3.5" />
+            <span>Clean Token (?q=)</span>
+            <span className="text-[10px] opacity-75 font-normal">(Zero Subdomain)</span>
           </button>
 
           <button
             type="button"
             onClick={() => setGeneratorMode("fast")}
-            className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
               generatorMode === "fast"
                 ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
             }`}
           >
-            <div className="flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5" />
-              <span>Instant In-House</span>
-            </div>
-            <span className="text-[10px] opacity-80 font-normal mt-0.5">1-Click (link=)</span>
+            <Zap className="h-3.5 w-3.5" />
+            <span>Direct Link (?link=)</span>
+            <span className="text-[10px] opacity-75 font-normal">(Instant 1-Click)</span>
           </button>
-        </div>
-
-        {/* Mode Descriptions */}
-        <div className="rounded-xl bg-background/60 border border-border/60 p-3 text-xs text-muted-foreground flex items-start gap-2.5">
-          <Info className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-          {generatorMode === "token" && (
-            <div>
-              <strong className="text-foreground">Clean Google Token Mode (Recommended):</strong> Generates an opaque link like{" "}
-              <code className="text-emerald-400 font-mono">https://www.google.com/share.google?q=pqATPUPG...</code> with ZERO subdomains in the query string. Facebook text scanners treat it 100% as a pure Google URL.
-            </div>
-          )}
-          {generatorMode === "apps_script" && (
-            <div>
-              <strong className="text-foreground">Google Apps Script Engine (100% Free & In-House):</strong> Deploy our 3-line Google Apps Script on your Google account. Yields a pure <code className="text-emerald-400 font-mono">https://script.google.com/macros/s/.../exec</code> URL with 0 subdomains and 100% Google domain trust.
-            </div>
-          )}
-          {generatorMode === "fast" && (
-            <div>
-              <strong className="text-foreground">Instant In-House Mode:</strong> Generates{" "}
-              <code className="text-emerald-400 font-mono">https://www.google.com/share.google?link=https://{autoDomain}/...</code> with 1-click without needing external tokens.
-            </div>
-          )}
         </div>
 
         {/* Form Inputs */}
@@ -5508,9 +5483,9 @@ function GoogleLinksTab() {
               <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-300 flex items-start gap-2.5">
                 <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
                 <div className="space-y-1">
-                  <p className="font-bold text-amber-200">Token Buffer Pool is empty (0 Available)</p>
+                  <p className="font-bold text-amber-200">Token Slot Stock is empty (0 Available)</p>
                   <p className="text-[11px] text-amber-300/90 leading-relaxed">
-                    To generate a clean token with zero subdomains, please paste a token in <strong>"Use custom token"</strong> below, refill the pool above, or switch to <strong>Apps Script Engine</strong> for 100% free pure Google links.
+                    To generate a clean token with zero subdomains, run <code className="font-mono text-amber-200 bg-amber-950/40 px-1 py-0.5 rounded">AdsPx_Token_Worker.bat</code> on your PC to add slots to the pool, or enter a custom token in <strong>"Use custom token"</strong> below.
                   </p>
                 </div>
               </div>
@@ -5574,53 +5549,12 @@ function GoogleLinksTab() {
           </div>
         )}
 
-        {/* Google Apps Script Mode Specific Fields */}
-        {generatorMode === "apps_script" && (
-          <div className="rounded-2xl border border-purple-500/30 bg-purple-950/15 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-black text-foreground flex items-center gap-1.5">
-                <Code2 className="h-3.5 w-3.5 text-purple-400" />
-                <span>Google Apps Script Code (3-line Free Engine)</span>
-              </Label>
-              <button
-                type="button"
-                onClick={() =>
-                  copyToClipboard(
-                    `function doGet(e) {\n  return HtmlService.createHtmlOutput('<script>location.replace("https://${autoDomain}/YOUR_CODE");</script>');\n}`,
-                    "script-copy",
-                    "Google Script"
-                  )
-                }
-                className="text-[11px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1"
-              >
-                <Copy className="h-3.5 w-3.5" />
-                <span>{copiedId === "script-copy" ? "Copied!" : "Copy Script"}</span>
-              </button>
-            </div>
-            <pre className="p-3 rounded-xl bg-background/90 border border-border/80 text-[11px] font-mono text-purple-300 overflow-x-auto">
-{`function doGet(e) {
-  return HtmlService.createHtmlOutput('<script>location.replace("https://${autoDomain}/YOUR_CODE");</script>');
-}`}
-            </pre>
-            <div className="space-y-1">
-              <Label className="text-xs font-bold text-foreground">Deployed Web App URL (script.google.com)*</Label>
-              <Input
-                value={googleTokenInput}
-                onChange={(e) => setGoogleTokenInput(e.target.value)}
-                placeholder="https://script.google.com/macros/s/AKfyc.../exec"
-                className="text-xs font-mono h-11 border-border/80 focus:border-purple-500 bg-background/90"
-              />
-            </div>
-          </div>
-        )}
-
         {/* Generate Button */}
         <Button
           className="w-full h-11 text-sm font-bold gap-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white shadow-lg shadow-emerald-500/20 border-0"
           disabled={
             !autoOfferUrl.trim() ||
             autoShortMut.isPending ||
-            (generatorMode === "apps_script" && !googleTokenInput.trim()) ||
             (generatorMode === "token" && (poolQ.data?.available ?? 0) === 0 && !googleTokenInput.trim())
           }
           onClick={() =>
@@ -5629,10 +5563,7 @@ function GoogleLinksTab() {
               domain: autoDomain,
               notes: autoNotes.trim() || undefined,
               mode: generatorMode,
-              googleShareCode:
-                generatorMode === "apps_script"
-                  ? googleTokenInput.trim()
-                  : (googleTokenInput.trim() || undefined),
+              googleShareCode: googleTokenInput.trim() || undefined,
             })
           }
         >
@@ -5646,8 +5577,6 @@ function GoogleLinksTab() {
               <span>
                 {generatorMode === "token"
                   ? "Generate Clean Google Token Link (?q=)"
-                  : generatorMode === "apps_script"
-                  ? "Register Google Apps Script Link"
                   : "Generate Instant Google Link (?link=)"}
               </span>
             </>

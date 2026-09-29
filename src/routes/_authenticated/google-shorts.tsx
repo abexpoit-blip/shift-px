@@ -31,7 +31,6 @@ import {
   Clock,
   ArrowUpRight,
   TrendingUp,
-  Code2,
   Info,
   KeyRound,
   ChevronDown,
@@ -77,8 +76,8 @@ function GoogleShortsPage() {
     return Array.from(new Set(combined.filter(Boolean)));
   }, [domainsQ.data]);
 
-  // Modes: "token" (Clean q=) | "apps_script" (Script Engine) | "fast" (In-house link=)
-  const [generatorMode, setGeneratorMode] = useState<"token" | "apps_script" | "fast">("token");
+  // Modes: "token" (Clean q=) | "fast" (In-house link=)
+  const [generatorMode, setGeneratorMode] = useState<"token" | "fast">("token");
   const [offerUrl, setOfferUrl] = useState("");
   const [domain, setDomain] = useState("adswapx.com");
   const [label, setLabel] = useState("");
@@ -232,42 +231,46 @@ function GoogleShortsPage() {
         </div>
       </div>
 
-      {/* Feature Highlights Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm backdrop-blur-sm">
-          <div className="flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider text-blue-400">
-            <div className="h-7 w-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
-              <Globe className="h-4 w-4 text-blue-400" />
+      {/* Slot Stock Inventory & Status */}
+      <div className="rounded-3xl border border-blue-500/40 bg-gradient-to-b from-blue-950/20 via-card to-card p-5 sm:p-6 shadow-xl space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md shadow-blue-500/20">
+              <GoogleGIcon className="h-4 w-4" />
             </div>
-            Social Reach Optimized
+            <div>
+              <h3 className="text-base font-black text-foreground flex items-center gap-2">
+                <span>Google Token Slot Inventory</span>
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  (poolQ.data?.available ?? 0) > 0
+                    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                    : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                }`}>
+                  <span className={`h-2 w-2 rounded-full ${
+                    (poolQ.data?.available ?? 0) > 0 ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
+                  }`} />
+                  {(poolQ.data?.available ?? 0) > 0 ? "Stock Ready" : "Stock Empty · Run Worker"}
+                </span>
+              </h3>
+              <p className="text-xs text-muted-foreground">Pre-minted Google ?q= token slots for instant user shortlinks</p>
+            </div>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            Links originate from Google&apos;s high-authority domain, ensuring smooth link sharing and rich OpenGraph cards across Facebook, Instagram, and chat apps.
-          </p>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+              Stock: {(poolQ.data?.available ?? 0)} Available
+            </span>
+          </div>
         </div>
 
-        <div className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm backdrop-blur-sm">
-          <div className="flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider text-emerald-400">
-            <div className="h-7 w-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-              <Zap className="h-4 w-4 text-emerald-400" />
-            </div>
-            Zero Traffic Loss
+        {/* Refill / PC Worker Notice */}
+        <div className="rounded-2xl border border-border/70 bg-background/60 p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-emerald-400 shrink-0" />
+            <span>
+              <strong className="text-foreground">Automated PC Refill:</strong> Run <code className="text-emerald-400 font-mono bg-muted/60 px-1.5 py-0.5 rounded">AdsPx_Token_Worker.bat</code> on your PC desktop to mint and add tokens directly to this website stock anytime.
+            </span>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            Ultra-light bounce engine hands off verified visitors in &lt;50ms directly to your CPA destination offer with full referrer preservation.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm backdrop-blur-sm">
-          <div className="flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider text-purple-400">
-            <div className="h-7 w-7 rounded-lg bg-purple-500/10 flex items-center justify-center">
-              <ShieldCheck className="h-4 w-4 text-purple-400" />
-            </div>
-            Auditor Protection
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            Automated crawlers and review bots receive compliant safe content, shielding your direct campaigns from policy flags and link blocks.
-          </p>
         </div>
       </div>
 
@@ -280,85 +283,43 @@ function GoogleShortsPage() {
             </div>
             <div>
               <h2 className="text-lg font-black text-foreground">Create Google Short Link</h2>
-              <p className="text-xs text-muted-foreground">Select your mode and paste your destination CPA offer</p>
+              <p className="text-xs text-muted-foreground">Select link format and enter your CPA destination offer</p>
             </div>
           </div>
           <div className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-            Active Engine: {domain}
+            Stock: {(poolQ.data?.available ?? 0)} Available
           </div>
         </div>
 
-        {/* Mode Selector Tabs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-muted/40 p-1.5 rounded-2xl border border-border/60">
+        {/* Mode Selector Tabs (Clean 2-Tab: Token vs Fast) */}
+        <div className="grid grid-cols-2 gap-2 bg-muted/40 p-1.5 rounded-2xl border border-border/60">
           <button
             type="button"
             onClick={() => setGeneratorMode("token")}
-            className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
               generatorMode === "token"
                 ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
             }`}
           >
-            <div className="flex items-center gap-1.5">
-              <GoogleGIcon className="h-3.5 w-3.5" />
-              <span>Clean Token (q=)</span>
-            </div>
-            <span className="text-[10px] opacity-80 font-normal mt-0.5">Zero Subdomain (Best for Reels)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setGeneratorMode("apps_script")}
-            className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-              generatorMode === "apps_script"
-                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-            }`}
-          >
-            <div className="flex items-center gap-1.5">
-              <Code2 className="h-3.5 w-3.5" />
-              <span>Apps Script Engine</span>
-            </div>
-            <span className="text-[10px] opacity-80 font-normal mt-0.5">100% Free script.google</span>
+            <GoogleGIcon className="h-3.5 w-3.5" />
+            <span>Clean Token (?q=)</span>
+            <span className="text-[10px] opacity-75 font-normal">(Zero Subdomain)</span>
           </button>
 
           <button
             type="button"
             onClick={() => setGeneratorMode("fast")}
-            className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
               generatorMode === "fast"
                 ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
             }`}
           >
-            <div className="flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5" />
-              <span>Instant In-House</span>
-            </div>
-            <span className="text-[10px] opacity-80 font-normal mt-0.5">1-Click (link=)</span>
+            <Zap className="h-3.5 w-3.5" />
+            <span>Direct Link (?link=)</span>
+            <span className="text-[10px] opacity-75 font-normal">(Instant 1-Click)</span>
           </button>
-        </div>
-
-        {/* Mode Descriptions */}
-        <div className="rounded-xl bg-background/60 border border-border/60 p-3 text-xs text-muted-foreground flex items-start gap-2.5">
-          <Info className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-          {generatorMode === "token" && (
-            <div>
-              <strong className="text-foreground">Clean Google Token Mode (Recommended for Facebook):</strong> Generates an opaque link like{" "}
-              <code className="text-emerald-400 font-mono">https://www.google.com/share.google?q=pqATPUPG...</code> with ZERO subdomains in the URL. Facebook text scanners treat it 100% as a pure Google URL.
-            </div>
-          )}
-          {generatorMode === "apps_script" && (
-            <div>
-              <strong className="text-foreground">Google Apps Script Engine (100% Free & In-House):</strong> Deploy our 3-line Google Apps Script on your Google account. Yields a pure <code className="text-emerald-400 font-mono">https://script.google.com/macros/s/.../exec</code> URL with 0 subdomains and 100% Google domain trust.
-            </div>
-          )}
-          {generatorMode === "fast" && (
-            <div>
-              <strong className="text-foreground">Instant In-House Mode:</strong> Generates{" "}
-              <code className="text-emerald-400 font-mono">https://www.google.com/share.google?link=https://{domain}/...</code> with 1-click without needing external tokens.
-            </div>
-          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
@@ -481,55 +442,12 @@ function GoogleShortsPage() {
           </div>
         )}
 
-        {/* Google Apps Script Mode Specific Fields */}
-        {generatorMode === "apps_script" && (
-          <div className="rounded-2xl border border-purple-500/30 bg-purple-950/15 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-black text-foreground flex items-center gap-1.5">
-                <Code2 className="h-3.5 w-3.5 text-purple-400" />
-                <span>Google Apps Script Code (3-line Free Engine)</span>
-              </Label>
-              <button
-                type="button"
-                onClick={() =>
-                  copyToClipboard(
-                    `function doGet(e) {\n  return HtmlService.createHtmlOutput('<script>location.replace("https://${domain}/YOUR_CODE");</script>');\n}`,
-                    "script-copy",
-                    "Google Script"
-                  )
-                }
-                className="text-[11px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1"
-              >
-                <Copy className="h-3.5 w-3.5" />
-                <span>Copy Script Code</span>
-              </button>
-            </div>
-
-            <div className="rounded-xl border border-purple-500/20 bg-background/80 p-3 text-xs font-mono text-purple-300 space-y-1">
-              <div>// In script.google.com ➔ New Project ➔ paste:</div>
-              <div>{"function doGet(e) {"}</div>
-              <div>{`  return HtmlService.createHtmlOutput('<script>location.replace("https://${domain}/YOUR_CODE");</script>');`}</div>
-              <div>{"}"}</div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-foreground">Your Deployed Apps Script Web App URL *</Label>
-              <Input
-                value={googleTokenInput}
-                onChange={(e) => setGoogleTokenInput(e.target.value)}
-                placeholder="https://script.google.com/macros/s/AKfycb.../exec"
-                className="text-xs font-mono h-11 border-border/80 focus:border-purple-500 bg-background/90"
-              />
-            </div>
-          </div>
-        )}
-
         <Button
           className="w-full h-11 text-sm font-bold gap-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white shadow-lg shadow-emerald-500/20 border-0"
           disabled={
             !offerUrl.trim() ||
             generateMut.isPending ||
-            (generatorMode === "apps_script" && !googleTokenInput.trim())
+            (generatorMode === "token" && (poolQ.data?.available ?? 0) === 0 && !googleTokenInput.trim())
           }
           onClick={() =>
             generateMut.mutate({
@@ -546,7 +464,12 @@ function GoogleShortsPage() {
             </>
           ) : (
             <>
-              <GoogleGIcon className="h-4 w-4" /> Generate Google Short Link
+              <GoogleGIcon className="h-4 w-4" />
+              <span>
+                {generatorMode === "token"
+                  ? "Generate Clean Google Token Link (?q=)"
+                  : "Generate Instant Google Link (?link=)"}
+              </span>
             </>
           )}
         </Button>
