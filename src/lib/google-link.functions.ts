@@ -194,7 +194,7 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
         googleShareCode: z.string().optional(),
         domain: z.string().optional().default("adswapx.com"),
         notes: z.string().optional(),
-        mode: z.enum(["token", "fast"]).optional(),
+        mode: z.enum(["token", "fast"]).optional().default("fast"),
       })
       .parse(d)
   )
@@ -295,8 +295,8 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
         officialGoogleUrl = `https://www.google.com/share.google?q=${encodeURIComponent(token)}`;
         shareGoogleAltUrl = `https://share.google/${encodeURIComponent(token)}`;
       }
-    } else {
-      // Auto-claim available pre-verified token from google_token_pool (<5ms instant)
+    } else if (data.mode === "token") {
+      // Clean Token Mode (?q=) — Auto-claim available pre-verified token from google_token_pool (<5ms instant)
       let claimed: any = null;
       try {
         const { data: candidates } = await (supabaseAdmin as any)
@@ -333,15 +333,15 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
       if (claimed) {
         officialGoogleUrl = claimed.google_url;
         shareGoogleAltUrl = claimed.share_google_url || `https://share.google/${claimed.token}`;
-      } else if (data.mode === "token") {
+      } else {
         throw new Error(
           "Token Buffer Pool is currently empty (0 available in stock). Please run the AdsPx Token Worker on your PC to refill token stock."
         );
-      } else {
-        // Fallback when pool is empty and not strictly in token mode
-        officialGoogleUrl = `https://www.google.com/share.google?link=${encodeURIComponent(destinationShortUrl)}`;
-        shareGoogleAltUrl = `https://share.google/?link=${encodeURIComponent(destinationShortUrl)}`;
       }
+    } else {
+      // Direct Link Mode (?link=) — Instant 1-Click Default, no token pool consumed
+      officialGoogleUrl = `https://www.google.com/share.google?link=${encodeURIComponent(destinationShortUrl)}`;
+      shareGoogleAltUrl = `https://share.google/?link=${encodeURIComponent(destinationShortUrl)}`;
     }
 
     // Record in public.google_shorts table
