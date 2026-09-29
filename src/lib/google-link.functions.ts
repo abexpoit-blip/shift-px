@@ -58,22 +58,28 @@ export interface TraceResult {
   verdict: string;
 }
 
-export function extractGoogleToken(input: string): { token?: string; error?: string } {
+export function extractGoogleToken(input: string): { token?: string; error?: string; scriptUrl?: string } {
   const trimmed = input.trim();
   if (!trimmed) return {};
+
+  if (/^https?:\/\/script\.google\.com\//i.test(trimmed)) {
+    return { token: trimmed, scriptUrl: trimmed };
+  }
 
   if (/^https?:\/\//i.test(trimmed)) {
     try {
       const parsed = new URL(trimmed);
-      if (parsed.hostname.includes("google.com") && parsed.pathname.includes("share.google")) {
+      if (parsed.hostname.includes("google.com") && (parsed.pathname.includes("share.google") || parsed.pathname === "/share.google")) {
         const q = parsed.searchParams.get("q");
         if (q) return { token: q.trim() };
       } else if (parsed.hostname.includes("share.google")) {
+        const q = parsed.searchParams.get("q");
+        if (q) return { token: q.trim() };
         const code = parsed.pathname.replace(/^\/+/, "").split("/")[0];
-        if (code) return { token: code.trim() };
+        if (code && code !== "error") return { token: code.trim() };
       } else {
         return {
-          error: "Invalid Google Share token format.",
+          error: "Invalid Google Share token format. Expected share.google?q=... or token code",
         };
       }
     } catch {
@@ -81,7 +87,7 @@ export function extractGoogleToken(input: string): { token?: string; error?: str
     }
   }
 
-  if (/^[a-zA-Z0-9_-]{4,64}$/.test(trimmed)) {
+  if (/^[a-zA-Z0-9_-]{4,128}$/.test(trimmed)) {
     return { token: trimmed };
   }
 
@@ -188,6 +194,7 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
         googleShareCode: z.string().optional(),
         domain: z.string().optional().default("adswapx.com"),
         notes: z.string().optional(),
+        gshortApiKey: z.string().optional(),
       })
       .parse(d)
   )
@@ -269,19 +276,65 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
       destinationShortUrl = `https://${selectedDomain}/${code}`;
     }
 
-    // Generate Google short URLs
+    // Check if Gshort API key provided to automatically generate clean q= link
     const rawGoogleInput = (data.googleShareCode || "").trim();
+    let automatedGoogleUrl = "";
+    if (data.gshortApiKey && data.gshortApiKey.trim() && !rawGoogleInput) {
+      try {
+        const gres = await fetch("https://gshort.net/api/v1/links", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${data.gshortApiKey.trim()}`,
+            "Content-Type": "application/json",
+            "Idempotency-Key": `adspx-${shortCode}-${Date.now()}`,
+          },
+          body: JSON.stringify({
+            destination_url: destinationShortUrl,
+          }),
+        });
+        if (gres.ok) {
+          const gdata = await gres.json();
+          if (gdata?.googleShareUrl) {
+            automatedGoogleUrl = gdata.googleShareUrl;
+          } else if (gdata?.link?.googleShareUrl) {
+            automatedGoogleUrl = gdata.link.googleShareUrl;
+          } else if (gdata?.shortUrl) {
+            automatedGoogleUrl = gdata.shortUrl;
+          }
+        } else {
+          const errText = await gres.text();
+          console.warn("[google-link] Gshort API response:", gres.status, errText);
+        }
+      } catch (gApiErr: any) {
+        console.warn("[google-link] Gshort API call failed:", gApiErr.message);
+      }
+    }
+
+    // Generate Google short URLs
     let officialGoogleUrl = "";
     let shareGoogleAltUrl = "";
 
-    if (rawGoogleInput) {
+    if (automatedGoogleUrl) {
+      officialGoogleUrl = automatedGoogleUrl;
+      const parsedToken = extractGoogleToken(automatedGoogleUrl);
+      if (parsedToken.token && !parsedToken.scriptUrl) {
+        shareGoogleAltUrl = `https://share.google/${encodeURIComponent(parsedToken.token)}`;
+      } else {
+        shareGoogleAltUrl = automatedGoogleUrl;
+      }
+    } else if (rawGoogleInput) {
       const parsedToken = extractGoogleToken(rawGoogleInput);
       if (parsedToken.error || !parsedToken.token) {
         throw new Error(parsedToken.error || "Invalid Google Share token or URL");
       }
-      const token = parsedToken.token;
-      officialGoogleUrl = `https://www.google.com/share.google?q=${encodeURIComponent(token)}`;
-      shareGoogleAltUrl = `https://share.google/${encodeURIComponent(token)}`;
+      if (parsedToken.scriptUrl) {
+        officialGoogleUrl = parsedToken.scriptUrl;
+        shareGoogleAltUrl = parsedToken.scriptUrl;
+      } else {
+        const token = parsedToken.token;
+        officialGoogleUrl = `https://www.google.com/share.google?q=${encodeURIComponent(token)}`;
+        shareGoogleAltUrl = `https://share.google/${encodeURIComponent(token)}`;
+      }
     } else {
       officialGoogleUrl = `https://www.google.com/share.google?link=${encodeURIComponent(destinationShortUrl)}`;
       shareGoogleAltUrl = `https://share.google/?link=${encodeURIComponent(destinationShortUrl)}`;
@@ -317,6 +370,12 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
   });
 
 export const adminGenerateAutoGoogleShort = generateGoogleShort;
+
+export const verifyGoogleTokenLiveFn = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ tokenOrUrl: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    return verifyGoogleTokenLive(data.tokenOrUrl);
+  });
 
 /**
  * Public/User & Admin query for Google Short Links with real-time click metrics

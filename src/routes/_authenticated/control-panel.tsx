@@ -58,6 +58,9 @@ import {
   XCircle,
   Pause,
   Play,
+  ChevronDown,
+  ChevronUp,
+  Code2,
   Pencil,
   ExternalLink,
   UserX,
@@ -156,6 +159,7 @@ import {
   adminDeleteGoogleLink,
   adminGenerateAutoGoogleShort,
   adminVerifyAndPairGoogleToken,
+  verifyGoogleTokenLiveFn,
   type TraceResult,
   type HopDetail,
   type StoredGoogleLink,
@@ -5068,6 +5072,7 @@ function GoogleLinksTab() {
   const deleteFn = useServerFn(adminDeleteGoogleLink);
   const autoShortFn = useServerFn(adminGenerateAutoGoogleShort);
   const listDomainsFn = useServerFn(listShortenerDomains);
+  const verifyTokenFn = useServerFn(verifyGoogleTokenLiveFn);
 
   const { data: state, isLoading, isRefetching } = useQuery({
     queryKey: ["admin-google-links-state"],
@@ -5088,9 +5093,26 @@ function GoogleLinksTab() {
     return Array.from(new Set(combined.filter(Boolean)));
   }, [domainsQ.data]);
 
+  // Modes: "token" (Clean q=) | "fast" (In-house link=) | "gshort" (Partner API) | "apps_script" (Script Engine)
+  const [generatorMode, setGeneratorMode] = useState<"token" | "fast" | "gshort" | "apps_script">("token");
   const [autoOfferUrl, setAutoOfferUrl] = useState("");
   const [autoDomain, setAutoDomain] = useState("adswapx.com");
   const [autoNotes, setAutoNotes] = useState("");
+  const [googleTokenInput, setGoogleTokenInput] = useState("");
+  const [gshortApiKey, setGshortApiKey] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("adspx_gshort_api_key") || "";
+    }
+    return "";
+  });
+  const [isVerifyingToken, setIsVerifyingToken] = useState(false);
+  const [tokenVerificationResult, setTokenVerificationResult] = useState<{
+    valid?: boolean;
+    destination?: string;
+    error?: string;
+  } | null>(null);
+  const [showAndroidGuide, setShowAndroidGuide] = useState(false);
+
   const [autoResult, setAutoResult] = useState<{
     googleUrl: string;
     shareGoogleUrl?: string;
@@ -5122,9 +5144,42 @@ function GoogleLinksTab() {
     document.body.removeChild(el);
   };
 
+  const handleVerifyToken = async (val: string) => {
+    const input = val.trim();
+    if (!input) return;
+    setIsVerifyingToken(true);
+    setTokenVerificationResult(null);
+    try {
+      const res = await verifyTokenFn({ data: { tokenOrUrl: input } });
+      setTokenVerificationResult(res);
+      if (res.valid) {
+        toast.success("Google Token verified! Live 301 confirmed.");
+      } else {
+        toast.error(res.error || "Token returned error or not registered");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Verification failed");
+      setTokenVerificationResult({ valid: false, error: e.message });
+    } finally {
+      setIsVerifyingToken(false);
+    }
+  };
+
+  const handleGshortKeyChange = (key: string) => {
+    setGshortApiKey(key);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("adspx_gshort_api_key", key.trim());
+    }
+  };
+
   const autoShortMut = useMutation({
-    mutationFn: (data: { offerUrl: string; domain?: string; notes?: string }) =>
-      autoShortFn({ data }),
+    mutationFn: (data: {
+      offerUrl: string;
+      domain?: string;
+      notes?: string;
+      googleShareCode?: string;
+      gshortApiKey?: string;
+    }) => autoShortFn({ data }),
     onSuccess: (res: any) => {
       setAutoResult({
         googleUrl: res.googleUrl,
@@ -5132,6 +5187,8 @@ function GoogleLinksTab() {
         destinationShortUrl: res.destinationShortUrl,
       });
       setAutoOfferUrl("");
+      setGoogleTokenInput("");
+      setTokenVerificationResult(null);
       setAutoNotes("");
       toast.success("Google Short Link generated successfully!");
       queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
@@ -5179,7 +5236,7 @@ function GoogleLinksTab() {
               <span>AdsPx Google Shorts</span>
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
-              Generate official Google domain links paired with AdsPx cloaking. High click-through rates, clean social previews, and 0% traffic drop.
+              Generate official Google domain links paired with AdsPx cloaking. High click-through rates, clean social previews, zero subdomains in URL, and 0% traffic drop.
             </p>
           </div>
 
@@ -5200,40 +5257,40 @@ function GoogleLinksTab() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
         <div className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400">
-            <Globe className="h-4 w-4" /> Social Whitelisted
+            <Globe className="h-4 w-4" /> 100% Pure Google Domain
           </div>
           <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-            High domain authority ensures social networks and ad platforms accept the link without spam warnings or previews failing.
+            Clean <code>share.google?q=...</code> tokens conceal your sub-domains completely. Facebook scanners only see trusted Google infrastructure.
           </p>
         </div>
         <div className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
-            <Zap className="h-4 w-4" /> Zero Traffic Loss
+            <Zap className="h-4 w-4" /> Sub-Second Hop (30ms Touch)
           </div>
           <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-            Instant client bounce delivers 100% of verified mobile visitors straight to your Adsterra CPA offer in under 50ms.
+            Instant client bounce delivers 100% of verified mobile visitors straight to your Adsterra CPA offer with zero perception delay.
           </p>
         </div>
         <div className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-400">
-            <ShieldCheck className="h-4 w-4" /> Bot & Reviewer Shield
+            <ShieldCheck className="h-4 w-4" /> 0% Bot Leak Shield
           </div>
           <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-            Automated crawlers and compliance reviewers are isolated and served clean verified content, shielding your direct campaigns.
+            Automated Meta crawlers and compliance reviewers are isolated into safe static articles. No ad disapproval or account bans.
           </p>
         </div>
       </div>
 
-      {/* 1-Click Generator Form */}
-      <div className="rounded-3xl border border-emerald-500/40 bg-gradient-to-b from-emerald-950/20 via-card to-card p-6 sm:p-7 shadow-xl space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+      {/* Generator Container with Mode Selector */}
+      <div className="rounded-3xl border border-emerald-500/40 bg-gradient-to-b from-emerald-950/20 via-card to-card p-6 sm:p-7 shadow-xl space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 text-white shadow-md shadow-emerald-500/20">
               <Sparkles className="h-4 w-4" />
             </div>
             <div>
               <h3 className="text-base font-black text-foreground">Create Google Short Link</h3>
-              <p className="text-xs text-muted-foreground">Paste your CPA offer URL to generate an instant Google link</p>
+              <p className="text-xs text-muted-foreground">Select your generation mode and paste your CPA offer URL</p>
             </div>
           </div>
           <span className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
@@ -5241,7 +5298,102 @@ function GoogleLinksTab() {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+        {/* Mode Selector Tabs */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-muted/40 p-1.5 rounded-2xl border border-border/60">
+          <button
+            type="button"
+            onClick={() => setGeneratorMode("token")}
+            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all ${
+              generatorMode === "token"
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <GoogleGIcon className="h-3.5 w-3.5" />
+              <span>Clean Token (q=)</span>
+            </div>
+            <span className="text-[10px] opacity-80 font-normal mt-0.5">Zero Subdomain (Best)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setGeneratorMode("fast")}
+            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all ${
+              generatorMode === "fast"
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5" />
+              <span>Instant In-House</span>
+            </div>
+            <span className="text-[10px] opacity-80 font-normal mt-0.5">1-Click (link=)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setGeneratorMode("gshort")}
+            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all ${
+              generatorMode === "gshort"
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <Rocket className="h-3.5 w-3.5" />
+              <span>Gshort Partner API</span>
+            </div>
+            <span className="text-[10px] opacity-80 font-normal mt-0.5">Auto Background</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setGeneratorMode("apps_script")}
+            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all ${
+              generatorMode === "apps_script"
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <Code2 className="h-3.5 w-3.5" />
+              <span>Apps Script Engine</span>
+            </div>
+            <span className="text-[10px] opacity-80 font-normal mt-0.5">100% Free script.google</span>
+          </button>
+        </div>
+
+        {/* Mode Descriptions */}
+        <div className="rounded-xl bg-background/60 border border-border/60 p-3 text-xs text-muted-foreground flex items-start gap-2.5">
+          <Info className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+          {generatorMode === "token" && (
+            <div>
+              <strong className="text-foreground">Clean Google Token Mode (Recommended):</strong> Generates an opaque link like{" "}
+              <code className="text-emerald-400 font-mono">https://www.google.com/share.google?q=pqATPUPG...</code> with ZERO subdomains in the query string. Facebook text scanners treat it 100% as a pure Google URL.
+            </div>
+          )}
+          {generatorMode === "fast" && (
+            <div>
+              <strong className="text-foreground">Instant In-House Mode:</strong> Generates{" "}
+              <code className="text-emerald-400 font-mono">https://www.google.com/share.google?link=https://{autoDomain}/...</code> with 1-click without needing external tokens.
+            </div>
+          )}
+          {generatorMode === "gshort" && (
+            <div>
+              <strong className="text-foreground">Gshort Partner API Mode:</strong> Connects to Gshort API via your private key to automatically create and fetch the Google <code className="text-emerald-400 font-mono">?q=</code> token in the background.
+            </div>
+          )}
+          {generatorMode === "apps_script" && (
+            <div>
+              <strong className="text-foreground">Google Apps Script Engine:</strong> Deploy a 3-line Google Apps Script on your Google account. Yields a pure <code className="text-emerald-400 font-mono">https://script.google.com/macros/s/.../exec</code> URL with 0 subdomains and 100% Google domain trust.
+            </div>
+          )}
+        </div>
+
+        {/* Form Inputs */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
           <div className="md:col-span-6 space-y-1.5">
             <Label className="text-xs font-bold text-foreground">Offer URL / CPA Direct Link *</Label>
             <Input
@@ -5272,20 +5424,175 @@ function GoogleLinksTab() {
             <Input
               value={autoNotes}
               onChange={(e) => setAutoNotes(e.target.value)}
-              placeholder="e.g. VIP Campaign #1"
+              placeholder="e.g. FB Reels Campaign #1"
               className="text-xs h-11 border-border/80 bg-background/70"
             />
           </div>
         </div>
 
+        {/* Clean Token Mode Specific Fields */}
+        {generatorMode === "token" && (
+          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/15 p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Label className="text-xs font-black text-foreground flex items-center gap-1.5">
+                <KeyRound className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Google Share Token or URL (`q=` or `share.google/`)*</span>
+              </Label>
+
+              <button
+                type="button"
+                onClick={() => setShowAndroidGuide(!showAndroidGuide)}
+                className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+              >
+                <span>How to get free token in 5 seconds</span>
+                {showAndroidGuide ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+
+            {showAndroidGuide && (
+              <div className="rounded-xl border border-emerald-500/20 bg-background/80 p-3.5 text-xs text-muted-foreground space-y-2 animate-in fade-in duration-200">
+                <p className="font-bold text-emerald-400">3 Easy Steps to get a 100% Free Official Google Token:</p>
+                <ol className="list-decimal list-inside space-y-1 text-foreground/90 pl-1">
+                  <li>Open your phone's <strong>Google App</strong> or <strong>Chrome</strong>.</li>
+                  <li>Open your cloaked link (or any short URL) and tap the <strong>Share</strong> button.</li>
+                  <li>Choose <strong>Copy link</strong> ➔ Google will give you a <code className="font-mono text-emerald-400">share.google?q=...</code> link. Paste it below!</li>
+                </ol>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <Input
+                value={googleTokenInput}
+                onChange={(e) => {
+                  setGoogleTokenInput(e.target.value);
+                  setTokenVerificationResult(null);
+                }}
+                placeholder="e.g. pqATPUPGq8j0jZDLI or https://www.google.com/share.google?q=pqATPUPG..."
+                className="text-xs font-mono h-11 border-border/80 focus:border-emerald-500 bg-background/90"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 px-4 text-xs font-semibold gap-1.5 shrink-0"
+                disabled={!googleTokenInput.trim() || isVerifyingToken}
+                onClick={() => handleVerifyToken(googleTokenInput)}
+              >
+                {isVerifyingToken ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Verifying...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Verify Live
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {tokenVerificationResult && (
+              <div
+                className={`rounded-xl p-2.5 text-xs flex items-center gap-2 ${
+                  tokenVerificationResult.valid
+                    ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
+                    : "bg-rose-500/10 border border-rose-500/30 text-rose-400"
+                }`}
+              >
+                {tokenVerificationResult.valid ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    <span>Token is live on Google! Redirect target: {tokenVerificationResult.destination}</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>{tokenVerificationResult.error || "Token returned error on Google"}</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Gshort Partner API Mode Specific Fields */}
+        {generatorMode === "gshort" && (
+          <div className="rounded-2xl border border-blue-500/30 bg-blue-950/15 p-4 space-y-3">
+            <Label className="text-xs font-black text-foreground flex items-center gap-1.5">
+              <KeyRound className="h-3.5 w-3.5 text-blue-400" />
+              <span>Gshort Partner API Key (Saved in browser)*</span>
+            </Label>
+            <Input
+              type="password"
+              value={gshortApiKey}
+              onChange={(e) => handleGshortKeyChange(e.target.value)}
+              placeholder="Paste your Gshort API Bearer Key (e.g. gsh_live_...)"
+              className="text-xs font-mono h-11 border-border/80 focus:border-blue-500 bg-background/90"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Your API key is securely stored in your browser's local storage and used exclusively to call Gshort API to fetch official Google tokens in the background.
+            </p>
+          </div>
+        )}
+
+        {/* Google Apps Script Mode Specific Fields */}
+        {generatorMode === "apps_script" && (
+          <div className="rounded-2xl border border-purple-500/30 bg-purple-950/15 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-black text-foreground flex items-center gap-1.5">
+                <Code2 className="h-3.5 w-3.5 text-purple-400" />
+                <span>Google Apps Script Code (3-line Free Engine)</span>
+              </Label>
+              <button
+                type="button"
+                onClick={() =>
+                  copyToClipboard(
+                    `function doGet(e) {\n  return HtmlService.createHtmlOutput('<script>location.replace("https://${autoDomain}/YOUR_CODE");</script>');\n}`,
+                    "script-copy",
+                    "Google Script"
+                  )
+                }
+                className="text-[11px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1"
+              >
+                <Copy className="h-3.5 w-3.5" />
+                <span>{copiedId === "script-copy" ? "Copied!" : "Copy Script"}</span>
+              </button>
+            </div>
+            <pre className="p-3 rounded-xl bg-background/90 border border-border/80 text-[11px] font-mono text-purple-300 overflow-x-auto">
+{`function doGet(e) {
+  return HtmlService.createHtmlOutput('<script>location.replace("https://${autoDomain}/YOUR_CODE");</script>');
+}`}
+            </pre>
+            <div className="space-y-1">
+              <Label className="text-xs font-bold text-foreground">Deployed Web App URL (script.google.com)*</Label>
+              <Input
+                value={googleTokenInput}
+                onChange={(e) => setGoogleTokenInput(e.target.value)}
+                placeholder="https://script.google.com/macros/s/AKfyc.../exec"
+                className="text-xs font-mono h-11 border-border/80 focus:border-purple-500 bg-background/90"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Generate Button */}
         <Button
           className="w-full h-11 text-sm font-bold gap-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white shadow-lg shadow-emerald-500/20 border-0"
-          disabled={!autoOfferUrl.trim() || autoShortMut.isPending}
+          disabled={
+            !autoOfferUrl.trim() ||
+            autoShortMut.isPending ||
+            (generatorMode === "token" && !googleTokenInput.trim()) ||
+            (generatorMode === "gshort" && !gshortApiKey.trim()) ||
+            (generatorMode === "apps_script" && !googleTokenInput.trim())
+          }
           onClick={() =>
             autoShortMut.mutate({
               offerUrl: autoOfferUrl.trim(),
               domain: autoDomain,
               notes: autoNotes.trim() || undefined,
+              googleShareCode:
+                generatorMode === "token" || generatorMode === "apps_script"
+                  ? googleTokenInput.trim()
+                  : undefined,
+              gshortApiKey: generatorMode === "gshort" ? gshortApiKey.trim() : undefined,
             })
           }
         >
@@ -5295,7 +5602,16 @@ function GoogleLinksTab() {
             </>
           ) : (
             <>
-              <GoogleGIcon className="h-4 w-4" /> Generate Google Short Link
+              <GoogleGIcon className="h-4 w-4" />
+              <span>
+                {generatorMode === "token"
+                  ? "Generate Clean Google Token Link (?q=)"
+                  : generatorMode === "fast"
+                  ? "Generate Instant Google Link (?link=)"
+                  : generatorMode === "gshort"
+                  ? "Generate via Gshort Partner API"
+                  : "Register Google Apps Script Link"}
+              </span>
             </>
           )}
         </Button>
@@ -5305,7 +5621,7 @@ function GoogleLinksTab() {
           <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-950/25 p-5 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-2">
               <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase text-emerald-400">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Active & Ready for Social Posting
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Active & Ready for Facebook Reels & Description
               </span>
               <span className="text-[11px] font-mono text-emerald-300/80 font-bold">
                 DA 100 Whitelisted Domain
@@ -5314,7 +5630,7 @@ function GoogleLinksTab() {
 
             <div className="space-y-1">
               <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">
-                Official Google Domain Link:
+                Official Google Domain Link (Clean - No Subdomain):
               </span>
               <div className="flex items-center gap-2">
                 <Input
