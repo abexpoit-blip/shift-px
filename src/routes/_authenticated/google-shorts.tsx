@@ -26,12 +26,10 @@ import {
   ShieldCheck,
   Zap,
   Flame,
-  Globe,
   RefreshCw,
   Clock,
   ArrowUpRight,
   TrendingUp,
-  Info,
   KeyRound,
   ChevronDown,
   ChevronUp,
@@ -148,6 +146,7 @@ function GoogleShortsPage() {
       domain?: string;
       notes?: string;
       googleShareCode?: string;
+      mode?: "token" | "fast";
     }) => generateFn({ data }),
     onSuccess: (res: any) => {
       setResult({
@@ -454,6 +453,7 @@ function GoogleShortsPage() {
               offerUrl: offerUrl.trim(),
               domain,
               notes: label.trim() || undefined,
+              mode: generatorMode,
               googleShareCode: generatorMode === "fast" ? undefined : (googleTokenInput.trim() || undefined),
             })
           }
