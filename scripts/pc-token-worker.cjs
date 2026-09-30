@@ -1,8 +1,9 @@
 /**
  * AdsPx PC Token Worker & Buffer Pool Synchronizer
  * Automated Google Token Minting Engine via LDPlayer Emulator
- * Directly pairs pre-minted custom query tokens (https://dovtv.com/?p=CODE)
- * and syncs them into the AdsPx token pool API.
+ *
+ * Strategy: WEB_SEARCH intent → loads Custom Tab directly inside Google App
+ * No typing, no coordinate clicks on search bar → zero misclick, 100% accurate
  */
 
 const { execSync } = require("child_process");
@@ -10,7 +11,10 @@ const https = require("https");
 const http = require("http");
 const fs = require("fs");
 
-const API_ENDPOINT = process.env.TOKEN_API_URL || "https://adspx.com/api/public/token-pool";
+const API_ENDPOINT =
+  process.env.TOKEN_API_URL || "https://adspx.com/api/public/token-pool";
+
+// ─── ADB ─────────────────────────────────────────────────────────────────────
 
 function findAdbPath() {
   const candidates = [
@@ -34,11 +38,11 @@ function log(msg, ...args) {
   console.log(`[${ts}] ${msg}`, ...args);
 }
 
-function runAdb(device, cmd, timeout = 10000) {
+function runAdb(device, cmd, timeout = 12000) {
   try {
     const fullCmd = `"${ADB_BIN}" ${device ? `-s ${device}` : ""} ${cmd}`;
     return execSync(fullCmd, { encoding: "utf-8", timeout }).trim();
-  } catch (err) {
+  } catch {
     return null;
   }
 }
@@ -52,9 +56,7 @@ function getActiveDevice() {
       .filter((l) => l && !l.startsWith("List of"));
     for (const line of lines) {
       const parts = line.split(/\s+/);
-      if (parts[1] === "device") {
-        return parts[0];
-      }
+      if (parts[1] === "device") return parts[0];
     }
   } catch {}
   return null;
@@ -73,6 +75,8 @@ function generateRandomCode(length = 7) {
   return res;
 }
 
+// ─── API ──────────────────────────────────────────────────────────────────────
+
 async function apiRequest(urlStr, method = "GET", body = null) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(urlStr);
@@ -85,7 +89,7 @@ async function apiRequest(urlStr, method = "GET", body = null) {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        timeout: 10000,
+        timeout: 12000,
       },
       (res) => {
         let data = "";
@@ -112,11 +116,15 @@ async function apiRequest(urlStr, method = "GET", body = null) {
 async function checkPoolStock() {
   try {
     const res = await apiRequest(API_ENDPOINT, "GET");
-    if (res.status === 200 && res.data && typeof res.data.available === "number") {
+    if (
+      res.status === 200 &&
+      res.data &&
+      typeof res.data.available === "number"
+    ) {
       return res.data.available;
     }
     return null;
-  } catch (err) {
+  } catch {
     return null;
   }
 }
@@ -133,71 +141,108 @@ async function submitTokenToApi(tokenData) {
   }
 }
 
+// ─── CORE MINT ────────────────────────────────────────────────────────────────
+
+/**
+ * Mints ONE Google share token for a given dovtv short code.
+ *
+ * Flow (zero search-bar clicks):
+ *  1. Force-stop Google App & Chrome → clean slate
+ *  2. Clear logcat buffer
+ *  3. Fire WEB_SEARCH intent → Google App opens Custom Tab directly with URL loaded
+ *  4. Tap Share icon at (370, 75)
+ *  5. Tap "Copy Link" at (207, 610) → Share Catcher captures share.google token
+ *  6. Read logcat for SHARE_CATCHER pattern
+ *  7. Close Custom Tab via back arrow at (65, 80)
+ *  8. Force-stop Google App → clean for next round
+ */
 async function mintOneToken(device) {
   const shortCode = generateRandomCode(7);
   const targetUrl = `https://dovtv.com/?p=${shortCode}`;
+
   log(`\n--------------------------------------------------`);
-  log(`🔹 Preparing target: ${targetUrl}`);
+  log(`🔹 Target: ${targetUrl}`);
 
-  // Step 1: Clean slate — close any open custom tabs or dialogs
-  runAdb(device, "shell input keyevent 4");
-  await sleep(200);
-  runAdb(device, "shell input keyevent 4");
-  await sleep(300);
+  // ── Step 1: Force stop both apps for a completely clean state ──
+  log(`🧹 Force-stopping Google App & Chrome...`);
+  runAdb(device, "shell am force-stop com.google.android.googlequicksearchbox");
+  await sleep(500);
+  runAdb(device, "shell am force-stop com.android.chrome");
+  await sleep(400);
 
-  // Clear logcat so we only catch this transaction
+  // ── Step 2: Clear logcat buffer ──
   runAdb(device, "logcat -c");
+  await sleep(200);
 
-  // Step 2: Open SearchActivity
-  runAdb(device, "shell am start -n com.google.android.googlequicksearchbox/.SearchActivity");
-  await sleep(1200);
+  // ── Step 3: Launch Custom Tab via WEB_SEARCH intent ──
+  // This fires the URL directly into Google App — NO typing, NO search bar tapping
+  log(`🌐 Opening URL via WEB_SEARCH intent...`);
+  runAdb(
+    device,
+    `shell am start -a android.intent.action.WEB_SEARCH --es query "${targetUrl}"`
+  );
+  log(`⏳ Waiting for Custom Tab to fully load (6s)...`);
+  await sleep(6000);
 
-  // Step 3: Tap search input / pill
-  runAdb(device, "shell input tap 270 300");
-  await sleep(500);
+  // ── Step 4: Tap Share icon (top-right area of Custom Tab) ──
+  log(`📤 Tapping Share icon at (370, 78)...`);
+  runAdb(device, "shell input tap 370 78");
+  await sleep(2200); // wait for share sheet to fully appear
 
-  // Step 4: Type URL into search input
-  const escaped = targetUrl.replace(":", "\\:").replace("?", "\\?").replace("=", "\\=");
-  runAdb(device, `shell input text "${escaped}"`);
-  await sleep(500);
+  // ── Step 5: Tap "Copy Link" in share sheet ──
+  log(`📋 Tapping Copy Link at (207, 605)...`);
+  runAdb(device, "shell input tap 207 605");
+  await sleep(2800); // wait for Share Catcher to receive and log the link
 
-  // Step 5: Press Enter (KEYCODE_ENTER = 66)
-  runAdb(device, "shell input keyevent 66");
-  log(`⏳ Loading Custom Tab in Google App (waiting 3.5s)...`);
-  await sleep(3500);
+  // ── Step 6: Read captured token from logcat using on-device grep ──
+  // Filter on-device so buffer size doesn't matter
+  const shareLogs =
+    runAdb(device, `shell logcat -d "*:S SHARE_CATCHER:I"`, 10000) || "";
+  // Also read full buffer as fallback
+  const allLogs = runAdb(device, `shell logcat -d -b main`, 10000) || "";
 
-  // Step 6: Tap Share Icon at top right (x=370, y=75)
-  runAdb(device, "shell input tap 370 75");
-  await sleep(1500);
+  let capturedTokenUrl = null;
 
-  // Step 7: Tap 'Copy Link' (Share Catcher) at (x=207, y=610)
-  runAdb(device, "shell input tap 207 610");
-  await sleep(1500);
-
-  // Step 8: Read captured token from logcat
-  const logs = runAdb(device, "logcat -d -t 60") || "";
-  const match = logs.match(/SHARE_CATCHER:\s+CAPTURED_LINK:\s+.*?(https:\/\/share\.google\/[a-zA-Z0-9_-]+)/);
-  let capturedTokenUrl = match ? match[1] : null;
-
-  if (!capturedTokenUrl) {
-    const rawMatch = logs.match(/(https:\/\/share\.google\/[a-zA-Z0-9_-]+)/);
-    if (rawMatch) capturedTokenUrl = rawMatch[1];
+  // Primary: SHARE_CATCHER tagged line
+  const primaryMatch = shareLogs.match(
+    /SHARE_CATCHER.*?(https:\/\/share\.google\/[a-zA-Z0-9_-]+)/
+  );
+  if (primaryMatch) {
+    capturedTokenUrl = primaryMatch[1];
+    log(`✅ SHARE_CATCHER captured: ${capturedTokenUrl}`);
+  } else {
+    // Fallback: any share.google URL in full logcat
+    const fallbackMatch = allLogs.match(
+      /(https:\/\/share\.google\/[a-zA-Z0-9_-]+)/
+    );
+    if (fallbackMatch) {
+      capturedTokenUrl = fallbackMatch[1];
+      log(`✅ Logcat fallback captured: ${capturedTokenUrl}`);
+    }
   }
 
-  // Step 9: Clean close — send back keys to close the tab and return to fresh search state
-  runAdb(device, "shell input keyevent 4");
-  await sleep(200);
-  runAdb(device, "shell input keyevent 4");
-  await sleep(200);
+  // ── Step 7: Close the Custom Tab ──
+  log(`🔙 Closing Custom Tab...`);
+  runAdb(device, "shell input tap 65 80"); // back/close arrow (top-left)
+  await sleep(700);
+
+  // ── Step 8: Force-stop Google App for 100% clean next round ──
+  log(`🧹 Force-stopping Google App for clean next round...`);
+  runAdb(device, "shell am force-stop com.google.android.googlequicksearchbox");
+  await sleep(500);
 
   if (!capturedTokenUrl) {
-    log(`❌ Failed to capture token for ${shortCode}`);
+    log(`❌ Token capture FAILED for short code: ${shortCode}`);
+    log(`   (logcat had no share.google URL — did share sheet open?)`);
     return null;
   }
 
-  const tokenOnly = capturedTokenUrl.replace(/^https?:\/\/share\.google\//i, "").trim();
-  log(`🎯 Minted Google Token: ${capturedTokenUrl}`);
-  log(`🔗 Destination mapped: https://dovtv.com/?p=${shortCode}`);
+  const tokenOnly = capturedTokenUrl
+    .replace(/^https?:\/\/share\.google\//i, "")
+    .trim();
+
+  log(`🎯 Token:   ${capturedTokenUrl}`);
+  log(`🔗 Mapped:  https://dovtv.com/?p=${shortCode}`);
 
   return {
     token: tokenOnly,
@@ -207,9 +252,12 @@ async function mintOneToken(device) {
   };
 }
 
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
+
 async function main() {
   console.log("==================================================");
-  console.log("   🚀 AdsPx Automated Google Token Worker (v2.0)  ");
+  console.log("   🚀 AdsPx Automated Google Token Worker (v3.0)  ");
+  console.log("   Strategy: WEB_SEARCH Intent — Zero Misclick    ");
   console.log("==================================================");
 
   const device = getActiveDevice();
@@ -221,40 +269,54 @@ async function main() {
   log(`📱 Connected to Android Device: ${device}`);
 
   const stockBefore = await checkPoolStock();
-  log(`📦 Current Pool Stock on Server: ${stockBefore !== null ? stockBefore : "Checking..."} Available`);
+  log(
+    `📦 Current Server Pool Stock: ${
+      stockBefore !== null ? stockBefore : "Unknown"
+    } available`
+  );
 
   const args = process.argv.slice(2);
   const countIdx = args.indexOf("--count");
-  const targetCount = countIdx !== -1 ? parseInt(args[countIdx + 1], 10) : 5;
+  const targetCount =
+    countIdx !== -1 ? parseInt(args[countIdx + 1], 10) || 5 : 5;
 
-  log(`Target tokens to mint: ${targetCount}`);
+  log(`🎯 Tokens to mint this session: ${targetCount}`);
   let successful = 0;
+  let failed = 0;
 
   for (let i = 0; i < targetCount; i++) {
-    log(`\n[Round ${i + 1}/${targetCount}]`);
+    log(`\n[Round ${i + 1} / ${targetCount}]`);
     const minted = await mintOneToken(device);
+
     if (minted) {
       log(`📡 Syncing token to AdsPx API...`);
       const syncResult = await submitTokenToApi(minted);
       if (syncResult.ok) {
         successful++;
-        log(`✅ Saved to Pool! Live Available Stock: ${syncResult.total}`);
+        log(`✅ Saved! Server pool now has ${syncResult.total} tokens.`);
       } else {
-        log(`⚠️ Failed to sync token to API: ${syncResult.error}`);
+        log(`⚠️  API sync failed: ${syncResult.error}`);
+        failed++;
       }
     } else {
-      // If stuck, perform a force-stop to guarantee recovery
-      log(`🔄 Recovering Google App...`);
-      runAdb(device, "shell am force-stop com.google.android.googlequicksearchbox");
-      await sleep(1000);
+      failed++;
+      log(`⚠️  Skipping round — will retry on next run`);
     }
-    await sleep(1500);
+
+    // Brief pause between rounds
+    if (i < targetCount - 1) {
+      await sleep(2000);
+    }
   }
 
   console.log("\n==================================================");
   const stockAfter = await checkPoolStock();
-  log(`🏁 Batch Complete: ${successful}/${targetCount} tokens minted & synced.`);
-  log(`🎉 Current Server Pool Stock: ${stockAfter !== null ? stockAfter : "OK"} Available`);
+  log(`🏁 Done: ${successful} minted, ${failed} failed.`);
+  log(
+    `🎉 Server Pool Stock: ${
+      stockAfter !== null ? stockAfter : "OK"
+    } available`
+  );
   console.log("==================================================");
 }
 
