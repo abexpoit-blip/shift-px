@@ -161,6 +161,7 @@ import {
   verifyGoogleTokenLiveFn,
   getGoogleTokenPoolStatsFn,
   addTokensToPoolFn,
+  clearTokenPoolFn,
   type TraceResult,
   type HopDetail,
   type StoredGoogleLink,
@@ -5076,6 +5077,7 @@ function GoogleLinksTab() {
   const verifyTokenFn = useServerFn(verifyGoogleTokenLiveFn);
   const getPoolStatsFn = useServerFn(getGoogleTokenPoolStatsFn);
   const addTokensFn = useServerFn(addTokensToPoolFn);
+  const clearPoolFn = useServerFn(clearTokenPoolFn);
 
   const { data: state, isLoading, isRefetching } = useQuery({
     queryKey: ["admin-google-links-state"],
@@ -5100,6 +5102,20 @@ function GoogleLinksTab() {
       queryClient.invalidateQueries({ queryKey: ["admin-google-token-pool-stats"] });
     },
     onError: (err: any) => toast.error(err.message || "Failed to add tokens"),
+  });
+
+  const clearPoolMut = useMutation({
+    mutationFn: (status: "available" | "all") =>
+      clearPoolFn({ data: { status } }),
+    onSuccess: (_res, status) => {
+      toast.success(
+        status === "all"
+          ? "🗑️ All tokens cleared from pool!"
+          : "🗑️ Available tokens cleared from pool!"
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin-google-token-pool-stats"] });
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to clear pool"),
   });
 
   const domainsQ = useQuery({
@@ -5288,14 +5304,42 @@ function GoogleLinksTab() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
               onClick={() => queryClient.invalidateQueries({ queryKey: ["admin-google-token-pool-stats"] })}
               className="h-8 gap-1.5 text-xs font-semibold"
             >
-              <RefreshCw className="h-3 w-3" /> Check Stock
+              <RefreshCw className="h-3 w-3" /> Refresh
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={clearPoolMut.isPending || (poolQ.data?.available ?? 0) === 0}
+              onClick={() => {
+                if (confirm("Delete all AVAILABLE tokens from pool? (Assigned tokens will be kept)")) {
+                  clearPoolMut.mutate("available");
+                }
+              }}
+              className="h-8 gap-1.5 text-xs font-semibold text-rose-400 border-rose-500/30 hover:bg-rose-500/10"
+            >
+              {clearPoolMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+              Clear Available
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={clearPoolMut.isPending}
+              onClick={() => {
+                if (confirm("⚠️ DELETE ALL TOKENS including assigned ones? This cannot be undone!")) {
+                  clearPoolMut.mutate("all");
+                }
+              }}
+              className="h-8 gap-1.5 text-xs font-semibold text-rose-600 border-rose-700/40 hover:bg-rose-700/10"
+            >
+              {clearPoolMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+              Clear ALL
             </Button>
           </div>
         </div>

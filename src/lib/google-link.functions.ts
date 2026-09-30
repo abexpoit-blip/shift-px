@@ -845,3 +845,47 @@ export const addTokensToPoolFn = createServerFn({ method: "POST" })
     };
   });
 
+/**
+ * Clear available (unassigned) tokens from the pool — Admin only
+ */
+export const clearTokenPoolFn = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        status: z
+          .enum(["available", "all"])
+          .default("available")
+          .optional(),
+      })
+      .parse(d)
+  )
+  .handler(async ({ data }) => {
+    const context = await getRequestAuth();
+
+    // Verify admin via user_roles (same pattern as addTokensToPoolFn)
+    const { data: roleRow } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (roleRow?.role !== "admin") {
+      throw new Error("Unauthorized: Admin access required.");
+    }
+
+    const deleteStatus = data?.status ?? "available";
+
+    // Perform the actual delete (cast to any — google_token_pool not in typed schema)
+    let del = (supabaseAdmin as any).from("google_token_pool").delete();
+    if (deleteStatus === "available") {
+      del = del.eq("status", "available");
+    } else {
+      // delete all — use a truthy filter to satisfy PostgREST safety requirement
+      del = del.gt("created_at", "2000-01-01");
+    }
+    const { error: delError } = await del;
+    if (delError) throw new Error(delError.message);
+
+    return { ok: true, deletedStatus: deleteStatus };
+  });
