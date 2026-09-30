@@ -2341,15 +2341,16 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       return new Response(html, { status: 200, headers });
     }
 
-    // (3) Unknown code WITHOUT any ad-click signal → article page
-    if (!hasAdClickSignal(url, referer)) {
+    // (3) If link does not exist in database, ALWAYS serve safe article/store page
+    // This allows Google App to load dovtv.com/?p=CODE cleanly without redirecting to mint the token.
+    if (!link || !hasAdClickSignal(url, referer)) {
       const tpl = pickArticleTemplateForCode(code, publicOrigin);
       const html = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
       const headers = new Headers({
         "content-type": "text/html; charset=utf-8",
         "cache-control": "private, no-store, no-cache, must-revalidate, max-age=0",
       });
-      setDebugHeaders(headers, "safe-article", "unknown-code-no-adsignal");
+      setDebugHeaders(headers, "safe-article", !link ? "link-not-found-safe" : "unknown-code-no-adsignal");
       return new Response(html, { status: 200, headers });
     }
 
