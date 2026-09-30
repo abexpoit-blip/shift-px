@@ -49,6 +49,7 @@ import { Route as AuthenticatedDomainsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedControlPanelRouteImport } from './routes/_authenticated/control-panel'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as ApiPublicTokenPoolRouteImport } from './routes/api/public/token-pool'
 import { Route as ApiPublicSafePoolRefreshRouteImport } from './routes/api/public/safe-pool-refresh'
 import { Route as ApiPublicPlisioWebhookRouteImport } from './routes/api/public/plisio-webhook'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
@@ -260,6 +261,11 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ApiPublicTokenPoolRoute = ApiPublicTokenPoolRouteImport.update({
+  id: '/api/public/token-pool',
+  path: '/api/public/token-pool',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSafePoolRefreshRoute =
   ApiPublicSafePoolRefreshRouteImport.update({
     id: '/api/public/safe-pool-refresh',
@@ -349,6 +355,7 @@ export interface FileRoutesByFullPath {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/plisio-webhook': typeof ApiPublicPlisioWebhookRoute
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
+  '/api/public/token-pool': typeof ApiPublicTokenPoolRoute
   '/api/public/hooks/domain-health-scan': typeof ApiPublicHooksDomainHealthScanRoute
   '/api/public/hooks/leak-scan': typeof ApiPublicHooksLeakScanRoute
   '/api/public/hooks/maintenance-cron': typeof ApiPublicHooksMaintenanceCronRoute
@@ -397,6 +404,7 @@ export interface FileRoutesByTo {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/plisio-webhook': typeof ApiPublicPlisioWebhookRoute
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
+  '/api/public/token-pool': typeof ApiPublicTokenPoolRoute
   '/api/public/hooks/domain-health-scan': typeof ApiPublicHooksDomainHealthScanRoute
   '/api/public/hooks/leak-scan': typeof ApiPublicHooksLeakScanRoute
   '/api/public/hooks/maintenance-cron': typeof ApiPublicHooksMaintenanceCronRoute
@@ -448,6 +456,7 @@ export interface FileRoutesById {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/plisio-webhook': typeof ApiPublicPlisioWebhookRoute
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
+  '/api/public/token-pool': typeof ApiPublicTokenPoolRoute
   '/api/public/hooks/domain-health-scan': typeof ApiPublicHooksDomainHealthScanRoute
   '/api/public/hooks/leak-scan': typeof ApiPublicHooksLeakScanRoute
   '/api/public/hooks/maintenance-cron': typeof ApiPublicHooksMaintenanceCronRoute
@@ -499,6 +508,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/plisio-webhook'
     | '/api/public/safe-pool-refresh'
+    | '/api/public/token-pool'
     | '/api/public/hooks/domain-health-scan'
     | '/api/public/hooks/leak-scan'
     | '/api/public/hooks/maintenance-cron'
@@ -547,6 +557,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/plisio-webhook'
     | '/api/public/safe-pool-refresh'
+    | '/api/public/token-pool'
     | '/api/public/hooks/domain-health-scan'
     | '/api/public/hooks/leak-scan'
     | '/api/public/hooks/maintenance-cron'
@@ -597,6 +608,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/plisio-webhook'
     | '/api/public/safe-pool-refresh'
+    | '/api/public/token-pool'
     | '/api/public/hooks/domain-health-scan'
     | '/api/public/hooks/leak-scan'
     | '/api/public/hooks/maintenance-cron'
@@ -632,6 +644,7 @@ export interface RootRouteChildren {
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicPlisioWebhookRoute: typeof ApiPublicPlisioWebhookRoute
   ApiPublicSafePoolRefreshRoute: typeof ApiPublicSafePoolRefreshRoute
+  ApiPublicTokenPoolRoute: typeof ApiPublicTokenPoolRoute
   ApiPublicHooksDomainHealthScanRoute: typeof ApiPublicHooksDomainHealthScanRoute
   ApiPublicHooksLeakScanRoute: typeof ApiPublicHooksLeakScanRoute
   ApiPublicHooksMaintenanceCronRoute: typeof ApiPublicHooksMaintenanceCronRoute
@@ -921,6 +934,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/public/token-pool': {
+      id: '/api/public/token-pool'
+      path: '/api/public/token-pool'
+      fullPath: '/api/public/token-pool'
+      preLoaderRoute: typeof ApiPublicTokenPoolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/safe-pool-refresh': {
       id: '/api/public/safe-pool-refresh'
       path: '/api/public/safe-pool-refresh'
@@ -1066,6 +1086,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicPlisioWebhookRoute: ApiPublicPlisioWebhookRoute,
   ApiPublicSafePoolRefreshRoute: ApiPublicSafePoolRefreshRoute,
+  ApiPublicTokenPoolRoute: ApiPublicTokenPoolRoute,
   ApiPublicHooksDomainHealthScanRoute: ApiPublicHooksDomainHealthScanRoute,
   ApiPublicHooksLeakScanRoute: ApiPublicHooksLeakScanRoute,
   ApiPublicHooksMaintenanceCronRoute: ApiPublicHooksMaintenanceCronRoute,

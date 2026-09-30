@@ -1,26 +1,21 @@
 /**
  * AdsPx PC Token Worker & Buffer Pool Synchronizer
- * Connects directly to local LDPlayer Emulator (emulator-5556) via ADB
- * and syncs verified Google Share tokens directly into the VPS Database (google_token_pool).
+ * Automated Google Token Minting Engine via LDPlayer Emulator
+ * Directly pairs pre-minted custom query tokens (https://dovtv.com/?p=CODE)
+ * and syncs them into the AdsPx token pool API.
  */
 
 const { execSync } = require("child_process");
 const https = require("https");
+const http = require("http");
 const fs = require("fs");
-const path = require("path");
 
-const SUPABASE_REST_URL =
-  process.env.SUPABASE_REST_URL || "https://adswapx.com/rest/v1";
-const SUPABASE_SERVICE_ROLE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3ODI4MTQ2MzksImV4cCI6MjA5ODE3NDYzOX0.X00UwEmqY4I0GkYvkT3tNO2BvI81Ffzs_CF2Kb0ybNM";
+const API_ENDPOINT = process.env.TOKEN_API_URL || "https://adspx.com/api/public/token-pool";
 
-// Locate ADB
 function findAdbPath() {
   const candidates = [
     "C:\\LDPlayer\\LDPlayer14\\adb.exe",
     "C:\\LDPlayer\\Blue LDPlayer9 Magisk\\adb.exe",
-    "C:\\Program Files\\Nox\\bin\\nox_adb.exe",
     "adb.exe",
     "adb",
   ];
@@ -39,10 +34,10 @@ function log(msg, ...args) {
   console.log(`[${ts}] ${msg}`, ...args);
 }
 
-function runAdb(device, cmd) {
+function runAdb(device, cmd, timeout = 10000) {
   try {
     const fullCmd = `"${ADB_BIN}" ${device ? `-s ${device}` : ""} ${cmd}`;
-    return execSync(fullCmd, { encoding: "utf-8", timeout: 15000 }).trim();
+    return execSync(fullCmd, { encoding: "utf-8", timeout }).trim();
   } catch (err) {
     return null;
   }
@@ -65,254 +60,205 @@ function getActiveDevice() {
   return null;
 }
 
-function makeSupabaseRequest(endpoint, method = "GET", body = null, headers = {}) {
-  return new Promise((resolve, reject) => {
-    const url = `${SUPABASE_REST_URL}/${endpoint}`;
-    const parsed = new URL(url);
-    const reqHeaders = {
-      apikey: SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-      "Content-Type": "application/json",
-      ...headers,
-    };
-
-    const req = https.request(
-      parsed,
-      {
-        method,
-        headers: reqHeaders,
-        timeout: 10000,
-      },
-      (res) => {
-        let data = "";
-        res.on("data", (c) => (data += c));
-        res.on("end", () => {
-          resolve({
-            status: res.statusCode,
-            headers: res.headers,
-            data: data ? safeJson(data) : null,
-          });
-        });
-      }
-    );
-
-    req.on("error", reject);
-    req.on("timeout", () => {
-      req.destroy();
-      reject(new Error("Supabase request timeout"));
-    });
-
-    if (body) {
-      req.write(JSON.stringify(body));
-    }
-    req.end();
-  });
-}
-
-function safeJson(str) {
-  try {
-    return JSON.parse(str);
-  } catch {
-    return str;
-  }
-}
-
-async function checkPoolHealth() {
-  try {
-    const res = await makeSupabaseRequest(
-      "google_token_pool?status=eq.available",
-      "GET",
-      null,
-      {
-        Prefer: "count=exact",
-        "Range-Unit": "items",
-      }
-    );
-    const range = res.headers["content-range"] || "";
-    const totalMatch = range.match(/\/(\d+)/);
-    const availableCount = totalMatch ? parseInt(totalMatch[1], 10) : 0;
-    return { available: availableCount };
-  } catch (err) {
-    log("Error checking pool health:", err.message);
-    return { available: 0 };
-  }
-}
-
-async function insertTokenToPool(token) {
-  const clean = token.trim();
-  if (!clean || clean.length < 5) return false;
-
-  const googleUrl = clean.startsWith("http")
-    ? clean
-    : `https://www.google.com/share.google?q=${clean}`;
-  const shareGoogleUrl = clean.startsWith("http")
-    ? clean
-    : `https://share.google/${clean}`;
-  const tokenCode = clean.replace(/^.*[?&]q=/, "").replace(/^.*share\.google\//, "");
-
-  try {
-    const res = await makeSupabaseRequest(
-      "google_token_pool",
-      "POST",
-      {
-        token: tokenCode,
-        google_url: googleUrl,
-        share_google_url: shareGoogleUrl,
-        status: "available",
-        verified_at: new Date().toISOString(),
-      },
-      {
-        Prefer: "resolution=merge-duplicates",
-      }
-    );
-    if (res.status >= 200 && res.status < 300) {
-      log(`✅ Token successfully added to VPS pool: ${tokenCode}`);
-      return true;
-    } else {
-      log(`⚠️ Token insert response: ${res.status}`, res.data);
-      return false;
-    }
-  } catch (err) {
-    log("Insert error:", err.message);
-    return false;
-  }
-}
-
-async function captureFromEmulator(device) {
-  // Clear previous logcat
-  runAdb(device, "logcat -c");
-
-  // 1. Bring Google App Search to front
-  runAdb(
-    device,
-    "shell am start -n com.google.android.googlequicksearchbox/.SearchActivity"
-  );
-  await sleep(1500);
-
-  // 2. Tap search bar and search keyword
-  runAdb(device, "shell input tap 300 85");
-  await sleep(400);
-  runAdb(device, "shell input text news");
-  await sleep(400);
-  runAdb(device, "shell input keyevent 66");
-  await sleep(2500);
-
-  // 3. Tap 3 dots on first result
-  runAdb(device, "shell input tap 505 618");
-  await sleep(1000);
-
-  // 4. Tap Share
-  runAdb(device, "shell input tap 168 330");
-  await sleep(1200);
-
-  // 5. Tap Copy Link (top left icon position in chooser)
-  runAdb(device, "shell input tap 70 620");
-  await sleep(1000);
-
-  // 6. Check logcat from Share Catcher
-  const logs = runAdb(device, "logcat -d -t 50") || "";
-  const match = logs.match(/SHARE_CATCHER:\s*CAPTURED_LINK:\s*([^\r\n]+)/);
-  if (match && match[1]) {
-    const rawLink = match[1].trim();
-    log(`🎯 Captured link: ${rawLink}`);
-    // Dismiss chooser/share sheet
-    runAdb(device, "shell input keyevent 4");
-    await sleep(300);
-    // Check if tokenized
-    const tokenMatch =
-      rawLink.match(/[?&]q=([a-zA-Z0-9_-]+)/) ||
-      rawLink.match(/share\.google\/([a-zA-Z0-9_-]+)/) ||
-      rawLink.match(/search\.app\/([a-zA-Z0-9_-]+)/);
-    if (tokenMatch && tokenMatch[1]) {
-      return tokenMatch[1];
-    }
-    // Return clean token or raw code
-    return rawLink;
-  }
-
-  // Dismiss any left-over dialogs
-  runAdb(device, "shell input keyevent 4");
-  await sleep(200);
-  runAdb(device, "shell input keyevent 4");
-  return null;
-}
-
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function bulkImportTokens(tokensList) {
-  log(`Importing ${tokensList.length} tokens into VPS pool...`);
-  let added = 0;
-  for (const t of tokensList) {
-    const ok = await insertTokenToPool(t);
-    if (ok) added++;
+function generateRandomCode(length = 7) {
+  const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+  let res = "";
+  for (let i = 0; i < length; i++) {
+    res += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  log(`🎉 Successfully imported ${added}/${tokensList.length} tokens.`);
+  return res;
+}
+
+async function apiRequest(urlStr, method = "GET", body = null) {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(urlStr);
+    const client = parsed.protocol === "https:" ? https : http;
+    const req = client.request(
+      parsed,
+      {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        timeout: 10000,
+      },
+      (res) => {
+        let data = "";
+        res.on("data", (chunk) => (data += chunk));
+        res.on("end", () => {
+          try {
+            resolve({ status: res.statusCode, data: JSON.parse(data) });
+          } catch {
+            resolve({ status: res.statusCode, data });
+          }
+        });
+      }
+    );
+    req.on("error", reject);
+    req.on("timeout", () => {
+      req.destroy();
+      reject(new Error("Request timeout"));
+    });
+    if (body) req.write(JSON.stringify(body));
+    req.end();
+  });
+}
+
+async function checkPoolStock() {
+  try {
+    const res = await apiRequest(API_ENDPOINT, "GET");
+    if (res.status === 200 && res.data && typeof res.data.available === "number") {
+      return res.data.available;
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+}
+
+async function submitTokenToApi(tokenData) {
+  try {
+    const res = await apiRequest(API_ENDPOINT, "POST", tokenData);
+    if (res.status === 200 && res.data && res.data.success) {
+      return { ok: true, total: res.data.total_available };
+    }
+    return { ok: false, error: res.data?.error || `HTTP ${res.status}` };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+async function mintOneToken(device) {
+  const shortCode = generateRandomCode(7);
+  const targetUrl = `https://dovtv.com/?p=${shortCode}`;
+  log(`\n--------------------------------------------------`);
+  log(`🔹 Preparing target: ${targetUrl}`);
+
+  // Step 1: Clean slate — close any open custom tabs or dialogs
+  runAdb(device, "shell input keyevent 4");
+  await sleep(200);
+  runAdb(device, "shell input keyevent 4");
+  await sleep(300);
+
+  // Clear logcat so we only catch this transaction
+  runAdb(device, "logcat -c");
+
+  // Step 2: Open SearchActivity
+  runAdb(device, "shell am start -n com.google.android.googlequicksearchbox/.SearchActivity");
+  await sleep(1200);
+
+  // Step 3: Tap search input / pill
+  runAdb(device, "shell input tap 270 300");
+  await sleep(500);
+
+  // Step 4: Type URL into search input
+  const escaped = targetUrl.replace(":", "\\:").replace("?", "\\?").replace("=", "\\=");
+  runAdb(device, `shell input text "${escaped}"`);
+  await sleep(500);
+
+  // Step 5: Press Enter (KEYCODE_ENTER = 66)
+  runAdb(device, "shell input keyevent 66");
+  log(`⏳ Loading Custom Tab in Google App (waiting 3.5s)...`);
+  await sleep(3500);
+
+  // Step 6: Tap Share Icon at top right (x=370, y=75)
+  runAdb(device, "shell input tap 370 75");
+  await sleep(1500);
+
+  // Step 7: Tap 'Copy Link' (Share Catcher) at (x=207, y=610)
+  runAdb(device, "shell input tap 207 610");
+  await sleep(1500);
+
+  // Step 8: Read captured token from logcat
+  const logs = runAdb(device, "logcat -d -t 60") || "";
+  const match = logs.match(/SHARE_CATCHER:\s+CAPTURED_LINK:\s+.*?(https:\/\/share\.google\/[a-zA-Z0-9_-]+)/);
+  let capturedTokenUrl = match ? match[1] : null;
+
+  if (!capturedTokenUrl) {
+    const rawMatch = logs.match(/(https:\/\/share\.google\/[a-zA-Z0-9_-]+)/);
+    if (rawMatch) capturedTokenUrl = rawMatch[1];
+  }
+
+  // Step 9: Clean close — send back keys to close the tab and return to fresh search state
+  runAdb(device, "shell input keyevent 4");
+  await sleep(200);
+  runAdb(device, "shell input keyevent 4");
+  await sleep(200);
+
+  if (!capturedTokenUrl) {
+    log(`❌ Failed to capture token for ${shortCode}`);
+    return null;
+  }
+
+  const tokenOnly = capturedTokenUrl.replace(/^https?:\/\/share\.google\//i, "").trim();
+  log(`🎯 Minted Google Token: ${capturedTokenUrl}`);
+  log(`🔗 Destination mapped: https://dovtv.com/?p=${shortCode}`);
+
+  return {
+    token: tokenOnly,
+    short_code: shortCode,
+    google_url: `https://www.google.com/share.google?q=${tokenOnly}`,
+    share_google_url: capturedTokenUrl,
+  };
 }
 
 async function main() {
   console.log("==================================================");
-  console.log("   🚀 AdsPx PC Token Worker & Pool Sync Engine    ");
+  console.log("   🚀 AdsPx Automated Google Token Worker (v2.0)  ");
   console.log("==================================================");
 
   const device = getActiveDevice();
   if (!device) {
-    console.error("❌ No active Android emulator/device detected.");
-    console.error("👉 Please ensure LDPlayer is open and running!");
+    console.error("❌ No active LDPlayer emulator detected.");
+    console.error("👉 Please start LDPlayer and try again!");
     process.exit(1);
   }
-  log(`📱 Connected to Emulator Device: ${device}`);
+  log(`📱 Connected to Android Device: ${device}`);
 
-  // Check health
-  const health = await checkPoolHealth();
-  log(`📊 Current VPS Token Pool: ${health.available} Available`);
+  const stockBefore = await checkPoolStock();
+  log(`📦 Current Pool Stock on Server: ${stockBefore !== null ? stockBefore : "Checking..."} Available`);
 
-  // Parse CLI args
   const args = process.argv.slice(2);
-  const countArgIdx = args.indexOf("--count");
-  const targetCount = countArgIdx !== -1 ? parseInt(args[countArgIdx + 1], 10) : 5;
+  const countIdx = args.indexOf("--count");
+  const targetCount = countIdx !== -1 ? parseInt(args[countIdx + 1], 10) : 5;
 
-  const importFileIdx = args.indexOf("--file");
-  if (importFileIdx !== -1) {
-    const filePath = args[importFileIdx + 1];
-    if (fs.existsSync(filePath)) {
-      const lines = fs
-        .readFileSync(filePath, "utf-8")
-        .split("\n")
-        .map((l) => l.trim())
-        .filter((l) => l && !l.startsWith("#"));
-      await bulkImportTokens(lines);
-      process.exit(0);
-    } else {
-      console.error(`File not found: ${filePath}`);
-      process.exit(1);
-    }
-  }
-
-  log(`Target tokens to generate: ${targetCount}`);
-  let generated = 0;
+  log(`Target tokens to mint: ${targetCount}`);
+  let successful = 0;
 
   for (let i = 0; i < targetCount; i++) {
-    log(`--- Generating Token ${i + 1}/${targetCount} ---`);
-    const token = await captureFromEmulator(device);
-    if (token) {
-      const ok = await insertTokenToPool(token);
-      if (ok) generated++;
+    log(`\n[Round ${i + 1}/${targetCount}]`);
+    const minted = await mintOneToken(device);
+    if (minted) {
+      log(`📡 Syncing token to AdsPx API...`);
+      const syncResult = await submitTokenToApi(minted);
+      if (syncResult.ok) {
+        successful++;
+        log(`✅ Saved to Pool! Live Available Stock: ${syncResult.total}`);
+      } else {
+        log(`⚠️ Failed to sync token to API: ${syncResult.error}`);
+      }
     } else {
-      log(`⚠️ Attempt ${i + 1} did not capture a token.`);
+      // If stuck, perform a force-stop to guarantee recovery
+      log(`🔄 Recovering Google App...`);
+      runAdb(device, "shell am force-stop com.google.android.googlequicksearchbox");
+      await sleep(1000);
     }
     await sleep(1500);
   }
 
-  const finalHealth = await checkPoolHealth();
-  console.log("==================================================");
-  log(`🏁 Run complete! Newly generated: ${generated}/${targetCount}`);
-  log(`📦 Total Pool Available: ${finalHealth.available}`);
+  console.log("\n==================================================");
+  const stockAfter = await checkPoolStock();
+  log(`🏁 Batch Complete: ${successful}/${targetCount} tokens minted & synced.`);
+  log(`🎉 Current Server Pool Stock: ${stockAfter !== null ? stockAfter : "OK"} Available`);
   console.log("==================================================");
 }
 
 main().catch((err) => {
-  console.error("Worker error:", err);
+  console.error("Fatal Worker Error:", err);
   process.exit(1);
 });
