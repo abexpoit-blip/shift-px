@@ -301,7 +301,7 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
       try {
         const { data: candidates } = await (supabaseAdmin as any)
           .from("google_token_pool")
-          .select("id, token, google_url, share_google_url")
+          .select("id, token, google_url, share_google_url, short_code")
           .eq("status", "available")
           .order("created_at", { ascending: true })
           .limit(1);
@@ -324,6 +324,15 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
           if (updatedRow) {
             claimed = updatedRow;
             usedPoolToken = true;
+
+            if (claimed.short_code && claimed.short_code !== shortCode) {
+              await (supabaseAdmin as any)
+                .from("links")
+                .update({ short_code: claimed.short_code })
+                .eq("id", linkId);
+              shortCode = claimed.short_code;
+              destinationShortUrl = `https://${selectedDomain}/${shortCode}`;
+            }
           }
         }
       } catch (poolErr) {
