@@ -30,9 +30,11 @@ import {
   deleteLink,
   toggleLink,
 } from "@/lib/links.functions";
+import { generateGoogleShort } from "@/lib/google-link.functions";
 import { listCustomDomains } from "@/lib/custom-domains.functions";
 import { getPrimaryShortenerDomain } from "@/lib/shortener-domains.functions";
 import { DEFAULT_SHORT_HOST, isFlaggedShortDomain } from "@/lib/short-domains";
+
 
 export const Route = createFileRoute("/_authenticated/links")({
   head: () => ({
@@ -159,6 +161,7 @@ function LinksPage() {
   const create = useServerFn(createLink);
   const remove = useServerFn(deleteLink);
   const toggle = useServerFn(toggleLink);
+  const generateShort = useServerFn(generateGoogleShort);
 
   const dashQ = useQuery({
     queryKey: ["dashboard"],
@@ -183,6 +186,11 @@ function LinksPage() {
   const [adsterra, setAdsterra] = useState("");
   const [title, setTitle] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+
+  // Token form state
+  const [tokenAdsterra, setTokenAdsterra] = useState("");
+  const [tokenTitle, setTokenTitle] = useState("");
+
   const [search, setSearch] = useState("");
   const [editingLink, setEditingLink] = useState<any>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -249,6 +257,35 @@ function LinksPage() {
       title: title.trim() || undefined,
       adsterra_url: adsterra.trim(),
       custom_domain: createDomain && createDomain !== primaryDomain ? createDomain : undefined,
+    });
+  };
+
+  // Token link mutation — uses pool token, no domain selection needed
+  const tokenMut = useMutation({
+    mutationFn: (vars: { adsterra_url: string; title?: string }) =>
+      generateShort({
+        data: {
+          adsterra_url: vars.adsterra_url,
+          title: vars.title,
+          mode: "token",
+        },
+      }),
+    onSuccess: () => {
+      toast.success("🎯 Token link created successfully!");
+      setTokenAdsterra("");
+      setTokenTitle("");
+      setShowCreate(false);
+      refreshMut.mutate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const onTokenSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!tokenAdsterra.trim()) return;
+    tokenMut.mutate({
+      adsterra_url: tokenAdsterra.trim(),
+      title: tokenTitle.trim() || undefined,
     });
   };
 
@@ -359,78 +396,143 @@ function LinksPage() {
           </div>
         </header>
 
-        {/* Create Link Panel */}
+        {/* Create Link Panel — 2 column: Default (left) | Token (right) */}
         {showCreate && (
-          <Panel className="p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center gap-3 pb-3 border-b border-border/60">
+          <Panel className="p-6 animate-in fade-in zoom-in-95 duration-150">
+            {/* Panel Header */}
+            <div className="flex items-center gap-3 pb-4 mb-5 border-b border-border/60">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="text-base font-extrabold text-foreground">Create New Protected Link</h3>
-                <p className="text-xs text-muted-foreground">Direct link in, protected short link out — bots never see your offer.</p>
+                <p className="text-xs text-muted-foreground">Choose your link type — Default or Google Token powered.</p>
               </div>
+              <button
+                type="button"
+                onClick={() => setShowCreate(false)}
+                className="ml-auto px-3 py-1.5 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted"
+              >
+                ✕ Close
+              </button>
             </div>
 
-            <form onSubmit={onSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Target Domain</label>
-                  <select
-                    value={createDomain || primaryDomain}
-                    onChange={(e) => setCreateDomain(e.target.value)}
-                    className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2.5 text-xs sm:text-sm font-mono text-foreground focus:outline-none focus:border-primary"
+            {/* Two Column Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+              {/* ── LEFT: Default Link ── */}
+              <div className="rounded-2xl border border-border/70 bg-muted/20 p-5 space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                  <Link2 className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-extrabold text-foreground">Default Link</span>
+                  <span className="ml-auto text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Standard</span>
+                </div>
+                <p className="text-xs text-muted-foreground -mt-1">Short link on your primary/custom domain. No token required.</p>
+
+                <form onSubmit={onSubmit} className="space-y-3">
+                  {/* Domain select */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Target Domain</label>
+                    <select
+                      value={createDomain || primaryDomain}
+                      onChange={(e) => setCreateDomain(e.target.value)}
+                      className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-xs font-mono text-foreground focus:outline-none focus:border-primary"
+                    >
+                      <option value={primaryDomain}>{primaryDomain} (Primary)</option>
+                      {verifiedCustomDomains.map((d: any) => (
+                        <option key={d.id} value={d.domain}>
+                          {d.domain} (Custom ✓)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Title */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Title (Optional)</label>
+                    <input
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="e.g. Meta Ads Campaign #1"
+                      className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  {/* Destination URL */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Destination / Offer URL *</label>
+                    <input
+                      required
+                      type="url"
+                      value={adsterra}
+                      onChange={(e) => setAdsterra(e.target.value)}
+                      placeholder="https://your-offer-link.com"
+                      className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-xs font-mono text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={createMut.isPending || !adsterra.trim()}
+                    className="w-full py-2.5 rounded-xl bg-muted border border-border text-xs font-bold flex items-center justify-center gap-2 hover:bg-muted/80 transition-colors disabled:opacity-50"
                   >
-                    <option value={primaryDomain}>{primaryDomain} (Primary)</option>
-                    {verifiedCustomDomains.map((d: any) => (
-                      <option key={d.id} value={d.domain}>
-                        {d.domain} (Custom ✓)
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Link Title (Optional)</label>
-                  <input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Meta Ads Campaign #1"
-                    className="w-full bg-muted/40 border border-border rounded-xl px-4 py-2.5 text-xs sm:text-sm text-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Destination / Offer URL *</label>
-                  <input
-                    required
-                    type="url"
-                    value={adsterra}
-                    onChange={(e) => setAdsterra(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full bg-muted/40 border border-border rounded-xl px-4 py-2.5 text-xs sm:text-sm font-mono text-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
+                    {createMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    Generate Default Link
+                  </button>
+                </form>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowCreate(false)}
-                  className="px-4 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createMut.isPending || !adsterra.trim()}
-                  className="px-6 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold flex items-center gap-2 hover:opacity-90 shadow-glow"
-                >
-                  {createMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  Generate Short Link
-                </button>
+              {/* ── RIGHT: Google Token Link ── */}
+              <div className="rounded-2xl border border-indigo-500/40 bg-indigo-500/5 p-5 space-y-4 relative overflow-hidden">
+                {/* Glow accent */}
+                <div className="absolute -top-6 -right-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+
+                <div className="flex items-center gap-2 pb-2 border-b border-indigo-500/30">
+                  <Zap className="w-4 h-4 text-indigo-400" />
+                  <span className="text-sm font-extrabold text-foreground">Google Token Link</span>
+                  <span className="ml-auto text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">Token Pool</span>
+                </div>
+                <p className="text-xs text-muted-foreground -mt-1">
+                  Uses a <span className="text-indigo-400 font-bold">share.google</span> token — domain is auto-included, no selection needed.
+                </p>
+
+                <form onSubmit={onTokenSubmit} className="space-y-3">
+                  {/* Title */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Title (Optional)</label>
+                    <input
+                      value={tokenTitle}
+                      onChange={(e) => setTokenTitle(e.target.value)}
+                      placeholder="e.g. FB Traffic Campaign"
+                      className="w-full bg-background border border-indigo-500/30 rounded-xl px-4 py-2.5 text-xs text-foreground focus:outline-none focus:border-indigo-400"
+                    />
+                  </div>
+
+                  {/* Destination URL — NO domain field */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Destination / Offer URL *</label>
+                    <input
+                      required
+                      type="url"
+                      value={tokenAdsterra}
+                      onChange={(e) => setTokenAdsterra(e.target.value)}
+                      placeholder="https://your-offer-link.com"
+                      className="w-full bg-background border border-indigo-500/30 rounded-xl px-4 py-2.5 text-xs font-mono text-foreground focus:outline-none focus:border-indigo-400"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={tokenMut.isPending || !tokenAdsterra.trim()}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold flex items-center justify-center gap-2 hover:opacity-90 shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
+                  >
+                    {tokenMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                    Create Token Link
+                  </button>
+                </form>
               </div>
-            </form>
+
+            </div>
           </Panel>
         )}
 
