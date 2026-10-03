@@ -62,20 +62,29 @@ async function run() {
       msg.includes("duplicate")
     ) {
       console.log("ℹ️ User already registered. Fetching user ID to ensure admin role...");
-      const { data: usersData, error: listError } = await supabase.auth.admin.listUsers();
-      if (listError) {
-        console.error("❌ Failed to list users:", listError.message);
-        process.exit(1);
+      let existingId = null;
+      const { data: prof } = await supabase.from("profiles").select("id").eq("email", email).maybeSingle();
+      if (prof?.id) {
+        existingId = prof.id;
+      } else {
+        const { data: usersData, error: listError } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (listError) {
+          console.error("❌ Failed to list users:", listError.message);
+          process.exit(1);
+        }
+        const existing = usersData.users.find((u) => u.email?.toLowerCase() === email);
+        existingId = existing?.id;
       }
-      const existing = usersData.users.find((u) => u.email?.toLowerCase() === email);
-      if (!existing) {
+
+      if (!existingId) {
         console.error("❌ Could not find existing user ID.");
         process.exit(1);
       }
-      userId = existing.id;
+      userId = existingId;
       // Update password if requested
       await supabase.auth.admin.updateUserById(userId, { password, email_confirm: true });
       console.log("✅ Password updated & email confirmed.");
+
     } else {
       console.error("❌ Error creating auth user:", createError.message);
       process.exit(1);
