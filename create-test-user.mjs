@@ -37,8 +37,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 async function run() {
   const email = (process.argv[2] || "admin@adspx.com").trim().toLowerCase();
-  const password = process.argv[3] || "AdminPass@2026";
-  const fullName = process.argv[4] || "System Admin";
+  const password = process.argv[3] || "Shovon@5448";
+  const fullName = process.argv[4] || "Super Admin";
 
   console.log(`\n🚀 Setting up Admin User on ${SUPABASE_URL}...`);
   console.log(`Email: ${email}`);
