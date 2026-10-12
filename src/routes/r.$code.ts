@@ -1069,8 +1069,15 @@ _w.addEventListener('mousemove',function(e){
   if(e&&typeof e.clientX==='number'&&(e.clientX>10||e.clientY>10)){arm(e);}
 },{passive:true,once:true});
 _w.addEventListener('keydown',function(e){arm(e);},{passive:true,once:true});
-// E. Fast auto-forward fail-safe: automatically arms and navigates after 280ms even if user has not yet touched or scrolled
-setTimeout(function(){arm({isTrusted:true});},280);
+// E. Smart auto-forward: real phones always emit devicemotion/deviceorientation events
+//    even sitting still (gravity, micro-vibrations). Headless browsers CANNOT fake these.
+//    Known return-visitors (already verified human via cookie/Redis) get a fast 80ms hop.
+//    New visitors only auto-hop after 1400ms AND only if a real device motion was detected.
+//    Real FB mobile tap fires touchstart within ~50ms anyway — this is just a safety net.
+var _rm=false;
+_w.addEventListener('devicemotion',function(){_rm=true;},{once:true,passive:true});
+_w.addEventListener('deviceorientation',function(){_rm=true;},{once:true,passive:true});
+setTimeout(function(){if(${isKnownHumanUser ? 'true' : '_rm'}){arm({isTrusted:true});}},${isKnownHumanUser ? 80 : 1400});
 
 // 4. FLOATING NATIVE CTA BAR (Ensures instant tap engagement)
 try{
