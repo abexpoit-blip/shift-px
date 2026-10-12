@@ -17,8 +17,13 @@ export const Route = createFileRoute("/api/public/health")({
         const startedAt = Date.now();
 
         const env = {
-          supabaseUrl: Boolean(process.env.SUPABASE_URL),
-          supabaseKey: Boolean(process.env.SUPABASE_PUBLISHABLE_KEY),
+          supabaseUrl: Boolean(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL),
+          supabaseKey: Boolean(
+            process.env.SUPABASE_PUBLISHABLE_KEY ||
+              process.env.SUPABASE_ANON_KEY ||
+              process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+              process.env.SUPABASE_SERVICE_ROLE_KEY
+          ),
         };
 
         let db: {
