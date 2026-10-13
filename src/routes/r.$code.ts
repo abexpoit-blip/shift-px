@@ -2880,7 +2880,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     });
   }
 
-  const userOffer = (link as any).destination_url || link.adsterra_url || (link as any).adsterra_direct_link;
+  const userOffer = link.adsterra_url || (link as any).destination_url || (link as any).adsterra_direct_link;
 
   // Detect direct tool tests, curl, postman, python, server scanners, or manual developer inspections:
   const uaLow = (ua || "").toLowerCase();

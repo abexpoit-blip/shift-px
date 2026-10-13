@@ -1824,6 +1824,8 @@ function LinksTab() {
     );
   }, [links.data, search]);
 
+  const [editingLink, setEditingLink] = useState<{ id: string; short_code: string; title: string; url: string } | null>(null);
+
   return (
     <Panel
       icon={Link2}
@@ -1861,12 +1863,12 @@ function LinksTab() {
                 <Td>{l.title || <span className="text-[var(--muted-foreground)]">—</span>}</Td>
                 <Td className="max-w-[280px] truncate text-xs">
                   <a
-                    href={l.adsterra_url}
+                    href={l.adsterra_url || l.destination_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[var(--primary)] hover:underline"
+                    className="text-[var(--primary)] hover:underline font-mono"
                   >
-                    {l.adsterra_url}
+                    {l.adsterra_url || l.destination_url}
                   </a>
                 </Td>
                 <Td>{l.clicks_count.toLocaleString()}</Td>
@@ -1894,8 +1896,12 @@ function LinksTab() {
                       size="sm"
                       variant="outline"
                       onClick={() => {
-                        const url = prompt("New destination URL:", l.adsterra_url);
-                        if (url) updateMut.mutate({ id: l.id, adsterra_url: url });
+                        setEditingLink({
+                          id: l.id,
+                          short_code: l.short_code,
+                          title: l.title || "",
+                          url: l.adsterra_url || l.destination_url || "",
+                        });
                       }}
                       className="border-[var(--border)]"
                     >
@@ -1918,6 +1924,96 @@ function LinksTab() {
           </tbody>
         </table>
       </div>
+
+      {editingLink && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+              <div>
+                <h3 className="font-bold text-base text-[var(--foreground)]">
+                  Edit Link: <span className="font-mono text-indigo-400">/{editingLink.short_code}</span>
+                </h3>
+                <p className="text-xs text-[var(--muted-foreground)]">
+                  Update destination offer link or title instantly with zero-downtime cache sync.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingLink(null)}
+                className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] p-1 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1">
+                  Link Title (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={editingLink.title}
+                  onChange={(e) => setEditingLink({ ...editingLink, title: e.target.value })}
+                  placeholder="e.g. Adsterra Campaign 1"
+                  className={inputCls}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1">
+                  Destination Offer URL <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  type="url"
+                  value={editingLink.url}
+                  onChange={(e) => setEditingLink({ ...editingLink, url: e.target.value })}
+                  placeholder="https://..."
+                  className={`${inputCls} font-mono text-xs`}
+                />
+                <p className="text-[11px] text-[var(--muted-foreground)] mt-1">
+                  Enter direct Adsterra URL or target landing page. Trailing spaces are automatically trimmed.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border)]">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditingLink(null)}
+                disabled={updateMut.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={updateMut.isPending || !editingLink.url.trim()}
+                onClick={() => {
+                  const targetUrl = editingLink.url.trim();
+                  if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
+                    toast.error("URL must start with http:// or https://");
+                    return;
+                  }
+                  updateMut.mutate(
+                    {
+                      id: editingLink.id,
+                      adsterra_url: targetUrl,
+                      title: editingLink.title.trim() || undefined,
+                    },
+                    {
+                      onSuccess: () => setEditingLink(null),
+                    }
+                  );
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
+              >
+                {updateMut.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Panel>
   );
 }

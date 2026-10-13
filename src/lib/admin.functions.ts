@@ -788,13 +788,14 @@ export const adminUpdateLink = createServerFn({ method: "POST" })
     const patch: Record<string, unknown> = {};
     if (data.title !== undefined) patch.title = data.title;
     if (data.adsterra_url !== undefined) {
-      patch.adsterra_url = data.adsterra_url;
-      // Legacy column kept in sync so older redirect paths resolve the new URL.
-      patch.adsterra_direct_link = data.adsterra_url;
+      const cleanUrl = String(data.adsterra_url).trim();
+      patch.adsterra_url = cleanUrl;
+      // All destination columns kept in sync so EVERY redirect path and cache reader resolves the new URL immediately
+      patch.destination_url = cleanUrl;
+      patch.adsterra_direct_link = cleanUrl;
     }
     if (data.safe_url !== undefined) {
-      patch.safe_url = data.safe_url;
-      patch.destination_url = data.safe_url;
+      patch.safe_url = String(data.safe_url).trim();
     }
     if (Object.keys(patch).length === 0) throw new Error("Nothing to update");
 
