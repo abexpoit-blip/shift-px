@@ -605,6 +605,100 @@ export const deleteGoogleShort = createServerFn({ method: "POST" })
 
 export const adminDeleteGoogleLink = deleteGoogleShort;
 
+/**
+ * Update Google Short destination URL and title (Admin or Link Owner)
+ */
+export const updateGoogleShort = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string(),
+        destination_url: z.string().url(),
+        title: z.string().optional(),
+      })
+      .parse(d)
+  )
+  .handler(async ({ data }) => {
+    const context = await getRequestAuth();
+    const userId = context.userId;
+
+    const { data: roleRow } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    const isAdmin = roleRow?.role === "admin";
+    const cleanUrl = String(data.destination_url).trim();
+
+    // 1. Check in google_shorts table
+    const { data: gsRecord } = await (supabaseAdmin as any)
+      .from("google_shorts")
+      .select("id, user_id, link_id, short_code")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    if (gsRecord) {
+      if (!isAdmin && gsRecord.user_id !== userId) {
+        throw new Error("Unauthorized to edit this link");
+      }
+
+      const updateGs: Record<string, any> = { destination_url: cleanUrl };
+      if (data.title !== undefined) updateGs.title = data.title.trim();
+      await (supabaseAdmin as any).from("google_shorts").update(updateGs).eq("id", gsRecord.id);
+
+      if (gsRecord.link_id) {
+        const updateLink: Record<string, any> = {
+          destination_url: cleanUrl,
+          adsterra_url: cleanUrl,
+          adsterra_direct_link: cleanUrl,
+        };
+        if (data.title !== undefined) updateLink.title = data.title.trim();
+        await (supabaseAdmin.from("links") as any).update(updateLink).eq("id", gsRecord.link_id);
+      }
+
+      const { invalidateLinkCache } = await import("@/lib/link-cache.server");
+      await invalidateLinkCache(gsRecord.short_code);
+      return { success: true, short_code: gsRecord.short_code };
+    }
+
+    // 2. Fallback: Check links table directly
+    const { data: linkRecord } = await supabaseAdmin
+      .from("links")
+      .select("id, user_id, short_code")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    if (linkRecord) {
+      if (!isAdmin && linkRecord.user_id !== userId) {
+        throw new Error("Unauthorized to edit this link");
+      }
+
+      const updateLink: Record<string, any> = {
+        destination_url: cleanUrl,
+        adsterra_url: cleanUrl,
+        adsterra_direct_link: cleanUrl,
+      };
+      if (data.title !== undefined) updateLink.title = data.title.trim();
+      await (supabaseAdmin.from("links") as any).update(updateLink).eq("id", linkRecord.id);
+
+      await (supabaseAdmin as any)
+        .from("google_shorts")
+        .update({ destination_url: cleanUrl, ...(data.title ? { title: data.title.trim() } : {}) })
+        .eq("link_id", linkRecord.id);
+
+      const { invalidateLinkCache } = await import("@/lib/link-cache.server");
+      await invalidateLinkCache(linkRecord.short_code);
+      return { success: true, short_code: linkRecord.short_code };
+    }
+
+    throw new Error("Link not found");
+  });
+
+export const adminUpdateGoogleLink = updateGoogleShort;
+
+
 export const adminRegisterInhouseGoogleLink = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z

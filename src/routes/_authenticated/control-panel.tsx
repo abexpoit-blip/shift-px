@@ -156,6 +156,7 @@ import {
   adminRegisterInhouseGoogleLink,
   adminGetGoogleLinksState,
   adminDeleteGoogleLink,
+  adminUpdateGoogleLink,
   adminGenerateAutoGoogleShort,
   adminVerifyAndPairGoogleToken,
   verifyGoogleTokenLiveFn,
@@ -5168,6 +5169,7 @@ function GoogleLinksTab() {
   const queryClient = useQueryClient();
   const getGoogleStateFn = useServerFn(adminGetGoogleLinksState);
   const deleteFn = useServerFn(adminDeleteGoogleLink);
+  const updateGoogleFn = useServerFn(adminUpdateGoogleLink);
   const autoShortFn = useServerFn(adminGenerateAutoGoogleShort);
   const listDomainsFn = useServerFn(listShortenerDomains);
   const verifyTokenFn = useServerFn(verifyGoogleTokenLiveFn);
@@ -5326,6 +5328,25 @@ function GoogleLinksTab() {
     },
     onError: (err: any) => toast.error(err.message || "Failed to delete link"),
   });
+
+  const updateGoogleMut = useMutation({
+    mutationFn: (data: { id: string; destination_url: string; title?: string }) =>
+      updateGoogleFn({ data }),
+    onSuccess: () => {
+      toast.success("Destination offer link updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["admin-google-links-state"] });
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to update link"),
+  });
+
+  const [editingGoogleLink, setEditingGoogleLink] = useState<{
+    id: string;
+    title: string;
+    google_url: string;
+    destination_url: string;
+    short_code: string;
+    domain: string;
+  } | null>(null);
 
   const links = state?.links ?? [];
   const totalCleanClicks = links.reduce((sum: number, l: any) => sum + (l.clicks_count || 0), 0);
@@ -5958,6 +5979,23 @@ function GoogleLinksTab() {
                           </Button>
                           <Button
                             size="sm"
+                            variant="outline"
+                            className="h-8 text-xs font-semibold gap-1 px-2.5 border-border hover:border-primary/50"
+                            onClick={() => {
+                              setEditingGoogleLink({
+                                id: link.id,
+                                title: link.title || "",
+                                google_url: link.google_url,
+                                destination_url: link.destination_url || "",
+                                short_code: link.short_code,
+                                domain: link.domain || "adswapx.com",
+                              });
+                            }}
+                          >
+                            <span>Edit</span>
+                          </Button>
+                          <Button
+                            size="sm"
                             variant="ghost"
                             className="h-8 w-8 p-0 text-muted-foreground hover:text-rose-400"
                             disabled={deleteMut.isPending}
@@ -5980,6 +6018,106 @@ function GoogleLinksTab() {
           </div>
         )}
       </div>
+
+      {editingGoogleLink && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <GoogleGIcon className="h-4 w-4" />
+                  <h3 className="font-bold text-base text-[var(--foreground)]">
+                    Edit Google Short Target
+                  </h3>
+                </div>
+                <p className="text-xs text-[var(--muted-foreground)]">
+                  Google URL remains identical. Only the final landing destination changes with zero delay.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingGoogleLink(null)}
+                className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] p-1 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5">
+              <div className="p-3 rounded-xl bg-muted/40 border border-border/70 space-y-1">
+                <div className="text-[11px] font-semibold text-muted-foreground">Permanent Google Link:</div>
+                <div className="font-mono text-xs text-emerald-400 font-semibold break-all">
+                  {editingGoogleLink.google_url}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1">
+                  Campaign Title (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={editingGoogleLink.title}
+                  onChange={(e) => setEditingGoogleLink({ ...editingGoogleLink, title: e.target.value })}
+                  placeholder="e.g. Adsterra Direct Link #1"
+                  className={inputCls}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1">
+                  Destination Offer URL <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  type="url"
+                  value={editingGoogleLink.destination_url}
+                  onChange={(e) => setEditingGoogleLink({ ...editingGoogleLink, destination_url: e.target.value })}
+                  placeholder="https://..."
+                  className={`${inputCls} font-mono text-xs`}
+                />
+                <p className="text-[11px] text-[var(--muted-foreground)] mt-1">
+                  Enter new direct Adsterra CPA link. Cache is instantly purged across all PM2 workers.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border)]">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditingGoogleLink(null)}
+                disabled={updateGoogleMut.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={updateGoogleMut.isPending || !editingGoogleLink.destination_url.trim()}
+                onClick={() => {
+                  const targetUrl = editingGoogleLink.destination_url.trim();
+                  if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
+                    toast.error("URL must start with http:// or https://");
+                    return;
+                  }
+                  updateGoogleMut.mutate(
+                    {
+                      id: editingGoogleLink.id,
+                      destination_url: targetUrl,
+                      title: editingGoogleLink.title.trim() || undefined,
+                    },
+                    {
+                      onSuccess: () => setEditingGoogleLink(null),
+                    }
+                  );
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
+              >
+                {updateGoogleMut.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
