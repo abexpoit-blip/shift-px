@@ -2563,7 +2563,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   // (3) Automated / Headless / Emulated tools (Puppeteer, Playwright, Selenium, Lighthouse, etc.) -> ALWAYS safe article
   // (4) Direct desktop visits without any ad-click signal -> ALWAYS safe article
   // Real humans from ANY country (mobile devices, social in-app traffic, real touch users) -> ALWAYS pass to offer!
-  if (!isBot && !knownHuman) {
+  if (!isBot) {
     const isAutomatedTool =
       /headless|phantom|electron|puppeteer|playwright|selenium|webdriver|httpclient|curl|wget|python|go-http|java\/|okhttp|axios|node-fetch|lighthouse|pingdom|bot|crawler|spider/i.test(
         uaLowFb,
