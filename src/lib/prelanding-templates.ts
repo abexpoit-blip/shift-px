@@ -1756,38 +1756,6 @@ export const DOVTV_BRANDS: Brand[] = [
   },
 ];
 
-// Primary Shortener 2: adswapx.com
-// Angle: Digital Trends, Tech, Finance, Business & Career, Modern Lifestyle
-export const ADSWAPX_BRANDS: Brand[] = [
-  {
-    name: "AdSwapX Daily Journal",
-    accent: "#4f46e5",
-    accentDark: "#3730a3",
-    tagline: "Independent analysis, digital economy & modern business",
-    email: "editorial@adswapx.com",
-  },
-  {
-    name: "AdSwapX Tech Review",
-    accent: "#0284c7",
-    accentDark: "#0369a1",
-    tagline: "In-depth reporting on modern tech, AI & digital tools",
-    email: "desk@adswapx.com",
-  },
-  {
-    name: "AdSwapX Global Media",
-    accent: "#0d9488",
-    accentDark: "#0f766e",
-    tagline: "Global perspectives, finance & modern market insights",
-    email: "press@adswapx.com",
-  },
-  {
-    name: "AdSwapX Chronicle",
-    accent: "#7c3aed",
-    accentDark: "#5b21b6",
-    tagline: "Curated technology trends & future lifestyles",
-    email: "editor@adswapx.com",
-  },
-];
 
 function cleanHost(origin?: string): string {
   if (!origin) return "";
@@ -1883,9 +1851,7 @@ export function pickBrand(code: string, origin?: string): Brand {
   if (host.includes("dovtv.com")) {
     return DOVTV_BRANDS[hashCode(`dovbrand:${code}`) % DOVTV_BRANDS.length];
   }
-  if (host.includes("adswapx.com")) {
-    return ADSWAPX_BRANDS[hashCode(`adswapxbrand:${code}`) % ADSWAPX_BRANDS.length];
-  }
+  
   if (host && host !== "localhost" && !host.startsWith("127.") && !host.startsWith("109.205.")) {
     return generateCustomDomainBrand(host, code);
   }
@@ -1923,18 +1889,7 @@ export function pickArticleTemplateForCode(code: string, origin?: string): Prela
     return dovList[hashCode(`dovtpl:${code}`) % dovList.length];
   }
 
-  if (host.includes("adswapx.com")) {
-    const adswapxList: PrelandingTemplate[] = [
-      "article_news",
-      "article_tech",
-      "article_finance",
-      "article_business",
-      "article_lifestyle",
-      "article_science",
-      "article_education",
-    ];
-    return adswapxList[hashCode(`adswapxtpl:${code}`) % adswapxList.length];
-  }
+  
 
   if (host) {
     if (/sport|cricket|football|match|game|score|ball/i.test(host)) {

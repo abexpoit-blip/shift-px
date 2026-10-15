@@ -8,7 +8,7 @@ import { SITE } from "@/lib/breezy-data";
 export const Route = createFileRoute("/shipping")({
   loader: async () => await getRequestOrigin(),
   head: ({ loaderData }) => {
-    const origin = loaderData?.origin ?? "https://adswapx.com";
+    const origin = loaderData?.origin ?? "https://dovtv.com";
     const brand = brandForOrigin(origin);
     return {
       meta: [

@@ -34,7 +34,7 @@ const SAFE_FALLBACK = `${DEFAULT_SHORT_ORIGIN}/`;
  * default that older deploys (adspx / adswapx)
  * used to store — our own homepage must never be served as a safe page.
  */
-const LEGACY_SAFE_HOST_RE = /^https?:\/\/(www\.)?(adspx|adswapx)\.com\/?$/i;
+const LEGACY_SAFE_HOST_RE = /^https?:\/\/(www\.)?(adspx|adswapx|dovtv)\.com\/?$/i;
 
 function customSafePage(link: { safe_url?: string | null }): string | null {
   const raw = (link.safe_url ?? "").trim();
@@ -857,7 +857,7 @@ function markKnownHuman(code: string, fpHash: string): void {
 
 // Offer targets that must NEVER be served to a visitor: our own SaaS hosts.
 // If a link somehow stores one of these, fall back to safe.
-const BLOCKED_TARGET_HOSTS = /(^|\.)(adspx|adswapx)\.com$/i;
+const BLOCKED_TARGET_HOSTS = /(^|\.)(adspx|adswapx|dovtv)\.com$/i;
 
 export function canonicalOfferTarget(target: string | null | undefined): string | null {
   if (!target) return null;

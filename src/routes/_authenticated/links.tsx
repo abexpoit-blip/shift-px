@@ -212,8 +212,8 @@ function LinksPage() {
     return ((customDomainsQ.data?.domains as any[]) || []).filter((d: any) => d.verified);
   }, [customDomainsQ.data]);
 
-  // The platform primary domain (e.g. dovtv.com), falls back to adswapx.com
-  const primaryDomain = primaryDomainQ.data?.domain ?? "adswapx.com";
+  // The platform primary domain (dovtv.com)
+  const primaryDomain = primaryDomainQ.data?.domain ?? "dovtv.com";
 
   const [domainFilter, setDomainFilter] = useState("all");
   const [createDomain, setCreateDomain] = useState("");

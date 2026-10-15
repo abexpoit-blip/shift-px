@@ -84,15 +84,15 @@ function GoogleShortsPage() {
 
   const availableDomains = useMemo(() => {
     const fromDb = (domainsQ.data?.domains ?? [])
-      .filter((d: any) => d.is_active)
+      .filter((d: any) => d.is_active && d.domain !== "adswapx.com")
       .map((d: any) => d.domain);
-    const combined = ["adswapx.com", ...fromDb, "dovtv.com"];
-    return Array.from(new Set(combined.filter(Boolean)));
+    const combined = ["dovtv.com", ...fromDb];
+    return Array.from(new Set(combined.filter((d) => Boolean(d) && d !== "adswapx.com")));
   }, [domainsQ.data]);
 
   // Left form: Direct Link System (?link=)
   const [directOfferUrl, setDirectOfferUrl] = useState("");
-  const [directDomain, setDirectDomain] = useState("adswapx.com");
+  const [directDomain, setDirectDomain] = useState("dovtv.com");
   const [directLabel, setDirectLabel] = useState("");
 
   // Right form: Google Token System (share.google)
@@ -266,7 +266,7 @@ function GoogleShortsPage() {
               >
                 {availableDomains.map((d) => (
                   <option key={d} value={d}>
-                    {d} {d === "adswapx.com" ? "(Primary)" : ""}
+                    {d} {d === "dovtv.com" ? "(Primary)" : ""}
                   </option>
                 ))}
               </select>

@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback } from "react";
  * red "Dangerous site" interstitial. Remove a host from here only after the
  * Safe Browsing review has actually cleared it.
  */
-export const FLAGGED_SHORT_DOMAINS: readonly string[] = ["tekuc.com"];
+export const FLAGGED_SHORT_DOMAINS: readonly string[] = ["tekuc.com", "adswapx.com"];
 
 export function isFlaggedShortDomain(host: string): boolean {
   const h = (host || "")
@@ -19,7 +19,6 @@ export function isFlaggedShortDomain(host: string): boolean {
 
 export const SHORT_DOMAINS = [
   { host: "dovtv.com", label: "dovtv.com (Primary)" },
-  { host: "adswapx.com", label: "adswapx.com" },
 ] as const;
 
 export type ShortDomainHost = string;
@@ -37,7 +36,7 @@ const STORAGE_KEY = "adspx.shortDomain";
 const DEFAULT_HOST = "dovtv.com";
 
 function isValidHost(h: string | null): h is string {
-  return typeof h === "string" && h.length > 0 && !isFlaggedShortDomain(h);
+  return typeof h === "string" && h.length > 0 && !isFlaggedShortDomain(h) && h !== "adswapx.com";
 }
 
 /**

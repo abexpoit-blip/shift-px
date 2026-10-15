@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { safeHandle } from "./r.$code";
 
 /**
- * Bare short-code route: https://adswapx.com/<code>
+ * Bare short-code route: https://dovtv.com/<code>
  *
  * The shortener domain serves links (and their safe pages) directly from the
  * root path — /r/<code> stays as the canonical/legacy form. Static routes in

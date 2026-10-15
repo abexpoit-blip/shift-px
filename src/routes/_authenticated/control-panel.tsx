@@ -5224,16 +5224,16 @@ function GoogleLinksTab() {
 
   const availableDomains = useMemo(() => {
     const fromDb = (domainsQ.data?.domains ?? [])
-      .filter((d: any) => d.is_active)
+      .filter((d: any) => d.is_active && d.domain !== "adswapx.com")
       .map((d: any) => d.domain);
-    const combined = ["adswapx.com", ...fromDb, "dovtv.com"];
-    return Array.from(new Set(combined.filter(Boolean)));
+    const combined = ["dovtv.com", ...fromDb];
+    return Array.from(new Set(combined.filter((d) => Boolean(d) && d !== "adswapx.com")));
   }, [domainsQ.data]);
 
   // Modes: "token" (Clean q=) | "fast" (In-house link=)
   const [generatorMode, setGeneratorMode] = useState<"token" | "fast">("token");
   const [autoOfferUrl, setAutoOfferUrl] = useState("");
-  const [autoDomain, setAutoDomain] = useState("adswapx.com");
+  const [autoDomain, setAutoDomain] = useState("dovtv.com");
   const [autoNotes, setAutoNotes] = useState("");
   const [googleTokenInput, setGoogleTokenInput] = useState("");
   const [isVerifyingToken, setIsVerifyingToken] = useState(false);
@@ -5600,7 +5600,7 @@ function GoogleLinksTab() {
             >
               {availableDomains.map((d) => (
                 <option key={d} value={d}>
-                  {d} {d === "adswapx.com" ? "(Primary)" : ""}
+                  {d} {d === "dovtv.com" ? "(Primary)" : ""}
                 </option>
               ))}
             </select>
@@ -5988,7 +5988,7 @@ function GoogleLinksTab() {
                                 google_url: link.google_url,
                                 destination_url: link.destination_url || "",
                                 short_code: link.short_code,
-                                domain: link.domain || "adswapx.com",
+                                domain: link.domain || "dovtv.com",
                               });
                             }}
                           >

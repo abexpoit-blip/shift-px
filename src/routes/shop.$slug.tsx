@@ -26,7 +26,7 @@ export const Route = createFileRoute("/shop/$slug")({
   },
   head: ({ loaderData, params }) => {
     const p = loaderData?.product;
-    const origin = loaderData?.origin ?? "https://adswapx.com";
+    const origin = loaderData?.origin ?? "https://dovtv.com";
     const b = brandForOrigin(origin);
     if (!p) return { meta: [{ title: "Product not found" }] };
     const imgPath = PRODUCT_IMAGES[p.slug];

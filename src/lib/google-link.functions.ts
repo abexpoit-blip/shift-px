@@ -192,7 +192,7 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
       .object({
         offerUrl: z.string().min(1, "Destination or Offer URL is required"),
         googleShareCode: z.string().optional(),
-        domain: z.string().optional().default("adswapx.com"),
+        domain: z.string().optional().default("dovtv.com"),
         notes: z.string().optional(),
         mode: z.enum(["token", "fast"]).optional().default("fast"),
       })
@@ -211,7 +211,7 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
     let shortCode = "";
     let linkId = "";
 
-    const selectedDomain = (data.domain || "adswapx.com")
+    const selectedDomain = (data.domain || "dovtv.com")
       .trim()
       .replace(/^https?:\/\//, "")
       .replace(/\/$/, "");
@@ -465,7 +465,7 @@ export const getGoogleShortsList = createServerFn({ method: "GET" }).handler(asy
       }
 
       const items: GoogleShortItem[] = legacyLinks.map((l: any) => {
-        const dom = l.custom_domain || "adswapx.com";
+        const dom = l.custom_domain || "dovtv.com";
         const cloaked = `https://${dom}/${l.short_code}`;
         const gUrl = `https://www.google.com/share.google?link=${encodeURIComponent(cloaked)}`;
         const shareUrl = `https://share.google/?link=${encodeURIComponent(cloaked)}`;
@@ -519,7 +519,7 @@ export const getGoogleShortsList = createServerFn({ method: "GET" }).handler(asy
       id: gs.id,
       link_id: gs.link_id,
       short_code: gs.short_code,
-      domain: gs.domain || "adswapx.com",
+      domain: gs.domain || "dovtv.com",
       destination_url: gs.destination_url,
       google_url: gs.google_url,
       share_google_url: gs.share_google_url,
@@ -732,7 +732,7 @@ export const adminVerifyAndPairGoogleToken = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     return generateGoogleShort({
       data: {
-        offerUrl: `https://adswapx.com/${data.shortCode}`,
+        offerUrl: `https://dovtv.com/${data.shortCode}`,
         googleShareCode: data.googleInput,
         notes: data.notes,
       },

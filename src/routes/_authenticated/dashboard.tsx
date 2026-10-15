@@ -958,7 +958,7 @@ function TopLinksCard({
       ) : (
         <div className="space-y-3">
           {topLinks.map((l: any, idx: number) => {
-            const domain = l.custom_domain || "adswapx.com";
+            const domain = l.custom_domain || "dovtv.com";
             const shortUrl = `https://${domain}/${l.short_code}`;
             const clicks = Number(l.clicks_count || 0);
             const botClicks = Number(l.bot_clicks_count || 0);

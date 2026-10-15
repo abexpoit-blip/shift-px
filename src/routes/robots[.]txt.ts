@@ -55,7 +55,7 @@ export const Route = createFileRoute("/robots.txt")({
           .trim()
           .toLowerCase();
         const proto = (request.headers.get("x-forwarded-proto") || "https").split(",")[0].trim();
-        const origin = `${proto}://${host || "adswapx.com"}`;
+        const origin = `${proto}://${host || "dovtv.com"}`;
 
         const saas = isAdspxSaasHost(host);
 
