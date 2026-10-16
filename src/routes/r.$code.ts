@@ -373,7 +373,7 @@ const AD_CLICK_PARAMS = [
   "_preview",
 ];
 const SOCIAL_REFERRER_RE =
-  /(facebook|fb\.me|fbcdn|instagram|messenger|whatsapp|tiktok|t\.co|twitter|x\.com|snapchat|pinterest|google|bing|yandex)\./i;
+  /(facebook|fb\.me|fbcdn|instagram|messenger|whatsapp|tiktok|t\.co|twitter|x\.com|snapchat|pinterest|google|bing|yandex|youtube|youtu\.be)\./i;
 
 function hasAdClickSignal(url: URL, referer: string): boolean {
   for (const p of AD_CLICK_PARAMS) {
