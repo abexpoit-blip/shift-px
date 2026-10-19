@@ -102,7 +102,7 @@ export const getStatistics = createServerFn({ method: "GET" })
     const sinceTs = new Date(`${since}T00:00:00Z`).toISOString();
 
     const { data: linkRows } = await guard(
-      db.from("links").select("id, short_code, title, clicks_count, bot_clicks_count").eq("user_id", userId),
+      db.from("links").select("id, short_code, title, clicks_count, bot_clicks_count, human_clicks_count").eq("user_id", userId),
       "links",
       EMPTY_RES,
     );
@@ -138,13 +138,15 @@ export const getStatistics = createServerFn({ method: "GET" })
           else liveMap[row.link_id].humans += 1;
         }
         for (const l of links) {
+          const currentHuman = Math.max(Number(l.clicks_count ?? 0), Number((l as any).human_clicks_count ?? 0));
+          const currentBot = Number(l.bot_clicks_count ?? 0);
           const live = liveMap[l.id];
-          if (live) {
-            const currentHuman = Number(l.clicks_count ?? 0);
-            const currentBot = Number(l.bot_clicks_count ?? 0);
-            if (live.humans > currentHuman) l.clicks_count = live.humans;
-            if (live.bots > currentBot) l.bot_clicks_count = live.bots;
-          }
+          l.clicks_count = live ? Math.max(currentHuman, live.humans) : currentHuman;
+          if (live && live.bots > currentBot) l.bot_clicks_count = live.bots;
+        }
+      } else {
+        for (const l of links) {
+          l.clicks_count = Math.max(Number(l.clicks_count ?? 0), Number((l as any).human_clicks_count ?? 0));
         }
       }
     } catch (err) {
@@ -385,7 +387,7 @@ export const getLinkStats = createServerFn({ method: "GET" })
 
     const { data: link } = await db
       .from("links")
-      .select("id, short_code, title, user_id, clicks_count, bot_clicks_count")
+      .select("id, short_code, title, user_id, clicks_count, bot_clicks_count, human_clicks_count")
       .eq("id", data.linkId)
       .maybeSingle();
     if (!link || link.user_id !== userId) throw new Error("Link not found");
@@ -470,7 +472,7 @@ export const getLinkStats = createServerFn({ method: "GET" })
     const series = days.map((d) => byDay.get(d)!);
     const linkHumans = series.reduce((s2, r) => s2 + r.humans, 0);
 
-    const currentLinkDbHumans = Number(link.clicks_count ?? 0);
+    const currentLinkDbHumans = Math.max(Number(link.clicks_count ?? 0), Number((link as any).human_clicks_count ?? 0));
     const currentLinkDbBots = Number(link.bot_clicks_count ?? 0);
     const finalLinkHumans = Math.max(linkHumans, currentLinkDbHumans, liveLinkHumans);
     const finalLinkBots = Math.max(series.reduce((s2, r) => s2 + r.bots, 0), currentLinkDbBots, liveLinkBots);

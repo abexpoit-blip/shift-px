@@ -102,11 +102,11 @@ export const getEarningsOverview = createServerFn({ method: "GET" })
     let ledgerBots = all.reduce((s, r) => s + num(r.bot_clicks), 0);
     let lifetimeEarned = all.reduce((s, r) => s + num(r.earnings_usd), 0);
 
-    const { data: userLinks } = await db.from("links").select("clicks_count, bot_clicks_count").eq("user_id", userId);
+    const { data: userLinks } = await db.from("links").select("clicks_count, bot_clicks_count, human_clicks_count").eq("user_id", userId);
     let linkHumanClicks = 0;
     let linkBotClicks = 0;
     for (const l of userLinks ?? []) {
-      linkHumanClicks += num(l.clicks_count);
+      linkHumanClicks += Math.max(num(l.clicks_count), num((l as any).human_clicks_count));
       linkBotClicks += num(l.bot_clicks_count);
     }
 
@@ -162,11 +162,12 @@ export const getLinkEarnings = createServerFn({ method: "GET" })
     const userId = (context as any).userId as string;
     const settings = await readPayoutSettings(db);
 
-    const { data } = await db.from("links").select("id, clicks_count").eq("user_id", userId);
+    const { data } = await db.from("links").select("id, clicks_count, human_clicks_count").eq("user_id", userId);
 
     const out: Record<string, number> = {};
     for (const row of (data ?? []) as any[]) {
-      out[row.id] = (num(row.clicks_count) / 1000) * settings.ratePer1k;
+      const clicks = Math.max(num(row.clicks_count), num(row.human_clicks_count));
+      out[row.id] = (clicks / 1000) * settings.ratePer1k;
     }
     return out;
   });
@@ -402,8 +403,8 @@ export const getLeaderboard = createServerFn({ method: "GET" })
         const u = totals.get(userId)!;
         userSummary = { humanClicks: u.humans, earnings: u.earnings };
       } else {
-        const { data: userLinks } = await db.from("links").select("clicks_count").eq("user_id", userId);
-        const humans = (userLinks ?? []).reduce((s: number, l: any) => s + num(l.clicks_count), 0);
+        const { data: userLinks } = await db.from("links").select("clicks_count, human_clicks_count").eq("user_id", userId);
+        const humans = (userLinks ?? []).reduce((s: number, l: any) => s + Math.max(num(l.clicks_count), num(l.human_clicks_count)), 0);
         if (humans > 0) {
           userSummary = { humanClicks: humans, earnings: Number(((humans * 0.02) / 1000).toFixed(4)) };
         }

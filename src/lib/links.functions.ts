@@ -25,8 +25,13 @@ type LinkRow = {
 export type DashboardLink = ReturnType<typeof normalizeLink>;
 
 function normalizeLink(row: LinkRow) {
+  const clicks = Math.max(
+    Number(row.clicks_count ?? 0),
+    Number((row as any).human_clicks_count ?? 0),
+  );
   return {
     ...row,
+    clicks_count: clicks,
     custom_domain: (row as any).custom_domain ?? null,
     adsterra_url: row.adsterra_url ?? row.adsterra_direct_link ?? row.destination_url ?? "",
     // Only an explicit safe_url counts — destination_url holds the offer.

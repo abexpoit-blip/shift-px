@@ -73,7 +73,7 @@ export const adminStats = createServerFn({ method: "GET" })
       supabaseAdmin.from("links").select("*", { count: "exact", head: true }),
       supabaseAdmin
         .from("links")
-        .select("clicks_count, ours_clicks_count, offer_clicks_count, bot_clicks_count"),
+        .select("clicks_count, ours_clicks_count, offer_clicks_count, bot_clicks_count, human_clicks_count"),
       supabaseAdmin
         .from("upgrade_requests")
         .select("*", { count: "exact", head: true })
@@ -122,7 +122,7 @@ export const adminStats = createServerFn({ method: "GET" })
 
     // Aggregating human clicks from the links table summary
     const humansTotalFromLinks = globalClicksData.reduce(
-      (s, l: any) => s + (Number(l.clicks_count) || 0),
+      (s, l: any) => s + Math.max(Number(l.clicks_count) || 0, Number(l.human_clicks_count) || 0),
       0,
     );
     const oursTotalFromLinks = globalClicksData.reduce(
@@ -237,12 +237,12 @@ export const adminTopUsers = createServerFn({ method: "GET" })
     // profiles.clicks_used and must not be recomputed from resettable counters.
     const { data: links } = await supabaseAdmin
       .from("links")
-      .select("user_id, clicks_count, bot_clicks_count, ours_clicks_count");
+      .select("user_id, clicks_count, bot_clicks_count, ours_clicks_count, human_clicks_count");
     const totals: Record<string, { humans: number; bots: number; ours: number }> = {};
     (links ?? []).forEach((l: any) => {
       if (!l.user_id) return;
       const t = (totals[l.user_id] ||= { humans: 0, bots: 0, ours: 0 });
-      t.humans += l.clicks_count ?? 0;
+      t.humans += Math.max(Number(l.clicks_count) || 0, Number((l as any).human_clicks_count) || 0);
       t.bots += l.bot_clicks_count ?? 0;
       t.ours += l.ours_clicks_count ?? 0;
     });
