@@ -166,9 +166,11 @@ async function mintOneToken(device) {
   // ── Step 1: Force stop both apps for a completely clean state ──
   log(`🧹 Force-stopping Google App & Chrome...`);
   runAdb(device, "shell am force-stop com.google.android.googlequicksearchbox");
-  await sleep(500);
+  await sleep(400);
   runAdb(device, "shell am force-stop com.android.chrome");
   await sleep(400);
+  runAdb(device, "shell am force-stop com.adspx.sharecatcher");
+  await sleep(200);
 
   // ── Step 2: Clear logcat buffer ──
   runAdb(device, "logcat -c");
@@ -189,10 +191,10 @@ async function mintOneToken(device) {
   runAdb(device, "shell input tap 370 78");
   await sleep(2200); // wait for share sheet to fully appear
 
-  // ── Step 5: Tap "Copy Link" in share sheet ──
-  log(`📋 Tapping Copy Link at (207, 605)...`);
-  runAdb(device, "shell input tap 207 605");
-  await sleep(2800); // wait for Share Catcher to receive and log the link
+  // ── Step 5: Tap "Copy Link" (Share Catcher) in share sheet ──
+  log(`📋 Tapping Copy Link at (333, 610)...`);
+  runAdb(device, "shell input tap 333 610");
+  await sleep(2500); // wait for Share Catcher to receive and log the link
 
   // ── Step 6: Read captured token from logcat using on-device grep ──
   // Filter on-device so buffer size doesn't matter
@@ -221,14 +223,16 @@ async function mintOneToken(device) {
     }
   }
 
-  // ── Step 7: Close the Custom Tab ──
+  // ── Step 7: Close any remaining windows ──
   log(`🔙 Closing Custom Tab...`);
-  runAdb(device, "shell input tap 65 80"); // back/close arrow (top-left)
-  await sleep(700);
+  runAdb(device, "shell input tap 36 78"); // close button (top-left)
+  await sleep(500);
 
-  // ── Step 8: Force-stop Google App for 100% clean next round ──
-  log(`🧹 Force-stopping Google App for clean next round...`);
+  // ── Step 8: Force-stop Google App, Chrome & Share Catcher for 100% clean next round ──
+  log(`🧹 Force-stopping Google App, Chrome & Share Catcher for clean next round...`);
   runAdb(device, "shell am force-stop com.google.android.googlequicksearchbox");
+  runAdb(device, "shell am force-stop com.android.chrome");
+  runAdb(device, "shell am force-stop com.adspx.sharecatcher");
   await sleep(500);
 
   if (!capturedTokenUrl) {

@@ -425,16 +425,30 @@ export const getGoogleShortsList = createServerFn({ method: "GET" }).handler(asy
   const linkIds = Array.from(new Set(gsList.map((r: any) => r.link_id).filter(Boolean)));
   const userIds = Array.from(new Set(gsList.map((r: any) => r.user_id).filter(Boolean)));
 
-  // If admin, fetch creator emails from profiles table
+  const chunkArray = <T>(arr: T[], size: number): T[][] => {
+    const chunks: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) {
+      chunks.push(arr.slice(i, i + size));
+    }
+    return chunks;
+  };
+
+  // If admin, fetch creator emails from profiles table (chunked to prevent header overflow)
   let userEmailMap = new Map<string, string>();
   if (isAdmin && userIds.length > 0) {
-    const { data: profileRows } = await (supabaseAdmin as any)
-      .from("profiles")
-      .select("id, email")
-      .in("id", userIds);
-
-    for (const p of profileRows || []) {
-      if (p.id && p.email) userEmailMap.set(p.id, p.email);
+    const userChunks = chunkArray(userIds, 60);
+    const profileResponses = await Promise.all(
+      userChunks.map((chunk) =>
+        (supabaseAdmin as any)
+          .from("profiles")
+          .select("id, email")
+          .in("id", chunk)
+      )
+    );
+    for (const res of profileResponses) {
+      for (const p of res.data || []) {
+        if (p.id && p.email) userEmailMap.set(p.id, p.email);
+      }
     }
   }
 
@@ -442,7 +456,7 @@ export const getGoogleShortsList = createServerFn({ method: "GET" }).handler(asy
   if (gsList.length === 0) {
     let linksQuery = (supabaseAdmin as any)
       .from("links")
-      .select("id, short_code, custom_domain, destination_url, adsterra_url, title, created_at, clicks_count, bot_clicks_count, is_active, user_id")
+      .select("id, short_code, custom_domain, destination_url, adsterra_url, title, created_at, clicks_count, bot_clicks_count, human_clicks_count, is_active, user_id")
       .eq("is_google_short", true)
       .order("created_at", { ascending: false });
 
@@ -454,13 +468,19 @@ export const getGoogleShortsList = createServerFn({ method: "GET" }).handler(asy
     if (legacyLinks && legacyLinks.length > 0) {
       const legUserIds = Array.from(new Set(legacyLinks.map((r: any) => r.user_id).filter(Boolean)));
       if (isAdmin && legUserIds.length > 0) {
-        const { data: profileRows } = await (supabaseAdmin as any)
-          .from("profiles")
-          .select("id, email")
-          .in("id", legUserIds);
-
-        for (const p of profileRows || []) {
-          if (p.id && p.email) userEmailMap.set(p.id, p.email);
+        const legChunks = chunkArray(legUserIds, 60);
+        const legProfiles = await Promise.all(
+          legChunks.map((chunk) =>
+            (supabaseAdmin as any)
+              .from("profiles")
+              .select("id, email")
+              .in("id", chunk)
+          )
+        );
+        for (const res of legProfiles) {
+          for (const p of res.data || []) {
+            if (p.id && p.email) userEmailMap.set(p.id, p.email);
+          }
         }
       }
 
@@ -469,7 +489,7 @@ export const getGoogleShortsList = createServerFn({ method: "GET" }).handler(asy
         const cloaked = `https://${dom}/${l.short_code}`;
         const gUrl = `https://www.google.com/share.google?link=${encodeURIComponent(cloaked)}`;
         const shareUrl = `https://share.google/?link=${encodeURIComponent(cloaked)}`;
-        const clicks = Number(l.clicks_count || 0);
+        const clicks = Math.max(Number(l.clicks_count || 0), Number(l.human_clicks_count || 0));
         const botClicks = Number(l.bot_clicks_count || 0);
         const total = clicks + botClicks;
         return {
@@ -495,22 +515,29 @@ export const getGoogleShortsList = createServerFn({ method: "GET" }).handler(asy
     }
   }
 
-  // Fetch live link counters from links table for accurate stats
+  // Fetch live link counters from links table for accurate stats (chunked to prevent header overflow)
   let linksMap = new Map<string, any>();
   if (linkIds.length > 0) {
-    const { data: linkRows } = await supabaseAdmin
-      .from("links")
-      .select("id, clicks_count, bot_clicks_count, is_active, status")
-      .in("id", linkIds);
+    const linkChunks = chunkArray(linkIds, 60);
+    const linkResponses = await Promise.all(
+      linkChunks.map((chunk) =>
+        (supabaseAdmin as any)
+          .from("links")
+          .select("id, clicks_count, bot_clicks_count, human_clicks_count, is_active, status")
+          .in("id", chunk)
+      )
+    );
 
-    for (const l of linkRows || []) {
-      linksMap.set(l.id, l);
+    for (const res of linkResponses) {
+      for (const l of (res.data as any[]) || []) {
+        linksMap.set(l.id, l);
+      }
     }
   }
 
   const items: GoogleShortItem[] = gsList.map((gs: any) => {
     const link = linksMap.get(gs.link_id);
-    const clicks = Number(link?.clicks_count || 0);
+    const clicks = Math.max(Number(link?.clicks_count || 0), Number(link?.human_clicks_count || 0));
     const botClicks = Number(link?.bot_clicks_count || 0);
     const total = clicks + botClicks;
     const isActive = link ? link.is_active !== false && link.status !== "inactive" : true;
