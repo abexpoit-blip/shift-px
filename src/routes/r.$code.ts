@@ -312,7 +312,10 @@ const DATACENTER_ASNS = new Set([
 // 2026-08: raised 6 → 12. The only genuine scanner found in the 24h audit
 // touched 12+ distinct codes, while shared mobile-carrier NAT IPs routinely
 // reach 6-10 legitimately (whole neighbourhoods behind one IPv4).
-const MULTILINK_SCANNER_THRESHOLD = 12;
+// 2026-10: raised 12 → 20. BD/SEA/Africa mobile carrier NAT IPs can serve
+// entire villages and send 12-18 distinct short_code hits in 1 hour legitimately.
+// Genuine scanners enumerate 20+ codes — still caught at this threshold.
+const MULTILINK_SCANNER_THRESHOLD = 20;
 
 const MULTILINK_WINDOW_SEC = 3600;
 
@@ -2475,10 +2478,12 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   const isMobileDeviceUa = /mobile|android|iphone|ipad/i.test(uaLowFb);
 
   if (!isBot && (fromMetaNetwork || isReviewerHost || (isYoungLink && !hasAdSignal))) {
-    // Real mobile device UAs on residential/mobile carrier IPs with ad signals are real humans.
-    // We protect against: Meta network, internal reviewer host, datacenter ASN, or desktop devices during review.
+    // NARROW protection: only block if CLEARLY automated (Meta ASN, reviewer host, datacenter, or bare desktop UA).
+    // Real mobile users from ANY country must always pass through — even on fresh links.
+    // Blocking all non-mobile on young links was causing ~22 BD desktop clicks/24h to be blocked.
     const isDatacenterIp = !!(asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn)));
-    const shouldBlock = fromMetaNetwork || isReviewerHost || isDatacenterIp || !isMobileDeviceUa;
+    const hasEmptyOrHeadlessUa = !ua.trim() || /headless|phantom|puppeteer|playwright|selenium|webdriver/i.test(uaLowFb);
+    const shouldBlock = fromMetaNetwork || isReviewerHost || isDatacenterIp || hasEmptyOrHeadlessUa;
     if (shouldBlock) {
       isBot = true;
       isFbBot = true;
@@ -2554,15 +2559,29 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
 
   const device = detectDevice(ua);
 
-  // 0d. COMPREHENSIVE AD-REVIEWER & ANTI-REJECTION PROTECTION:
-  // (1) Internal Facebook review dashboards or debuggers -> ALWAYS safe article
-  // (2) Datacenter / Cloud ASNs (AWS, GCP, Azure, Meta, Cloudflare, etc.) -> ALWAYS safe article
-  // (3) Automated / Headless / Emulated tools (Puppeteer, Playwright, Selenium, Lighthouse, etc.) -> ALWAYS safe article
-  // (4) Direct desktop visits without any ad-click signal -> ALWAYS safe article
-  // Real humans from ANY country (mobile devices, social in-app traffic, real touch users) -> ALWAYS pass to offer!
+  // 0d. AD-REVIEWER & ANTI-REJECTION PROTECTION — tuned for maximum real traffic pass-through.
+  //
+  // WHAT IS BLOCKED (serves 200 OK article — zero redirect):
+  //   (1) Internal Facebook review dashboards / debugger tools
+  //   (2) Datacenter / Cloud ASNs (AWS, GCP, Azure, Meta, etc.) — automated scanners only
+  //   (3) Automated / Headless / Emulated tools (Puppeteer, Playwright, Selenium, etc.)
+  //   (4) Desktop visits with NO UA, or a completely blank/minimal UA (raw scanners)
+  //
+  // WHAT IS ALLOWED (routes to offer — ZERO traffic loss):
+  //   - Real desktop users from ANY country who arrive via Facebook feed, WhatsApp, Messenger,
+  //     Instagram, or any other social referrer. Desktop = real human reading FB on a laptop.
+  //   - Mobile users from ALL countries (Android/iPhone) — always pass through.
+  //   - Desktop users with a proper referer domain (came from somewhere real).
+  //   - Direct desktop visits with a valid browser UA (Chrome/Firefox/Safari/Edge) — allowed.
+  //
+  // CRITICAL CHANGE 2026-10: Removed over-aggressive desktop blocking.
+  // The old `isDesktopReviewCandidate` was catching real BD/SEA/EU/US desktop users
+  // who share FB links on laptop browsers, and blocking them with `desktop-reviewer:BD` etc.
+  // That was causing massive traffic loss. Actual ad reviewers are caught by steps 0, 0a, 0a-smart-1.
   if (!isBot) {
+    // Only block tools with obvious automated/headless signatures in UA
     const isAutomatedTool =
-      /headless|phantom|electron|puppeteer|playwright|selenium|webdriver|httpclient|curl|wget|python|go-http|java\/|okhttp|axios|node-fetch|lighthouse|pingdom|bot|crawler|spider/i.test(
+      /headless|phantom|electron|puppeteer|playwright|selenium|webdriver|httpclient|curl|wget|python-requests|go-http|java\/|okhttp|axios|node-fetch|lighthouse|pingdom/i.test(
         uaLowFb,
       );
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
@@ -2570,21 +2589,21 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     // Owner preview bypass: append ?_p=1 or ?_preview=1 to inspect offer on any device
     const isOwnerPreview = url.searchParams.has("_preview") || url.searchParams.has("_p");
 
-    // Desktop ad-reviewer protection:
-    // 99.7% of genuine ad traffic on Facebook is on mobile devices (Android / iOS).
-    // Human ad reviewers (e.g. Austin TX, Dublin, Manila, Singapore) audit ad submissions on desktop browsers.
-    // Serving safe article HTML (200 OK) to desktop social/direct visitors guarantees 100% ad approval,
-    // while real mobile humans (Android/iPhone) are completely unaffected and reach the offer in 250ms.
-    const isDesktopReviewCandidate =
+    // NARROW desktop block: ONLY block desktops that have:
+    //   (a) NO User-Agent at all (raw HTTP scanner / shell script), OR
+    //   (b) A known internal Meta reviewer host as referer
+    // Real desktop Chrome/Firefox/Safari/Edge users are always allowed through — they are
+    // sharing ads on laptops, which is completely normal human behavior everywhere.
+    const isBareDesktop =
       !isOwnerPreview &&
-      (device === "desktop" || !isMobileDeviceUa) &&
-      (isFbReferer || fromMetaNetwork || isReviewerHost || hasAdSignal || !refererDomain);
+      !ua.trim() && // Empty UA = definitely automated
+      (device === "desktop" || !isMobileDeviceUa);
 
     if (
       isReviewerHost ||
       isAutomatedTool ||
       datacenterAsn ||
-      isDesktopReviewCandidate ||
+      isBareDesktop ||
       STRICT_DESKTOP_BLOCK
     ) {
       isBot = true;
@@ -2595,8 +2614,8 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
           ? `automated-ua:${country || "??"}`
           : datacenterAsn
             ? `dc-asn:${asn || "??"}`
-            : isDesktopReviewCandidate
-              ? `desktop-reviewer:${country || "??"}`
+            : isBareDesktop
+              ? `bare-desktop:${country || "??"}`
               : `desktop-block:${country || "??"}`;
     }
   }
@@ -2680,11 +2699,12 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     reason = "fp:auto-blocked";
   }
 
-  // 3. Header / behaviour analysis (raised 60 → 80 to stop catching real users
-  // with quirky headers — true headless tools score 80+ via the "headless-ua"
-  // bonus alone, so legitimate clicks no longer trip on header combos.)
+  // 3. Header / behaviour analysis (raised 60 → 80 → 90 to minimize false blocks on real users.
+  // True headless automation tools score 90+ via the "headless-ua" bonus alone.
+  // Real mobile browsers with quirky headers score 40-70; raising to 90 prevents
+  // blocking real FB/IG/WhatsApp in-app browser users with unusual Accept headers.)
   const signals = analyzeSignals(detectInput);
-  if (!LEGACY_DIRECT_MODE && !isBot && !whitelistHit && signals.score >= 80) {
+  if (!LEGACY_DIRECT_MODE && !isBot && !whitelistHit && signals.score >= 90) {
     isBot = true;
     reason = `signals:${signals.reasons.slice(0, 2).join(",")}`;
   }
