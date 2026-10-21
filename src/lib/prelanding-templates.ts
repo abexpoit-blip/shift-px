@@ -163,7 +163,7 @@ const ARTICLES: Record<string, ArticleContent> = {
     description: "Town halls and neighborhood hubs are reporting record attendance by trading formal lectures for casual workshops.",
     category: "Community & Society",
     author: "Julian Vance",
-    heroImage: "https://images.unsplash.com/photo-1504711434489-ff2e1e3a5ef7?auto=format&fit=crop&w=1200&q=75",
+    heroImage: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=75",
     intro: "Public community spaces across urban neighborhoods are undergoing a quiet renaissance, attracting younger crowds with hands-on maker fairs, repair cafes, and open discussion circles.",
     paragraphs: [
       "Rather than strictly hosting bureaucratic forums, neighborhood coordinators have introduced flexible schedules featuring weekend swap meets and zero-cost hobby classes. The focus has decisively shifted toward fostering genuine human connection.",
@@ -415,7 +415,7 @@ const ARTICLES: Record<string, ArticleContent> = {
     description: "How parents are easing sensory overload for kids by replacing packed activity schedules with simple open-ended play.",
     category: "Family & Parenting",
     author: "Hannah Montgomery",
-    heroImage: "https://images.unsplash.com/photo-1504711434489-ff2e1e3a5ef7?auto=format&fit=crop&w=1200&q=75",
+    heroImage: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=75",
     intro: "With children's schedules increasingly packed with structured classes and digital screens, pediatric researchers highlight the critical value of open-ended, slow-paced family weekends.",
     paragraphs: [
       "Unstructured play — such as building blanket forts, drawing on butcher paper, or baking bread together — fosters deep creativity and emotional regulation in developing children.",
@@ -787,7 +787,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Natural Sleep Patterns: What Really Works for Deep Nightly Rest",
       description: "How simple shifts in evening lighting and bedtime habits consistently transform sleep quality.",
-      heroImage: "https://images.unsplash.com/photo-1434626881859-051d6b39e8a4?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Gentle Evening Routines for People Who Struggle to Fall Asleep",
@@ -804,7 +804,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "How Civic Centers Are Reinventing Weekend Gathering Spaces in 2025",
       description: "Town halls and neighborhood hubs are reporting record attendance with casual workshops.",
-      heroImage: "https://images.unsplash.com/photo-1504711434489-ff2e1e3a5ef7?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Local Community Spaces Quietly Becoming Weekend Family Hubs Again",
@@ -819,7 +819,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "The Growing Movement to Reclaim Shared Public Gathering Spaces",
       description: "How local coordinators are turning underused spaces into thriving weekend artisan hubs.",
-      heroImage: "https://images.unsplash.com/photo-1504711434489-ff2e1e3a5ef7?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Why Free Community Workshops Are Drawing Crowds in Every Town",
@@ -841,7 +841,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "The 5-Minute Sunday Financial Review That Replaces Complex Spreadsheets",
       description: "Keep tabs on cash flow and discretionary spending without tracking every single receipt.",
-      heroImage: "https://images.unsplash.com/photo-1611974789855-9c702a8b5f5a?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Smart Money Rules for Navigating Everyday Household Expenses in 2025",
@@ -868,7 +868,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Calm Domestic Rhythms That Banish Sunday Evening Dread for Good",
       description: "Simple boundary-setting habits that keep work anxiety from encroaching on weekend rest.",
-      heroImage: "https://images.unsplash.com/photo-1493246507009-8f55f5777e98?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "How Mindful Living Habits Cultivate Daily Balance in Modern Homes",
@@ -917,7 +917,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Why Modern Readers Are Reconnecting in Local Bookshop Gatherings",
       description: "An antidote to algorithmic feeds: thoughtful dialogue over fiction, poetry, and backlist classics.",
-      heroImage: "https://images.unsplash.com/photo-1481627834876-b7833e8f84b4?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Inside the Revival of Slow Cultural Conversations and Author Salons",
@@ -932,7 +932,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "The Return of Deep Discussion Circles in Independent Bookstores",
       description: "Why book lovers are choosing long-form evenings of conversation over quick digital reviews.",
-      heroImage: "https://images.unsplash.com/photo-1481627834876-b7833e8f84b4?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=75",
     },
   ],
   article_business: [
@@ -944,12 +944,12 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "The No-Meeting Framework: How Modern Organizations Protect Deep Focus",
       description: "Replacing frantic calendar invites with structured written memos speeds up strategic delivery.",
-      heroImage: "https://images.unsplash.com/photo-1664575602807-e3f2c67cf35c?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Building an Async-First Culture Across Global Time Zones in 2025",
       description: "Clear documentation and autonomous workflows empower teams to execute without friction.",
-      heroImage: "https://images.unsplash.com/photo-1573497620290-7f05dfd07f8e?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Why Thoughtful Documentation Outperforms Real-Time Chat Channels",
@@ -959,7 +959,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Sustainable Career Habits: Balancing High Performance with True Wellbeing",
       description: "Setting firm boundaries and prioritizing deliberate work over frantic multitasking.",
-      heroImage: "https://images.unsplash.com/photo-1664575602807-e3f2c67cf35c?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=75",
     },
   ],
   article_travel: [
@@ -971,7 +971,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Slow Travel by Train: Why Sleeper Corridors Are Booming in Popularity",
       description: "Spacious lounges and zero baggage hassles make railway journeys the ultimate vacation reset.",
-      heroImage: "https://images.unsplash.com/photo-1507608616759-54f98b6ee94d?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Uncovering Hidden Towns Along Historic Regional Rail Lines",
@@ -986,7 +986,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Pack Light, Travel Far: Minimalist Habits for Stress-Free Vacations",
       description: "Tips for exploring scenic destinations with one small bag and maximum flexibility.",
-      heroImage: "https://images.unsplash.com/photo-1507608616759-54f98b6ee94d?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=75",
     },
   ],
   article_cooking: [
@@ -1025,12 +1025,12 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Balcony Botanicals: High-Yield Herbs That Thrive in Small Pots",
       description: "Grow fragrant basil, parsley, and crisp salad greens in tight spaces with minimal care.",
-      heroImage: "https://images.unsplash.com/photo-1416879347937-86af90b6c0cf?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Watering Wisdom: Keeping Container Plants Lush and Resilient All Year",
       description: "Avoid root rot and promote vigorous indoor growth with simple drainage routines.",
-      heroImage: "https://images.unsplash.com/photo-1591857177580-e8d7f9d2d6ab?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "A Beginner's Guide to Indoor Greenery: Bringing Nature into Your Home",
@@ -1040,7 +1040,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Seasonal Planting in Small Spaces: Maximizing Every Square Foot",
       description: "How to rotate seasonal culinary greens for continuous fresh harvests from spring to winter.",
-      heroImage: "https://images.unsplash.com/photo-1416879347937-86af90b6c0cf?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=75",
     },
   ],
   article_pets: [
@@ -1052,7 +1052,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "The Calming Power of Canine Scent Work: 15 Minutes to Total Peace",
       description: "How simple foraging activities soothe overstimulated dogs and prevent destructive habits.",
-      heroImage: "https://images.unsplash.com/photo-1548681620-4f3fd54a5f1d?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Indoor Cat Enrichment: Fulfilling Predatory Instincts in Small Homes",
@@ -1067,7 +1067,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "DIY Pet Enrichment Toys You Can Assemble from Household Items",
       description: "Turn recycled cardboard and cotton towels into engaging mental challenges for your pets.",
-      heroImage: "https://images.unsplash.com/photo-1548681620-4f3fd54a5f1d?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=1200&q=75",
     },
   ],
   article_sports: [
@@ -1079,12 +1079,12 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "The Social Fitness Wave: Why Racket Sports and Five-a-Side Are Thriving",
       description: "Padel, pickleball, and weekend football deliver serious cardiovascular workouts disguised as play.",
-      heroImage: "https://images.unsplash.com/photo-1461896836374-cf382b776ab2?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Joining a Community Sports League as an Adult: A Low-Pressure Guide",
       description: "How beginner-friendly divisions help working adults build fitness and neighborhood friendships.",
-      heroImage: "https://images.unsplash.com/photo-1571019613576-8b3c05d8e7ef?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "The Joy of Play: How Team Athletics Boost Mood and Relieve Stress",
@@ -1094,7 +1094,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Weekend Warrior Athletics: Staying Injury-Free While Playing Hard",
       description: "Essential mobility drills and recovery routines for recreational league athletes.",
-      heroImage: "https://images.unsplash.com/photo-1461896836374-cf382b776ab2?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=1200&q=75",
     },
   ],
   article_education: [
@@ -1111,7 +1111,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Active Recall: The High-Efficiency Habit Behind Rapid Skill Mastery",
       description: "Writing short summaries from memory beats hours of passive rereading every single time.",
-      heroImage: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Lifelong Learning for Working Professionals: Finding Time That Sticks",
@@ -1128,7 +1128,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Low-Stimulation Family Weekends: Rediscovering Unstructured Play at Home",
       description: "Parents are easing sensory overload for kids by replacing packed schedules with simple play.",
-      heroImage: "https://images.unsplash.com/photo-1504711434489-ff2e1e3a5ef7?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "The Case for Screen-Free Saturday Mornings: Calmer Days for Everyone",
@@ -1143,7 +1143,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Gentle Domestic Routines That Bring Peace to Busy Family Households",
       description: "Shared meal preparation, bedtime storytelling, and unhurried weekend walks.",
-      heroImage: "https://images.unsplash.com/photo-1504711434489-ff2e1e3a5ef7?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Building Lasting Family Connections Through Simple Weekend Rituals",
@@ -1165,7 +1165,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Building an Affordable Hi-Fi Setup: A Beginner's Guide to Rich Audio",
       description: "Discover clean dynamic range and warmth without spending thousands on boutique gear.",
-      heroImage: "https://images.unsplash.com/photo-1511379938547-c7925e619b94?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "The Independent Record Store Renaissance: Communities Built on Vinyl",
@@ -1219,7 +1219,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Statement Paint and Floating Shelves: Beginner DIY Projects with Big Impact",
       description: "Simple carpentry and bold entryway paint choices that make smaller rooms feel expansive.",
-      heroImage: "https://images.unsplash.com/photo-1484154153234-9416dc7e1e2f?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Weekend Tool Clinic: The Four Essential Tools Every Homeowner Needs",
@@ -1241,12 +1241,12 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "The Directional Window Secret: Soft Shadows for Flattering Photos",
       description: "Position subjects near large natural light sources to eliminate harsh highlights effortlessly.",
-      heroImage: "https://images.unsplash.com/photo-1495916071200-7f63f23bf9c7?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1503220317375-aaad61436b1b?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Composition That Pops: Using the Rule of Thirds on Your Mobile Screen",
       description: "Simple framing techniques that turn everyday snapshots into striking editorial imagery.",
-      heroImage: "https://images.unsplash.com/photo-1461749280684-dab4e0d9c9c3?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Capturing Authentic Moments: Moving Beyond Posed Family Photography",
@@ -1256,7 +1256,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Mobile Exposure Control: Preserving Rich Detail and Cinematic Mood",
       description: "Lock focus and dial down exposure slider to capture rich colors in changing light.",
-      heroImage: "https://images.unsplash.com/photo-1495916071200-7f63f23bf9c7?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1503220317375-aaad61436b1b?auto=format&fit=crop&w=1200&q=75",
     },
   ],
   article_fitness: [
@@ -1273,7 +1273,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Mitochondrial Health: How Slower Workouts Supercharge Your Daily Energy",
       description: "Three 45-minute steady sessions weekly optimize cellular stamina and long-term vitality.",
-      heroImage: "https://images.unsplash.com/photo-1534438327167-8ca15c4c8484?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "The Power of Daily Brisk Walking: The Most Sustainable Cardio of All",
@@ -1300,7 +1300,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "The Joy of Tangible Creation: Slow Crafts That Reward Everyday Patience",
       description: "Embrace imperfect beauty and discover the restorative rhythm of traditional pottery.",
-      heroImage: "https://images.unsplash.com/photo-1484154153234-9416dc7e1e2f?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Beginner Woodworking and Fiber Arts for Relaxing Weekend Projects",
@@ -1349,7 +1349,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "The Rule of Fifty: Give Yourself Permission to Abandon Boring Books",
       description: "Free up reading time for books you adore by ditching guilt around unfinished novels.",
-      heroImage: "https://images.unsplash.com/photo-1481627834876-b7833e8f84b4?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Twenty Pages a Day: The Low-Pressure Habit Behind High Reading Volume",
@@ -1364,7 +1364,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Curating a Personal Library: Choosing Books That Stand the Test of Time",
       description: "Build an inspiring bookshelf filled with backlist treasures, essays, and re-readable gems.",
-      heroImage: "https://images.unsplash.com/photo-1481627834876-b7833e8f84b4?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=75",
     },
   ],
   article_science: [
@@ -1376,7 +1376,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Backyard Biodiversity: Mapping Pollinators and Birds from Your Phone",
       description: "How crowd-sourced observations help professional biologists track ecosystem shifts in real time.",
-      heroImage: "https://images.unsplash.com/photo-1518152006264-18b758c3a066?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1507499739999-097706ad8914?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Star-Gazing and Night Sky Audits: Families Helping Astronomers Measure Light",
@@ -1391,7 +1391,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Everyday Scientific Curiosity: Inspiring Young Minds with Real Fieldwork",
       description: "How simple nature journaling and water sampling turn neighborhood walks into thrilling science.",
-      heroImage: "https://images.unsplash.com/photo-1518152006264-18b758c3a066?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1507499739999-097706ad8914?auto=format&fit=crop&w=1200&q=75",
     },
   ],
   article_history: [
@@ -1408,7 +1408,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Adaptive Reuse: Giving Forgotten Textile Mills and Power Houses New Life",
       description: "Modern cities transform cavernous heritage brick buildings into bustling community hubs.",
-      heroImage: "https://images.unsplash.com/photo-1565393932659-f79e17e9f6d4?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Walking Through Living History: Uncovering Clues in City Architecture",
@@ -1435,7 +1435,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Voice Memo Exchanges: Conquering Speaking Anxiety One Sentence at a Time",
       description: "Low-pressure voice messaging with native speakers bridges the gap to confident real-time talks.",
-      heroImage: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "The 500-Word Core: Mastering High-Frequency Conversational Patterns",
@@ -1462,7 +1462,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Intentional Acquiring: Pausing Before Buying to Protect Home Peace",
       description: "Introduce positive friction before making purchases to evaluate true utility and longevity.",
-      heroImage: "https://images.unsplash.com/photo-1484154153234-9416dc7e1e2f?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "The 15-Minute Nightly Tidy: Resetting Your Space for Effortless Mornings",
@@ -1489,7 +1489,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Two Wheels Over Four: Saving Thousands Annually on Fuel and Parking",
       description: "Ditch traffic gridlock for scenic riverside paths and arrive at your desk fully energized.",
-      heroImage: "https://images.unsplash.com/photo-1502933325-da4a0ab86c65?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Urban Cycling Gear Essentials: Staying Safe, Dry, and Visible in Any Season",
@@ -1511,12 +1511,12 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Reading the Sky: Cloud Formations and Natural Wind Cues for Walkers",
       description: "Recognize impending afternoon showers and barometric shifts using time-tested sky watching.",
-      heroImage: "https://images.unsplash.com/photo-1501854140801-62e9c93dc39e?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Urban Heat Islands vs Green Pockets: Why Tree Canopies Cool Neighborhoods",
       description: "Discover how urban vegetation and elevation reduce summer temperatures by several degrees.",
-      heroImage: "https://images.unsplash.com/photo-1513002749450-73ceef2c4b13?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Home Weather Stations: Tracking Rainfall and Barometric Pressure from Your Garden",
@@ -1526,7 +1526,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Frost Pockets and Sun Traps: Microclimate Secrets for Thriving Gardens",
       description: "Position delicate plants in protected corners of your yard to extend growing seasons.",
-      heroImage: "https://images.unsplash.com/photo-1501854140801-62e9c93dc39e?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?auto=format&fit=crop&w=1200&q=75",
     },
   ],
   article_dovtv_pulse: [
@@ -1538,12 +1538,12 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "Escaping Algorithmic Outrage: The Rapid Rise of Curated Private Newsletters",
       description: "Independent writers and readers connect directly without third-party platform censorship.",
-      heroImage: "https://images.unsplash.com/photo-1560472354-b9b60b246434?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "High-Trust Online Circles: Where Authentic Conversations Still Flourish",
       description: "Why focused community hubs produce richer dialogue and meaningful offline collaborations.",
-      heroImage: "https://images.unsplash.com/photo-1543269865-cbf427effbef?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Depth Over Impressions: How Modern Creators Measure Real Cultural Value",
@@ -1553,7 +1553,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "The Future of Digital Media: Smaller Spaces, Stronger Voices, Genuine Trust",
       description: "An editorial analysis of changing digital habits and the search for authentic connection.",
-      heroImage: "https://images.unsplash.com/photo-1560472354-b9b60b246434?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=75",
     },
   ],
   article_dovtv_culture: [
@@ -1565,12 +1565,12 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "The Lost Art of Being Alone: How Silence Restores Creative Clarity",
       description: "Differentiate positive solitude from isolation, and unlock deep focus without smartphone pings.",
-      heroImage: "https://images.unsplash.com/photo-1525431254958-a3c2bcd3ad2e?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Think Mornings: How Visionaries Carve Out Stillness Before the World Wakes",
       description: "Dedicate early hours to journaling and contemplative reflection before inbox demands begin.",
-      heroImage: "https://images.unsplash.com/photo-1519389496547-ff9a2c96e9c3?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=1200&q=75",
     },
     {
       title: "Finding Stillness in the City: Simple Habits for Inner Calm",
@@ -1580,7 +1580,7 @@ const VARIANTS: Record<string, OgVariant[]> = {
     {
       title: "The Sanctuary of Unscheduled Hours: Protecting Your Mental Freedom",
       description: "Saying no to non-essential commitments to make room for deep restorative leisure and thought.",
-      heroImage: "https://images.unsplash.com/photo-1525431254958-a3c2bcd3ad2e?auto=format&fit=crop&w=1200&q=75",
+      heroImage: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=1200&q=75",
     },
   ],
 };
