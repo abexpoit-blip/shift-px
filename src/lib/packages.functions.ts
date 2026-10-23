@@ -61,12 +61,34 @@ const CANONICAL_PACKAGES: Package[] = [
     features: [
       "50 Short Links limit",
       "Unlimited traffic & visitors",
-      "Earn $1.00 per 50,000 verified visits",
+      "Earning System: Service Off",
       "Standard Meta & Facebook bot cloaking",
       "Real-time click & country analytics",
-      "No withdrawal (Upgrade to cash out)",
+      "Cashouts: Service Off",
     ],
     sort_order: 0,
+  },
+  {
+    id: "pkg-1m",
+    slug: "premium_1m",
+    name: "Premium — 1 Month",
+    price_monthly: 10,
+    price_usd: 10,
+    duration_months: 1,
+    link_limit: 1000000,
+    click_quota: null,
+    is_premium: true,
+    can_withdraw: false,
+    features: [
+      "Unlimited Short Links creation",
+      "Unlimited traffic & Tier-1 fast routing",
+      "Full Facebook & Meta Ad Review Cloaking",
+      "Geo-Targeting & Multi-Offer A/B Rotation",
+      "Dynamic SubID & UTM tracking forwarding",
+      "Earning System: Service Off",
+      "Priority VIP Telegram & Discord Support",
+    ],
+    sort_order: 1,
   },
   {
     id: "pkg-6m",
@@ -78,17 +100,17 @@ const CANONICAL_PACKAGES: Package[] = [
     link_limit: 1000000,
     click_quota: null,
     is_premium: true,
-    can_withdraw: true,
+    can_withdraw: false,
     features: [
+      "Everything in Monthly Plan included",
+      "6 Months Uninterrupted Access",
       "Unlimited Short Links creation",
       "Unlimited traffic & Tier-1 fast routing",
-      "Instant Cashouts Enabled (Min $5 USD)",
       "Advanced Facebook Ad Review Cloaking",
       "Geo-Targeting & Multi-Offer A/B Rotation",
-      "Dynamic SubID & UTM tracking forwarding",
       "Priority VIP Telegram & Discord Support",
     ],
-    sort_order: 1,
+    sort_order: 2,
   },
   {
     id: "pkg-12m",
@@ -100,18 +122,17 @@ const CANONICAL_PACKAGES: Package[] = [
     link_limit: 1000000,
     click_quota: null,
     is_premium: true,
-    can_withdraw: true,
+    can_withdraw: false,
     features: [
       "Everything in 6-Month Plan included",
       "Save $20 (2 Months FREE — $120 → $100)",
       "Unlimited Short Links & Max Speed CDNs",
-      "Instant Lifetime Withdrawals (Min $5 USD)",
       "Custom Short Domains Connection",
       "Dedicated High-Priority Server Queue",
       "Real-Time Click Logs & Audit Export",
       "24/7 Dedicated VIP Account Manager",
     ],
-    sort_order: 2,
+    sort_order: 3,
   },
 ];
 
@@ -125,8 +146,8 @@ export const listPackages = createServerFn({ method: "GET" }).handler(async () =
     .order("sort_order", { ascending: true });
 
   const rows = (data ?? []) as Package[];
-  const hasPremium = rows.some((p) => p.slug === "premium_6m" || p.slug === "premium_12m");
-  if (!hasPremium || rows.length < 3) {
+  const hasMonthly = rows.some((p) => p.slug === "premium_1m");
+  if (!hasMonthly || rows.length < 3) {
     return CANONICAL_PACKAGES;
   }
   return rows;
@@ -209,8 +230,8 @@ export const getMyPlanStatus = createServerFn({ method: "GET" })
       recentUpgrades: ((upgradeRes.data ?? []) as any[]).map((r) => ({
         id: r.id,
         package_slug: r.package_slug,
-        packageName: r.package_slug === "premium_12m" ? "Premium — 12 Months" : r.package_slug === "premium_6m" ? "Premium — 6 Months" : "Subscription Plan",
-        amount_usd: Number(r.amount ?? (r.package_slug === "premium_12m" ? 100 : 60)),
+        packageName: r.package_slug === "premium_12m" ? "Premium — 12 Months" : r.package_slug === "premium_6m" ? "Premium — 6 Months" : r.package_slug === "premium_1m" ? "Premium — 1 Month" : "Subscription Plan",
+        amount_usd: Number(r.amount ?? (r.package_slug === "premium_12m" ? 100 : r.package_slug === "premium_6m" ? 60 : 10)),
         status: r.status,
         crypto_currency: "LTC",
         crypto_amount: null,
@@ -242,7 +263,7 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
     z
       .object({
-        package_slug: z.enum(["premium_6m", "premium_12m"]),
+        package_slug: z.enum(["premium_1m", "premium_6m", "premium_12m"]),
         crypto_currency: z.string().default("LTC"),
         promo_code: z.string().trim().max(50).optional(),
       })
@@ -260,8 +281,10 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
       .eq("is_active", true)
       .maybeSingle();
 
-    const priceUsd = Number(pkg?.price_usd ?? (data.package_slug === "premium_12m" ? 100 : 60));
-    const packageName = pkg?.name ?? (data.package_slug === "premium_12m" ? "Premium — 12 Months" : "Premium — 6 Months");
+    const fallbackPrice = data.package_slug === "premium_12m" ? 100 : data.package_slug === "premium_6m" ? 60 : 10;
+    const fallbackName = data.package_slug === "premium_12m" ? "Premium — 12 Months" : data.package_slug === "premium_6m" ? "Premium — 6 Months" : "Premium — 1 Month";
+    const priceUsd = Number(pkg?.price_usd ?? fallbackPrice);
+    const packageName = pkg?.name ?? fallbackName;
 
     // Validate promo code if provided
     let discountPercent = 0;
@@ -489,7 +512,7 @@ export const adminActivatePremium = createServerFn({ method: "POST" })
     z
       .object({
         user_id: z.string().uuid(),
-        package_slug: z.enum(["premium_6m", "premium_12m"]),
+        package_slug: z.enum(["premium_1m", "premium_6m", "premium_12m"]),
         upgrade_request_id: z.string().uuid().optional(),
       })
       .parse(data),
@@ -498,7 +521,7 @@ export const adminActivatePremium = createServerFn({ method: "POST" })
     await assertAdmin((context as any).userId);
     const db = await getAdmin();
 
-    const months = data.package_slug === "premium_12m" ? 12 : 6;
+    const months = data.package_slug === "premium_12m" ? 12 : data.package_slug === "premium_6m" ? 6 : 1;
     const { data: currentProfile } = await db
       .from("profiles")
       .select("premium_until")

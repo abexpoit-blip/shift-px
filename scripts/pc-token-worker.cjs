@@ -186,41 +186,79 @@ async function mintOneToken(device) {
   log(`⏳ Waiting for Custom Tab to fully load (6s)...`);
   await sleep(6000);
 
+function findCopyLinkCoords(device) {
+  try {
+    runAdb(device, "shell uiautomator dump /sdcard/ui_share.xml", 5000);
+    const xml = runAdb(device, "shell cat /sdcard/ui_share.xml", 5000) || "";
+    const match = xml.match(
+      /text="Copy Link"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/
+    );
+    if (match) {
+      const x1 = parseInt(match[1], 10);
+      const y1 = parseInt(match[2], 10);
+      const x2 = parseInt(match[3], 10);
+      const y2 = parseInt(match[4], 10);
+      const cx = Math.round((x1 + x2) / 2);
+      const cy = Math.round((y1 + y2) / 2);
+      return { x: cx, y: cy };
+    }
+  } catch (err) {}
+  return null;
+}
+
+function readCapturedToken(device) {
+  const shareLogs =
+    runAdb(device, `shell logcat -d "*:S SHARE_CATCHER:I"`, 10000) || "";
+  const allLogs = runAdb(device, `shell logcat -d -b main`, 10000) || "";
+
+  const primaryMatch = shareLogs.match(
+    /SHARE_CATCHER.*?(https:\/\/share\.google\/[a-zA-Z0-9_-]+)/
+  );
+  if (primaryMatch) {
+    return primaryMatch[1];
+  }
+
+  const fallbackMatch = allLogs.match(
+    /(https:\/\/share\.google\/[a-zA-Z0-9_-]+)/
+  );
+  if (fallbackMatch) {
+    return fallbackMatch[1];
+  }
+
+  return null;
+}
+
   // ── Step 4: Tap Share icon (top-right area of Custom Tab) ──
   log(`📤 Tapping Share icon at (370, 78)...`);
   runAdb(device, "shell input tap 370 78");
   await sleep(2200); // wait for share sheet to fully appear
 
-  // ── Step 5: Tap "Copy Link" (Share Catcher) in share sheet ──
-  log(`📋 Tapping Copy Link at (333, 610)...`);
-  runAdb(device, "shell input tap 333 610");
-  await sleep(2500); // wait for Share Catcher to receive and log the link
-
-  // ── Step 6: Read captured token from logcat using on-device grep ──
-  // Filter on-device so buffer size doesn't matter
-  const shareLogs =
-    runAdb(device, `shell logcat -d "*:S SHARE_CATCHER:I"`, 10000) || "";
-  // Also read full buffer as fallback
-  const allLogs = runAdb(device, `shell logcat -d -b main`, 10000) || "";
-
-  let capturedTokenUrl = null;
-
-  // Primary: SHARE_CATCHER tagged line
-  const primaryMatch = shareLogs.match(
-    /SHARE_CATCHER.*?(https:\/\/share\.google\/[a-zA-Z0-9_-]+)/
-  );
-  if (primaryMatch) {
-    capturedTokenUrl = primaryMatch[1];
-    log(`✅ SHARE_CATCHER captured: ${capturedTokenUrl}`);
+  // ── Step 5: Dynamically locate and tap "Copy Link" in share sheet ──
+  // Android dynamically reorders items (Save, Copy Link, Bluetooth) based on usage
+  const coords = findCopyLinkCoords(device);
+  if (coords) {
+    log(`🎯 Dynamically detected "Copy Link" at (${coords.x}, ${coords.y})...`);
+    runAdb(device, `shell input tap ${coords.x} ${coords.y}`);
   } else {
-    // Fallback: any share.google URL in full logcat
-    const fallbackMatch = allLogs.match(
-      /(https:\/\/share\.google\/[a-zA-Z0-9_-]+)/
-    );
-    if (fallbackMatch) {
-      capturedTokenUrl = fallbackMatch[1];
-      log(`✅ Logcat fallback captured: ${capturedTokenUrl}`);
-    }
+    log(`⚠️ Could not parse UI XML, trying default coordinate (207, 610)...`);
+    runAdb(device, "shell input tap 207 610");
+  }
+  await sleep(2200);
+
+  // ── Step 6: Read captured token from logcat ──
+  let capturedTokenUrl = readCapturedToken(device);
+
+  // Retry fallback if first tap didn't trigger Share Catcher
+  if (!capturedTokenUrl) {
+    const altX = coords && coords.x === 207 ? 333 : 207;
+    log(`🔄 Retrying with alternate coordinate (${altX}, 610)...`);
+    runAdb(device, `shell input tap ${altX} 610`);
+    await sleep(2000);
+    capturedTokenUrl = readCapturedToken(device);
+  }
+
+  if (capturedTokenUrl) {
+    log(`✅ Captured share token: ${capturedTokenUrl}`);
   }
 
   // ── Step 7: Close any remaining windows ──

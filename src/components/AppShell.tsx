@@ -78,7 +78,7 @@ function BalanceWidget({ balance }: { balance: number }) {
         href="/withdraw"
         className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-md bg-primary text-primary-foreground text-xs font-medium py-1.5 hover:opacity-90 transition"
       >
-        Withdraw <ArrowRight className="h-3 w-3" />
+        Withdraw (Service Off) <ArrowRight className="h-3 w-3" />
       </a>
     </div>
   );
@@ -106,10 +106,11 @@ function AppSidebar({ isAdmin, balance }: { isAdmin: boolean; balance: number })
       ],
     },
     {
-      label: "Earnings",
+      label: "Membership",
       items: [
-        { title: "Withdraw", to: "/withdraw", icon: Wallet },
         { title: "Upgrade to Premium", to: "/upgrade", icon: Crown },
+        { title: "Withdraw (Service Off)", to: "/withdraw", icon: Wallet },
+        
       ],
     },
     {

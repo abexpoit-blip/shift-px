@@ -48,17 +48,21 @@ export function EarningsStrip() {
           {c.accent && (
             <Link
               to="/withdraw"
-              className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-rose-500 hover:underline"
             >
-              Withdraw <ArrowRight className="w-3 h-3" />
+              Withdraw (Service Off) <ArrowRight className="w-3 h-3" />
             </Link>
           )}
         </div>
       ))}
-      <p className="sm:col-span-2 lg:col-span-4 text-[11px] text-muted-foreground">
-        All features are free · you earn {money(data?.ratePer1k ?? 0)} per 1,000 verified human
-        visits · minimum payout {money(data?.minWithdrawal ?? 5)}.
-      </p>
+      <div className="sm:col-span-2 lg:col-span-4 flex items-center justify-between gap-2 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs">
+        <span className="font-bold text-rose-400 flex items-center gap-1.5">
+          ⛔ Earning System: Service Off
+        </span>
+        <span className="text-[11px] text-muted-foreground">
+          Platform operates exclusively as high-speed shortener, safe cloaking & traffic routing.
+        </span>
+      </div>
     </div>
   );
 }

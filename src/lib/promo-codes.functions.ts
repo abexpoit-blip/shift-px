@@ -75,7 +75,7 @@ export const validatePromoCode = createServerFn({ method: "POST" })
     z
       .object({
         code: z.string().trim().min(1).max(50),
-        package_slug: z.enum(["premium_6m", "premium_12m"]),
+        package_slug: z.enum(["premium_1m", "premium_6m", "premium_12m"]),
       })
       .parse(d),
   )
@@ -120,7 +120,7 @@ export const validatePromoCode = createServerFn({ method: "POST" })
       throw new Error(`Promo code "${promo.code}" has reached its maximum usage limit.`);
     }
 
-    const originalPriceUsd = data.package_slug === "premium_12m" ? 100 : 60;
+    const originalPriceUsd = data.package_slug === "premium_12m" ? 100 : data.package_slug === "premium_6m" ? 60 : 10;
     const discountPercent = Math.min(100, Math.max(1, promo.discount_percent));
     const discountAmountUsd = Number(((originalPriceUsd * discountPercent) / 100).toFixed(2));
     const finalPriceUsd = Math.max(0, Number((originalPriceUsd - discountAmountUsd).toFixed(2)));

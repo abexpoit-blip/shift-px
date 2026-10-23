@@ -1136,9 +1136,24 @@ function PromoCodesTab() {
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5 block">
-                Coupon Code *
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] block">
+                  Coupon Code *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const prefixes = ["PROMO", "SAVE", "OFFER", "DEAL", "SPECIAL"];
+                    const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+                    const n = Math.floor(1000 + Math.random() * 9000);
+                    setCode(`${p}${n}`);
+                    toast.info(`Generated code: ${p}${n}`);
+                  }}
+                  className="text-[10px] font-extrabold text-primary hover:underline flex items-center gap-1"
+                >
+                  🎲 Auto-Generate Code
+                </button>
+              </div>
               <input
                 type="text"
                 value={code}

@@ -32,16 +32,15 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
 });
 
 const COMPARISON_ROWS = [
-  { feature: "Short Links Creation", free: "50 Links Limit", p6m: "Unlimited Links", p12m: "Unlimited Links" },
-  { feature: "Traffic & Clicks Volume", free: "Unlimited", p6m: "Unlimited (Tier-1 Speed)", p12m: "Unlimited (Max Priority)" },
-  { feature: "Earning Rate per 50k Human Clicks", free: "$1.00 USD", p6m: "$1.00 USD", p12m: "$1.00 USD" },
-  { feature: "Earnings Withdrawal (Cashout)", free: "Disabled (Upgrade Required)", p6m: "Instant (Min $5 USD)", p12m: "Instant (Min $5 USD)" },
-  { feature: "Facebook & Meta Review Cloaking", free: "Standard Safe Article", p6m: "Advanced AI Shield", p12m: "Military-Grade VIP Shield" },
-  { feature: "Zero Traffic Loss Direct 302", free: "Included", p6m: "Included (Ultra-Low Latency)", p12m: "Included (Dedicated Edge)" },
-  { feature: "Adsterra SubID & UTM Forwarding", free: "Basic", p6m: "Full Dynamic Tracking", p12m: "Full Dynamic Tracking" },
-  { feature: "Geo-Targeting & Multi-Offer Rotation", free: "Not Available", p6m: "Full A/B Rotation", p12m: "Full A/B Rotation" },
-  { feature: "Custom Short Domains", free: "Not Available", p6m: "Standard", p12m: "Unlimited Custom Domains" },
-  { feature: "Support Tier", free: "Community Support", p6m: "Priority VIP Telegram", p12m: "24/7 Dedicated Account Manager" },
+  { feature: "Short Links Creation", free: "50 Links Limit", p1m: "Unlimited Links", p6m: "Unlimited Links", p12m: "Unlimited Links" },
+  { feature: "Traffic & Clicks Volume", free: "Unlimited", p1m: "Unlimited (Tier-1)", p6m: "Unlimited (Tier-1 Speed)", p12m: "Unlimited (Max Priority)" },
+  { feature: "Earning System", free: "Service Off", p1m: "Service Off", p6m: "Service Off", p12m: "Service Off" },
+  { feature: "Facebook & Meta Review Cloaking", free: "Standard Safe Article", p1m: "Advanced AI Shield", p6m: "Advanced AI Shield", p12m: "Military-Grade VIP Shield" },
+  { feature: "Zero Traffic Loss Direct 302", free: "Included", p1m: "Included (Instant)", p6m: "Included (Instant)", p12m: "Included (Dedicated Edge)" },
+  { feature: "Adsterra SubID & UTM Forwarding", free: "Basic", p1m: "Full Dynamic", p6m: "Full Dynamic Tracking", p12m: "Full Dynamic Tracking" },
+  { feature: "Geo-Targeting & Multi-Offer Rotation", free: "Not Available", p1m: "Full A/B Rotation", p6m: "Full A/B Rotation", p12m: "Full A/B Rotation" },
+  { feature: "Custom Short Domains", free: "Not Available", p1m: "Standard", p6m: "Standard", p12m: "Unlimited Custom Domains" },
+  { feature: "Support Tier", free: "Community Support", p1m: "Priority VIP Telegram", p6m: "Priority VIP Telegram", p12m: "24/7 Dedicated Account Manager" },
 ];
 
 const FAQS = [
@@ -80,6 +79,7 @@ function PlanCard({
 }) {
   const isYearly = pkg.slug === "premium_12m";
   const is6M = pkg.slug === "premium_6m";
+  const is1M = pkg.slug === "premium_1m";
   const isFree = pkg.slug === "free";
 
   return (
@@ -136,13 +136,45 @@ function PlanCard({
               }`}
             >
               {isFree ? (
-                <Zap className="h-6 w-6" />
-              ) : isYearly ? (
-                <Crown className="h-6 w-6 stroke-[2.5]" />
-              ) : (
-                <Sparkles className="h-6 w-6" />
-              )}
+            <div className="flex items-baseline gap-1">
+              <span className="text-4xl font-black tracking-tight text-foreground">$0</span>
+              <span className="text-xs font-semibold text-muted-foreground">/ Lifetime</span>
             </div>
+          ) : is1M ? (
+            <div className="space-y-1">
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl sm:text-5xl font-black tracking-tight text-foreground">
+                  $10
+                </span>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  / 1 Month
+                </span>
+              </div>
+              <p className="text-xs font-semibold text-emerald-500">
+                Full Paid Access · Renews monthly
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl sm:text-5xl font-black tracking-tight text-foreground">
+                  ${pkg.price_usd}
+                </span>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  / {pkg.duration_months} Months
+                </span>
+                {isYearly && (
+                  <span className="text-sm font-bold text-muted-foreground line-through opacity-70">
+                    $120
+                  </span>
+                )}
+              </div>
+              <p className="text-xs font-semibold text-emerald-500">
+                {isYearly ? "Only $8.33 / month equivalent" : "Only $10.00 / month equivalent"}
+              </p>
+            </div>
+          )}
+        </div>
             <div>
               <h3 className="font-extrabold text-xl text-foreground tracking-tight">{pkg.name}</h3>
               <p className="text-xs text-muted-foreground">
@@ -410,7 +442,7 @@ function UpgradePage() {
   const upgradeFn = useServerFn(createUpgradeRequest);
   const validatePromoFn = useServerFn(validatePromoCode);
 
-  const [selectedSlug, setSelectedSlug] = useState<"premium_6m" | "premium_12m">("premium_12m");
+  const [selectedSlug, setSelectedSlug] = useState<"premium_1m" | "premium_6m" | "premium_12m">("premium_1m");
   const [invoiceResult, setInvoiceResult] = useState<any>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
@@ -450,7 +482,7 @@ function UpgradePage() {
   // When changing package, re-sync the discount amount
   useEffect(() => {
     if (appliedPromo) {
-      const basePrice = selectedSlug === "premium_12m" ? 100 : 60;
+      const basePrice = selectedSlug === "premium_12m" ? 100 : selectedSlug === "premium_6m" ? 60 : 10;
       const discount = Number(((basePrice * appliedPromo.discount_percent) / 100).toFixed(2));
       const finalPrice = Math.max(0, Number((basePrice - discount).toFixed(2)));
       setAppliedPromo((prev) =>
@@ -465,7 +497,7 @@ function UpgradePage() {
     }
   }, [selectedSlug]);
 
-  const basePriceUsd = selectedSlug === "premium_12m" ? 100 : 60;
+  const basePriceUsd = selectedSlug === "premium_12m" ? 100 : selectedSlug === "premium_6m" ? 60 : 10;
   const finalPriceUsd = appliedPromo ? appliedPromo.final_price_usd : basePriceUsd;
 
   const upgrade = useMutation({
@@ -595,7 +627,7 @@ function UpgradePage() {
                   pkg={pkg}
                   isCurrent={status?.planSlug === pkg.slug}
                   selected={selectedSlug === pkg.slug}
-                  onSelect={() => setSelectedSlug(pkg.slug as "premium_6m" | "premium_12m")}
+                  onSelect={() => setSelectedSlug(pkg.slug as "premium_1m" | "premium_6m" | "premium_12m")}
                 />
               ))}
             </div>
@@ -612,7 +644,7 @@ function UpgradePage() {
               <p className="text-xs text-muted-foreground mt-0.5">
                 Selected Plan:{" "}
                 <strong className="text-foreground">
-                  {selectedSlug === "premium_12m" ? "Premium — 12 Months" : "Premium — 6 Months"}
+                  {selectedSlug === "premium_12m" ? "Premium — 12 Months" : selectedSlug === "premium_6m" ? "Premium — 6 Months" : "Premium — 1 Month ($10)"}
                 </strong>
               </p>
             </div>
@@ -784,7 +816,8 @@ function UpgradePage() {
                 <tr className="border-b border-border/80 text-muted-foreground font-bold">
                   <th className="pb-4 pt-2 font-extrabold text-foreground">System Feature</th>
                   <th className="pb-4 pt-2 text-center w-36 sm:w-48">Free Plan</th>
-                  <th className="pb-4 pt-2 text-center w-36 sm:w-48 text-indigo-400 font-extrabold">Premium 6M</th>
+                  <th className="pb-4 pt-2 text-center w-28 sm:w-36 text-emerald-400 font-extrabold">Monthly ($10)</th>
+                  <th className="pb-4 pt-2 text-center w-28 sm:w-36 text-indigo-400 font-extrabold">Premium 6M</th>
                   <th className="pb-4 pt-2 text-center w-36 sm:w-48 text-amber-400 font-black">Premium 12M 💎</th>
                 </tr>
               </thead>
@@ -803,8 +836,13 @@ function UpgradePage() {
           </span>
         )}
       </td>
+      <td className="py-4 text-center bg-emerald-500/5">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-xs font-bold text-emerald-300">
+          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> {row.p1m}
+        </span>
+      </td>
       <td className="py-4 text-center bg-indigo-500/5">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 px-3 py-1 text-xs font-extrabold text-indigo-300">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 px-2.5 py-1 text-xs font-extrabold text-indigo-300">
           <CheckCircle2 className="h-3.5 w-3.5 text-indigo-400" /> {row.p6m}
         </span>
       </td>

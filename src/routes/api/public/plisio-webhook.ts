@@ -117,7 +117,7 @@ async function handlePlisioCallback(request: Request) {
 
     if (isCompleted && reqRow.status !== "paid" && reqRow.status !== "completed") {
       const now = new Date();
-      const durationMonths = reqRow.package_slug === "premium_12m" ? 12 : 6;
+      const durationMonths = reqRow.package_slug === "premium_12m" ? 12 : reqRow.package_slug === "premium_6m" ? 6 : 1;
       const expiryDate = new Date(now.setMonth(now.getMonth() + durationMonths)).toISOString();
 
       await supabaseAdmin

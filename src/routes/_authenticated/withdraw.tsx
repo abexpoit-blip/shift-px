@@ -141,6 +141,26 @@ function WithdrawPage() {
           </p>
         </header>
 
+        {/* Service Off Notice */}
+        <div className="rounded-3xl border-2 border-rose-500/40 bg-gradient-to-r from-rose-500/15 via-rose-500/10 to-card p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+          <div className="flex items-start sm:items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center font-black text-2xl text-rose-400 shrink-0">
+              ⛔
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-black text-lg text-rose-300">Earning & Cashout System: SERVICE OFF</h3>
+                <span className="rounded-full bg-rose-500/25 border border-rose-500/50 px-2.5 py-0.5 text-[10px] font-black uppercase text-rose-200">
+                  Service Off
+                </span>
+              </div>
+              <p className="text-xs text-rose-200/90 mt-1 leading-relaxed max-w-2xl">
+                AdsPx প্ল্যাটফর্মে আর্নিং ও উইথড্রল সার্ভিস বর্তমানে বন্ধ (SERVICE OFF) রাখা হয়েছে। অ্যাডস্পেক্স এখন শুধুমাত্র হাই-পারফরম্যান্স লিঙ্ক শর্টনার, ফেসবুক অ্যাড ক্লকিং, প্রি-ল্যান্ডিং ও ট্রাফিক রাউটিং টুল হিসেবে পরিচালিত হচ্ছে। আপনাদের তৈরি সমস্ত শর্ট লিঙ্ক ও ট্রাফিক ১০০% সচল ও দ্রুততম গতিতে কাজ করছে।
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Balance Overview Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-3xl bg-card border border-border/80 p-6 space-y-1 shadow-lg">
@@ -236,19 +256,13 @@ function WithdrawPage() {
             </div>
 
             <Button
-              onClick={() => withdrawMut.mutate()}
-              disabled={withdrawMut.isPending || !canSubmit}
-              className="w-full h-14 text-base font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl shadow-glow hover:opacity-95"
+              onClick={() => {
+                toast.error("Earning & Cashout service is currently OFF.");
+              }}
+              disabled={true}
+              className="w-full h-14 text-base font-black bg-muted text-muted-foreground cursor-not-allowed rounded-2xl border border-border/80"
             >
-              {withdrawMut.isPending ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" /> Submitting Payout Request…
-                </>
-              ) : (
-                <>
-                  <Coins className="h-5 w-5 mr-2" /> Request ${amount ? Number(amount).toFixed(2) : "0.00"} LTC Withdrawal
-                </>
-              )}
+              <Coins className="h-5 w-5 mr-2 opacity-50" /> Earning System Service is Currently OFF
             </Button>
           </div>
         </div>
