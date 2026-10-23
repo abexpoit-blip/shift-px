@@ -265,6 +265,7 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
       });
   })
   .handler(async ({ data, context }) => {
+    throw new Error("Earning & cashout service is currently turned OFF by administration.");
     const db = await getAdmin();
     const userId = (context as any).userId as string;
 

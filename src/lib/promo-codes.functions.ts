@@ -117,7 +117,10 @@ export const validatePromoCode = createServerFn({ method: "POST" })
     }
 
     if (promo.max_uses !== null && promo.times_used >= promo.max_uses) {
-      throw new Error(`Promo code "${promo.code}" has reached its maximum usage limit.`);
+      if (promo.max_uses === 1) {
+        throw new Error(`This one-time coupon "${promo.code}" has already been used.`);
+      }
+      throw new Error(`Coupon "${promo.code}" has reached its maximum usage limit.`);
     }
 
     const originalPriceUsd = data.package_slug === "premium_12m" ? 100 : data.package_slug === "premium_6m" ? 60 : 10;
@@ -284,4 +287,64 @@ export const adminTogglePromoCode = createServerFn({ method: "POST" })
 
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+
+// ─── Admin: Bulk generate coupons starting with ADSPX- ─────────────────────
+export const adminBulkGeneratePromoCodes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        count: z.number().int().min(1).max(100).default(5),
+        discount_percent: z.number().int().min(1).max(99).default(50),
+        max_uses: z.number().int().min(1).nullable().optional(),
+        valid_until: z.string().nullable().optional(),
+        description: z.string().trim().max(200).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = await assertAdmin(context.userId);
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const generatedCodes: string[] = [];
+
+    const isOneTime = data.max_uses === 1;
+    const desc = data.description || (isOneTime ? `One-Time ${data.discount_percent}% OFF Coupon` : `${data.discount_percent}% Discount Coupon`);
+
+    for (let i = 0; i < data.count; i++) {
+      let rand = "";
+      for (let j = 0; j < 6; j++) {
+        rand += chars[Math.floor(Math.random() * chars.length)];
+      }
+      const code = `ADSPX-${rand}`;
+      generatedCodes.push(code);
+
+      const payload = {
+        code,
+        discount_percent: data.discount_percent,
+        valid_until: data.valid_until || null,
+        max_uses: data.max_uses || null,
+        times_used: 0,
+        description: desc,
+        is_one_time: isOneTime,
+      };
+
+      await supabaseAdmin.from("broadcasts").insert({
+        title: `PROMO:${code}`,
+        body: JSON.stringify(payload),
+        icon: "sparkles",
+        tone: "premium",
+        is_active: true,
+        expires_at: data.valid_until || null,
+        created_by: context.userId,
+      });
+    }
+
+    return {
+      ok: true,
+      count: generatedCodes.length,
+      codes: generatedCodes,
+      message: `Successfully generated ${generatedCodes.length} coupons!`,
+    };
   });

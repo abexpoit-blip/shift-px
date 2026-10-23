@@ -82,7 +82,7 @@ async function getProfileQuota(supabase: any, userId: string) {
       if (data?.link_limit !== 1000000) {
         await supabase.from("profiles").update({ link_limit: 1000000 }).eq("id", userId);
       }
-      return { limit: null, used: 0, clickQuota: null };
+      return { limit: null, used: 0, clickQuota: null, isPremium: true, dailyLimit: null, dailyUsed: 0 };
     }
 
     // Dynamic exact count of user's active links from database
@@ -100,13 +100,29 @@ async function getProfileQuota(supabase: any, userId: string) {
       await supabase.from("profiles").update({ link_limit: limit }).eq("id", userId);
     }
 
+    // Free tier: 5 links per day limit
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+
+    const { count: todayCount } = await supabase
+      .from("links")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", todayStart.toISOString());
+
+    const dailyUsed = todayCount ?? 0;
+    const dailyLimit = 5;
+
     return {
       limit,
       used: actualUsed,
-      clickQuota: null, // Unlimited clicks for all users
+      dailyLimit,
+      dailyUsed,
+      isPremium: false,
+      clickQuota: null,
     };
   } catch (err) {
-    return { limit: 50, used: 0, clickQuota: null };
+    return { limit: 50, used: 0, dailyLimit: 5, dailyUsed: 0, isPremium: false, clickQuota: null };
   }
 }
 
@@ -422,8 +438,10 @@ export const createLink = createServerFn({ method: "POST" })
     const context = await getRequestAuth();
     await assertNotBanned(context.supabase, context.userId);
     const profile = await getProfileQuota(context.supabase, context.userId);
-    if (profile && profile.limit !== null && profile.used >= profile.limit) {
-      throw new Error(`Link limit reached (${profile.used}/${profile.limit}). Please upgrade.`);
+    if (!profile.isPremium) {
+      if ((profile.dailyUsed ?? 0) >= 5) {
+        throw new Error("Free tier daily limit reached (5/5 links created today). Upgrade to Premium for Unlimited links!");
+      }
     }
 
     let code = randomCode();

@@ -97,6 +97,7 @@ import {
   adminCreatePromoCode,
   adminDeletePromoCode,
   adminTogglePromoCode,
+  adminBulkGeneratePromoCodes,
   type PromoCode,
 } from "@/lib/promo-codes.functions";
 import {
@@ -1056,6 +1057,24 @@ function PromoCodesTab() {
   const createFn = useServerFn(adminCreatePromoCode);
   const deleteFn = useServerFn(adminDeletePromoCode);
   const toggleFn = useServerFn(adminTogglePromoCode);
+  const bulkGenFn = useServerFn(adminBulkGeneratePromoCodes);
+
+  // Bulk generator state
+  const [bulkCount, setBulkCount] = useState(5);
+  const [bulkDiscount, setBulkDiscount] = useState(50);
+  const [bulkIsOneTime, setBulkIsOneTime] = useState(true);
+  const [bulkGeneratedList, setBulkGeneratedList] = useState<string[]>([]);
+
+  const bulkGenMut = useMutation({
+    mutationFn: (v: { count: number; discount_percent: number; max_uses?: number | null }) =>
+      bulkGenFn({ data: v }),
+    onSuccess: (res) => {
+      toast.success(res.message);
+      setBulkGeneratedList(res.codes);
+      invalidate();
+    },
+    onError: (err: Error) => toast.error(err.message || "Failed to bulk generate"),
+  });
 
   const promosQuery = useQuery({
     queryKey: ["admin-promos"],
@@ -1143,11 +1162,12 @@ function PromoCodesTab() {
                 <button
                   type="button"
                   onClick={() => {
-                    const prefixes = ["PROMO", "SAVE", "OFFER", "DEAL", "SPECIAL"];
-                    const p = prefixes[Math.floor(Math.random() * prefixes.length)];
-                    const n = Math.floor(1000 + Math.random() * 9000);
-                    setCode(`${p}${n}`);
-                    toast.info(`Generated code: ${p}${n}`);
+                    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+                    let rand = "";
+                    for (let j = 0; j < 6; j++) rand += chars[Math.floor(Math.random() * chars.length)];
+                    const genCode = `ADSPX-${rand}`;
+                    setCode(genCode);
+                    toast.info(`Generated code: ${genCode}`);
                   }}
                   className="text-[10px] font-extrabold text-primary hover:underline flex items-center gap-1"
                 >
@@ -1234,6 +1254,112 @@ function PromoCodesTab() {
         </form>
       </Panel>
 
+      {/* Bulk Coupon Generation Panel */}
+      <Panel
+        icon={Sparkles}
+        title="⚡ Bulk Auto-Generate Custom Coupons"
+        subtitle="Instantly generate multiple random one-time or multi-use coupons starting with 'ADSPX-'"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5 block">
+                How Many Coupons? *
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={bulkCount}
+                onChange={(e) => setBulkCount(Math.max(1, Math.min(100, Number(e.target.value))))}
+                className="w-full bg-card/70 border border-border rounded-xl px-4 py-2 text-xs font-bold text-[var(--foreground)] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5 block">
+                Discount Percentage (% OFF) *
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={bulkDiscount}
+                  onChange={(e) => setBulkDiscount(Math.max(1, Math.min(99, Number(e.target.value))))}
+                  className="w-full bg-card/70 border border-border rounded-xl px-4 py-2 text-xs font-bold text-[var(--foreground)] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+                <span className="text-xs font-black text-primary">% OFF</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5 block">
+                Coupon Type
+              </label>
+              <label className="flex items-center gap-2 h-9 px-3 bg-card/70 border border-border rounded-xl cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={bulkIsOneTime}
+                  onChange={(e) => setBulkIsOneTime(e.target.checked)}
+                  className="rounded text-primary focus:ring-primary h-4 w-4"
+                />
+                <span className="text-xs font-bold text-foreground">
+                  {bulkIsOneTime ? "One-Time (1 User Only)" : "Unlimited Uses"}
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <span className="text-xs text-muted-foreground">
+              Generated codes format: <strong className="font-mono text-primary font-bold">ADSPX-XXXXXX</strong>
+            </span>
+            <Button
+              type="button"
+              disabled={bulkGenMut.isPending}
+              onClick={() => {
+                bulkGenMut.mutate({
+                  count: Number(bulkCount),
+                  discount_percent: Number(bulkDiscount),
+                  max_uses: bulkIsOneTime ? 1 : null,
+                });
+              }}
+              className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black rounded-xl px-5 shadow-md hover:opacity-95"
+            >
+              {bulkGenMut.isPending ? "Generating…" : `🚀 Generate ${bulkCount} Coupons`}
+            </Button>
+          </div>
+
+          {bulkGeneratedList.length > 0 && (
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 space-y-2 mt-3 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-emerald-400">
+                  🎉 Generated {bulkGeneratedList.length} New Coupons:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(bulkGeneratedList.join("\n"));
+                    toast.success("All generated coupon codes copied to clipboard!");
+                  }}
+                  className="text-xs font-bold px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-lg hover:bg-emerald-500/30 flex items-center gap-1"
+                >
+                  <Copy className="h-3 w-3" /> Copy All Codes
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 bg-background/50 rounded-xl border border-border/80">
+                {bulkGeneratedList.map((c) => (
+                  <span key={c} className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-card border border-border text-foreground">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </Panel>
+
       {/* Active Promo Codes List Table */}
       <Panel
         icon={Percent}
@@ -1302,14 +1428,30 @@ function PromoCodesTab() {
                       </td>
 
                       <td className="px-3 py-3 text-center font-mono text-xs font-bold text-foreground">
-                        {p.times_used} {p.max_uses ? `/ ${p.max_uses} max` : "uses"}
-                        {isLimitReached && (
+                        {p.max_uses === 1 ? (
+                          <span className={p.times_used >= 1 ? "text-rose-400 font-black" : "text-amber-400 font-bold"}>
+                            {p.times_used >= 1 ? "Used (1/1)" : "Unused (0/1)"}
+                          </span>
+                        ) : (
+                          <span>
+                            {p.times_used} {p.max_uses ? `/ ${p.max_uses} max` : "uses"}
+                          </span>
+                        )}
+                        {isLimitReached && p.max_uses !== 1 && (
                           <span className="block text-[9px] text-rose-400 font-bold">Limit Reached</span>
                         )}
                       </td>
 
                       <td className="px-3 py-3 text-center">
-                        {p.is_active && !isExpired && !isLimitReached ? (
+                        {p.max_uses === 1 && p.times_used >= 1 ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                            <CheckCircle2 className="h-3 w-3 text-rose-400" /> Used
+                          </span>
+                        ) : p.max_uses === 1 && p.times_used === 0 ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                            1-Time (Unused)
+                          </span>
+                        ) : p.is_active && !isExpired && !isLimitReached ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                             <CheckCircle2 className="h-3 w-3" /> Active
                           </span>
