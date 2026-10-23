@@ -155,7 +155,7 @@ function WithdrawPage() {
                 </span>
               </div>
               <p className="text-xs text-rose-200/90 mt-1 leading-relaxed max-w-2xl">
-                AdsPx প্ল্যাটফর্মে আর্নিং ও উইথড্রল সার্ভিস বর্তমানে বন্ধ (SERVICE OFF) রাখা হয়েছে। অ্যাডস্পেক্স এখন শুধুমাত্র হাই-পারফরম্যান্স লিঙ্ক শর্টনার, ফেসবুক অ্যাড ক্লকিং, প্রি-ল্যান্ডিং ও ট্রাফিক রাউটিং টুল হিসেবে পরিচালিত হচ্ছে। আপনাদের তৈরি সমস্ত শর্ট লিঙ্ক ও ট্রাফিক ১০০% সচল ও দ্রুততম গতিতে কাজ করছে।
+                Earning and cashout services are currently disabled (SERVICE OFF) on the AdsPx platform. AdsPx is now operating exclusively as a high-performance link shortener, Facebook ad cloaking, prelanding, and traffic routing suite. All your created short links and campaign traffic remain 100% active, protected, and running at maximum speed.
               </p>
             </div>
           </div>

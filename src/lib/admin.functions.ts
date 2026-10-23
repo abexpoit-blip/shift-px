@@ -28,7 +28,8 @@ async function applyPackageToProfileIds(userIds: string[], pkg: any) {
 
   for (const id of ids) {
     const baseDate = new Date();
-    const expiryDate = isFree ? null : new Date(baseDate.setMonth(baseDate.getMonth() + (durationMonths || 6))).toISOString();
+    const months = isFree ? 0 : Math.max(1, durationMonths);
+    const expiryDate = isFree ? null : new Date(baseDate.setMonth(baseDate.getMonth() + months)).toISOString();
 
     const update = {
       plan_slug: pkg.slug,
@@ -716,10 +717,10 @@ export const adminDecideUpgradeRequest = createServerFn({ method: "POST" })
     if (!pkg) {
       pkg = {
         slug: req.package_slug,
-        duration_months: req.package_slug === "premium_12m" ? 12 : 6,
+        duration_months: req.package_slug === "premium_12m" ? 12 : req.package_slug === "premium_6m" ? 6 : 1,
         link_limit: 1000000,
         click_quota: null,
-        price_usd: req.package_slug === "premium_12m" ? 100 : 60,
+        price_usd: req.package_slug === "premium_12m" ? 100 : req.package_slug === "premium_6m" ? 60 : 10,
       } as any;
     }
 

@@ -281,7 +281,15 @@ function SettingsPage() {
             <div className="text-sm font-black text-foreground">
               {isPremium ? (
                 <span className="text-indigo-400 font-extrabold">
-                  {planQ.data?.planSlug === "premium_12m" ? "Premium (12 Months)" : "Premium (6 Months)"}
+                  {planQ.data?.planSlug === "premium_12m"
+                  ? "Premium (12 Months)"
+                  : planQ.data?.planSlug === "premium_6m"
+                  ? "Premium (6 Months)"
+                  : planQ.data?.planSlug === "premium_1m"
+                  ? "Premium (1 Month — $10/mo)"
+                  : planQ.data?.planSlug === "lifetime" || planQ.data?.planSlug === "unlimited"
+                  ? "Premium (Lifetime Unlimited)"
+                  : "Premium Active"}
                 </span>
               ) : (
                 "Free Plan"
@@ -323,18 +331,12 @@ function SettingsPage() {
           </div>
 
           <div className="p-4 rounded-2xl bg-muted/40 border border-border/70 space-y-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">Withdrawal Privileges</span>
-            <div className="text-sm font-black text-foreground">
-              {planQ.data?.canWithdraw ? (
-                <span className="text-emerald-400 inline-flex items-center gap-1 font-bold">
-                  <CheckCircle2 className="h-4 w-4" /> Enabled (LTC)
-                </span>
-              ) : (
-                <span className="text-rose-400 font-bold">Requires Premium</span>
-              )}
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block">Cashout / Earning System</span>
+            <div className="text-sm font-black text-rose-400">
+              SERVICE OFF
             </div>
             <span className="text-[11px] text-muted-foreground block">
-              Min payout: $5.00
+              Cloaking & Redirects 100% Active
             </span>
           </div>
         </div>

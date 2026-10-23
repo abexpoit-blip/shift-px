@@ -2804,10 +2804,9 @@ function TrafficTab() {
             FB Ad-Review Protection
           </h3>
           <p className="text-xs text-[var(--muted-foreground)] mb-4">
-            নতুন লিংকের প্রথম ৬ ঘন্টা বা ২৫ ক্লিক পর্যন্ত FB/IG in-app browser-কে safe page দেখায়
-            (ad reviewer যেন offer না দেখে)।{" "}
-            <b>Ad approved হয়ে campaign run হলে এটা OFF করে দিন</b> — সব FB user offer পাবে,
-            traffic 100% count হবে।
+            Shows a safe article page to FB/IG in-app browsers for the first 6 hours or 25 clicks of a new link (preventing ad reviewers from seeing the offer).{" "}
+            <b>Turn this OFF once your ad is approved and campaign is live</b> — all FB users will receive the offer,
+            and traffic will count 100%.
           </p>
           <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-card/60 border border-[var(--border)]">
             <input
@@ -2940,8 +2939,8 @@ function TrafficSnapshotPanel() {
             <div className="mt-4 p-3 rounded-xl bg-muted border border-border text-foreground text-xs flex gap-2 items-start">
               <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
               <div>
-                Bot rate <b>{d.botPct}%</b> — যদি FB campaign চলছে তাহলে নিচে{" "}
-                <b>FB Ad-Review Protection</b> OFF করুন। Top bot reasons:&nbsp;
+                Bot rate <b>{d.botPct}%</b> — if your FB ad campaign is already approved and live, turn OFF{" "}
+                <b>FB Ad-Review Protection</b> below. Top bot reasons:&nbsp;
                 {d.topBotReasons.map((r) => `${r.key}(${r.count})`).join(", ")}
               </div>
             </div>

@@ -211,6 +211,12 @@ export const getMyPlanStatus = createServerFn({ method: "GET" })
     }
 
     const rawSlug = (profile as any).plan_slug ?? "free";
+    const isLifetime = rawSlug === "lifetime" || rawSlug === "unlimited";
+    if (isLifetime) {
+      isPremiumActive = true;
+      daysRemaining = 9999;
+      formattedExpiry = "Lifetime (Never Expires)";
+    }
     const effectivePlanSlug = isPremiumActive ? rawSlug : "free";
     const canWithdraw = isPremiumActive ? ((profile as any).can_withdraw ?? true) : false;
     const linkLimit = isPremiumActive ? 1000000 : 50;
@@ -322,9 +328,16 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
 
           if (promoRow) {
             promoPayload.times_used = (promoPayload.times_used || 0) + 1;
+            const updatePayload: any = {
+              body: JSON.stringify(promoPayload),
+              updated_at: new Date().toISOString(),
+            };
+            if (promoPayload.max_uses && promoPayload.times_used >= promoPayload.max_uses) {
+              updatePayload.is_active = false;
+            }
             await db
               .from("broadcasts")
-              .update({ body: JSON.stringify(promoPayload), updated_at: new Date().toISOString() })
+              .update(updatePayload)
               .eq("id", promoRow.id);
           }
         }
