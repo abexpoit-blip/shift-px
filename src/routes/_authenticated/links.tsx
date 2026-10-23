@@ -166,11 +166,11 @@ function LinksPage() {
   const dashQ = useQuery({
     queryKey: ["dashboard"],
     queryFn: () => dash(),
-    staleTime: 5_000,
+    staleTime: 30_000,
     gcTime: 5 * 60_000,
-    refetchInterval: 15_000,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
     refetchOnReconnect: true,
   });
 

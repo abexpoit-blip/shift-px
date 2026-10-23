@@ -124,33 +124,9 @@ export const getStatistics = createServerFn({ method: "GET" })
       };
     }
 
-    // Live link click reconciliation
-    try {
-      const { data: liveClicks } = await db
-        .from("clicks")
-        .select("link_id, is_bot")
-        .in("link_id", linkIds);
-      if (liveClicks && liveClicks.length > 0) {
-        const liveMap: Record<string, { humans: number; bots: number }> = {};
-        for (const row of liveClicks) {
-          if (!liveMap[row.link_id]) liveMap[row.link_id] = { humans: 0, bots: 0 };
-          if (row.is_bot) liveMap[row.link_id].bots += 1;
-          else liveMap[row.link_id].humans += 1;
-        }
-        for (const l of links) {
-          const currentHuman = Math.max(Number(l.clicks_count ?? 0), Number((l as any).human_clicks_count ?? 0));
-          const currentBot = Number(l.bot_clicks_count ?? 0);
-          const live = liveMap[l.id];
-          l.clicks_count = live ? Math.max(currentHuman, live.humans) : currentHuman;
-          if (live && live.bots > currentBot) l.bot_clicks_count = live.bots;
-        }
-      } else {
-        for (const l of links) {
-          l.clicks_count = Math.max(Number(l.clicks_count ?? 0), Number((l as any).human_clicks_count ?? 0));
-        }
-      }
-    } catch (err) {
-      console.warn("[stats] live reconciliation error:", err);
+    // Normalize link click counts
+    for (const l of links) {
+      l.clicks_count = Math.max(Number(l.clicks_count ?? 0), Number((l as any).human_clicks_count ?? 0));
     }
 
     const hotDay = hotCutoff();
