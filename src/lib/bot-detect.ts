@@ -176,7 +176,10 @@ export function analyzeSignals(input: DetectInput): DetectSignals {
   // Real in-app mobile webviews (FB, Instagram, WhatsApp, TikTok, etc.)
   // On mobile in-app browsers, WebViews frequently omit Sec-Fetch-* and sec-ch-ua.
   // We detect these real mobile apps and protect them so real ad clicks are NEVER misidentified.
+  // Real mobile WebViews ALWAYS start with "Mozilla/5.0". Meta's automated ad-review
+  // scanner on AWS/Meta IPs sends a bare "[FBAN/FB4A;..." string without "Mozilla/5.0".
   const isInAppMobile =
+    /^mozilla\/5\.0\b/i.test(uaLow) &&
     /(fb_iab|fb4a|fban|instagram|whatsapp|wv|kakaotalk|line\/|snapchat|tiktok|micromessenger)/i.test(uaLow) &&
     !/facebookexternalhit|meta-externalads|crawler|bot/i.test(uaLow);
 
@@ -184,6 +187,9 @@ export function analyzeSignals(input: DetectInput): DetectSignals {
     // In-app mobile webviews are confirmed real user sessions from social ad clicks.
     // Cap score to ensure they are never flagged as bots.
     score = Math.max(0, score - 35);
+  } else if (/^\s*\[(?:fban|fb_iab|fbav|fbios|fb4a)\b/i.test(uaLow)) {
+    score += 95;
+    reasons.push("bare-fban-crawler");
   }
 
   const isDirectHit = !input.referer;

