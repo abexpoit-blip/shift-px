@@ -46,24 +46,24 @@ const COMPARISON_ROWS = [
 const FAQS = [
   {
     q: "Why is Litecoin (LTC) the preferred payment method?",
-    a: "Litecoin offers lightning-fast transactions (averaging under 2.5 minutes) and ultra-low blockchain network fees (often under $0.01), ensuring you don't waste money on expensive gas fees."
+    a: "Litecoin offers lightning-fast transactions (averaging under 2.5 minutes) and ultra-low blockchain network fees (often under $0.01), ensuring you don't waste money on expensive gas fees.",
   },
   {
     q: "How fast does my Premium membership activate?",
-    a: "Once you send the LTC and paste your transaction hash (TXID), our system verifies the payment. Your account is upgraded to Premium immediately upon blockchain confirmation."
+    a: "Once you send the LTC, our system automatically monitors the blockchain. Your account is upgraded to Premium immediately upon payment verification — usually within 2 minutes.",
   },
   {
-    q: "Can I earn money on the Free plan before upgrading?",
-    a: "Yes! Free users earn $1.00 for every 50,000 verified human clicks. All earnings accumulate in your balance. Once you are ready to cash out (minimum $5), simply upgrade to Premium to enable instant withdrawals."
+    q: "What benefits does Premium give for Facebook & Meta advertising?",
+    a: "Premium unlocks our advanced multi-layered cloaking engine: real human visitors get instant zero-delay 302 redirection to your target offer, while Meta review crawlers, bots, and automated inspectors are served authentic high-authority editorial articles to protect your ad accounts.",
   },
   {
-    q: "How does the $5 minimum withdrawal work?",
-    a: "Premium members can request withdrawals anytime their available balance reaches $5.00 or more. Payouts are processed directly in cryptocurrency to your specified wallet address."
+    q: "What is the status of the platform Earning & Withdrawal system?",
+    a: "The legacy click-earning and withdrawal feature is officially Service Off. AdsPx is strictly focused on providing high-performance URL redirection, traffic filtering, and stealth ad review protection for publishers and affiliate marketers.",
   },
   {
     q: "What happens to my links if my subscription expires?",
-    a: "Your links never break or go offline. If your plan expires, existing links continue redirecting normally. You can renew at any time to create new links and submit withdrawal requests."
-  }
+    a: "Your existing links never break or go offline. If your plan expires, existing links continue redirecting normally. You can renew at any time to create new links and access advanced features.",
+  },
 ];
 
 function PlanCard({
@@ -85,128 +85,131 @@ function PlanCard({
   return (
     <div
       onClick={isFree ? undefined : onSelect}
-      className={`group relative flex flex-col justify-between rounded-3xl p-7 transition-all duration-300 ${
+      className={`group relative flex flex-col justify-between rounded-3xl p-6 transition-all duration-300 ${
         isFree
-          ? "border border-border/70 bg-card/40 opacity-90 cursor-default"
+          ? "border border-border/70 bg-card/60 opacity-90 cursor-default"
           : isYearly
             ? selected
-              ? "border-2 border-amber-400/90 bg-gradient-to-b from-amber-500/10 via-purple-500/5 to-card shadow-[0_0_40px_rgba(245,158,11,0.25)] scale-[1.02] cursor-pointer"
-              : "border border-amber-500/40 bg-gradient-to-b from-amber-500/5 to-card hover:border-amber-400 hover:shadow-xl hover:scale-[1.01] cursor-pointer"
-            : selected
-              ? "border-2 border-indigo-500 bg-gradient-to-b from-indigo-500/15 via-purple-500/5 to-card shadow-[0_0_35px_rgba(99,102,241,0.3)] scale-[1.02] cursor-pointer"
-              : "border border-indigo-500/30 bg-card hover:border-indigo-500/70 hover:shadow-lg hover:scale-[1.01] cursor-pointer"
+              ? "border-2 border-amber-400 bg-gradient-to-b from-amber-500/10 via-amber-500/5 to-card shadow-[0_0_35px_rgba(245,158,11,0.25)] scale-[1.02] cursor-pointer"
+              : "border border-amber-500/40 bg-card hover:border-amber-400 hover:shadow-xl hover:scale-[1.01] cursor-pointer"
+            : is6M
+              ? selected
+                ? "border-2 border-purple-500 bg-gradient-to-b from-purple-500/15 via-indigo-500/5 to-card shadow-[0_0_35px_rgba(168,85,247,0.3)] scale-[1.02] cursor-pointer"
+                : "border border-purple-500/40 bg-card hover:border-purple-400 hover:shadow-lg hover:scale-[1.01] cursor-pointer"
+              : selected
+                ? "border-2 border-indigo-500 bg-gradient-to-b from-indigo-500/15 via-purple-500/5 to-card shadow-[0_0_35px_rgba(99,102,241,0.3)] scale-[1.02] cursor-pointer"
+                : "border border-indigo-500/30 bg-card hover:border-indigo-500/70 hover:shadow-lg hover:scale-[1.01] cursor-pointer"
       }`}
     >
       {/* Top Banner Tag */}
       {isYearly && (
-        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 px-4 py-1 text-[11px] font-black uppercase tracking-wider text-slate-950 shadow-lg animate-pulse">
-            <Star className="h-3.5 w-3.5 fill-current" /> BEST VALUE · SAVE $20 (2 MONTHS FREE)
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
+          <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 px-3 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-950 shadow-lg">
+            <Star className="h-3 w-3 fill-current" /> BEST VALUE · SAVE $20
           </span>
         </div>
       )}
 
       {is6M && (
-        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-1 text-[11px] font-black uppercase tracking-wider text-white shadow-lg">
-            <Flame className="h-3.5 w-3.5 fill-current" /> MOST POPULAR
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
+          <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-500 to-indigo-600 px-3 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-lg">
+            <Flame className="h-3 w-3 fill-current" /> MOST POPULAR
+          </span>
+        </div>
+      )}
+
+      {is1M && (
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
+          <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 px-3 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-lg">
+            <Sparkles className="h-3 w-3" /> FLEXIBLE MONTHLY
           </span>
         </div>
       )}
 
       {isCurrent && (
-        <div className="absolute -top-3.5 right-6 z-10">
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-3 py-0.5 text-[11px] font-black uppercase text-white shadow-md">
-            <Check className="h-3.5 w-3.5 stroke-[3]" /> Active Plan
+        <div className="absolute -top-3.5 right-4 z-10">
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-black uppercase text-white shadow-md">
+            <Check className="h-3 w-3 stroke-[3]" /> Active
           </span>
         </div>
       )}
 
       <div>
         {/* Plan Header */}
-        <div className="flex items-center justify-between gap-3 mb-5">
+        <div className="flex items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">
             <div
-              className={`h-12 w-12 rounded-2xl flex items-center justify-center shadow-md ${
+              className={`h-11 w-11 rounded-2xl flex items-center justify-center shadow-md shrink-0 ${
                 isFree
                   ? "bg-muted text-muted-foreground"
                   : isYearly
                     ? "bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950"
-                    : "bg-gradient-to-br from-indigo-500 to-purple-600 text-white"
+                    : is6M
+                      ? "bg-gradient-to-br from-purple-500 to-pink-600 text-white"
+                      : "bg-gradient-to-br from-indigo-500 to-purple-600 text-white"
               }`}
             >
               {isFree ? (
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-black tracking-tight text-foreground">$0</span>
-              <span className="text-xs font-semibold text-muted-foreground">/ Lifetime</span>
+                <Shield className="h-5 w-5" />
+              ) : isYearly ? (
+                <Crown className="h-5 w-5" />
+              ) : is6M ? (
+                <Flame className="h-5 w-5" />
+              ) : (
+                <Zap className="h-5 w-5" />
+              )}
+            </div>
+            <div>
+              <h3 className="font-extrabold text-lg text-foreground tracking-tight leading-tight">{pkg.name}</h3>
+              <p className="text-[11px] text-muted-foreground">
+                {isFree ? "Starter Tier" : is1M ? "1 Month Access" : `${pkg.duration_months} Months Access`}
+              </p
+            ></div>
+          </div>
+        </div>
+
+        {/* Pricing Display */}
+        <div className="mb-5 pb-5 border-b border-border/60">
+          {isFree ? (
+            <div className="space-y-0.5">
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">$0</span>
+                <span className="text-xs font-semibold text-muted-foreground">/ Lifetime</span>
+              </div>
+              <p className="text-[11px] font-semibold text-muted-foreground">
+                Standard basic cloaking
+              </p>
             </div>
           ) : is1M ? (
-            <div className="space-y-1">
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl sm:text-5xl font-black tracking-tight text-foreground">
+            <div className="space-y-0.5">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
                   $10
                 </span>
                 <span className="text-xs font-semibold text-muted-foreground">
                   / 1 Month
                 </span>
               </div>
-              <p className="text-xs font-semibold text-emerald-500">
+              <p className="text-[11px] font-semibold text-emerald-500">
                 Full Paid Access · Renews monthly
               </p>
             </div>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl sm:text-5xl font-black tracking-tight text-foreground">
+                <span className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
                   ${pkg.price_usd}
                 </span>
                 <span className="text-xs font-semibold text-muted-foreground">
-                  / {pkg.duration_months} Months
+                  / {pkg.duration_months} Mos
                 </span>
                 {isYearly && (
-                  <span className="text-sm font-bold text-muted-foreground line-through opacity-70">
+                  <span className="text-xs font-bold text-muted-foreground line-through opacity-70">
                     $120
                   </span>
                 )}
               </div>
-              <p className="text-xs font-semibold text-emerald-500">
-                {isYearly ? "Only $8.33 / month equivalent" : "Only $10.00 / month equivalent"}
-              </p>
-            </div>
-          )}
-        </div>
-            <div>
-              <h3 className="font-extrabold text-xl text-foreground tracking-tight">{pkg.name}</h3>
-              <p className="text-xs text-muted-foreground">
-                {isFree ? "Starter Tier" : `${pkg.duration_months} Months Full Access`}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Pricing Display */}
-        <div className="mb-6 pb-6 border-b border-border/60">
-          {isFree ? (
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-black tracking-tight text-foreground">$0</span>
-              <span className="text-xs font-semibold text-muted-foreground">/ Lifetime</span>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl sm:text-5xl font-black tracking-tight text-foreground">
-                  ${pkg.price_usd}
-                </span>
-                <span className="text-xs font-semibold text-muted-foreground">
-                  / {pkg.duration_months} Months
-                </span>
-                {isYearly && (
-                  <span className="text-sm font-bold text-muted-foreground line-through opacity-70">
-                    $120
-                  </span>
-                )}
-              </div>
-              <p className="text-xs font-semibold text-emerald-500">
+              <p className="text-[11px] font-semibold text-emerald-500">
                 {isYearly ? "Only $8.33 / month equivalent" : "Only $10.00 / month equivalent"}
               </p>
             </div>
@@ -214,15 +217,15 @@ function PlanCard({
         </div>
 
         {/* Features List */}
-        <div className="space-y-3 mb-6">
-          <div className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground">
-            Included Facilities:
+        <div className="space-y-2.5 mb-5">
+          <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+            Included Features:
           </div>
-          <ul className="space-y-2.5">
+          <ul className="space-y-2">
             {(pkg.features as string[]).map((f, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-xs sm:text-sm">
+              <li key={i} className="flex items-start gap-2 text-xs">
                 <div
-                  className={`mt-0.5 h-4 w-4 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  className={`mt-0.5 h-3.5 w-3.5 rounded-full flex items-center justify-center flex-shrink-0 ${
                     isFree
                       ? "bg-muted text-muted-foreground"
                       : isYearly
@@ -230,9 +233,9 @@ function PlanCard({
                         : "bg-indigo-500/20 text-indigo-400"
                   }`}
                 >
-                  <Check className="h-3 w-3 stroke-[3]" />
+                  <Check className="h-2.5 w-2.5 stroke-[3]" />
                 </div>
-                <span className={isFree && f.includes("No withdrawal") ? "text-amber-500 font-semibold" : "text-foreground"}>
+                <span className={f.includes("Service Off") ? "text-muted-foreground line-through opacity-75" : "text-foreground"}>
                   {f}
                 </span>
               </li>
@@ -242,20 +245,28 @@ function PlanCard({
       </div>
 
       {/* Select Button */}
-      {!isFree && (
+      {!isFree ? (
         <div
-          className={`mt-4 h-12 rounded-2xl flex items-center justify-center gap-2 text-sm font-extrabold transition-all shadow-md ${
+          className={`mt-2 h-10 rounded-xl flex items-center justify-center gap-1.5 text-xs font-extrabold transition-all shadow-md ${
             selected
               ? isYearly
                 ? "bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.4)]"
-                : "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-[0_0_20px_rgba(99,102,241,0.4)]"
+                : is6M
+                  ? "bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+                  : "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-[0_0_20px_rgba(99,102,241,0.4)]"
               : isYearly
                 ? "bg-amber-500/10 text-amber-400 border border-amber-500/30 group-hover:bg-amber-500/20"
-                : "bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 group-hover:bg-indigo-500/20"
+                : is6M
+                  ? "bg-purple-500/10 text-purple-400 border border-purple-500/30 group-hover:bg-purple-500/20"
+                  : "bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 group-hover:bg-indigo-500/20"
           }`}
         >
-          {selected ? <Check className="h-4 w-4 stroke-[3]" /> : <ArrowRight className="h-4 w-4" />}
+          {selected ? <Check className="h-3.5 w-3.5 stroke-[3]" /> : <ArrowRight className="h-3.5 w-3.5" />}
           {selected ? "Selected Plan" : "Choose " + pkg.name}
+        </div>
+      ) : (
+        <div className="mt-2 h-10 rounded-xl flex items-center justify-center text-xs font-bold text-muted-foreground bg-muted/40 border border-border/50">
+          Default Tier
         </div>
       )}
     </div>
@@ -585,8 +596,8 @@ function UpgradePage() {
             },
             {
               icon: Wallet,
-              title: "Instant Cashout",
-              desc: "Minimum $5 withdrawal threshold. Cash out directly to your personal crypto wallet.",
+              title: "Ad Account Safety",
+              desc: "Continuous IP intelligence and behavioral bot filters keep your ad campaigns alive 24/7.",
               color: "text-emerald-400",
             },
             {
@@ -620,7 +631,7 @@ function UpgradePage() {
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
               {packages.map((pkg) => (
                 <PlanCard
                   key={pkg.slug}

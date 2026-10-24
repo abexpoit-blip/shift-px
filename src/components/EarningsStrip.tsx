@@ -36,7 +36,7 @@ export function EarningsStrip() {
           key={c.label}
           className={`rounded-2xl border p-4 backdrop-blur-xl ${
             c.accent
-              ? "border-primary/30 bg-gradient-to-br from-primary/12 to-white/70"
+              ? "border-primary/30 bg-gradient-to-br from-primary/15 via-primary/5 to-card/60"
               : "glass-card"
           }`}
         >
