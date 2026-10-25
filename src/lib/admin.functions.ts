@@ -46,6 +46,14 @@ async function applyPackageToProfileIds(userIds: string[], pkg: any) {
       .update(update as any)
       .eq("id", id);
     if (error) throw new Error(error.message);
+
+    if (!isFree) {
+      await supabaseAdmin
+        .from("upgrade_requests")
+        .update({ status: "paid", updated_at: resetAt } as any)
+        .eq("user_id", id)
+        .eq("status", "pending");
+    }
   }
 }
 
@@ -170,18 +178,37 @@ export const adminStats = createServerFn({ method: "GET" })
     }
 
     const monthISO = new Date(Date.now() - 30 * 86_400_000).toISOString();
-    const { data: paidRows } = await supabaseAdmin
-      .from("upgrade_requests")
-      .select("amount")
-      .or("status.eq.paid,status.eq.completed,status.eq.success,status.eq.finished")
-      .gte("created_at", monthISO);
-    const mrr = (paidRows ?? []).reduce((s, r: any) => s + Number(r.amount || 0), 0);
-    const { data: allPaid } = await supabaseAdmin
-      .from("upgrade_requests")
-      .select("amount")
-      .or("status.eq.paid,status.eq.completed,status.eq.success,status.eq.finished");
+    const [{ data: paidRows }, { data: allPaid }, { data: activePremiumProfiles }] = await Promise.all([
+      supabaseAdmin
+        .from("upgrade_requests")
+        .select("amount")
+        .or("status.eq.paid,status.eq.completed,status.eq.success,status.eq.finished")
+        .gte("created_at", monthISO),
+      supabaseAdmin
+        .from("upgrade_requests")
+        .select("amount")
+        .or("status.eq.paid,status.eq.completed,status.eq.success,status.eq.finished"),
+      supabaseAdmin
+        .from("profiles")
+        .select("id, email, plan_slug, plan_expires_at, premium_until")
+        .neq("plan_slug", "free"),
+    ]);
 
+    const mrr = (paidRows ?? []).reduce((s, r: any) => s + Number(r.amount || 0), 0);
     const totalRevenue = (allPaid ?? []).reduce((s, r: any) => s + Number(r.amount || 0), 0);
+
+    const nowMs = Date.now();
+    const activeSubs = (activePremiumProfiles ?? []).filter((p: any) => {
+      if (!p.plan_slug || p.plan_slug === "free") return false;
+      if (String(p.email || "").toLowerCase() === "admin@adspx.com") return false;
+      const exp = p.plan_expires_at || p.premium_until;
+      if (exp && new Date(exp).getTime() < nowMs) return false;
+      return true;
+    });
+
+    const premium1mCount = activeSubs.filter((p: any) => p.plan_slug === "premium_1m").length;
+    const premium6mCount = activeSubs.filter((p: any) => p.plan_slug === "premium_6m").length;
+    const premium12mCount = activeSubs.filter((p: any) => p.plan_slug === "premium_12m").length;
 
     return {
       users: users ?? 0,
@@ -197,6 +224,10 @@ export const adminStats = createServerFn({ method: "GET" })
       banned_users: bannedUsers ?? 0,
       mrr_30d: mrr,
       total_revenue: totalRevenue,
+      premium_users: activeSubs.length,
+      premium_1m_count: premium1mCount,
+      premium_6m_count: premium6mCount,
+      premium_12m_count: premium12mCount,
     };
   });
 
@@ -532,13 +563,14 @@ export const adminSetUserPlan = createServerFn({ method: "POST" })
 
     if (!pkg) {
       const is12m = data.package_slug === "premium_12m";
+      const is6m = data.package_slug === "premium_6m";
       const isFree = data.package_slug === "free";
       pkg = {
         slug: data.package_slug,
-        duration_months: isFree ? 0 : is12m ? 12 : 6,
+        duration_months: isFree ? 0 : is12m ? 12 : is6m ? 6 : 1,
         link_limit: isFree ? 50 : 1000000,
         click_quota: null,
-        price_usd: isFree ? 0 : is12m ? 100 : 60,
+        price_usd: isFree ? 0 : is12m ? 100 : is6m ? 60 : 10,
       } as any;
     }
 
@@ -557,11 +589,12 @@ export const adminListPackages = createServerFn({ method: "GET" })
       .order("sort_order");
     if (error) throw new Error(error.message);
     const list = (data ?? []) as any[];
-    if (list.length === 0 || !list.some((p) => p.slug === "premium_6m" || p.slug === "premium_12m")) {
+    if (list.length === 0 || !list.some((p) => p.slug === "premium_1m" || p.slug === "premium_6m" || p.slug === "premium_12m")) {
       return [
         { id: "pkg-free", slug: "free", name: "Free Plan", price_usd: 0, duration_months: 0, link_limit: 50, click_quota: null, is_premium: false, can_withdraw: false, sort_order: 0 },
-        { id: "pkg-6m", slug: "premium_6m", name: "Premium — 6 Months", price_usd: 60, duration_months: 6, link_limit: 1000000, click_quota: null, is_premium: true, can_withdraw: true, sort_order: 1 },
-        { id: "pkg-12m", slug: "premium_12m", name: "Premium — 12 Months", price_usd: 100, duration_months: 12, link_limit: 1000000, click_quota: null, is_premium: true, can_withdraw: true, sort_order: 2 }
+        { id: "pkg-1m", slug: "premium_1m", name: "Premium — 1 Month", price_usd: 10, duration_months: 1, link_limit: 1000000, click_quota: null, is_premium: true, can_withdraw: true, sort_order: 1 },
+        { id: "pkg-6m", slug: "premium_6m", name: "Premium — 6 Months", price_usd: 60, duration_months: 6, link_limit: 1000000, click_quota: null, is_premium: true, can_withdraw: true, sort_order: 2 },
+        { id: "pkg-12m", slug: "premium_12m", name: "Premium — 12 Months", price_usd: 100, duration_months: 12, link_limit: 1000000, click_quota: null, is_premium: true, can_withdraw: true, sort_order: 3 }
       ];
     }
     return list;
@@ -1602,21 +1635,42 @@ export const adminListPayments = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
 
-    const { data: requests, error } = await supabaseAdmin
-      .from("upgrade_requests")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(500);
+    const [{ data: requests, error }, { data: premiumProfiles }] = await Promise.all([
+      supabaseAdmin
+        .from("upgrade_requests")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      supabaseAdmin
+        .from("profiles")
+        .select("id, email, full_name, plan_slug, plan_started_at, plan_expires_at, premium_until, created_at")
+        .neq("plan_slug", "free"),
+    ]);
 
     if (error) throw new Error(error.message);
 
-    const userIds = Array.from(new Set((requests ?? []).map((r: any) => r.user_id).filter(Boolean)));
-    let userMap: Record<string, { email: string; full_name?: string; plan_slug?: string; premium_until?: string | null }> = {};
+    const userIds = Array.from(
+      new Set([
+        ...(requests ?? []).map((r: any) => r.user_id).filter(Boolean),
+        ...(premiumProfiles ?? []).map((p: any) => p.id).filter(Boolean),
+      ]),
+    );
+    let userMap: Record<
+      string,
+      {
+        email: string;
+        full_name?: string;
+        plan_slug?: string;
+        plan_started_at?: string | null;
+        plan_expires_at?: string | null;
+        premium_until?: string | null;
+      }
+    > = {};
 
     if (userIds.length > 0) {
       const { data: profs } = await supabaseAdmin
         .from("profiles")
-        .select("id, email, full_name, plan_slug, premium_until")
+        .select("id, email, full_name, plan_slug, plan_started_at, plan_expires_at, premium_until")
         .in("id", userIds);
 
       (profs ?? []).forEach((p: any) => {
@@ -1624,28 +1678,96 @@ export const adminListPayments = createServerFn({ method: "GET" })
           email: p.email || "",
           full_name: p.full_name || "",
           plan_slug: p.plan_slug || "free",
-          premium_until: p.premium_until || null,
+          plan_started_at: p.plan_started_at || null,
+          plan_expires_at: p.plan_expires_at || p.premium_until || null,
+          premium_until: p.premium_until || p.plan_expires_at || null,
         };
       });
     }
 
+    const paidUserIds = new Set<string>();
+    const reconcileIds: string[] = [];
+
     const rows = (requests ?? []).map((r: any) => {
       const prof = userMap[r.user_id];
-      const isPaid =
+      let isPaid =
         r.status === "paid" ||
         r.status === "completed" ||
         r.status === "success" ||
         r.status === "finished";
+
+      // Auto-reconcile if webhook upgraded the user's profile but upgrade_requests stayed 'pending'
+      if (
+        !isPaid &&
+        r.status === "pending" &&
+        prof &&
+        prof.plan_slug === r.package_slug &&
+        prof.plan_slug !== "free"
+      ) {
+        isPaid = true;
+        reconcileIds.push(r.id);
+      }
+
+      if (isPaid && r.user_id) {
+        paidUserIds.add(r.user_id);
+      }
 
       const effectiveStatus = isPaid ? "paid" : r.status;
 
       return {
         ...r,
         status: effectiveStatus,
+        is_direct_activation: r.payment_id === "admin_manual" || r.payment_id === "Admin / Direct",
         user_email: prof?.email || "Unknown User",
         user_name: prof?.full_name || "",
         current_plan: prof?.plan_slug || "free",
+        plan_started_at: prof?.plan_started_at || null,
+        plan_expires_at: prof?.plan_expires_at || null,
       };
+    });
+
+    if (reconcileIds.length > 0) {
+      await supabaseAdmin
+        .from("upgrade_requests")
+        .update({ status: "paid", updated_at: new Date().toISOString() } as any)
+        .in("id", reconcileIds);
+    }
+
+    // Include active premium users from profiles who were upgraded directly / by admin without an upgrade_requests paid row
+    for (const p of premiumProfiles ?? []) {
+      const slug = String((p as any).plan_slug || "free");
+      const email = String((p as any).email || "");
+      if (slug === "free" || email.toLowerCase() === "admin@adspx.com") continue;
+      if (paidUserIds.has((p as any).id)) continue;
+
+      const defaultPrice = slug === "premium_12m" ? 100 : slug === "premium_6m" ? 60 : slug === "premium_1m" ? 10 : 0;
+      const startedAt = (p as any).plan_started_at || (p as any).created_at || new Date().toISOString();
+      const expiresAt = (p as any).plan_expires_at || (p as any).premium_until || null;
+
+      rows.push({
+        id: `active-sub-${(p as any).id}`,
+        user_id: (p as any).id,
+        package_slug: slug,
+        amount: defaultPrice,
+        status: "paid",
+        is_direct_activation: true,
+        plisio_invoice_id: null,
+        plisio_invoice_url: null,
+        payment_id: "Admin / Direct",
+        created_at: startedAt,
+        updated_at: startedAt,
+        user_email: email || "Unknown User",
+        user_name: (p as any).full_name || "",
+        current_plan: slug,
+        plan_started_at: (p as any).plan_started_at || startedAt,
+        plan_expires_at: expiresAt,
+      });
+    }
+
+    rows.sort((a: any, b: any) => {
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return tb - ta;
     });
 
     return rows;

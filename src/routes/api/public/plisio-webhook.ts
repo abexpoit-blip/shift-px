@@ -115,19 +115,40 @@ async function handlePlisioCallback(request: Request) {
 
     const isCompleted = status === "completed" || status === "mismatch" || status === "paid" || status === "success";
 
+    // Best-effort audit log in plisio_event_logs
+    try {
+      await supabaseAdmin.from("plisio_event_logs" as any).insert({
+        order_number: String(orderNumber || reqRow.id || ""),
+        txn_id: String(txnId || ""),
+        status: status || "unknown",
+        raw_payload: payload,
+      } as any);
+    } catch {}
+
     if (isCompleted && reqRow.status !== "paid" && reqRow.status !== "completed") {
       const now = new Date();
       const durationMonths = reqRow.package_slug === "premium_12m" ? 12 : reqRow.package_slug === "premium_6m" ? 6 : 1;
       const expiryDate = new Date(now.setMonth(now.getMonth() + durationMonths)).toISOString();
 
-      await supabaseAdmin
+      const { error: reqErr } = await supabaseAdmin
         .from("upgrade_requests" as any)
         .update({
           status: "paid",
-          tx_hash: txnId || payload.tx_url || (reqRow as any).tx_hash,
+          tx_hash: txnId || payload.tx_url || (reqRow as any).tx_hash || null,
           updated_at: new Date().toISOString(),
         } as any)
         .eq("id", reqRow.id);
+
+      if (reqErr) {
+        console.warn("[plisio-webhook] Fallback update for upgrade_requests:", reqErr.message);
+        await supabaseAdmin
+          .from("upgrade_requests" as any)
+          .update({
+            status: "paid",
+            updated_at: new Date().toISOString(),
+          } as any)
+          .eq("id", reqRow.id);
+      }
 
       const { error: profileErr } = await supabaseAdmin
         .from("profiles" as any)
@@ -148,6 +169,7 @@ async function handlePlisioCallback(request: Request) {
         console.log(`[plisio-webhook] Successfully upgraded user ${reqRow.user_id} to ${reqRow.package_slug} until ${expiryDate}`);
       }
     } else if (status === "expired" || status === "cancelled") {
+      // Never overwrite a request if the user's profile was already upgraded for this order
       if (reqRow.status === "pending") {
         await supabaseAdmin
           .from("upgrade_requests" as any)

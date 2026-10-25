@@ -479,50 +479,74 @@ export const checkUpgradeRequestStatus = createServerFn({ method: "GET" })
     const userId = (context as any).userId as string;
     const { data: req } = await db
       .from("upgrade_requests")
-      .select("id, status, package_slug, plisio_invoice_id")
+      .select("id, status, package_slug, plisio_invoice_id, created_at")
       .eq("id", data.request_id)
       .eq("user_id", userId)
       .maybeSingle();
 
-    if (req && req.status === "pending" && (req as any).plisio_invoice_id) {
-      try {
-        const { data: settings } = await db
-          .from("app_settings")
-          .select("plisio_api_key")
-          .limit(1)
-          .maybeSingle();
-        const apiKey = (settings as any)?.plisio_api_key || "mNftu0lvWb5iTX6AVsiUhZINdfZkWVFRNJke3sUwKXyrxFVo0cHUS0A3yOf065Dq";
-        const res = await fetch(`https://plisio.net/api/v1/invoices/${(req as any).plisio_invoice_id}?api_key=${apiKey}`, {
-          signal: AbortSignal.timeout(5000),
-        });
-        const json = (await res.json()) as any;
-        const pStatus = (json?.data?.status || "").toLowerCase();
-        if (pStatus === "completed" || pStatus === "mismatch" || pStatus === "paid" || pStatus === "success") {
-          const now = new Date();
-          const durationMonths = req.package_slug === "premium_12m" ? 12 : req.package_slug === "premium_6m" ? 6 : 1;
-          const expiryDate = new Date(now.setMonth(now.getMonth() + durationMonths)).toISOString();
+    if (req && req.status === "pending") {
+      // 1. Check if webhook already upgraded the user's profile
+      const { data: prof } = await db
+        .from("profiles")
+        .select("plan_slug, plan_started_at")
+        .eq("id", userId)
+        .maybeSingle();
 
-          await db
-            .from("upgrade_requests")
-            .update({ status: "paid", updated_at: new Date().toISOString() })
-            .eq("id", req.id);
+      if (
+        prof &&
+        prof.plan_slug === req.package_slug &&
+        prof.plan_started_at &&
+        new Date(prof.plan_started_at).getTime() >= new Date((req as any).created_at).getTime() - 60_000
+      ) {
+        await db
+          .from("upgrade_requests")
+          .update({ status: "paid", updated_at: new Date().toISOString() })
+          .eq("id", req.id);
+        return { status: "paid", isPaid: true };
+      }
 
-          await db
-            .from("profiles")
-            .update({
-              plan_slug: req.package_slug,
-              link_limit: 1000000,
-              can_withdraw: true,
-              plan_started_at: new Date().toISOString(),
-              plan_expires_at: expiryDate,
-              premium_until: expiryDate,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", userId);
+      // 2. Poll Plisio invoice via IPv4
+      if ((req as any).plisio_invoice_id) {
+        try {
+          const { data: settings } = await db
+            .from("app_settings")
+            .select("plisio_api_key")
+            .limit(1)
+            .maybeSingle();
+          const apiKey = (settings as any)?.plisio_api_key || "mNftu0lvWb5iTX6AVsiUhZINdfZkWVFRNJke3sUwKXyrxFVo0cHUS0A3yOf065Dq";
+          const fetchFn = typeof window === "undefined" ? fetchIpv4 : fetch;
+          const res = await fetchFn(`https://plisio.net/api/v1/invoices/${(req as any).plisio_invoice_id}?api_key=${apiKey}`, {
+            signal: AbortSignal.timeout(8000),
+          });
+          const json = (await res.json()) as any;
+          const pStatus = (json?.data?.status || "").toLowerCase();
+          if (pStatus === "completed" || pStatus === "mismatch" || pStatus === "paid" || pStatus === "success") {
+            const now = new Date();
+            const durationMonths = req.package_slug === "premium_12m" ? 12 : req.package_slug === "premium_6m" ? 6 : 1;
+            const expiryDate = new Date(now.setMonth(now.getMonth() + durationMonths)).toISOString();
 
-          return { status: "paid", isPaid: true };
-        }
-      } catch (err) {}
+            await db
+              .from("upgrade_requests")
+              .update({ status: "paid", updated_at: new Date().toISOString() })
+              .eq("id", req.id);
+
+            await db
+              .from("profiles")
+              .update({
+                plan_slug: req.package_slug,
+                link_limit: 1000000,
+                can_withdraw: true,
+                plan_started_at: new Date().toISOString(),
+                plan_expires_at: expiryDate,
+                premium_until: expiryDate,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", userId);
+
+            return { status: "paid", isPaid: true };
+          }
+        } catch (err) {}
+      }
     }
 
     return {
@@ -548,9 +572,10 @@ export const submitUpgradeTransaction = createServerFn({ method: "POST" })
     const { error } = await db
       .from("upgrade_requests")
       .update({
+        tx_hash: data.tx_hash.trim(),
         admin_note: `TXID: ${data.tx_hash.trim()}`,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq("id", data.request_id)
       .eq("user_id", userId);
 
@@ -585,16 +610,19 @@ export const adminActivatePremium = createServerFn({ method: "POST" })
     const currentExpiry = currentProfile?.premium_until ? new Date(currentProfile.premium_until) : new Date();
     const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
     const newExpiry = new Date(baseDate.setMonth(baseDate.getMonth() + months)).toISOString();
+    const nowIso = new Date().toISOString();
 
     const { error } = await db
       .from("profiles")
       .update({
         plan_slug: data.package_slug,
+        plan_started_at: nowIso,
+        plan_expires_at: newExpiry,
         premium_until: newExpiry,
         can_withdraw: true,
         link_limit: 1000000,
         click_quota: null,
-      })
+      } as any)
       .eq("id", data.user_id);
 
     if (error) throw new Error(error.message);
@@ -602,7 +630,7 @@ export const adminActivatePremium = createServerFn({ method: "POST" })
     if (data.upgrade_request_id) {
       await db
         .from("upgrade_requests")
-        .update({ status: "paid", paid_at: new Date().toISOString() })
+        .update({ status: "paid", updated_at: nowIso } as any)
         .eq("id", data.upgrade_request_id);
     }
 

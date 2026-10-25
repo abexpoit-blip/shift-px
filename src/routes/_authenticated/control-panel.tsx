@@ -506,7 +506,7 @@ function OverviewTab() {
           icon={Users}
           label="Users"
           value={s?.users ?? "…"}
-          sub={`${s?.banned_users ?? 0} banned`}
+          sub={`${(s as any)?.premium_users ?? 0} premium · ${s?.banned_users ?? 0} banned`}
         />
         <Kpi
           icon={Link2}
@@ -524,7 +524,7 @@ function OverviewTab() {
           icon={DollarSign}
           label="MRR (30d)"
           value={`$${(s?.mrr_30d ?? 0).toFixed(2)}`}
-          sub={`$${(s?.total_revenue ?? 0).toFixed(2)} all-time`}
+          sub={`$${(s?.total_revenue ?? 0).toFixed(2)} total · ${(s as any)?.premium_users ?? 0} active subs`}
           accent
         />
       </div>
@@ -767,15 +767,29 @@ function PaymentsTab() {
 
   const stats = useMemo(() => {
     let totalRevenue = 0;
+    let cryptoRevenue = 0;
     let paidCount = 0;
+    let cryptoPaidCount = 0;
+    let directPaidCount = 0;
     let pendingCount = 0;
     let expiredCount = 0;
+    const activeSubUsers = new Map<string, string>();
 
     items.forEach((p: any) => {
       const st = String(p.status || "").toLowerCase();
       if (st === "paid" || st === "completed" || st === "success" || st === "finished") {
-        totalRevenue += Number(p.amount || 0);
+        const amt = Number(p.amount || 0);
+        totalRevenue += amt;
         paidCount++;
+        if (p.is_direct_activation) {
+          directPaidCount++;
+        } else {
+          cryptoRevenue += amt;
+          cryptoPaidCount++;
+        }
+        if (p.user_id && !activeSubUsers.has(p.user_id)) {
+          activeSubUsers.set(p.user_id, p.current_plan || p.package_slug || "premium_1m");
+        }
       } else if (st === "pending") {
         pendingCount++;
       } else {
@@ -783,7 +797,28 @@ function PaymentsTab() {
       }
     });
 
-    return { totalRevenue, paidCount, pendingCount, expiredCount };
+    let count1m = 0;
+    let count6m = 0;
+    let count12m = 0;
+    activeSubUsers.forEach((slug) => {
+      if (slug === "premium_12m") count12m++;
+      else if (slug === "premium_6m") count6m++;
+      else count1m++;
+    });
+
+    return {
+      totalRevenue,
+      cryptoRevenue,
+      paidCount,
+      cryptoPaidCount,
+      directPaidCount,
+      activePremiumUsers: activeSubUsers.size,
+      count1m,
+      count6m,
+      count12m,
+      pendingCount,
+      expiredCount,
+    };
   }, [items]);
 
   const filtered = useMemo(() => {
@@ -800,6 +835,7 @@ function PaymentsTab() {
       const isPaid = st === "paid" || st === "completed" || st === "success" || st === "finished";
 
       if (statusFilter === "paid" && !isPaid) return false;
+      if (statusFilter === "crypto" && (!isPaid || p.is_direct_activation)) return false;
       if (statusFilter === "pending" && st !== "pending") return false;
       if (statusFilter === "expired" && (isPaid || st === "pending")) return false;
 
@@ -813,62 +849,70 @@ function PaymentsTab() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 shadow-sm">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-bold uppercase tracking-wider">Total Revenue</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Active Premium Users</span>
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary">
+              <Crown className="h-4 w-4" />
+            </span>
+          </div>
+          <div className="mt-3 text-2xl font-black text-foreground">
+            {stats.activePremiumUsers.toLocaleString()}
+          </div>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary">1M: {stats.count1m}</span>
+            <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500">6M: {stats.count6m}</span>
+            <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500">12M: {stats.count12m}</span>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-bold uppercase tracking-wider">Crypto Revenue</span>
             <span className="grid h-8 w-8 place-items-center rounded-xl bg-emerald-500/10 text-emerald-500">
               <DollarSign className="h-4 w-4" />
             </span>
           </div>
           <div className="mt-3 text-2xl font-black text-foreground">
-            ${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ${stats.cryptoRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">Verified customer payments</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {stats.cryptoPaidCount} Plisio checkouts · ${stats.totalRevenue.toFixed(0)} total plan value
+          </p>
         </div>
 
         <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 shadow-sm">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-bold uppercase tracking-wider">Paid Upgrades</span>
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-emerald-500/10 text-emerald-500">
               <CheckCircle2 className="h-4 w-4" />
             </span>
           </div>
           <div className="mt-3 text-2xl font-black text-foreground">
             {stats.paidCount.toLocaleString()}
           </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">Active premium subscriptions</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {stats.cryptoPaidCount} Crypto Gateway · {stats.directPaidCount} Direct/Admin
+          </p>
         </div>
 
         <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 shadow-sm">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-bold uppercase tracking-wider">Pending Orders</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Pending / Expired</span>
             <span className="grid h-8 w-8 place-items-center rounded-xl bg-amber-500/10 text-amber-500">
               <Clock className="h-4 w-4" />
             </span>
           </div>
           <div className="mt-3 text-2xl font-black text-amber-500">
-            {stats.pendingCount.toLocaleString()}
+            {stats.pendingCount.toLocaleString()} <span className="text-xs font-semibold text-muted-foreground">pending</span>
           </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">Awaiting crypto confirmation</p>
-        </div>
-
-        <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-bold uppercase tracking-wider">Expired / Closed</span>
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-muted/60 text-muted-foreground">
-              <X className="h-4 w-4" />
-            </span>
-          </div>
-          <div className="mt-3 text-2xl font-black text-foreground">
-            {stats.expiredCount.toLocaleString()}
-          </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">Unpaid session timeouts</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">{stats.expiredCount} expired / unpaid sessions</p>
         </div>
       </div>
 
       {/* Main Table Panel */}
       <Panel
         icon={CreditCard}
-        title="Customer Payments & Upgrades"
-        subtitle="Live feed of all customer subscription checkouts, crypto invoices, and user plans"
+        title="Customer Payments & Active Premium Packages"
+        subtitle="Live feed of all customer subscription checkouts, Plisio crypto invoices, and active user packages"
       >
         {/* Filter / Search Row */}
         <div className="mb-5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
@@ -878,11 +922,11 @@ function PaymentsTab() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by user email, plan, or invoice ID…"
-              className="${inputCls} pl-10 w-full"
+              className={`${inputCls} pl-10 w-full`}
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setStatusFilter("all")}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
@@ -901,7 +945,17 @@ function PaymentsTab() {
                   : "bg-card border border-border text-muted-foreground hover:text-foreground"
               }`}
             >
-              Paid ({stats.paidCount})
+              Active & Paid ({stats.paidCount})
+            </button>
+            <button
+              onClick={() => setStatusFilter("crypto")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                statusFilter === "crypto"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-card border border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Crypto Paid ({stats.cryptoPaidCount})
             </button>
             <button
               onClick={() => setStatusFilter("pending")}
@@ -929,18 +983,19 @@ function PaymentsTab() {
             <thead>
               <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 <Th>User Email</Th>
-                <Th>Plan / Duration</Th>
+                <Th>Package / Plan</Th>
                 <Th>Amount</Th>
                 <Th>Status</Th>
-                <Th>Invoice / Gateway</Th>
-                <Th>Created Date</Th>
+                <Th>Invoice / Source</Th>
+                <Th>Activated / Date</Th>
+                <Th>Package Expiry</Th>
                 <Th>Actions</Th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-muted-foreground text-xs">
+                  <td colSpan={8} className="text-center py-12 text-muted-foreground text-xs">
                     {paymentsQuery.isLoading ? "Loading customer payments…" : "No payment records match your query."}
                   </td>
                 </tr>
@@ -955,7 +1010,12 @@ function PaymentsTab() {
                       ? "Premium — 12 Months"
                       : r.package_slug === "premium_6m"
                       ? "Premium — 6 Months"
+                      : r.package_slug === "premium_1m"
+                      ? "Premium — 1 Month"
                       : r.package_slug?.replace(/_/g, " ").toUpperCase() || "Premium Plan";
+
+                  const expDate = r.plan_expires_at ? new Date(r.plan_expires_at) : null;
+                  const daysLeft = expDate ? Math.ceil((expDate.getTime() - Date.now()) / 86400000) : null;
 
                   return (
                     <tr key={r.id} className="border-b border-border/50 hover:bg-card/60 transition-colors">
@@ -1005,13 +1065,27 @@ function PaymentsTab() {
                             #{String(r.plisio_invoice_id).slice(-10)}
                           </span>
                         ) : (
-                          <span className="text-xs text-muted-foreground italic">Direct / Internal</span>
+                          <span className="text-xs text-muted-foreground font-medium">
+                            {r.payment_id || "Admin / Direct"}
+                          </span>
                         )}
                       </Td>
                       <Td>
                         <div className="text-xs text-muted-foreground">
                           {r.created_at ? new Date(r.created_at).toLocaleString() : "—"}
                         </div>
+                      </Td>
+                      <Td>
+                        {isPaid && expDate ? (
+                          <div className="text-xs">
+                            <div className="font-semibold text-foreground">{expDate.toLocaleDateString()}</div>
+                            <div className={`text-[10px] font-bold ${daysLeft != null && daysLeft > 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                              {daysLeft != null && daysLeft > 0 ? `${daysLeft}d remaining` : "Expired"}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </Td>
                       <Td className="text-right">
                         {isPending ? (
@@ -1695,6 +1769,7 @@ function UsersTab() {
           >
             <option value="">Move to plan…</option>
             <option value="free">Free Plan</option>
+            <option value="premium_1m">Premium — 1 Month</option>
             <option value="premium_6m">Premium — 6 Months</option>
             <option value="premium_12m">Premium — 12 Months</option>
           </select>
@@ -1762,9 +1837,10 @@ function UsersTab() {
                     className="bg-card/80 border border-[var(--border)] rounded-lg px-2 py-1 text-xs font-semibold"
                   >
                     <option value="free">Free Plan</option>
+                    <option value="premium_1m">Premium — 1 Month</option>
                     <option value="premium_6m">Premium — 6 Months</option>
                     <option value="premium_12m">Premium — 12 Months</option>
-                    {!["free", "premium_6m", "premium_12m"].includes(u.plan_slug) && (
+                    {!["free", "premium_1m", "premium_6m", "premium_12m"].includes(u.plan_slug) && (
                       <option value={u.plan_slug}>{u.plan_slug}</option>
                     )}
                   </select>
