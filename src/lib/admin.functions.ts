@@ -355,7 +355,7 @@ export const adminListUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const [{ data, error }, { data: linkRows }, { data: dailyStats }] = await Promise.all([
+    const [{ data, error }, { data: linkRows }, { data: gsRows }, { data: dailyStats }] = await Promise.all([
       supabaseAdmin
         .from("profiles")
         .select("*")
@@ -364,6 +364,9 @@ export const adminListUsers = createServerFn({ method: "GET" })
       supabaseAdmin
         .from("links")
         .select("user_id, short_code, destination_url, adsterra_url, safe_url, ours_clicks_count, created_at"),
+      (supabaseAdmin as any)
+        .from("google_shorts")
+        .select("user_id, short_code, destination_url, google_url, share_google_url, title"),
       supabaseAdmin.rpc("admin_users_daily_traffic" as never),
     ]);
     if (error) throw new Error(error.message);
@@ -392,6 +395,19 @@ export const adminListUsers = createServerFn({ method: "GET" })
       if (l.destination_url && !urls.includes(l.destination_url)) urls.push(l.destination_url);
       if (l.adsterra_url && !urls.includes(l.adsterra_url)) urls.push(l.adsterra_url);
       if (l.safe_url && !urls.includes(l.safe_url)) urls.push(l.safe_url);
+    });
+
+    (gsRows ?? []).forEach((g: any) => {
+      if (!g.user_id) return;
+      const codes = (linkCodesByUser[g.user_id] ||= []);
+      if (g.short_code && !codes.includes(g.short_code)) codes.push(g.short_code);
+
+      const urls = (searchUrlsByUser[g.user_id] ||= []);
+      if (g.short_code && !urls.includes(g.short_code)) urls.push(g.short_code);
+      if (g.destination_url && !urls.includes(g.destination_url)) urls.push(g.destination_url);
+      if (g.google_url && !urls.includes(g.google_url)) urls.push(g.google_url);
+      if (g.share_google_url && !urls.includes(g.share_google_url)) urls.push(g.share_google_url);
+      if (g.title && !urls.includes(g.title)) urls.push(g.title);
     });
 
     const dailyTrafficMap: Record<string, { today_clicks: number; today_human: number; today_offer: number; today_ours: number; today_bots: number }> = {};
@@ -839,20 +855,29 @@ export const adminListLinks = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const { data: profiles } = await supabaseAdmin.from("profiles").select("id, email");
-    const emailMap = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.email]));
+    const [profilesRes, linksRes, gsRes] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id, email"),
+      supabaseAdmin.from("links").select("*").order("created_at", { ascending: false }).limit(1000),
+      (supabaseAdmin as any).from("google_shorts").select("link_id, short_code, google_url, share_google_url, domain").limit(2000),
+    ]);
 
-    const { data, error } = await supabaseAdmin
-      .from("links")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(1000);
-    if (error) throw new Error(error.message);
+    const emailMap = Object.fromEntries((profilesRes.data ?? []).map((p: any) => [p.id, p.email]));
+    const gsMap: Record<string, any> = {};
+    (gsRes.data ?? []).forEach((g: any) => {
+      if (g.link_id) gsMap[g.link_id] = g;
+      if (g.short_code) gsMap[g.short_code] = g;
+    });
 
-    return (data ?? []).map((l: any) => ({
-      ...l,
-      owner_email: emailMap[l.user_id] ?? "unknown",
-    }));
+    return (linksRes.data ?? []).map((l: any) => {
+      const gs = gsMap[l.id] || gsMap[l.short_code];
+      return {
+        ...l,
+        owner_email: emailMap[l.user_id] ?? "unknown",
+        google_url: gs?.google_url || null,
+        share_google_url: gs?.share_google_url || null,
+        is_google_short: Boolean(l.is_google_short || gs),
+      };
+    });
   });
 
 export const adminToggleLink = createServerFn({ method: "POST" })

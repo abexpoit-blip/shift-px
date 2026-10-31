@@ -2191,14 +2191,16 @@ function LinksTab() {
     const raw = search.trim().toLowerCase();
     const pathSegment = raw.replace(/^https?:\/\//, "").split(/[/?#]/).filter(Boolean).pop() ?? "";
     return l.filter(
-      (x) =>
+      (x: any) =>
         x.short_code.toLowerCase().includes(raw) ||
         (pathSegment && x.short_code.toLowerCase() === pathSegment) ||
         (x.title ?? "").toLowerCase().includes(raw) ||
         (x.owner_email ?? "").toLowerCase().includes(raw) ||
         (x.destination_url ?? "").toLowerCase().includes(raw) ||
         (x.adsterra_url ?? "").toLowerCase().includes(raw) ||
-        (x.safe_url ?? "").toLowerCase().includes(raw),
+        (x.safe_url ?? "").toLowerCase().includes(raw) ||
+        (x.google_url ?? "").toLowerCase().includes(raw) ||
+        (x.share_google_url ?? "").toLowerCase().includes(raw),
     );
   }, [links.data, search]);
 
@@ -2208,7 +2210,7 @@ function LinksTab() {
     <Panel
       icon={Link2}
       title="All links"
-      subtitle="Force disable, edit destination, search by short code / URL, view click/bot stats"
+      subtitle="Force disable, edit destination, search by short code / Google URL / destination, view click/bot stats"
     >
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="relative max-w-md flex-1 min-w-[280px]">
@@ -2216,7 +2218,7 @@ function LinksTab() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search short code, URL, destination, title, owner email…"
+            placeholder="Search short code, Google URL, destination, title, owner email…"
             className={`${inputCls} pl-10`}
           />
         </div>
@@ -2241,9 +2243,23 @@ function LinksTab() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((l) => (
+            {filtered.map((l: any) => (
               <tr key={l.id} className="border-t border-[var(--border)]/60">
-                <Td className="font-mono text-xs">{l.short_code}</Td>
+                <Td className="font-mono text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span>{l.short_code}</span>
+                    {(l.is_google_short || l.google_url) && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                        Google
+                      </span>
+                    )}
+                  </div>
+                  {l.google_url && (
+                    <div className="text-[10px] text-emerald-400/90 font-mono truncate max-w-[200px]" title={l.google_url}>
+                      {l.google_url}
+                    </div>
+                  )}
+                </Td>
                 <Td className="text-xs text-[var(--muted-foreground)]">{l.owner_email}</Td>
                 <Td>{l.title || <span className="text-[var(--muted-foreground)]">—</span>}</Td>
                 <Td className="max-w-[280px] truncate text-xs">
@@ -5732,6 +5748,24 @@ function GoogleLinksTab() {
   } | null>(null);
 
   const links = state?.links ?? [];
+  const [googleSearch, setGoogleSearch] = useState("");
+
+  const filteredGoogleLinks = useMemo(() => {
+    if (!googleSearch.trim()) return links;
+    const q = googleSearch.trim().toLowerCase();
+    const pathSegment = q.replace(/^https?:\/\//, "").split(/[/?#]/).filter(Boolean).pop() ?? "";
+    return links.filter((l: any) =>
+      (l.title || "").toLowerCase().includes(q) ||
+      (l.short_code || "").toLowerCase().includes(q) ||
+      (pathSegment && (l.short_code || "").toLowerCase() === pathSegment) ||
+      (l.google_url || "").toLowerCase().includes(q) ||
+      (l.share_google_url || "").toLowerCase().includes(q) ||
+      (l.destination_url || "").toLowerCase().includes(q) ||
+      (l.user_email || "").toLowerCase().includes(q) ||
+      (l.domain || "").toLowerCase().includes(q)
+    );
+  }, [links, googleSearch]);
+
   const totalCleanClicks = links.reduce((sum: number, l: any) => sum + (l.clicks_count || 0), 0);
   const totalShieldedBots = links.reduce((sum: number, l: any) => sum + (l.bot_clicks_count || 0), 0);
   const totalTraffic = totalCleanClicks + totalShieldedBots;
@@ -6225,7 +6259,7 @@ function GoogleLinksTab() {
             <GoogleGIcon className="h-5 w-5" />
             <h3 className="text-base font-extrabold text-foreground">Active Google Shorts Directory</h3>
             <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-mono font-bold text-muted-foreground">
-              {links.length} Links
+              {filteredGoogleLinks.length} / {links.length} Links
             </span>
           </div>
 
@@ -6234,6 +6268,25 @@ function GoogleLinksTab() {
             <span>Links with 0 clicks in 14 days auto-cleared</span>
           </div>
         </div>
+
+        {links.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative max-w-md flex-1 min-w-[280px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={googleSearch}
+                onChange={(e) => setGoogleSearch(e.target.value)}
+                placeholder="Search Google URL, short code, creator email, destination, notes…"
+                className="pl-10 text-xs h-10 bg-background/80"
+              />
+            </div>
+            {googleSearch.trim() && (
+              <div className="text-xs text-muted-foreground font-semibold">
+                Found {filteredGoogleLinks.length} matching links
+              </div>
+            )}
+          </div>
+        )}
 
         {isLoading ? (
           <div className="py-12 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
@@ -6245,6 +6298,14 @@ function GoogleLinksTab() {
             <p className="font-bold text-foreground text-sm">No Google Shorts Created Yet</p>
             <p className="mt-1 text-muted-foreground">
               Paste an Adsterra CPA direct link above to generate an instant Google-powered short link.
+            </p>
+          </div>
+        ) : filteredGoogleLinks.length === 0 ? (
+          <div className="py-10 text-center text-xs text-muted-foreground border border-dashed border-border/80 rounded-2xl p-4">
+            <Search className="h-8 w-8 mx-auto mb-2 text-muted-foreground/60" />
+            <p className="font-bold text-foreground text-sm">No Google Shorts found</p>
+            <p className="mt-1 text-muted-foreground">
+              No links matched &quot;{googleSearch}&quot;. Try a different short code, URL, or email.
             </p>
           </div>
         ) : (
@@ -6262,7 +6323,7 @@ function GoogleLinksTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {links.map((link: any) => {
+                {filteredGoogleLinks.map((link: any) => {
                   const isHot = (link.clicks_count || 0) >= 50;
                   return (
                     <tr key={link.id} className="hover:bg-muted/30 transition-colors">
