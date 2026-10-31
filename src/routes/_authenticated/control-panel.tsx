@@ -1610,6 +1610,8 @@ function UsersTab() {
   const users = useQuery({ queryKey: ["admin-users"], queryFn: () => usersFn() });
   const packages = useQuery({ queryKey: ["admin-packages"], queryFn: () => packagesFn() });
   const [search, setSearch] = useState("");
+  const [filterMode, setFilterMode] = useState<"all" | "active_today" | "premium" | "free">("all");
+  const [sortBy, setSortBy] = useState<"today_desc" | "clicks_desc" | "newest">("today_desc");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkPlan, setBulkPlan] = useState("");
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -1619,15 +1621,59 @@ function UsersTab() {
     enabled: !!detailId,
   });
 
-  const filtered = useMemo(() => {
+  const userStats = useMemo(() => {
     const list = users.data ?? [];
-    if (!search) return list;
-    const q = search.toLowerCase();
-    return list.filter(
-      (u) =>
-        (u.email ?? "").toLowerCase().includes(q) || u.id.includes(q) || u.plan_slug.includes(q),
-    );
-  }, [users.data, search]);
+    let totalTodayClicks = 0;
+    let activeTodayCount = 0;
+    let premiumCount = 0;
+    list.forEach((u: any) => {
+      const tc = Number(u.today_clicks || 0);
+      if (tc > 0) {
+        totalTodayClicks += tc;
+        activeTodayCount++;
+      }
+      if (String(u.plan_slug || "").includes("premium") || u.plan_slug === "lifetime" || u.plan_slug === "unlimited") {
+        premiumCount++;
+      }
+    });
+    return { totalTodayClicks, activeTodayCount, premiumCount, totalUsers: list.length };
+  }, [users.data]);
+
+  const filtered = useMemo(() => {
+    let list = users.data ?? [];
+
+    if (filterMode === "active_today") {
+      list = list.filter((u: any) => (u.today_clicks ?? 0) > 0);
+    } else if (filterMode === "premium") {
+      list = list.filter((u: any) => String(u.plan_slug ?? "").includes("premium") || u.plan_slug === "lifetime" || u.plan_slug === "unlimited");
+    } else if (filterMode === "free") {
+      list = list.filter((u: any) => !String(u.plan_slug ?? "").includes("premium") && u.plan_slug !== "lifetime" && u.plan_slug !== "unlimited");
+    }
+
+    if (search) {
+      const q = search.toLowerCase().trim();
+      const cleanCode = q.replace(/^https?:\/\//i, "").replace(/^[^\/]+\//, "").replace(/\/.*$/, "").trim();
+
+      list = list.filter((u: any) => {
+        const emailMatch = (u.email ?? "").toLowerCase().includes(q);
+        const idMatch = (u.id ?? "").toLowerCase().includes(q);
+        const planMatch = (u.plan_slug ?? "").toLowerCase().includes(q);
+        const urlMatch = (u.searchable_urls ?? "").toLowerCase().includes(q);
+        const codeMatch = cleanCode && (u.link_codes ?? []).some((c: string) => c.toLowerCase() === cleanCode || c.toLowerCase().includes(cleanCode));
+        return emailMatch || idMatch || planMatch || urlMatch || codeMatch;
+      });
+    }
+
+    return [...list].sort((a: any, b: any) => {
+      if (sortBy === "today_desc") {
+        return (b.today_clicks ?? 0) - (a.today_clicks ?? 0) || (b.clicks_used ?? 0) - (a.clicks_used ?? 0);
+      }
+      if (sortBy === "clicks_desc") {
+        return (b.clicks_used ?? 0) - (a.clicks_used ?? 0);
+      }
+      return new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
+    });
+  }, [users.data, search, filterMode, sortBy]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["admin-users"] });
@@ -1692,20 +1738,82 @@ function UsersTab() {
   return (
     <Panel
       icon={Users}
-      title="Users"
-      subtitle="Search · bulk ban · reset quota · plan switch · per-user detail"
+      title="Users & Traffic Intelligence"
+      subtitle="Search by URL / link / email · daily traffic monitoring · bulk ban · reset quota · plan switch"
     >
+      {/* User Traffic Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+        <div className="rounded-xl border border-border/70 bg-card/60 p-4 shadow-sm">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Today's Total User Traffic</div>
+          <div className="mt-1 text-2xl font-black text-foreground font-mono">
+            {userStats.totalTodayClicks.toLocaleString()}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Live clicks sent by users today</p>
+        </div>
+        <div className="rounded-xl border border-border/70 bg-card/60 p-4 shadow-sm">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Active Senders Today</div>
+          <div className="mt-1 text-2xl font-black text-emerald-500 font-mono">
+            {userStats.activeTodayCount}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Users actively generating traffic today</p>
+        </div>
+        <div className="rounded-xl border border-border/70 bg-card/60 p-4 shadow-sm">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Registered Users</div>
+          <div className="mt-1 text-2xl font-black text-foreground font-mono">
+            {userStats.totalUsers}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{userStats.premiumCount} Premium · {userStats.totalUsers - userStats.premiumCount} Free tier (max 5 links/day)</p>
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="relative flex-1 min-w-[220px]">
+        <div className="relative flex-1 min-w-[280px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)]" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by email, plan, id…"
+            placeholder="Search by URL, short link (dovtv.com/xyz), offer URL, email, ID…"
             className={`${inputCls} pl-10`}
           />
         </div>
-        <span className="text-xs text-[var(--muted-foreground)]">{selected.size} selected</span>
+
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            onClick={() => setFilterMode("all")}
+            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${filterMode === "all" ? "bg-primary text-primary-foreground shadow-sm" : "bg-card border border-border text-muted-foreground hover:text-foreground"}`}
+          >
+            All ({userStats.totalUsers})
+          </button>
+          <button
+            onClick={() => setFilterMode("active_today")}
+            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${filterMode === "active_today" ? "bg-emerald-500 text-white shadow-sm" : "bg-card border border-border text-muted-foreground hover:text-foreground"}`}
+          >
+            Active Today ({userStats.activeTodayCount})
+          </button>
+          <button
+            onClick={() => setFilterMode("premium")}
+            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${filterMode === "premium" ? "bg-primary text-primary-foreground shadow-sm" : "bg-card border border-border text-muted-foreground hover:text-foreground"}`}
+          >
+            Premium ({userStats.premiumCount})
+          </button>
+          <button
+            onClick={() => setFilterMode("free")}
+            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${filterMode === "free" ? "bg-amber-500 text-white shadow-sm" : "bg-card border border-border text-muted-foreground hover:text-foreground"}`}
+          >
+            Free ({userStats.totalUsers - userStats.premiumCount})
+          </button>
+        </div>
+
+        <select
+          value={sortBy}
+          onChange={(e: any) => setSortBy(e.target.value)}
+          className="bg-card/80 border border-[var(--border)] rounded-xl px-2.5 py-1.5 text-xs font-semibold text-foreground"
+        >
+          <option value="today_desc">Sort: Today Traffic (Highest)</option>
+          <option value="clicks_desc">Sort: All-time Clicks (Highest)</option>
+          <option value="newest">Sort: Newest Users</option>
+        </select>
+
         <Button
           size="sm"
           variant="outline"
@@ -1798,11 +1906,12 @@ function UsersTab() {
                   onChange={toggleAll}
                 />
               </Th>
-              <Th>Email</Th>
+              <Th>Email & Links</Th>
               <Th>Plan</Th>
               <Th>Change</Th>
-              <Th>Links</Th>
-              <Th>Clicks</Th>
+              <Th>Today Traffic</Th>
+              <Th>All-Time Clicks</Th>
+              <Th>Links (Today / Total)</Th>
               <Th>Ours</Th>
               <Th>Started</Th>
               <Th>Expires</Th>
@@ -1820,7 +1929,14 @@ function UsersTab() {
                     onChange={() => toggleOne(u.id)}
                   />
                 </Td>
-                <Td className="font-medium text-[var(--foreground)]">{u.email}</Td>
+                <Td className="font-medium text-[var(--foreground)]">
+                  <div>{u.email}</div>
+                  {search && (u.link_codes ?? []).length > 0 && (
+                    <div className="text-[10px] text-primary font-mono truncate max-w-[220px]" title={u.link_codes.join(", ")}>
+                      Matched links: {u.link_codes.slice(0, 3).join(", ")}{u.link_codes.length > 3 ? ` +${u.link_codes.length - 3}` : ""}
+                    </div>
+                  )}
+                </Td>
                 <Td>
                   <Pill>{u.plan_slug}</Pill>
                 </Td>
@@ -1845,12 +1961,35 @@ function UsersTab() {
                     )}
                   </select>
                 </Td>
-                <Td className="text-[var(--muted-foreground)]">
-                  {u.links_used} / {u.link_limit == null ? "∞" : u.link_limit}
+                <Td>
+                  {(u.today_clicks ?? 0) > 0 ? (
+                    <div>
+                      <div className="font-extrabold text-foreground text-xs font-mono">
+                        {(u.today_clicks ?? 0).toLocaleString()}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground whitespace-nowrap">
+                        <span className="text-emerald-500 font-semibold">{((u.today_human ?? 0) - (u.today_ours ?? 0)).toLocaleString()} offer</span>
+                        {" · "}
+                        <span className="text-primary font-semibold">{(u.today_ours ?? 0).toLocaleString()} ours</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-[var(--muted-foreground)] text-xs">—</span>
+                  )}
                 </Td>
                 <Td className="text-[var(--muted-foreground)]">
                   {u.clicks_used.toLocaleString()}
                   {u.click_quota == null ? " / ∞" : ` / ${u.click_quota.toLocaleString()}`}
+                </Td>
+                <Td className="text-[var(--muted-foreground)] text-xs">
+                  <div>
+                    {u.links_used} / {u.link_limit == null ? "∞" : u.link_limit}
+                  </div>
+                  {!String(u.plan_slug ?? "").includes("premium") && u.plan_slug !== "lifetime" && u.plan_slug !== "unlimited" && (
+                    <div className="text-[10px] text-amber-500 font-medium">
+                      Today: {u.links_created_today ?? 0}/5
+                    </div>
+                  )}
                 </Td>
                 <Td>
                   <span className="inline-flex px-2 py-0.5 rounded-md bg-gradient-to-r from-[var(--primary)]/15 to-[var(--primary-glow)]/15 text-[var(--primary)] text-xs font-bold">
@@ -2048,13 +2187,18 @@ function LinksTab() {
 
   const filtered = useMemo(() => {
     const l = links.data ?? [];
-    if (!search) return l;
-    const q = search.toLowerCase();
+    if (!search.trim()) return l;
+    const raw = search.trim().toLowerCase();
+    const pathSegment = raw.replace(/^https?:\/\//, "").split(/[/?#]/).filter(Boolean).pop() ?? "";
     return l.filter(
       (x) =>
-        x.short_code.toLowerCase().includes(q) ||
-        (x.title ?? "").toLowerCase().includes(q) ||
-        (x.owner_email ?? "").toLowerCase().includes(q),
+        x.short_code.toLowerCase().includes(raw) ||
+        (pathSegment && x.short_code.toLowerCase() === pathSegment) ||
+        (x.title ?? "").toLowerCase().includes(raw) ||
+        (x.owner_email ?? "").toLowerCase().includes(raw) ||
+        (x.destination_url ?? "").toLowerCase().includes(raw) ||
+        (x.adsterra_url ?? "").toLowerCase().includes(raw) ||
+        (x.safe_url ?? "").toLowerCase().includes(raw),
     );
   }, [links.data, search]);
 
@@ -2064,16 +2208,23 @@ function LinksTab() {
     <Panel
       icon={Link2}
       title="All links"
-      subtitle="Force disable, edit destination, view click/bot stats"
+      subtitle="Force disable, edit destination, search by short code / URL, view click/bot stats"
     >
-      <div className="mb-4 relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)]" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search short code, title, owner…"
-          className={`${inputCls} pl-10`}
-        />
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="relative max-w-md flex-1 min-w-[280px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)]" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search short code, URL, destination, title, owner email…"
+            className={`${inputCls} pl-10`}
+          />
+        </div>
+        {search.trim() && (
+          <div className="text-xs text-muted-foreground font-semibold">
+            Found {filtered.length} of {(links.data ?? []).length} links
+          </div>
+        )}
       </div>
       <div className="overflow-x-auto -mx-2">
         <table className="w-full text-sm">

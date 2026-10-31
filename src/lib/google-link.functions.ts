@@ -235,6 +235,13 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
         if (existingLink) linkId = existingLink.id;
       } catch {}
     } else {
+      // Check free tier quota (max 5 links/day) before auto-creating cloaked AdsPx link
+      const { getProfileQuota } = await import("@/lib/links.functions");
+      const quota = await getProfileQuota(supabaseAdmin, userId);
+      if (!quota.isPremium && (quota.dailyUsed ?? 0) >= 5) {
+        throw new Error("Free tier daily limit reached (5/5 links created today). Upgrade to Premium for Unlimited Google Short links!");
+      }
+
       // Auto-create cloaked AdsPx link
       const chars = "abcdefghijkmnpqrstuvwxyz23456789";
       let code = "";

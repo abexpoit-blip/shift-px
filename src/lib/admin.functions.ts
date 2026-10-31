@@ -265,11 +265,23 @@ export const adminTopUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    // Aggregate from links table for dashboard ranking; quota usage lives in
-    // profiles.clicks_used and must not be recomputed from resettable counters.
-    const { data: links } = await supabaseAdmin
-      .from("links")
-      .select("user_id, clicks_count, bot_clicks_count, ours_clicks_count, human_clicks_count");
+    const [{ data: links }, { data: dailyStats }] = await Promise.all([
+      supabaseAdmin
+        .from("links")
+        .select("user_id, clicks_count, bot_clicks_count, ours_clicks_count, human_clicks_count"),
+      supabaseAdmin.rpc("admin_users_daily_traffic" as never),
+    ]);
+
+    const dailyMap: Record<string, { today_clicks: number; today_human: number; today_ours: number; today_bots: number }> = {};
+    (dailyStats ?? []).forEach((d: any) => {
+      dailyMap[d.user_id] = {
+        today_clicks: Number(d.today_clicks || 0),
+        today_human: Number(d.today_human || 0),
+        today_ours: Number(d.today_ours || 0),
+        today_bots: Number(d.today_bots || 0),
+      };
+    });
+
     const totals: Record<string, { humans: number; bots: number; ours: number }> = {};
     (links ?? []).forEach((l: any) => {
       if (!l.user_id) return;
@@ -278,26 +290,33 @@ export const adminTopUsers = createServerFn({ method: "GET" })
       t.bots += l.bot_clicks_count ?? 0;
       t.ours += l.ours_clicks_count ?? 0;
     });
-    const topIds = Object.entries(totals)
-      .sort((a, b) => b[1].humans - a[1].humans)
-      .slice(0, 10)
-      .map(([id]) => id);
+
+    const userIdsWithTraffic = Array.from(new Set([...Object.keys(totals), ...Object.keys(dailyMap)]));
+    const topIds = userIdsWithTraffic
+      .sort((a, b) => (dailyMap[b]?.today_clicks || 0) - (dailyMap[a]?.today_clicks || 0) || (totals[b]?.humans || 0) - (totals[a]?.humans || 0))
+      .slice(0, 15);
+
     if (topIds.length === 0) return [];
     const { data: profs } = await supabaseAdmin
       .from("profiles")
       .select("id, email, plan_slug")
       .in("id", topIds);
+
     return topIds.map((id) => {
       const p = (profs ?? []).find((x: any) => x.id === id) || {
         id,
         email: "(unknown)",
         plan_slug: null,
       };
+      const d = dailyMap[id] || { today_clicks: 0, today_human: 0, today_ours: 0, today_bots: 0 };
       return {
         ...p,
-        clicks_used: totals[id].humans,
-        bot_clicks: totals[id].bots,
-        ours_clicks: totals[id].ours,
+        clicks_used: totals[id]?.humans || 0,
+        today_clicks: d.today_clicks,
+        today_human: d.today_human,
+        today_ours: d.today_ours,
+        bot_clicks: totals[id]?.bots || d.today_bots,
+        ours_clicks: totals[id]?.ours || d.today_ours,
       };
     });
   });
@@ -336,29 +355,77 @@ export const adminListUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const { data, error } = await supabaseAdmin
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(1000);
+    const [{ data, error }, { data: linkRows }, { data: dailyStats }] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(1000),
+      supabaseAdmin
+        .from("links")
+        .select("user_id, short_code, destination_url, adsterra_url, safe_url, ours_clicks_count, created_at"),
+      supabaseAdmin.rpc("admin_users_daily_traffic" as never),
+    ]);
     if (error) throw new Error(error.message);
+
     const oursByUser: Record<string, number> = {};
-    const { data: linkRows } = await supabaseAdmin
-      .from("links")
-      .select("user_id, ours_clicks_count");
+    const linkCodesByUser: Record<string, string[]> = {};
+    const searchUrlsByUser: Record<string, string[]> = {};
+    const linksTodayByUser: Record<string, number> = {};
+    const todayUTC = new Date().toISOString().slice(0, 10);
+
     (linkRows ?? []).forEach((l: any) => {
+      if (!l.user_id) return;
       oursByUser[l.user_id] = (oursByUser[l.user_id] ?? 0) + (l.ours_clicks_count ?? 0);
+
+      if (l.created_at && String(l.created_at).slice(0, 10) === todayUTC) {
+        linksTodayByUser[l.user_id] = (linksTodayByUser[l.user_id] ?? 0) + 1;
+      }
+
+      const codes = (linkCodesByUser[l.user_id] ||= []);
+      if (l.short_code && !codes.includes(l.short_code)) {
+        codes.push(l.short_code);
+      }
+
+      const urls = (searchUrlsByUser[l.user_id] ||= []);
+      if (l.short_code && !urls.includes(l.short_code)) urls.push(l.short_code);
+      if (l.destination_url && !urls.includes(l.destination_url)) urls.push(l.destination_url);
+      if (l.adsterra_url && !urls.includes(l.adsterra_url)) urls.push(l.adsterra_url);
+      if (l.safe_url && !urls.includes(l.safe_url)) urls.push(l.safe_url);
     });
+
+    const dailyTrafficMap: Record<string, { today_clicks: number; today_human: number; today_offer: number; today_ours: number; today_bots: number }> = {};
+    (dailyStats ?? []).forEach((d: any) => {
+      dailyTrafficMap[d.user_id] = {
+        today_clicks: Number(d.today_clicks || 0),
+        today_human: Number(d.today_human || 0),
+        today_offer: Number(d.today_offer || 0),
+        today_ours: Number(d.today_ours || 0),
+        today_bots: Number(d.today_bots || 0),
+      };
+    });
+
     return (data ?? []).map((u: any) => {
       const plan = String(u.plan_slug ?? "free").toLowerCase();
       const isFree = plan === "free" || !plan.includes("premium");
       const linkLimit = isFree ? (u.link_limit && Number(u.link_limit) >= 50 ? Number(u.link_limit) : 50) : (u.link_limit || 1000000);
       const planExpiresAt = u.plan_expires_at || u.premium_until || null;
+      const daily = dailyTrafficMap[u.id] || { today_clicks: 0, today_human: 0, today_offer: 0, today_ours: 0, today_bots: 0 };
+      const linksToday = linksTodayByUser[u.id] ?? 0;
+
       return {
         ...u,
         plan_expires_at: planExpiresAt,
         link_limit: linkLimit,
         ours_clicks: oursByUser[u.id] ?? 0,
+        link_codes: linkCodesByUser[u.id] ?? [],
+        searchable_urls: (searchUrlsByUser[u.id] ?? []).slice(0, 100).join(" "),
+        links_created_today: linksToday,
+        today_clicks: daily.today_clicks,
+        today_human: daily.today_human,
+        today_offer: daily.today_offer,
+        today_ours: daily.today_ours,
+        today_bots: daily.today_bots,
       };
     });
   });

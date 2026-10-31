@@ -62,9 +62,10 @@ async function selectLinks(
   return { data: (data ?? []).map((row: LinkRow) => normalizeLink(row)), error: null };
 }
 
-async function getProfileQuota(supabase: any, userId: string) {
+export async function getProfileQuota(supabase: any, userId: string) {
+  const db = supabaseAdmin || supabase;
   try {
-    const { data } = await supabase
+    const { data } = await db
       .from("profiles")
       .select("plan_slug, link_limit, links_used, click_quota")
       .eq("id", userId)
@@ -80,13 +81,13 @@ async function getProfileQuota(supabase: any, userId: string) {
 
     if (isPremium) {
       if (data?.link_limit !== 1000000) {
-        await supabase.from("profiles").update({ link_limit: 1000000 }).eq("id", userId);
+        await db.from("profiles").update({ link_limit: 1000000 }).eq("id", userId);
       }
       return { limit: null, used: 0, clickQuota: null, isPremium: true, dailyLimit: null, dailyUsed: 0 };
     }
 
     // Dynamic exact count of user's active links from database
-    const { count: actualCount } = await supabase
+    const { count: actualCount } = await db
       .from("links")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId);
@@ -97,14 +98,14 @@ async function getProfileQuota(supabase: any, userId: string) {
     const limit = Math.max(50, rawLimit);
 
     if (data?.link_limit !== limit) {
-      await supabase.from("profiles").update({ link_limit: limit }).eq("id", userId);
+      await db.from("profiles").update({ link_limit: limit }).eq("id", userId);
     }
 
-    // Free tier: 5 links per day limit
+    // Free tier: 5 links per day limit (UTC day start)
     const todayStart = new Date();
     todayStart.setUTCHours(0, 0, 0, 0);
 
-    const { count: todayCount } = await supabase
+    const { count: todayCount } = await db
       .from("links")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
