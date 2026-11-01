@@ -44,15 +44,25 @@ async function getServerEntry(): Promise<ServerEntry> {
  * The production proxy's bare short-link rewrite can turn `/dashboard` into
  * `/r/dashboard` before TanStack sees the request. On the SaaS host that must
  * resolve back to the real app route, never the unknown-code safe article.
- * Shortener hosts deliberately keep `/r/<code>` unchanged.
+ * Shortener hosts deliberately keep `/r/<code>` unchanged and also support
+ * `/?p=<code>` directly on any custom/shortener domain.
  */
 function restoreSaasRoute(request: Request): Request {
   const url = new URL(request.url);
-  if (!url.pathname.toLowerCase().startsWith("/r/")) return request;
-
   const host = (request.headers.get("x-forwarded-host") || request.headers.get("host") || "")
     .split(",")[0]
     .trim();
+
+  if (url.pathname === "/" && !isAdspxSaasHost(host)) {
+    const pCode = (url.searchParams.get("p") || "").trim().replace(/[.,;:!?)>'"\]}]+$/, "");
+    if (/^[a-z0-9_-]{3,32}$/i.test(pCode)) {
+      url.pathname = `/r/${pCode}`;
+      return new Request(url, request);
+    }
+  }
+
+  if (!url.pathname.toLowerCase().startsWith("/r/")) return request;
+
   const restoredPath = url.pathname.slice(2) || "/";
 
   if (!isAdspxSaasHost(host) || !isSaasOnlyPath(restoredPath)) return request;
@@ -77,7 +87,7 @@ const SAAS_HTML_PREFIXES = [
 ];
 
 // Security headers applied to every response (improves domain trust score).
-// Note: do NOT set X-Frame-Options on /r/* article responses for FB crawler — FB embeds in iframe.
+// Note: do NOT set X-Frame-Options on /r/* or bare /<code> article responses for FB crawler — FB embeds in iframe.
 function applySecurityHeaders(request: Request, response: Response): Response {
   const url = new URL(request.url);
   const headers = new Headers(response.headers);
@@ -99,8 +109,13 @@ function applySecurityHeaders(request: Request, response: Response): Response {
     headers.set("x-xss-protection", "0");
   }
 
-  // X-Frame-Options: skip for /r/* (cloaked article may be previewed in social iframes)
-  const isRedirectRoute = url.pathname.startsWith("/r/");
+  // X-Frame-Options: skip for /r/* and bare short-code routes (cloaked article may be previewed in social iframes)
+  const p = url.pathname.toLowerCase();
+  const isBareShortCode =
+    /^\/[a-z0-9_-]{3,32}\/?$/i.test(p) &&
+    !SAAS_HTML_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix + "/")) &&
+    !/^\/(about|privacy|terms|contact|faq|shipping|returns|pricing|cart|checkout|blog|shop)\/?$/.test(p);
+  const isRedirectRoute = p.startsWith("/r/") || isBareShortCode || (p === "/" && url.searchParams.has("p"));
   if (!isRedirectRoute && !headers.has("x-frame-options")) {
     headers.set("x-frame-options", "SAMEORIGIN");
   }
@@ -126,7 +141,6 @@ function applySecurityHeaders(request: Request, response: Response): Response {
     headers.set("vary", Array.from(varyParts).join(", "));
 
     // Authenticated / product HTML is per-user: never let it sit in any cache.
-    const p = url.pathname.toLowerCase();
     const isAppHtml =
       p === "/" || SAAS_HTML_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix + "/"));
     if (isAppHtml && !isRedirectRoute) {

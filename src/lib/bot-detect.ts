@@ -90,11 +90,13 @@ export function analyzeSignals(input: DetectInput): DetectSignals {
   const reasons: string[] = [];
   let score = 0;
   const uaLow = input.ua.toLowerCase();
+  const secChUaLow = (input.secChUa || "").toLowerCase();
 
   const isHeadless =
-    /headlesschrome|phantomjs|selenium|puppeteer|playwright|nightmare|electron/.test(uaLow);
+    /headlesschrome|phantomjs|selenium|puppeteer|playwright|nightmare|electron/.test(uaLow) ||
+    /headlesschrome|headless|phantomjs|puppeteer|playwright/.test(secChUaLow);
   if (isHeadless) {
-    score += 80;
+    score += 95;
     reasons.push("headless-ua");
   }
 
@@ -215,6 +217,8 @@ export function matchCloaking(
   for (const r of rules) {
     const p = (r.pattern || "").toLowerCase();
     if (!p) continue;
+    // Never block AS13335 (carries Apple iCloud Private Relay on iOS Safari + Cloudflare 1.1.1.1 mobile users)
+    if (r.rule_type === "asn" && p === "13335") continue;
     if (r.rule_type === "ua" && uaLow.includes(p)) return { rule: r, matchKey: `ua:${p}` };
     if (r.rule_type === "asn" && input.asn && input.asn === p)
       return { rule: r, matchKey: `asn:${p}` };
