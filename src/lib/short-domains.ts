@@ -19,6 +19,7 @@ export function isFlaggedShortDomain(host: string): boolean {
 
 export const SHORT_DOMAINS = [
   { host: "dovtv.com", label: "dovtv.com (Primary)" },
+  { host: "blentrovus.com", label: "blentrovus.com" },
 ] as const;
 
 export type ShortDomainHost = string;

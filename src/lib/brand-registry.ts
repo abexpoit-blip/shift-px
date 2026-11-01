@@ -34,6 +34,13 @@ const REGISTRY: Record<string, Brand> = {
     city: "New York, NY",
     host: "dovtv.com",
   },
+  "blentrovus.com": {
+    name: "Blentrovus Media",
+    tagline: "Inspiring stories, trends, and daily viewpoints.",
+    email: "editorial@blentrovus.com",
+    city: "Austin, TX",
+    host: "blentrovus.com",
+  },
   "adswapx.com": {
     name: "Adswapx",
     tagline: "Everyday finds, simply delivered.",
