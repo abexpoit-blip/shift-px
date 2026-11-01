@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { redisGet, redisSet, redisDel } from "@/lib/redis-cache.server";
 
 async function assertAdmin(userId: string) {
   const { data } = await supabaseAdmin
@@ -57,10 +58,34 @@ async function applyPackageToProfileIds(userIds: string[], pkg: any) {
   }
 }
 
+export type AdminStatsResult = {
+  users: number;
+  links: number;
+  active_links: number;
+  clicks: number;
+  pending: number;
+  ours: number;
+  offer: number;
+  bots: number;
+  today_total: number;
+  today_ours: number;
+  banned_users: number;
+  mrr_30d: number;
+  total_revenue: number;
+  premium_users: number;
+  premium_1m_count: number;
+  premium_6m_count: number;
+  premium_12m_count: number;
+};
+
 export const adminStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }): Promise<AdminStatsResult> => {
     await assertAdmin(context.userId);
+
+    const cacheKey = "admin:stats:cache";
+    const cached = await redisGet<AdminStatsResult>(cacheKey);
+    if (cached) return cached;
 
     // Use UTC midnight for Today stats to be accurate
     const now = new Date();
@@ -210,7 +235,7 @@ export const adminStats = createServerFn({ method: "GET" })
     const premium6mCount = activeSubs.filter((p: any) => p.plan_slug === "premium_6m").length;
     const premium12mCount = activeSubs.filter((p: any) => p.plan_slug === "premium_12m").length;
 
-    return {
+    const result = {
       users: users ?? 0,
       links: links ?? 0,
       active_links: activeLinks ?? 0,
@@ -229,36 +254,56 @@ export const adminStats = createServerFn({ method: "GET" })
       premium_6m_count: premium6mCount,
       premium_12m_count: premium12mCount,
     };
+    void redisSet(cacheKey, result, 30_000);
+    return result;
   });
 
 export const adminClicksTimeseries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
+    const cacheKey = "admin:timeseries:14d";
+    const cached = await redisGet<Array<{
+      date: string;
+      total: number;
+      ours: number;
+      offer: number;
+      bots: number;
+    }>>(cacheKey);
+    if (cached) return cached;
+
     const { data, error } = await supabaseAdmin.rpc(
       "admin_clicks_timeseries" as never,
       { _days: 14 } as never,
     );
     if (error) throw new Error(error.message);
-    return (data ?? []) as Array<{
+    const res = (data ?? []) as Array<{
       date: string;
       total: number;
       ours: number;
       offer: number;
       bots: number;
     }>;
+    void redisSet(cacheKey, res, 60_000);
+    return res;
   });
 
 export const adminTopCountries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
+    const cacheKey = "admin:top_countries:7d";
+    const cached = await redisGet<Array<{ country: string; count: number }>>(cacheKey);
+    if (cached) return cached;
+
     const { data, error } = await supabaseAdmin.rpc(
       "admin_top_countries" as never,
       { _days: 7, _limit: 12 } as never,
     );
     if (error) throw new Error(error.message);
-    return (data ?? []) as Array<{ country: string; count: number }>;
+    const res = (data ?? []) as Array<{ country: string; count: number }>;
+    void redisSet(cacheKey, res, 60_000);
+    return res;
   });
 
 export const adminTopUsers = createServerFn({ method: "GET" })
@@ -1330,11 +1375,31 @@ export const adminDeleteUsers = createServerFn({ method: "POST" })
     }
     return { ok: errors.length === 0, deleted, failed: errors.length, errors: errors.slice(0, 5) };
   });
+export type AdminTrafficSnapshot = {
+  total24h: number;
+  humans24h: number;
+  bots24h: number;
+  offer24h: number;
+  ours24h: number;
+  safe24h: number;
+  total1h: number;
+  humans1h: number;
+  humanPct: number;
+  botPct: number;
+  offerSuccessPct: number;
+  fbCrawlerBlocked: number;
+  topBotReasons: Array<{ key: string; count: number }>;
+};
+
 // ===== Mini-dashboard for Control Panel — last 24h live stats =====
 export const adminTrafficSnapshot = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }): Promise<AdminTrafficSnapshot> => {
     await assertAdmin(context.userId);
+    const cacheKey = "admin:traffic_snapshot:24h";
+    const cached = await redisGet<AdminTrafficSnapshot>(cacheKey);
+    if (cached) return cached;
+
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const since1h = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
@@ -1405,7 +1470,7 @@ export const adminTrafficSnapshot = createServerFn({ method: "GET" })
     const b24 = bots24h ?? 0;
     const o24 = offer24h ?? 0;
 
-    return {
+    const snapshotResult = {
       total24h: t24,
       humans24h: h24,
       bots24h: b24,
@@ -1420,6 +1485,8 @@ export const adminTrafficSnapshot = createServerFn({ method: "GET" })
       fbCrawlerBlocked: fbBlocked,
       topBotReasons: topReasons,
     };
+    void redisSet(cacheKey, snapshotResult, 30_000);
+    return snapshotResult;
   });
 
 // ===== Reset ALL clicks (admin) =====
@@ -1429,6 +1496,12 @@ export const adminResetAllClicks = createServerFn({ method: "POST" })
     await assertAdmin(context.userId);
     const { data, error } = await supabaseAdmin.rpc("reset_all_clicks" as never);
     if (error) throw new Error(error.message);
+    await redisDel(
+      "admin:stats:cache",
+      "admin:timeseries:14d",
+      "admin:top_countries:7d",
+      "admin:traffic_snapshot:24h",
+    );
     return data ?? { ok: true };
   });
 

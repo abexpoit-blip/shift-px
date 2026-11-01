@@ -3184,14 +3184,14 @@ function TrafficSnapshotPanel() {
               <div>
                 Bot rate <b>{d.botPct}%</b> — if your FB ad campaign is already approved and live, turn OFF{" "}
                 <b>FB Ad-Review Protection</b> below. Top bot reasons:&nbsp;
-                {d.topBotReasons.map((r) => `${r.key}(${r.count})`).join(", ")}
+                {d.topBotReasons.map((r: { key: string; count: number }) => `${r.key}(${r.count})`).join(", ")}
               </div>
             </div>
           )}
           {d.botPct <= 40 && d.topBotReasons.length > 0 && (
             <div className="mt-4 text-xs text-[var(--muted-foreground)]">
               <b>Top bot reasons:</b>{" "}
-              {d.topBotReasons.map((r) => `${r.key} (${r.count})`).join(" · ")}
+              {d.topBotReasons.map((r: { key: string; count: number }) => `${r.key} (${r.count})`).join(" · ")}
             </div>
           )}
         </>
