@@ -5,20 +5,33 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isAdspxSaasHost } from "@/lib/site-hosts";
+import { isFlaggedShortDomain } from "@/lib/short-domains";
 
-/** Every domain we advertise from: built-ins + verified user custom domains. */
+/** Every shortener domain we advertise from: built-ins + active shortener_domains + verified custom domains. */
 async function collectDomains(): Promise<string[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const set = new Set<string>(["dovtv.com", "adspx.com"]);
+  const set = new Set<string>(["dovtv.com", "blentrovus.com"]);
   try {
-    const { data } = await supabaseAdmin
-      .from("custom_domains")
-      .select("domain, verified")
-      .eq("verified", true)
-      .limit(50);
-    for (const row of (data as { domain?: string }[] | null) ?? []) {
+    const [{ data: sysDomains }, { data: customDomains }] = await Promise.all([
+      (supabaseAdmin as any)
+        .from("shortener_domains")
+        .select("domain, is_active, verified")
+        .eq("is_active", true)
+        .limit(50),
+      supabaseAdmin
+        .from("custom_domains")
+        .select("domain, verified")
+        .eq("verified", true)
+        .limit(50),
+    ]);
+    for (const row of (sysDomains as { domain?: string }[] | null) ?? []) {
       const d = (row.domain || "").trim().toLowerCase();
-      if (d) set.add(d);
+      if (d && !isAdspxSaasHost(d) && !isFlaggedShortDomain(d)) set.add(d);
+    }
+    for (const row of (customDomains as { domain?: string }[] | null) ?? []) {
+      const d = (row.domain || "").trim().toLowerCase();
+      if (d && !isAdspxSaasHost(d) && !isFlaggedShortDomain(d)) set.add(d);
     }
   } catch {
     /* built-ins are enough */

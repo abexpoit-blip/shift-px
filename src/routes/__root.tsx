@@ -18,6 +18,9 @@ import {
   recoverFromChunkError,
 } from "@/lib/chunk-recovery";
 import { installAuthWatchdog } from "@/lib/auth-watchdog";
+import { getHost } from "@/lib/host";
+import { isAdspxSaasHost } from "@/lib/site-hosts";
+import { brandForOrigin } from "@/lib/brand-registry";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -84,41 +87,89 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "AdsPx — High-Performance Smart Link Platform & Link Cloaker" },
-      {
-        name: "description",
-        content:
-          "AdsPx is a next-generation link management platform with advanced anti-bot cloaking, real-time analytics, and instant crypto payout infrastructure.",
-      },
-      { name: "facebook-domain-verification", content: "vwq9sy1oxrdami370lemzya1296y7j" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "robots", content: "index, follow" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-      { rel: "icon", type: "image/x-icon", href: "/favicon.ico", sizes: "any" },
-      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
-      { rel: "manifest", href: "/manifest.json" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap",
-      },
-    ],
-    scripts: [
-      { src: "https://www.googletagmanager.com/gtag/js?id=G-79NYCD5JM9", async: true },
-      {
-        children: `window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-79NYCD5JM9');`,
-      },
-    ],
-  }),
+  loader: () => {
+    const host = getHost();
+    const isSaas = isAdspxSaasHost(host);
+    return { host, isSaas };
+  },
+  head: ({ loaderData }) => {
+    const host = loaderData?.host || "";
+    const isSaas = loaderData?.isSaas ?? isAdspxSaasHost(host);
+
+    if (!isSaas) {
+      const cleanHost = (host || "dovtv.com").replace(/^www\./, "");
+      const brand = brandForOrigin(`https://${cleanHost}`);
+      const isDovtv = cleanHost === "dovtv.com";
+      const meta: Array<Record<string, string>> = [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { title: `${brand.name} — ${brand.tagline}` },
+        {
+          name: "description",
+          content: `${brand.name}: ${brand.tagline} Independent stories, practical essentials, and daily features.`,
+        },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "robots", content: "index, follow" },
+      ];
+      // Preserve existing domain-verification tokens ONLY on dovtv.com, never cross-contaminating other shortener domains
+      if (isDovtv) {
+        meta.push(
+          { name: "facebook-domain-verification", content: "vwq9sy1oxrdami370lemzya1296y7j" },
+          { name: "google-site-verification", content: "rn4Co7u4RniBHEjW9QBQjctEBAY5I_dicODU2ir9s2w" },
+          { name: "google-site-verification", content: "dBmj6auZVrnDJBXhq6BuCQvyj0EMnH94zmy6Shz2V90" },
+        );
+      }
+      return {
+        meta,
+        links: [
+          { rel: "stylesheet", href: appCss },
+          { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+          { rel: "icon", type: "image/x-icon", href: "/favicon.ico", sizes: "any" },
+          { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+          { rel: "preconnect", href: "https://fonts.googleapis.com" },
+          { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+        ],
+      };
+    }
+
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { title: "AdsPx — High-Performance Smart Link Platform" },
+        {
+          name: "description",
+          content:
+            "AdsPx is a next-generation link management platform with real-time analytics, smart routing, and instant payout infrastructure.",
+        },
+        { name: "facebook-domain-verification", content: "vwq9sy1oxrdami370lemzya1296y7j" },
+        { name: "google-site-verification", content: "rn4Co7u4RniBHEjW9QBQjctEBAY5I_dicODU2ir9s2w" },
+        { name: "google-site-verification", content: "dBmj6auZVrnDJBXhq6BuCQvyj0EMnH94zmy6Shz2V90" },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "robots", content: "index, follow" },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+        { rel: "icon", type: "image/x-icon", href: "/favicon.ico", sizes: "any" },
+        { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap",
+        },
+      ],
+      scripts: [
+        { src: "https://www.googletagmanager.com/gtag/js?id=G-79NYCD5JM9", async: true },
+        {
+          children: `window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-79NYCD5JM9');`,
+        },
+      ],
+    };
+  },
 
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
@@ -130,14 +181,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <meta
-          name="google-site-verification"
-          content="rn4Co7u4RniBHEjW9QBQjctEBAY5I_dicODU2ir9s2w"
-        />
-        <meta
-          name="google-site-verification"
-          content="dBmj6auZVrnDJBXhq6BuCQvyj0EMnH94zmy6Shz2V90"
-        />
         <HeadContent />
       </head>
       <body>
@@ -170,8 +213,6 @@ function AuthSync() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
-      // Ignore TOKEN_REFRESHED / INITIAL_SESSION churn, and skip SIGNED_IN
-      // (login pages navigate themselves — a parallel invalidate races them).
       if (event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();

@@ -216,11 +216,35 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
       .replace(/^https?:\/\//, "")
       .replace(/\/$/, "");
 
-    // Check if input is already an AdsPx short URL on adswapx.com or custom domain
-    const isExistingShortener =
+    // Check if input is already an AdsPx short URL on built-in or active shortener/custom domain
+    let isExistingShortener =
       cleanOffer.includes("adswapx.com/") ||
       cleanOffer.includes("dovtv.com/") ||
+      cleanOffer.includes("blentrovus.com/") ||
       cleanOffer.includes("localhost:");
+
+    if (!isExistingShortener) {
+      try {
+        const parsedHost = new URL(cleanOffer).hostname.replace(/^www\./i, "").toLowerCase();
+        if (parsedHost) {
+          const [{ data: sysDom }, { data: usrDom }] = await Promise.all([
+            (supabaseAdmin as any)
+              .from("shortener_domains")
+              .select("domain")
+              .eq("domain", parsedHost)
+              .eq("is_active", true)
+              .maybeSingle(),
+            supabaseAdmin
+              .from("custom_domains")
+              .select("domain")
+              .eq("domain", parsedHost)
+              .eq("verified", true)
+              .maybeSingle(),
+          ]);
+          if (sysDom || usrDom) isExistingShortener = true;
+        }
+      } catch {}
+    }
 
     if (isExistingShortener) {
       destinationShortUrl = cleanOffer;

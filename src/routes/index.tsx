@@ -1,32 +1,36 @@
+import { lazy, Suspense } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { getHost, variantFromHost } from "@/lib/host";
-import { AdspxHome } from "@/components/adspx-home";
 import { BreezyHome } from "@/components/breezy/BreezyHome";
 import { buildOg } from "@/lib/og-meta";
 import { brandForOrigin } from "@/lib/brand-registry";
 
+// Lazy-load AdspxHome so shortener domains (dovtv.com, blentrovus.com, custom domains)
+// never emit <link rel="modulepreload" href="/assets/AdspxLogo-*.js"> in their SSR <head>.
+const AdspxHome = lazy(() =>
+  import("@/components/adspx-home").then((m) => ({ default: m.AdspxHome })),
+);
+
 /**
  * Host-aware homepage:
- *   adspx.com         → Adspx SaaS landing (existing)
- *   breezysocial.com    → BreezySocial gadget storefront (new)
+ *   adspx.com                        → Adspx SaaS landing
+ *   dovtv.com / blentrovus.com / ... → Independent branded storefront
  *
  * Host is detected SSR-side (request headers) so Facebook/Twitter/Google
- * crawlers — which don't execute JS — receive the correct HTML on first
- * fetch. This matters: a "real ecommerce" landing page is the trust signal
- * that keeps /r/{code} links from being flagged.
+ * crawlers — which don't execute JS — receive the exact host-matched HTML
+ * and brand identity on first fetch.
  */
 export const Route = createFileRoute("/")({
   loader: () => {
     const host = getHost();
-    return { host, variant: variantFromHost(host) };
+    const cleanHost = (host || "dovtv.com").replace(/^www\./, "");
+    const origin = `https://${cleanHost}`;
+    return { host, origin, variant: variantFromHost(host) };
   },
   head: ({ loaderData }) => {
     if (loaderData?.variant === "breezysocial") {
-      // Self-referencing origin + per-host brand. NEVER hard-code
-      // breezysocial.com here — every ad domain must look like its own
-      // independent store to Meta / Google, not a mirror of one brand.
       const host = (loaderData?.host || "dovtv.com").replace(/^www\./, "");
-      const origin = `https://${host}`;
+      const origin = loaderData?.origin || `https://${host}`;
       const brand = brandForOrigin(origin);
       const { meta, links } = buildOg({
         origin,
@@ -89,7 +93,7 @@ export const Route = createFileRoute("/")({
         { property: "og:type", content: "website" },
         { property: "og:url", content: "https://adspx.com/" },
         { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: "Adspx — Smart Link Manager" },
+        { property: "twitter:title", content: "Adspx — Smart Link Manager" },
         {
           name: "twitter:description",
           content:
@@ -114,5 +118,9 @@ export const Route = createFileRoute("/")({
 function HomeRouter() {
   const { variant } = Route.useLoaderData();
   if (variant === "breezysocial") return <BreezyHome />;
-  return <AdspxHome />;
+  return (
+    <Suspense fallback={null}>
+      <AdspxHome />
+    </Suspense>
+  );
 }

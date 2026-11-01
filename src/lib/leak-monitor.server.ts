@@ -14,7 +14,7 @@ import { fetchIpv4 } from "@/lib/fetch-ipv4";
  * Each finding carries a `fix` string: a copy-pasteable one-line remedy.
  */
 
-import { isSaasOnlyPath } from "./site-hosts";
+import { isAdspxSaasHost, isSaasOnlyPath } from "./site-hosts";
 
 export const LEAK_SOURCE = "leak_monitor";
 
@@ -180,8 +180,9 @@ export async function scanDomain(
   }
 
   // ---- 2. SaaS product visible on the shortener domain --------------------
+  const isSaasDomain = isAdspxSaasHost(domain);
   const rootHtml = rootFb.body.toLowerCase();
-  const rootHits = SAAS_FINGERPRINTS.filter((w) => rootHtml.includes(w));
+  const rootHits = isSaasDomain ? [] : SAAS_FINGERPRINTS.filter((w) => rootHtml.includes(w));
   if (rootHits.length > 0) {
     add({
       check: "saas_fingerprint_on_root",
@@ -195,7 +196,7 @@ export async function scanDomain(
   }
 
   // ---- 3. SaaS paths must not resolve -------------------------------------
-  for (const p of SAAS_PROBE_PATHS) {
+  for (const p of isSaasDomain ? [] : SAAS_PROBE_PATHS) {
     if (!isSaasOnlyPath(p)) continue;
     const r = await probe(base + p, DESKTOP_UA);
     if (r.status !== 200) continue;

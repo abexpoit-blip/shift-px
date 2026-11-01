@@ -1,50 +1,72 @@
 // Host-aware robots.txt.
 //
-// LEAK FIX: the old static public/robots.txt was served on EVERY host and
-// contained `Disallow: /dashboard` + `/admin/`. On an ad domain that is a
-// direct tell that a SaaS dashboard lives behind the storefront, which is
-// exactly the footprint Meta/Google reviewers look for. Only the real SaaS
-// host advertises those paths now; content domains get a plain storefront
-// robots file.
-//
-// CRITICAL: /r/ (redirect path) is ALWAYS disallowed. We never want crawlers
-// to index or follow redirect links — only humans clicking from ads should
-// land on /r/. Disallowing it also prevents crawlers from following the link
-// and accidentally landing on the offer URL.
+// Each domain advertises ONLY its own host sitemap (never cross-referencing
+// adspx.com on shortener domains) and explicitly allows all Meta/Facebook and
+// Google ad-quality / link-preview crawlers to read OpenGraph metadata cleanly.
 import { createFileRoute } from "@tanstack/react-router";
 import { isAdspxSaasHost } from "@/lib/site-hosts";
 
-const SOCIAL_ALLOW = `
-# Social / link preview crawlers must always be allowed to read OG tags
-# from content pages. The redirect path /r/ is still off-limits even for them.
-User-agent: facebookexternalhit
-Allow: /blog/
-Allow: /shop/
-Allow: /about
-Allow: /faq
+const SOCIAL_ALLOW_SHORTENER = `# --- Search & social link-preview crawlers: ALLOW ---
+User-agent: Googlebot
 Allow: /
-Disallow: /r/
 
-User-agent: facebookcatalog
+User-agent: AdsBot-Google
 Allow: /
-Disallow: /r/
 
-User-agent: meta-externalagent
+User-agent: Bingbot
 Allow: /
-Disallow: /r/
 
-User-agent: meta-externalads
+User-agent: Applebot
 Allow: /
-Disallow: /r/
-
-User-agent: meta-webindexer
-Allow: /
-Disallow: /r/
 
 User-agent: Twitterbot
 Allow: /
-Disallow: /r/
-`;
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+User-agent: facebookcatalog
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: meta-externalfetcher
+Allow: /
+
+User-agent: meta-externalads
+Allow: /
+
+User-agent: meta-webindexer
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+# --- AI training scrapers: DISALLOW ---
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /`;
 
 export const Route = createFileRoute("/robots.txt")({
   server: {
@@ -66,16 +88,19 @@ Disallow: /r/
 Disallow: /admin/
 Disallow: /dashboard
 Disallow: /control-panel
-${SOCIAL_ALLOW}
+
+${SOCIAL_ALLOW_SHORTENER}
+
 Sitemap: ${origin}/sitemap.xml
 `
-          : `User-agent: *
+          : `${SOCIAL_ALLOW_SHORTENER}
+
+User-agent: *
 Allow: /
-Disallow: /r/
 Disallow: /cart
 Disallow: /checkout
 Disallow: /order-confirmed
-${SOCIAL_ALLOW}
+
 Sitemap: ${origin}/sitemap.xml
 `;
 
