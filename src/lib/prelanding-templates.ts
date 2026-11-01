@@ -40,7 +40,9 @@ export type PrelandingTemplate =
   | "article_cycling"
   | "article_weather"
   | "article_dovtv_pulse"
-  | "article_dovtv_culture";
+  | "article_dovtv_culture"
+  | "article_blentrovus_horizons"
+  | "article_blentrovus_trends";
 
 export type RenderMode = "human" | "fbbot";
 
@@ -75,6 +77,8 @@ export const ARTICLE_TEMPLATES: PrelandingTemplate[] = [
   "article_weather",
   "article_dovtv_pulse",
   "article_dovtv_culture",
+  "article_blentrovus_horizons",
+  "article_blentrovus_trends",
 ];
 
 export const TEMPLATE_OPTIONS: { value: PrelandingTemplate; label: string; group: string }[] = [
@@ -108,6 +112,8 @@ export const TEMPLATE_OPTIONS: { value: PrelandingTemplate; label: string; group
   { value: "article_weather", label: "Weather & Seasons", group: "Article (FB-safe)" },
   { value: "article_dovtv_pulse", label: "DovTV Digital Trends", group: "Article (FB-safe)" },
   { value: "article_dovtv_culture", label: "DovTV Modern Culture", group: "Article (FB-safe)" },
+  { value: "article_blentrovus_horizons", label: "Blentrovus Urban Horizons", group: "Article (FB-safe)" },
+  { value: "article_blentrovus_trends", label: "Blentrovus Modern Living", group: "Article (FB-safe)" },
   { value: "verify", label: "Verify (challenge)", group: "Legacy" },
   { value: "reward", label: "Reward (challenge)", group: "Legacy" },
   { value: "countdown", label: "Countdown (challenge)", group: "Legacy" },
@@ -766,6 +772,48 @@ const ARTICLES: Record<string, ArticleContent> = {
       "Accessible anywhere without spending a dime",
     ],
     related: RELATED_POOL.slice(2, 5),
+  },
+  article_blentrovus_horizons: {
+    title: "The Rise of Thoughtful Spaces: How Modern Cities Are Designing for Focus and Connection in 2026",
+    description: "Architects and urban planners are reimagining third places to foster community collaboration without digital overwhelm.",
+    category: "Urban Living & Culture",
+    author: "Devon Vance",
+    heroImage: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=75",
+    intro: "As urban pace accelerates, a quiet revolution is unfolding across modern metropolises: community hubs and communal reading lounges designed to foster deep calm and face-to-face dialogue.",
+    paragraphs: [
+      "City living has long been defined by rapid transit and fleeting interactions. However, recent urban design initiatives in Austin, Seattle, and Amsterdam are dedicating prime civic real estate to peaceful garden atriums and shared learning centers.",
+      "These reimagined third spaces emphasize natural timber aesthetics, circadian lighting, and dedicated quiet zones where smartphones are politely kept in pockets.",
+      "Early community feedback has been overwhelmingly positive. Visitors report lower daily stress levels, enhanced creative output, and a renewed sense of neighborhood belonging.",
+      "Prioritizing intentional quiet spaces proves that modern urban development can champion human well-being alongside technological progress.",
+    ],
+    highlights: [
+      "Timber aesthetics and circadian lighting",
+      "Screen-free community lounge spaces",
+      "Noticeable reduction in daily metropolitan stress",
+      "Strengthens localized neighborhood bonds",
+    ],
+    related: RELATED_POOL.slice(0, 3),
+  },
+  article_blentrovus_trends: {
+    title: "Micro-Rituals for Modern Living: Small Daily Practices Transforming Everyday Productivity",
+    description: "Behavioral researchers explore how minimal 3-minute morning transitions create lasting mental clarity and emotional resilience.",
+    category: "Lifestyle & Mindset",
+    author: "Corinne Sterling",
+    heroImage: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1200&q=75",
+    intro: "Instead of overwhelming 10-step morning regimens, psychologists now advocate for micro-rituals—compact, three-minute habits that ground attention before busy days begin.",
+    paragraphs: [
+      "Lengthy morning routines often collapse under the weight of busy schedules, causing unnecessary guilt. In contrast, micro-rituals require virtually no friction to maintain.",
+      "Simple acts like three minutes of mindful breathing, journaling a single sentence of intention, or enjoying a slow glass of water without checking notifications set an intentional emotional baseline.",
+      "Longitudinal behavioral studies demonstrate that these mini-pauses regulate the autonomic nervous system, substantially diminishing mid-day stress spikes.",
+      "The secret lies in consistency rather than duration. When small grounding moments become second nature, sustainable clarity naturally follows.",
+    ],
+    highlights: [
+      "Requires less than 3 minutes each morning",
+      "Zero specialized tools or apps required",
+      "Calms autonomic nervous system response",
+      "Builds sustainable, guilt-free daily focus",
+    ],
+    related: RELATED_POOL.slice(1, 4),
   },
 };
 
@@ -1583,6 +1631,60 @@ const VARIANTS: Record<string, OgVariant[]> = {
       heroImage: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=1200&q=75",
     },
   ],
+  article_blentrovus_horizons: [
+    {
+      title: "The Rise of Thoughtful Spaces: How Modern Cities Are Designing for Focus and Connection",
+      description: "Architects and urban planners are reimagining third places to foster community collaboration without digital overwhelm.",
+      heroImage: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "Designing for Stillness: Urban Lounges Offering Respite in Fast-Paced Cities",
+      description: "Why forward-thinking civic centers are embracing quiet architecture and screen-free environments.",
+      heroImage: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "Reclaiming the Third Place: The Cultural Renaissance of Neighborhood Atriums",
+      description: "How shared community lounges are bringing neighbors together and combating urban loneliness.",
+      heroImage: "https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "Architecture of Well-Being: Natural Materials and Mindful Public Spaces",
+      description: "Urban development shifting towards circadian lighting, timber design, and human-centric living.",
+      heroImage: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "The Quiet Metropolises: How City Living Is Embracing Mindful Communal Zones",
+      description: "A cultural exploration of tranquil urban sanctuaries revitalizing everyday work and social life.",
+      heroImage: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=75",
+    },
+  ],
+  article_blentrovus_trends: [
+    {
+      title: "Micro-Rituals for Modern Living: Small Daily Practices Transforming Everyday Productivity",
+      description: "Behavioral researchers explore how minimal 3-minute morning transitions create lasting mental clarity.",
+      heroImage: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "The 3-Minute Reset: Why Minimal Morning Routines Outperform Complex Regimens",
+      description: "Discover the guilt-free behavioral science behind small, consistent grounding pauses before busy mornings.",
+      heroImage: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "Mindful Transitions: How Intentional Mini-Breaks Shield Against Afternoon Burnout",
+      description: "Psychologists reveal how simple 180-second pauses regulate attention and restore nervous system calm.",
+      heroImage: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "Sustainable Focus: The Power of Micro-Habits in a Distracted Digital Age",
+      description: "Trade exhausting hour-long productivity hacks for tiny, repeatable morning anchors that truly stick.",
+      heroImage: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1200&q=75",
+    },
+    {
+      title: "Small Anchors, Big Impact: The Gentle Art of Everyday Intentional Living",
+      description: "How quiet morning moments of reflection cultivate deep resilience and unshakeable daily clarity.",
+      heroImage: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&w=1200&q=75",
+    },
+  ],
 };
 
 // djb2 hash — stable across processes (don't use Math.random; would break across PM2 workers)
@@ -1725,6 +1827,38 @@ export const BRANDS: Brand[] = [
 
 // Primary Shortener 1: dovtv.com
 // Angle: Entertainment, Streaming, Movies, Sports, Pop Culture & Media
+
+export const BLENTROVUS_BRANDS: Brand[] = [
+  {
+    name: "Blentrovus Daily Chronicle",
+    accent: "#0d9488",
+    accentDark: "#0f766e",
+    tagline: "Insightful perspectives, daily news & verified reporting",
+    email: "editorial@blentrovus.com",
+  },
+  {
+    name: "Blentrovus Media Dispatch",
+    accent: "#2563eb",
+    accentDark: "#1d4ed8",
+    tagline: "Global trends, modern life & community culture",
+    email: "media@blentrovus.com",
+  },
+  {
+    name: "Blentrovus Horizons Journal",
+    accent: "#7c3aed",
+    accentDark: "#6d28d9",
+    tagline: "Emerging discoveries, smart lifestyle & innovation",
+    email: "desk@blentrovus.com",
+  },
+  {
+    name: "Blentrovus Life & Living",
+    accent: "#e11d48",
+    accentDark: "#be123c",
+    tagline: "Everyday inspiration, well-being & mindful living",
+    email: "contact@blentrovus.com",
+  },
+];
+
 export const DOVTV_BRANDS: Brand[] = [
   {
     name: "DovTV News",
@@ -1848,6 +1982,9 @@ function generateCustomDomainBrand(host: string, code: string): Brand {
 
 export function pickBrand(code: string, origin?: string): Brand {
   const host = cleanHost(origin);
+  if (host.includes("blentrovus.com")) {
+    return BLENTROVUS_BRANDS[hashCode(`blentrovusbrand:${code}`) % BLENTROVUS_BRANDS.length];
+  }
   if (host.includes("dovtv.com")) {
     return DOVTV_BRANDS[hashCode(`dovbrand:${code}`) % DOVTV_BRANDS.length];
   }
@@ -1874,6 +2011,19 @@ function pickVariant(template: string, code: string): OgVariant | null {
 // shows the same article (matching what the ad reviewer first cached).
 export function pickArticleTemplateForCode(code: string, origin?: string): PrelandingTemplate {
   const host = cleanHost(origin);
+
+  if (host.includes("blentrovus.com")) {
+    const blentrovusList: PrelandingTemplate[] = [
+      "article_blentrovus_horizons",
+      "article_blentrovus_trends",
+      "article_lifestyle",
+      "article_tech",
+      "article_news",
+      "article_health",
+      "article_travel",
+    ];
+    return blentrovusList[hashCode(`blentrovustpl:${code}`) % blentrovusList.length];
+  }
 
   if (host.includes("dovtv.com")) {
     const dovList: PrelandingTemplate[] = [
