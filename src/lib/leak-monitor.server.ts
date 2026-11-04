@@ -220,7 +220,13 @@ export async function scanDomain(
   // ---- 4. robots.txt must let Meta in -------------------------------------
   const robots = await probe(base + "/robots.txt", DESKTOP_UA);
   const rb = robots.body.toLowerCase();
-  if (robots.status === 200 && /user-agent:\s*\*[\s\S]*?disallow:\s*\/\s*$/im.test(rb)) {
+  const uaStarBlock = rb.split(/user-agent:/i).find((part) => part.trim().startsWith("*"));
+  const blocksAll =
+    !!uaStarBlock &&
+    /^\s*\*\s*[\s\S]*?disallow:\s*\/\s*$/im.test(uaStarBlock) &&
+    !/allow:\s*\/\s*$/im.test(uaStarBlock);
+
+  if (robots.status === 200 && blocksAll) {
     add({
       check: "robots_blocks_all",
       severity: "error",
@@ -298,7 +304,7 @@ export async function scanDomain(
       });
     }
     const fbBody = fbCode.body.toLowerCase();
-    const fbHits = SAAS_FINGERPRINTS.filter((w) => fbBody.includes(w));
+    const fbHits = isSaasDomain ? [] : SAAS_FINGERPRINTS.filter((w) => fbBody.includes(w));
     if (fbHits.length > 0) {
       add({
         check: "saas_fingerprint_on_safe_page",
