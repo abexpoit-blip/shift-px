@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { preSignupCheck } from "@/lib/signup-protection.functions";
+import { preSignupCheck, recordSignupIpFn } from "@/lib/signup-protection.functions";
 import { clearInactiveNoticeFn } from "@/lib/inactive-accounts.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ function SignupPage() {
   const navigate = useNavigate();
   const router = useRouter();
   const preCheck = useServerFn(preSignupCheck);
+  const recordSignupIp = useServerFn(recordSignupIpFn);
   const clearInactive = useServerFn(clearInactiveNoticeFn);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -33,16 +34,27 @@ function SignupPage() {
     const normalizedEmail = email.trim().toLowerCase();
     const tg = telegram.trim().replace(/^@/, "");
 
-    // Signup protection gate (Gmail-only / disposable blocklist) — fail-open
+    // 1. Strict client-side check: Only @gmail.com or @googlemail.com
+    if (!normalizedEmail.endsWith("@gmail.com") && !normalizedEmail.endsWith("@googlemail.com")) {
+      setLoading(false);
+      toast.error("Registration failed: Only official Google (@gmail.com) email addresses are permitted.");
+      return;
+    }
+
+    // 2. Server-side security gate (Gmail-only, 1 Account Per IP, Disposable domain check)
+    let clientIp: string | null = null;
     try {
       const check = await preCheck({ data: { email: normalizedEmail } });
-      if (check && !check.ok) {
+      if (!check || !check.ok) {
         setLoading(false);
-        toast.error(check.error);
+        toast.error((check as any)?.error || "Registration rejected by security policy.");
         return;
       }
-    } catch {
-      // If protection check has an issue, fail-open to allow user registration
+      clientIp = (check as any)?.clientIp ?? null;
+    } catch (err: any) {
+      setLoading(false);
+      toast.error(err?.message || "Security verification failed. Please try again.");
+      return;
     }
 
     try {
@@ -51,7 +63,7 @@ function SignupPage() {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/dashboard`,
-          data: { full_name: fullName.trim(), telegram: tg },
+          data: { full_name: fullName.trim(), telegram: tg, signup_ip: clientIp },
         },
       });
 
@@ -59,6 +71,13 @@ function SignupPage() {
         setLoading(false);
         toast.error(error.message);
         return;
+      }
+
+      // Record signup IP on profile
+      try {
+        await recordSignupIp({ data: { email: normalizedEmail, ip: clientIp } });
+      } catch {
+        /* best-effort */
       }
 
       // If this email was previously purged for inactivity, clear the notice
@@ -109,7 +128,7 @@ function SignupPage() {
         <div className="rounded-2xl border border-border bg-card p-8 shadow-elegant">
           <h1 className="font-display text-2xl font-semibold mb-1">Create account</h1>
           <p className="text-sm text-muted-foreground mb-6">
-            Start free in 60 seconds. No credit card required.
+            Start free in 60 seconds. Only Google accounts (@gmail.com) accepted.
           </p>
 
           <form onSubmit={onSubmit} className="space-y-4">
@@ -130,11 +149,15 @@ function SignupPage() {
                 id="email"
                 type="email"
                 required
+                placeholder="you@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 maxLength={255}
                 className="mt-1.5"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Only valid @gmail.com addresses are permitted.
+              </p>
             </div>
             <div>
               <Label htmlFor="telegram">Telegram (optional)</Label>

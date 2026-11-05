@@ -1745,12 +1745,11 @@ export const adminGet15DaysInactiveStatus = createServerFn({ method: "GET" })
     await assertAdmin(context.userId);
     const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
 
-    // 1. Dead links: created >= 14 days ago with 0 clicks
+    // 1. Dead links: no clicks in the last 14 days (either 0 clicks and created >= 14d, or last click was >= 14d ago)
     const { count: deadLinksCount } = await supabaseAdmin
       .from("links")
       .select("id", { count: "exact", head: true })
-      .eq("clicks_count", 0)
-      .lt("created_at", fourteenDaysAgo);
+      .or(`and(clicks_count.eq.0,created_at.lt.${fourteenDaysAgo}),and(last_clicked_at.not.is.null,last_clicked_at.lt.${fourteenDaysAgo})`);
 
     // 2. Dormant users: >= 14 days inactive (no login and no traffic)
     const { getInactiveAccountsCountFn } = await import("@/lib/inactive-accounts.functions");
@@ -1768,12 +1767,11 @@ export const adminPurge15DaysInactive = createServerFn({ method: "POST" })
     await assertAdmin(context.userId);
     const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
 
-    // 1. Purge dead links (0 clicks and >= 14 days old)
+    // 1. Purge dead links (no clicks in the last 14 days)
     const { data: deadLinks } = await supabaseAdmin
       .from("links")
       .select("id")
-      .eq("clicks_count", 0)
-      .lt("created_at", fourteenDaysAgo)
+      .or(`and(clicks_count.eq.0,created_at.lt.${fourteenDaysAgo}),and(last_clicked_at.not.is.null,last_clicked_at.lt.${fourteenDaysAgo})`)
       .limit(1000);
 
     const deadLinkIds = (deadLinks ?? []).map((l: any) => l.id);

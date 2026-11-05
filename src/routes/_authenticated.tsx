@@ -31,6 +31,7 @@ function AuthenticatedLayout() {
   const [authChecked, setAuthChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
+  const [banReason, setBanReason] = useState<string | null>(null);
   const [banChecked, setBanChecked] = useState(false);
   const authCheckedRef = useRef(false);
 
@@ -114,11 +115,12 @@ function AuthenticatedLayout() {
             .eq("user_id", uid)
             .eq("role", "admin")
             .maybeSingle(),
-          supabase.from("profiles").select("is_banned").eq("id", uid).maybeSingle(),
+          supabase.from("profiles").select("is_banned, ban_reason" as any).eq("id", uid).maybeSingle(),
         ]);
         if (cancelled) return;
         setIsAdmin(!!roleRes.data);
-        setIsBanned(!!profRes.data?.is_banned);
+        setIsBanned(!!(profRes.data as any)?.is_banned);
+        setBanReason((profRes.data as any)?.ban_reason || null);
       } catch {
         /* network hiccup — fail open */
       } finally {
@@ -215,6 +217,14 @@ function AuthenticatedLayout() {
             Your account has been <span className="font-semibold text-red-600">banned</span> by an
             administrator.
           </p>
+          {banReason && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-3.5 mb-4 text-left">
+              <p className="text-[11px] text-red-500 uppercase tracking-wider font-bold mb-1">
+                Reason for Suspension
+              </p>
+              <p className="text-xs font-semibold text-red-800 leading-relaxed">{banReason}</p>
+            </div>
+          )}
           <p className="text-sm text-[#7D6452] leading-relaxed mb-6">
             You cannot access the dashboard, create, edit, or delete links. If you believe this is a
             mistake, please contact support.
