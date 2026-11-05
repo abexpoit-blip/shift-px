@@ -8,7 +8,8 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
  */
 
 function verifyPlisioSignature(postData: Record<string, any>, secretKey: string): boolean {
-  if (!postData || !postData.verify_hash || !secretKey) return true;
+  if (!postData || !secretKey) return false;
+  if (!postData.verify_hash) return false;
 
   try {
     const receivedHash = postData.verify_hash;
@@ -22,7 +23,7 @@ function verifyPlisioSignature(postData: Record<string, any>, secretKey: string)
     return computedHash === receivedHash;
   } catch (e) {
     console.error("[plisio-webhook] signature verification error:", e);
-    return true;
+    return false;
   }
 }
 
@@ -70,7 +71,11 @@ async function handlePlisioCallback(request: Request) {
 
     const isValid = verifyPlisioSignature(payload, secretKey);
     if (!isValid) {
-      console.warn("[plisio-webhook] Invalid signature for order:", orderNumber);
+      console.warn("[plisio-webhook] Invalid or missing signature for order:", orderNumber);
+      return new Response(JSON.stringify({ status: "error", message: "Invalid signature" }), {
+        status: 403,
+        headers: { "content-type": "application/json" },
+      });
     }
 
         let reqRow: any = null;
@@ -121,7 +126,8 @@ async function handlePlisioCallback(request: Request) {
         order_number: String(orderNumber || reqRow.id || ""),
         txn_id: String(txnId || ""),
         status: status || "unknown",
-        raw_payload: payload,
+        raw_body: payload,
+        processed_at: new Date().toISOString(),
       } as any);
     } catch {}
 
