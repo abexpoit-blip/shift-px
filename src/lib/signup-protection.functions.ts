@@ -1,11 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 const GMAIL_DOMAINS = new Set(["gmail.com", "googlemail.com"]);
 
-export function getClientIp(): string | null {
+async function getClientIp(): Promise<string | null> {
   try {
+    const { getRequest } = await import("@tanstack/react-start/server");
     const req = getRequest();
     const cf = req.headers.get("cf-connecting-ip");
     if (cf) return cf.trim();
@@ -34,7 +34,7 @@ export const preSignupCheck = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const email = data.email.trim().toLowerCase();
     const domain = email.split("@")[1] ?? "";
-    const ip = getClientIp();
+    const ip = await getClientIp();
 
     const log = async (success: boolean, reason: string | null) => {
       try {
@@ -126,7 +126,7 @@ export const recordSignupIpFn = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ email: z.string().email(), ip: z.string().nullable() }).parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const ip = data.ip || getClientIp();
+    const ip = data.ip || (await getClientIp());
     if (!ip) return { ok: true };
     await supabaseAdmin
       .from("profiles")
