@@ -2293,8 +2293,9 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   if (request.method === "HEAD") {
     const headHeaders = new Headers({
       "content-type": "text/html; charset=utf-8",
-      "cache-control": "private, no-store, no-cache, must-revalidate, max-age=0",
+      "cache-control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
       "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1",
+      "vary": "Accept-Encoding, User-Agent",
     });
     setDebugHeaders(headHeaders, "fb-article", "head-preflight-safe");
     return new Response(null, { status: 200, headers: headHeaders });
@@ -2443,7 +2444,9 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       const html = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
       const headers = new Headers({
         "content-type": "text/html; charset=utf-8",
-        "cache-control": "private, no-store, no-cache, must-revalidate, max-age=0",
+        "cache-control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
+        "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1",
+        "vary": "Accept-Encoding, User-Agent",
       });
       setDebugHeaders(headers, "fb-article", !link ? "link-not-found-fb" : "link-inactive-fb");
       return new Response(html, { status: 200, headers });
@@ -2973,7 +2976,32 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     const html = renderPrelanding(tpl, code, "", "fbbot", publicOrigin);
     routedTo = "fb-article";
 
-    if (shouldRecordClick) {
+    const isKnownCrawler = Boolean(
+      crawlerMatch ||
+      (reason && (reason.startsWith("fb-ua") || reason.startsWith("crawler-ua:") || reason.startsWith("fb-asn:"))) ||
+      fromMetaNetwork
+    );
+
+    let shouldRecordCrawler = shouldRecordClick;
+    if (isKnownCrawler && shouldRecordClick) {
+      // Throttle crawler click logging in DB to at most once per 60 seconds per link + crawler type.
+      // Real humans are NEVER affected by this (they execute below and are recorded 100%).
+      // This prevents Facebook's edge crawler nodes (often 300+ edge nodes scraping simultaneously)
+      // from flooding thousands of duplicate rows into the clicks table.
+      const crawlerLogKey = `craw_log:${link.id}:${(reason || "fb").slice(0, 15)}`;
+      try {
+        const alreadyLogged = await redisGet(crawlerLogKey);
+        if (alreadyLogged) {
+          shouldRecordCrawler = false;
+        } else {
+          void redisSet(crawlerLogKey, "1", 60_000);
+        }
+      } catch {
+        // Fallback to normal logging if Redis has an issue
+      }
+    }
+
+    if (shouldRecordCrawler) {
       recordRedirectClick({
         linkId: link.id,
         userId: link.user_id,
@@ -3005,9 +3033,13 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       });
     }
 
+    const cacheHeader = isKnownCrawler
+      ? "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800"
+      : "private, no-store, no-cache, must-revalidate, max-age=0";
+
     const botHeaders = new Headers({
       "content-type": "text/html; charset=utf-8",
-      "cache-control": "private, no-store, no-cache, must-revalidate, max-age=0",
+      "cache-control": cacheHeader,
       "x-robots-tag": "index, follow, max-image-preview:large, max-snippet:-1",
       "vary": "Accept-Encoding, User-Agent",
     });
