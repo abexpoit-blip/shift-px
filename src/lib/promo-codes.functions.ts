@@ -179,7 +179,7 @@ export const adminCreatePromoCode = createServerFn({ method: "POST" })
           .min(2)
           .max(30)
           .regex(/^[A-Z0-9_-]+$/i, "Code must be alphanumeric without spaces"),
-        discount_percent: z.number().int().min(1).max(99).default(50),
+        discount_percent: z.number().int().min(1).max(100).default(50),
         valid_until: z.string().nullable().optional(),
         max_uses: z.number().int().min(1).nullable().optional(),
         description: z.string().trim().max(200).optional(),
@@ -297,7 +297,7 @@ export const adminBulkGeneratePromoCodes = createServerFn({ method: "POST" })
     z
       .object({
         count: z.number().int().min(1).max(100).default(5),
-        discount_percent: z.number().int().min(1).max(99).default(50),
+        discount_percent: z.number().int().min(1).max(100).default(50),
         max_uses: z.number().int().min(1).nullable().optional(),
         valid_until: z.string().nullable().optional(),
         description: z.string().trim().max(200).optional(),

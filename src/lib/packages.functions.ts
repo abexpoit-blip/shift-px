@@ -344,7 +344,49 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
       }
     }
 
-    const finalPriceUsd = Math.max(1, Number((priceUsd - discountAmountUsd).toFixed(2)));
+    const rawDiscountedPrice = Number((priceUsd - discountAmountUsd).toFixed(2));
+
+    // Instant Free Activation for 100% Discount Coupons
+    if (rawDiscountedPrice <= 0 || discountPercent === 100) {
+      const months = data.package_slug === "premium_12m" ? 12 : data.package_slug === "premium_6m" ? 6 : 1;
+      const baseDate = new Date();
+      const newExpiry = new Date(baseDate.setMonth(baseDate.getMonth() + months)).toISOString();
+      const nowIso = new Date().toISOString();
+
+      // Activate user profile immediately
+      await db
+        .from("profiles")
+        .update({
+          plan_slug: data.package_slug,
+          plan_started_at: nowIso,
+          plan_expires_at: newExpiry,
+          premium_until: newExpiry,
+          can_withdraw: true,
+          link_limit: 1000000,
+          click_quota: null,
+          updated_at: nowIso,
+        })
+        .eq("id", userId);
+
+      // Record completed upgrade request
+      await db.from("upgrade_requests").insert({
+        user_id: userId,
+        package_slug: data.package_slug,
+        amount: 0,
+        status: "paid",
+        payment_id: `COUPON:${appliedPromoCode || "100_PERCENT"}`,
+        created_at: nowIso,
+        updated_at: nowIso,
+      });
+
+      return {
+        free_activated: true,
+        package_name: packageName,
+        message: `Congratulations! Coupon ${appliedPromoCode} applied successfully. Your ${packageName} plan is now ACTIVE!`,
+      };
+    }
+
+    const finalPriceUsd = Math.max(1, rawDiscountedPrice);
 
     // Fetch settings
     const { data: settings } = await db

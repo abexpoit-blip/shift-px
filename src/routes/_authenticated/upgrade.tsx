@@ -448,6 +448,7 @@ function InvoicePanel({
 }
 
 function UpgradePage() {
+  const queryClient = useQueryClient();
   const listFn = useServerFn(listPackages);
   const statusFn = useServerFn(getMyPlanStatus);
   const upgradeFn = useServerFn(createUpgradeRequest);
@@ -520,7 +521,14 @@ function UpgradePage() {
           promo_code: appliedPromo?.code,
         },
       }),
-    onSuccess: (res) => {
+    onSuccess: (res: any) => {
+      if (res?.free_activated) {
+        toast.success(res.message || "Account upgraded to Premium successfully!");
+        void queryClient.invalidateQueries({ queryKey: ["my-plan-status"] });
+        setAppliedPromo(null);
+        setPromoInput("");
+        return;
+      }
       setInvoiceResult(res);
     },
     onError: (e: Error) => {
@@ -764,31 +772,58 @@ function UpgradePage() {
           </div>
 
           {/* Payment Method Badge */}
-          <div className="rounded-2xl border-2 border-primary bg-primary/10 p-4 flex items-center justify-between shadow-glow">
-            <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center font-black text-xl text-blue-400">
-                Ł
+          {finalPriceUsd === 0 ? (
+            <div className="rounded-2xl border-2 border-emerald-500/60 bg-emerald-500/10 p-4 flex items-center justify-between shadow-glow">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center font-black text-xl text-emerald-400">
+                  🎁
+                </div>
+                <div>
+                  <span className="font-bold text-sm text-foreground block">100% Free Upgrade Applied</span>
+                  <span className="text-xs text-muted-foreground">Zero crypto payment required · Instant account activation</span>
+                </div>
               </div>
-              <div>
-                <span className="font-bold text-sm text-foreground block">Litecoin (LTC)</span>
-                <span className="text-xs text-muted-foreground">Fast 2.5 min settlement · Lowest blockchain fees (&lt; $0.01)</span>
-              </div>
+              <span className="rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 text-xs font-bold flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5" /> $0.00 Total
+              </span>
             </div>
-            <span className="rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 text-xs font-bold flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Instant Deposit Ready
-            </span>
-          </div>
+          ) : (
+            <div className="rounded-2xl border-2 border-primary bg-primary/10 p-4 flex items-center justify-between shadow-glow">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center font-black text-xl text-blue-400">
+                  Ł
+                </div>
+                <div>
+                  <span className="font-bold text-sm text-foreground block">Litecoin (LTC)</span>
+                  <span className="text-xs text-muted-foreground">Fast 2.5 min settlement · Lowest blockchain fees (&lt; $0.01)</span>
+                </div>
+              </div>
+              <span className="rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 text-xs font-bold flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Instant Deposit Ready
+              </span>
+            </div>
+          )}
 
           {/* CTA Action */}
           <div className="space-y-3 pt-2">
             <Button
               onClick={() => upgrade.mutate()}
               disabled={upgrade.isPending || !selectedSlug}
-              className="w-full h-14 text-lg font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white hover:opacity-95 shadow-[0_0_30px_rgba(99,102,241,0.4)] rounded-2xl"
+              className={`w-full h-14 text-lg font-black text-white hover:opacity-95 rounded-2xl ${
+                finalPriceUsd === 0
+                  ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-green-600 shadow-[0_0_30px_rgba(16,185,129,0.4)]"
+                  : "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-[0_0_30px_rgba(99,102,241,0.4)]"
+              }`}
             >
               {upgrade.isPending ? (
                 <>
-                  <Loader2 className="h-6 w-6 animate-spin mr-3" /> Calculating Live LTC Rate…
+                  <Loader2 className="h-6 w-6 animate-spin mr-3" />{" "}
+                  {finalPriceUsd === 0 ? "Activating Free Premium…" : "Calculating Live LTC Rate…"}
+                </>
+              ) : finalPriceUsd === 0 ? (
+                <>
+                  <Sparkles className="h-6 w-6 mr-3 stroke-[2.5]" />
+                  Redeem 100% Free Upgrade & Activate
                 </>
               ) : (
                 <>
