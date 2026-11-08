@@ -27,6 +27,13 @@ export const updateMyProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ full_name: z.string().trim().max(80) }).parse(input))
   .handler(async ({ data, context }) => {
+    if (data.full_name) {
+      const { detectFakeGibberishName } = await import("@/lib/signup-protection.functions");
+      const check = detectFakeGibberishName(data.full_name);
+      if (check.isFake) {
+        throw new Error(check.reason || "Invalid or fake name detected. Real names are required.");
+      }
+    }
     const { error } = await context.supabase
       .from("profiles")
       .update({ full_name: data.full_name || null, updated_at: new Date().toISOString() } as never)

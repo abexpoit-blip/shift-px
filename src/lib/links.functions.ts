@@ -79,13 +79,6 @@ export async function getProfileQuota(supabase: any, userId: string) {
       plan === "monthly" ||
       plan === "yearly";
 
-    if (isPremium) {
-      if (data?.link_limit !== 1000000) {
-        await db.from("profiles").update({ link_limit: 1000000 }).eq("id", userId);
-      }
-      return { limit: null, used: 0, clickQuota: null, isPremium: true, dailyLimit: null, dailyUsed: 0 };
-    }
-
     // Dynamic exact count of user's active links from database
     const { count: actualCount } = await db
       .from("links")
@@ -93,15 +86,8 @@ export async function getProfileQuota(supabase: any, userId: string) {
       .eq("user_id", userId);
 
     const actualUsed = actualCount !== null && actualCount !== undefined ? actualCount : (data?.links_used ?? 0);
-    // Free tier: Minimum 50 links limit guaranteed for all free users
-    const rawLimit = Number(data?.link_limit || 50);
-    const limit = Math.max(50, rawLimit);
 
-    if (data?.link_limit !== limit) {
-      await db.from("profiles").update({ link_limit: limit }).eq("id", userId);
-    }
-
-    // Free tier: 5 links per day limit (UTC day start)
+    // Count today's created links (UTC day start)
     const todayStart = new Date();
     todayStart.setUTCHours(0, 0, 0, 0);
 
@@ -112,18 +98,36 @@ export async function getProfileQuota(supabase: any, userId: string) {
       .gte("created_at", todayStart.toISOString());
 
     const dailyUsed = todayCount ?? 0;
-    const dailyLimit = 5;
+
+    if (isPremium) {
+      // Premium / Paid tier: Maximum 10 links per day
+      const dailyLimit = 10;
+      return {
+        limit: null,
+        used: actualUsed,
+        dailyLimit,
+        dailyUsed,
+        isPremium: true,
+        clickQuota: null,
+      };
+    }
+
+    // Free tier: Maximum 5 total links (lifetime limit)
+    const limit = 5;
+    if (data?.link_limit !== limit) {
+      await db.from("profiles").update({ link_limit: limit }).eq("id", userId);
+    }
 
     return {
       limit,
       used: actualUsed,
-      dailyLimit,
+      dailyLimit: 5,
       dailyUsed,
       isPremium: false,
       clickQuota: null,
     };
   } catch (err) {
-    return { limit: 50, used: 0, dailyLimit: 5, dailyUsed: 0, isPremium: false, clickQuota: null };
+    return { limit: 5, used: 0, dailyLimit: 5, dailyUsed: 0, isPremium: false, clickQuota: null };
   }
 }
 
@@ -420,9 +424,13 @@ export const createLink = createServerFn({ method: "POST" })
     const context = await getRequestAuth();
     await assertNotBanned(context.supabase, context.userId);
     const profile = await getProfileQuota(context.supabase, context.userId);
-    if (!profile.isPremium) {
-      if ((profile.dailyUsed ?? 0) >= 5) {
-        throw new Error("Free tier daily limit reached (5/5 links created today). Upgrade to Premium for Unlimited links!");
+    if (profile.isPremium) {
+      if ((profile.dailyUsed ?? 0) >= 10) {
+        throw new Error("Daily link creation limit reached (10 links/day max for Premium members). You can create 10 more links tomorrow!");
+      }
+    } else {
+      if ((profile.used ?? 0) >= 5) {
+        throw new Error("Free tier limit reached (5 total links max). Upgrade to Premium to create 10 links per day!");
       }
     }
 

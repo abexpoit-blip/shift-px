@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
 });
 
 const COMPARISON_ROWS = [
-  { feature: "Short Links Creation", free: "50 Links Limit", p1m: "Unlimited Links", p6m: "Unlimited Links", p12m: "Unlimited Links" },
+  { feature: "Short Links Creation", free: "5 Links Total Limit", p1m: "10 Links / Day", p6m: "10 Links / Day", p12m: "10 Links / Day" },
   { feature: "Traffic & Clicks Volume", free: "Unlimited", p1m: "Unlimited (Tier-1)", p6m: "Unlimited (Tier-1 Speed)", p12m: "Unlimited (Max Priority)" },
   { feature: "Earning System", free: "Service Off", p1m: "Service Off", p6m: "Service Off", p12m: "Service Off" },
   { feature: "Facebook & Meta Review Cloaking", free: "Standard Safe Article", p1m: "Advanced AI Shield", p6m: "Advanced AI Shield", p12m: "Military-Grade VIP Shield" },

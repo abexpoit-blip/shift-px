@@ -44,7 +44,9 @@ function SignupPage() {
     // 2. Server-side security gate (Gmail-only, 1 Account Per IP, Disposable domain check)
     let clientIp: string | null = null;
     try {
-      const check = await preCheck({ data: { email: normalizedEmail } });
+      const check = await preCheck({
+        data: { email: normalizedEmail, full_name: fullName.trim() },
+      });
       if (!check || !check.ok) {
         setLoading(false);
         toast.error((check as any)?.error || "Registration rejected by security policy.");

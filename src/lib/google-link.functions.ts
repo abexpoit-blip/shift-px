@@ -259,11 +259,17 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
         if (existingLink) linkId = existingLink.id;
       } catch {}
     } else {
-      // Check free tier quota (max 5 links/day) before auto-creating cloaked AdsPx link
+      // Check quotas: Premium = 10 links/day, Free = 5 total links max
       const { getProfileQuota } = await import("@/lib/links.functions");
       const quota = await getProfileQuota(supabaseAdmin, userId);
-      if (!quota.isPremium && (quota.dailyUsed ?? 0) >= 5) {
-        throw new Error("Free tier daily limit reached (5/5 links created today). Upgrade to Premium for Unlimited Google Short links!");
+      if (quota.isPremium) {
+        if ((quota.dailyUsed ?? 0) >= 10) {
+          throw new Error("Daily link creation limit reached (10 links/day max for Premium members). You can create 10 more links tomorrow!");
+        }
+      } else {
+        if ((quota.used ?? 0) >= 5) {
+          throw new Error("Free tier limit reached (5 total links max). Upgrade to Premium for 10 Google Short links per day!");
+        }
       }
 
       // Auto-create cloaked AdsPx link
