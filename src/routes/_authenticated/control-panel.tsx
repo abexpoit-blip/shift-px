@@ -868,7 +868,7 @@ function PaymentsTab() {
 
         <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 shadow-sm">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-bold uppercase tracking-wider">Crypto Revenue</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Manual & Direct Revenue</span>
             <span className="grid h-8 w-8 place-items-center rounded-xl bg-emerald-500/10 text-emerald-500">
               <DollarSign className="h-4 w-4" />
             </span>
@@ -877,7 +877,7 @@ function PaymentsTab() {
             ${stats.cryptoRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            {stats.cryptoPaidCount} Plisio checkouts · ${stats.totalRevenue.toFixed(0)} total plan value
+            {stats.cryptoPaidCount} manual deposits · ${stats.totalRevenue.toFixed(0)} total plan value
           </p>
         </div>
 
@@ -892,13 +892,13 @@ function PaymentsTab() {
             {stats.paidCount.toLocaleString()}
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            {stats.cryptoPaidCount} Crypto Gateway · {stats.directPaidCount} Direct/Admin
+            {stats.cryptoPaidCount} Crypto Verified · {stats.directPaidCount} Direct/Admin
           </p>
         </div>
 
         <div className="rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-5 shadow-sm">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-bold uppercase tracking-wider">Pending / Expired</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Pending Approvals</span>
             <span className="grid h-8 w-8 place-items-center rounded-xl bg-amber-500/10 text-amber-500">
               <Clock className="h-4 w-4" />
             </span>
@@ -906,15 +906,40 @@ function PaymentsTab() {
           <div className="mt-3 text-2xl font-black text-amber-500">
             {stats.pendingCount.toLocaleString()} <span className="text-xs font-semibold text-muted-foreground">pending</span>
           </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">{stats.expiredCount} expired / unpaid sessions</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">{stats.expiredCount} expired / unpaid requests</p>
         </div>
       </div>
+
+      {/* Pending Approvals Alert Banner */}
+      {stats.pendingCount > 0 && (
+        <div className="rounded-2xl border-2 border-amber-500/50 bg-amber-500/10 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black shrink-0">
+              <Clock className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="font-extrabold text-foreground text-sm sm:text-base">
+                Action Required: {stats.pendingCount} Manual Payment{stats.pendingCount > 1 ? "s" : ""} Pending Review
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Users have submitted deposit proofs. Verify the transaction hashes (TXIDs) below and click Approve to activate their subscriptions.
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setStatusFilter("pending")}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md transition-all shrink-0"
+          >
+            Review Pending ({stats.pendingCount})
+          </button>
+        </div>
+      )}
 
       {/* Main Table Panel */}
       <Panel
         icon={CreditCard}
-        title="Customer Payments & Active Premium Packages"
-        subtitle="Live feed of all customer subscription checkouts, Plisio crypto invoices, and active user packages"
+        title="Customer Payments & Manual Upgrade Approvals"
+        subtitle="Review deposit proofs, approve manual payments, and monitor active user subscription packages"
       >
         {/* Filter / Search Row */}
         <div className="mb-5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
@@ -988,8 +1013,8 @@ function PaymentsTab() {
                 <Th>Package / Plan</Th>
                 <Th>Amount</Th>
                 <Th>Status</Th>
-                <Th>Invoice / Source</Th>
-                <Th>Activated / Date</Th>
+                <Th>Transaction ID / Proof</Th>
+                <Th>Date</Th>
                 <Th>Package Expiry</Th>
                 <Th>Actions</Th>
               </tr>
@@ -1006,6 +1031,7 @@ function PaymentsTab() {
                   const st = String(r.status || "").toLowerCase();
                   const isPaid = st === "paid" || st === "completed" || st === "success" || st === "finished";
                   const isPending = st === "pending";
+                  const isRejected = st === "rejected";
 
                   const planName =
                     r.package_slug === "premium_12m"
@@ -1043,7 +1069,11 @@ function PaymentsTab() {
                           </span>
                         ) : isPending ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse">
-                            <Clock className="w-3 h-3" /> Pending Checkout
+                            <Clock className="w-3 h-3" /> Pending Review
+                          </span>
+                        ) : isRejected ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                            <X className="w-3 h-3" /> Rejected
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-muted/40 text-muted-foreground border border-border">
@@ -1052,23 +1082,42 @@ function PaymentsTab() {
                         )}
                       </Td>
                       <Td>
-                        {r.plisio_invoice_url ? (
-                          <a
-                            href={r.plisio_invoice_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-mono"
-                          >
-                            <span>Invoice #{String(r.plisio_invoice_id || "").slice(-8) || "LTC"}</span>
-                            <Eye className="w-3 h-3" />
-                          </a>
-                        ) : r.plisio_invoice_id ? (
-                          <span className="font-mono text-xs text-muted-foreground">
-                            #{String(r.plisio_invoice_id).slice(-10)}
-                          </span>
+                        {r.tx_hash ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <code className="text-xs font-mono font-bold bg-background px-2 py-0.5 rounded border border-border/80 text-foreground max-w-[170px] truncate" title={r.tx_hash}>
+                                {r.tx_hash}
+                              </code>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(r.tx_hash);
+                                  toast.success("TXID copied to clipboard!");
+                                }}
+                                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                title="Copy TXID"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                              <a
+                                href={`https://blockchair.com/litecoin/transaction/${r.tx_hash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1 rounded hover:bg-muted text-primary transition-colors"
+                                title="Verify on Blockchain Explorer"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </div>
+                            {r.admin_note && (
+                              <div className="text-[10px] text-muted-foreground truncate max-w-[200px]" title={r.admin_note}>
+                                {r.admin_note}
+                              </div>
+                            )}
+                          </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground font-medium">
-                            {r.payment_id || "Admin / Direct"}
+                          <span className="text-xs text-muted-foreground font-mono">
+                            {r.payment_id || "Awaiting submission"}
                           </span>
                         )}
                       </Td>
@@ -1095,21 +1144,29 @@ function PaymentsTab() {
                             <button
                               onClick={() => decideMut.mutate({ id: r.id, decision: "approve" })}
                               disabled={decideMut.isPending}
-                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all"
-                              title="Approve and activate user package"
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all flex items-center gap-1"
+                              title="Approve payment and activate subscription"
                             >
+                              <CheckCircle2 className="w-3 h-3" />
                               Approve
                             </button>
                             <button
-                              onClick={() => decideMut.mutate({ id: r.id, decision: "reject" })}
+                              onClick={() => {
+                                if (confirm("Are you sure you want to reject this payment request?")) {
+                                  decideMut.mutate({ id: r.id, decision: "reject" });
+                                }
+                              }}
                               disabled={decideMut.isPending}
-                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all"
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all flex items-center gap-1"
                             >
+                              <X className="w-3 h-3" />
                               Reject
                             </button>
                           </div>
                         ) : isPaid ? (
                           <span className="text-xs font-bold text-emerald-500">Active</span>
+                        ) : isRejected ? (
+                          <span className="text-xs font-bold text-rose-500">Rejected</span>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}

@@ -284,8 +284,8 @@ function InvoicePanel({
     cryptoCurrency: string | null;
     cryptoAmount: string | null;
     cryptoAddress: string | null;
+    usdtAddress?: string | null;
     ltcPriceUsd?: number;
-    plisioInvoiceUrl: string | null;
     expiresAt: string;
     manualMode: boolean;
     appliedPromoCode?: string | null;
@@ -295,10 +295,26 @@ function InvoicePanel({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
-  const [copied, setCopied] = useState<"amount" | "address" | null>(null);
+  const [copied, setCopied] = useState<"amount" | "address" | "usdt" | null>(null);
+  const [txHashInput, setTxHashInput] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const checkStatusFn = useServerFn(checkUpgradeRequestStatus);
+  const submitTxFn = useServerFn(submitUpgradeTransaction);
 
-  // Live real-time polling: automatically checks when deposit arrives and upgrades instantly
+  const submitTxMutation = useMutation({
+    mutationFn: (txHash: string) =>
+      submitTxFn({ data: { request_id: result.requestId, tx_hash: txHash } }),
+    onSuccess: () => {
+      setIsSubmitted(true);
+      toast.success("Payment proof submitted! Awaiting administrator approval.");
+      qc.invalidateQueries({ queryKey: ["my-plan-status"] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to submit transaction proof");
+    },
+  });
+
+  // Live real-time polling: automatically checks when admin approves and upgrades
   useEffect(() => {
     let active = true;
     const interval = setInterval(async () => {
@@ -307,7 +323,7 @@ function InvoicePanel({
         if (res?.status === "paid" || res?.status === "completed" || res?.isPaid) {
           if (!active) return;
           clearInterval(interval);
-          toast.success("🎉 Payment verified! Your account is now upgraded to Premium!");
+          toast.success("🎉 Payment approved! Your account is now upgraded to Premium!");
           qc.invalidateQueries({ queryKey: ["my-plan-status"] });
           qc.invalidateQueries({ queryKey: ["dashboard"] });
           onClose();
@@ -324,20 +340,22 @@ function InvoicePanel({
     };
   }, [result.requestId, checkStatusFn, qc, onClose]);
 
-  const copy = (val: string, type: "amount" | "address") => {
+  const copy = (val: string, type: "amount" | "address" | "usdt") => {
     navigator.clipboard.writeText(val).then(() => {
       setCopied(type);
-      toast.success(`${type === "amount" ? "Amount" : "Litecoin address"} copied to clipboard!`);
+      toast.success(`${type === "amount" ? "Amount" : "Deposit address"} copied to clipboard!`);
       setTimeout(() => setCopied(null), 2500);
     });
   };
 
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=litecoin:${result.cryptoAddress}?amount=${result.cryptoAmount}&margin=6`;
+  const qrUrl = result.cryptoAddress
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=litecoin:${result.cryptoAddress}?amount=${result.cryptoAmount || ""}&margin=6`
+    : "";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
       <div className="w-full max-w-lg rounded-3xl bg-card border-2 border-primary/30 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-        {/* In-House AdsPx Invoice Header */}
+        {/* Invoice Header */}
         <div className="bg-gradient-to-r from-indigo-600 via-primary to-purple-700 px-6 py-5 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -345,7 +363,7 @@ function InvoicePanel({
                 Ł
               </div>
               <div>
-                <h3 className="font-black text-xl leading-none mb-1">AdsPx Instant Invoice</h3>
+                <h3 className="font-black text-xl leading-none mb-1">Manual Deposit Invoice</h3>
                 <div className="flex flex-wrap items-center gap-1.5 text-xs text-white/90 font-medium">
                   <span>{result.packageName}</span>
                   <span>·</span>
@@ -360,83 +378,140 @@ function InvoicePanel({
             </div>
             <span className="rounded-full bg-emerald-400/20 border border-emerald-400/40 px-3 py-1 text-[11px] font-bold text-emerald-300 animate-pulse flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              Awaiting Deposit
+              {isSubmitted ? "Pending Review" : "Awaiting Deposit"}
             </span>
           </div>
         </div>
 
         <div className="p-6 space-y-5">
+          {/* Instructions Notice */}
+          <div className="rounded-2xl bg-primary/5 border border-primary/20 p-4 space-y-1.5 text-xs">
+            <div className="font-bold text-foreground flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              Deposit Instructions:
+            </div>
+            <ol className="list-decimal list-inside space-y-1 text-muted-foreground text-[11px] leading-relaxed">
+              <li>Send the exact amount below to our official deposit address.</li>
+              <li>Copy your <strong>Transaction Hash / TXID</strong> from your wallet or exchange.</li>
+              <li>Paste the TXID below and click <strong>Submit Payment Proof</strong>.</li>
+            </ol>
+          </div>
+
           {/* QR Code & Amount Display */}
           <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-muted/40 border border-border/80">
-            <div className="bg-white p-2 rounded-2xl shadow-md border border-border shrink-0">
-              <img
-                src={qrUrl}
-                alt="Litecoin Deposit QR"
-                className="w-28 h-28 sm:w-32 sm:h-32 rounded-xl object-contain"
-              />
-            </div>
+            {qrUrl && (
+              <div className="bg-white p-2 rounded-2xl shadow-md border border-border shrink-0">
+                <img
+                  src={qrUrl}
+                  alt="Litecoin Deposit QR"
+                  className="w-28 h-28 sm:w-32 sm:h-32 rounded-xl object-contain"
+                />
+              </div>
+            )}
 
             <div className="space-y-3 flex-1 text-center sm:text-left min-w-0">
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
-                  Exact Amount to Send
+                  Amount to Send (Litecoin)
                 </span>
                 <div className="flex items-center justify-center sm:justify-start gap-2 mt-0.5">
                   <span className="font-mono font-black text-2xl text-emerald-500">
-                    {result.cryptoAmount} LTC
+                    {result.cryptoAmount || "0.00"} LTC
                   </span>
-                  <button
-                    onClick={() => copy(result.cryptoAmount!, "amount")}
-                    className="h-7 px-2 rounded-lg bg-card border border-border flex items-center gap-1 text-[11px] font-bold hover:bg-muted transition-colors"
-                  >
-                    {copied === "amount" ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
-                    {copied === "amount" ? "Copied" : "Copy"}
-                  </button>
+                  {result.cryptoAmount && (
+                    <button
+                      onClick={() => copy(result.cryptoAmount!, "amount")}
+                      className="h-7 px-2 rounded-lg bg-card border border-border flex items-center gap-1 text-[11px] font-bold hover:bg-muted transition-colors"
+                    >
+                      {copied === "amount" ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+                      {copied === "amount" ? "Copied" : "Copy"}
+                    </button>
+                  )}
                 </div>
                 <span className="text-[10px] text-muted-foreground block mt-0.5">
-                  Live Rate: ${result.ltcPriceUsd?.toFixed(2) || "90.00"} / LTC · Zero extra fee
+                  Amount in USD: <strong>${result.amountUsd}.00</strong> · Rate: ~${result.ltcPriceUsd?.toFixed(2) || "90.00"} / LTC
                 </span>
               </div>
 
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
-                <Sparkles className="w-3 h-3 text-primary" />
-                Auto-Verifying Blockchain
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                Manual Administrator Verification
               </div>
             </div>
           </div>
 
           {/* Official LTC Deposit Address */}
-          <div className="rounded-2xl bg-muted/40 border border-border/80 p-4 space-y-2">
-            <div className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
-              <span>Official Deposit Address</span>
-              <span className="text-[10px] text-blue-400 font-bold">LTC Network Only</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <code className="text-xs font-mono font-bold bg-background rounded-xl p-3 flex-1 break-all border border-border/80 text-foreground">
-                {result.cryptoAddress}
-              </code>
-              <button
-                onClick={() => copy(result.cryptoAddress!, "address")}
-                className="h-11 px-3.5 rounded-xl bg-primary text-primary-foreground font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity flex-shrink-0"
-              >
-                {copied === "address" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied === "address" ? "Copied" : "Copy"}
-              </button>
-            </div>
-          </div>
-
-          {/* Real-time Status Card */}
-          <div className="flex items-center gap-3 text-xs text-emerald-500 font-semibold bg-emerald-500/10 border border-emerald-500/25 rounded-2xl p-3.5">
-            <div className="h-8 w-8 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
-              <Loader2 className="h-4 w-4 text-emerald-500 animate-spin" />
-            </div>
-            <div className="space-y-0.5">
-              <div className="font-extrabold text-foreground text-xs">Listening for transaction...</div>
-              <div className="text-[11px] text-emerald-400/90 font-medium">
-                Send from Binance, TrustWallet, or any exchange. Account activates automatically in ~2 minutes!
+          {result.cryptoAddress && (
+            <div className="rounded-2xl bg-muted/40 border border-border/80 p-4 space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
+                <span>Official Litecoin (LTC) Address</span>
+                <span className="text-[10px] text-blue-400 font-bold">LTC Network Only</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <code className="text-xs font-mono font-bold bg-background rounded-xl p-3 flex-1 break-all border border-border/80 text-foreground">
+                  {result.cryptoAddress}
+                </code>
+                <button
+                  onClick={() => copy(result.cryptoAddress!, "address")}
+                  className="h-11 px-3.5 rounded-xl bg-primary text-primary-foreground font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity flex-shrink-0"
+                >
+                  {copied === "address" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied === "address" ? "Copied" : "Copy"}
+                </button>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* TXID Submission Form */}
+          {!isSubmitted ? (
+            <div className="rounded-2xl bg-muted/40 border border-border/80 p-4 space-y-3">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+                Submit Transaction Hash / Proof of Payment
+              </label>
+              <div className="space-y-2.5">
+                <input
+                  type="text"
+                  value={txHashInput}
+                  onChange={(e) => setTxHashInput(e.target.value)}
+                  placeholder="Paste Transaction Hash / TXID (e.g. 7f3b...)"
+                  className="w-full h-11 px-4 text-xs font-mono font-bold bg-background border border-border rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/60"
+                />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (!txHashInput.trim()) {
+                      toast.error("Please enter your transaction hash (TXID)");
+                      return;
+                    }
+                    submitTxMutation.mutate(txHashInput.trim());
+                  }}
+                  disabled={submitTxMutation.isPending || !txHashInput.trim()}
+                  className="w-full h-11 rounded-xl font-bold bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                >
+                  {submitTxMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  Submit Payment Proof for Approval
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/30 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                <CheckCircle2 className="h-4 w-4" /> Payment Proof Submitted
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Your transaction proof has been submitted:{" "}
+                <code className="font-mono text-foreground font-bold break-all">{txHashInput}</code>
+              </p>
+              <div className="flex items-center gap-2 text-[11px] text-amber-400 font-semibold pt-1">
+                <Clock className="h-3.5 w-3.5 animate-spin" />
+                Status: Pending Admin Approval. Your subscription will be activated upon verification.
+              </div>
+            </div>
+          )}
 
           <Button onClick={onClose} variant="outline" className="w-full h-11 rounded-2xl font-bold">
             Close Window
@@ -903,6 +978,98 @@ function UpgradePage() {
             </table>
           </div>
         </div>
+
+        {/* User's Payment / Order History */}
+        {status?.recentUpgrades && status.recentUpgrades.length > 0 && (
+          <div className="rounded-3xl border border-border bg-card p-6 sm:p-8 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-black text-foreground">My Upgrade Requests</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  Track your deposit proofs and administrator approval statuses.
+                </p>
+              </div>
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
+                {status.recentUpgrades.length} Total Record{status.recentUpgrades.length > 1 ? "s" : ""}
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs sm:text-sm border-collapse">
+                <thead>
+                  <tr className="border-b border-border/80 text-muted-foreground font-bold">
+                    <th className="pb-3 pt-2">Date</th>
+                    <th className="pb-3 pt-2">Package</th>
+                    <th className="pb-3 pt-2">Amount</th>
+                    <th className="pb-3 pt-2">Transaction ID / Proof</th>
+                    <th className="pb-3 pt-2 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {status.recentUpgrades.map((order) => {
+                    const isPaid = order.status === "paid" || order.status === "completed";
+                    const isPending = order.status === "pending";
+                    const isRejected = order.status === "rejected" || order.status === "failed";
+
+                    return (
+                      <tr key={order.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="py-3 text-muted-foreground font-medium">{order.formattedDate}</td>
+                        <td className="py-3 font-bold text-foreground">{order.packageName || order.package_slug}</td>
+                        <td className="py-3 font-mono font-bold text-foreground">${order.amount_usd} USD</td>
+                        <td className="py-3">
+                          {order.tx_hash ? (
+                            <span className="font-mono text-xs text-foreground bg-muted/60 px-2 py-1 rounded border border-border">
+                              {order.tx_hash.length > 24 ? `${order.tx_hash.slice(0, 10)}...${order.tx_hash.slice(-8)}` : order.tx_hash}
+                            </span>
+                          ) : isPending ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInvoiceResult({
+                                  requestId: order.id,
+                                  packageName: order.packageName || "Premium Plan",
+                                  amountUsd: order.amount_usd,
+                                  cryptoCurrency: "LTC",
+                                  cryptoAmount: null,
+                                  cryptoAddress: order.crypto_address || "ltc1qu99r55302t9e295pks5k072049e6x89ycmq8h7",
+                                  expiresAt: order.expires_at,
+                                  manualMode: true,
+                                });
+                              }}
+                              className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                            >
+                              <span>Submit TxID</span>
+                              <ArrowRight className="h-3 w-3" />
+                            </button>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="py-3 text-right">
+                          {isPaid ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                              <CheckCircle2 className="h-3 w-3" /> Active & Approved
+                            </span>
+                          ) : isPending ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-500/10 text-amber-400 border border-amber-500/30 animate-pulse">
+                              <Clock className="h-3 w-3" /> Pending Review
+                            </span>
+                          ) : isRejected ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                              <XCircle className="h-3 w-3" /> Rejected
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">{order.status}</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* FAQs */}
         <div className="rounded-3xl border border-border bg-card p-6 sm:p-8 space-y-5">

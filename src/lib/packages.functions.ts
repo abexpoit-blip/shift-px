@@ -183,7 +183,7 @@ export const getMyPlanStatus = createServerFn({ method: "GET" })
         .maybeSingle(),
       db
         .from("upgrade_requests")
-        .select("id, package_slug, amount, status, plisio_invoice_id, plisio_invoice_url, created_at, updated_at")
+        .select("id, package_slug, amount, status, tx_hash, payment_id, created_at, updated_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(10),
@@ -239,10 +239,10 @@ export const getMyPlanStatus = createServerFn({ method: "GET" })
         packageName: r.package_slug === "premium_12m" ? "Premium — 12 Months" : r.package_slug === "premium_6m" ? "Premium — 6 Months" : r.package_slug === "premium_1m" ? "Premium — 1 Month" : "Subscription Plan",
         amount_usd: Number(r.amount ?? (r.package_slug === "premium_12m" ? 100 : r.package_slug === "premium_6m" ? 60 : 10)),
         status: r.status,
+        tx_hash: r.tx_hash || null,
         crypto_currency: "LTC",
         crypto_amount: null,
-        crypto_address: null,
-        plisio_invoice_url: r.plisio_invoice_url,
+        crypto_address: r.payment_id || null,
         formattedDate: r.created_at ? new Date(r.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "Recent",
         expires_at: r.updated_at || r.created_at,
         created_at: r.created_at,
@@ -254,11 +254,11 @@ export type UpgradeRequest = {
   id: string;
   package_slug: string;
   amount_usd: number;
-  status: "pending" | "paid" | "failed" | "expired";
+  status: "pending" | "paid" | "completed" | "failed" | "rejected" | "expired";
+  tx_hash?: string | null;
   crypto_currency: string | null;
   crypto_amount: string | null;
   crypto_address: string | null;
-  plisio_invoice_url: string | null;
   expires_at: string;
   created_at: string;
 };
@@ -388,108 +388,41 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
 
     const finalPriceUsd = Math.max(1, rawDiscountedPrice);
 
-    // Fetch settings
+    // Fetch official deposit address from app settings
     const { data: settings } = await db
       .from("app_settings")
-      .select("ltc_deposit_address, plisio_api_key, plisio_enabled")
+      .select("ltc_deposit_address, usdt_deposit_address")
       .limit(1)
       .maybeSingle();
 
     // Default Litecoin address or admin configured address
-    let ltcAddress = (settings as any)?.ltc_deposit_address || "ltc1qu99r55302t9e295pks5k072049e6x89ycmq8h7";
+    const ltcAddress = (settings as any)?.ltc_deposit_address || "ltc1qu99r55302t9e295pks5k072049e6x89ycmq8h7";
+    const usdtAddress = (settings as any)?.usdt_deposit_address || "";
 
     // Compute live LTC amount from live market rate using final discounted price
     const ltcPrice = await getLiveLtcPrice();
-    let ltcAmount = (finalPriceUsd / ltcPrice).toFixed(5);
+    const ltcAmount = (finalPriceUsd / ltcPrice).toFixed(5);
 
-    // Expire any pending requests for this user
+    // Expire any older pending requests for this user
     await db
       .from("upgrade_requests")
       .update({ status: "expired", updated_at: new Date().toISOString() })
       .eq("user_id", userId)
       .eq("status", "pending");
 
-    // 1. Create upgrade request in DB first to get a permanent UUID
+    // Create pending upgrade request in DB
     const { data: req, error: insertErr } = await db.from("upgrade_requests" as any).insert({
       user_id: userId,
       package_slug: data.package_slug,
       amount: finalPriceUsd,
       status: "pending",
       payment_id: ltcAddress,
+      admin_note: appliedPromoCode ? `Promo Applied: ${appliedPromoCode} (${discountPercent}% OFF)` : null,
     } as any).select().single();
 
     if (insertErr || !req) throw new Error(insertErr?.message || "Failed to create order request");
 
     const requestId = (req as any).id as string;
-    let invoiceUrl: string | null = null;
-    let plisioInvoiceId: string | null = null;
-
-    // 2. Always generate Plisio invoice with the permanent requestId and discounted amount
-    try {
-      const apiKey = (settings as any)?.plisio_api_key || "mNftu0lvWb5iTX6AVsiUhZINdfZkWVFRNJke3sUwKXyrxFVo0cHUS0A3yOf065Dq";
-      const params = new URLSearchParams({
-        api_key: apiKey,
-        currency: "LTC",
-        source_currency: "USD",
-        source_amount: String(finalPriceUsd),
-        order_name: `AdsPx ${packageName}${appliedPromoCode ? ` (${appliedPromoCode} ${discountPercent}% OFF)` : ""}`,
-        order_number: requestId,
-        callback_url: "https://adspx.com/api/public/plisio-webhook",
-        success_url: "https://adspx.com/upgrade?status=success",
-        cancel_url: "https://adspx.com/upgrade?status=failed",
-        language: "en_US",
-      });
-
-      const fetchFn = typeof window === "undefined" ? fetchIpv4 : fetch;
-      const res = await fetchFn(`https://plisio.net/api/v1/invoices/new?${params.toString()}`, {
-        signal: AbortSignal.timeout(15000),
-      });
-      const json = await res.json() as any;
-
-      if (json.status === "success" && json.data) {
-        plisioInvoiceId = json.data.txn_id ?? null;
-        invoiceUrl = json.data.invoice_url ?? null;
-        if (json.data.wallet_hash) {
-          ltcAddress = json.data.wallet_hash;
-        }
-        if (json.data.invoice_total_sum || json.data.amount) {
-          ltcAmount = String(json.data.invoice_total_sum || json.data.amount);
-        }
-
-        // Fetch dynamic blockchain wallet_hash from Plisio invoice details
-        if (!json.data.wallet_hash && plisioInvoiceId) {
-          try {
-            const detailRes = await fetchFn(`https://plisio.net/api/v1/invoices/${plisioInvoiceId}?api_key=${apiKey}`, {
-              signal: AbortSignal.timeout(10000),
-            });
-            const detailJson = await detailRes.json() as any;
-            if (detailJson?.status === "success" && detailJson?.data?.wallet_hash) {
-              ltcAddress = detailJson.data.wallet_hash;
-              if (detailJson.data.invoice_total_sum || detailJson.data.amount) {
-                ltcAmount = String(detailJson.data.invoice_total_sum || detailJson.data.amount);
-              }
-            }
-          } catch (err) {
-            console.error("[Plisio] Error fetching invoice detail wallet:", err);
-          }
-        }
-
-        // Update DB with Plisio details
-        await db
-          .from("upgrade_requests" as any)
-          .update({
-            plisio_invoice_id: plisioInvoiceId,
-            plisio_invoice_url: invoiceUrl,
-            payment_id: ltcAddress,
-            updated_at: new Date().toISOString(),
-          } as any)
-          .eq("id", requestId);
-      } else {
-        console.warn("[Plisio] Non-success response:", json);
-      }
-    } catch (e) {
-      console.error("[Plisio] API error:", e);
-    }
 
     return {
       ok: true as const,
@@ -503,14 +436,14 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
       cryptoCurrency: "LTC",
       cryptoAmount: ltcAmount,
       cryptoAddress: ltcAddress,
+      usdtAddress: usdtAddress || null,
       ltcPriceUsd: ltcPrice,
-      plisioInvoiceUrl: invoiceUrl,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      manualMode: !invoiceUrl,
+      manualMode: true,
     };
   });
 
-// ─── User: Submit Transaction Hash / TXID for verification ─────────────────
+// ─── User: Check Upgrade Request Status ────────────────────────────────────
 export const checkUpgradeRequestStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
@@ -521,89 +454,31 @@ export const checkUpgradeRequestStatus = createServerFn({ method: "GET" })
     const userId = (context as any).userId as string;
     const { data: req } = await db
       .from("upgrade_requests")
-      .select("id, status, package_slug, plisio_invoice_id, created_at")
+      .select("id, status, package_slug, tx_hash, created_at")
       .eq("id", data.request_id)
       .eq("user_id", userId)
       .maybeSingle();
 
-    if (req && req.status === "pending") {
-      // 1. Check if webhook already upgraded the user's profile
-      const { data: prof } = await db
-        .from("profiles")
-        .select("plan_slug, plan_started_at")
-        .eq("id", userId)
-        .maybeSingle();
+    if (!req) return { status: "not_found", isPaid: false };
 
-      if (
-        prof &&
-        prof.plan_slug === req.package_slug &&
-        prof.plan_started_at &&
-        new Date(prof.plan_started_at).getTime() >= new Date((req as any).created_at).getTime() - 60_000
-      ) {
-        await db
-          .from("upgrade_requests")
-          .update({ status: "paid", updated_at: new Date().toISOString() })
-          .eq("id", req.id);
-        return { status: "paid", isPaid: true };
-      }
-
-      // 2. Poll Plisio invoice via IPv4
-      if ((req as any).plisio_invoice_id) {
-        try {
-          const { data: settings } = await db
-            .from("app_settings")
-            .select("plisio_api_key")
-            .limit(1)
-            .maybeSingle();
-          const apiKey = (settings as any)?.plisio_api_key || "mNftu0lvWb5iTX6AVsiUhZINdfZkWVFRNJke3sUwKXyrxFVo0cHUS0A3yOf065Dq";
-          const fetchFn = typeof window === "undefined" ? fetchIpv4 : fetch;
-          const res = await fetchFn(`https://plisio.net/api/v1/invoices/${(req as any).plisio_invoice_id}?api_key=${apiKey}`, {
-            signal: AbortSignal.timeout(8000),
-          });
-          const json = (await res.json()) as any;
-          const pStatus = (json?.data?.status || "").toLowerCase();
-          if (pStatus === "completed" || pStatus === "mismatch" || pStatus === "paid" || pStatus === "success") {
-            const now = new Date();
-            const durationMonths = req.package_slug === "premium_12m" ? 12 : req.package_slug === "premium_6m" ? 6 : 1;
-            const expiryDate = new Date(now.setMonth(now.getMonth() + durationMonths)).toISOString();
-
-            await db
-              .from("upgrade_requests")
-              .update({ status: "paid", updated_at: new Date().toISOString() })
-              .eq("id", req.id);
-
-            await db
-              .from("profiles")
-              .update({
-                plan_slug: req.package_slug,
-                link_limit: 1000000,
-                can_withdraw: true,
-                plan_started_at: new Date().toISOString(),
-                plan_expires_at: expiryDate,
-                premium_until: expiryDate,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", userId);
-
-            return { status: "paid", isPaid: true };
-          }
-        } catch (err) {}
-      }
-    }
+    const status = String((req as any)?.status || "pending").toLowerCase();
+    const isPaid = status === "paid" || status === "completed" || status === "success" || status === "finished";
 
     return {
-      status: (req as any)?.status ?? "pending",
-      isPaid: (req as any)?.status === "paid" || (req as any)?.status === "completed",
+      status,
+      isPaid,
+      txHash: (req as any)?.tx_hash || null,
     };
   });
 
+// ─── User: Submit Transaction Hash / TXID for Manual Verification ──────────
 export const submitUpgradeTransaction = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
         request_id: z.string().uuid(),
-        tx_hash: z.string().min(8, "Please enter a valid transaction hash / TXID"),
+        tx_hash: z.string().trim().min(5, "Please enter a valid Transaction Hash / TXID or payment proof"),
       })
       .parse(data),
   )
@@ -615,7 +490,8 @@ export const submitUpgradeTransaction = createServerFn({ method: "POST" })
       .from("upgrade_requests")
       .update({
         tx_hash: data.tx_hash.trim(),
-        admin_note: `TXID: ${data.tx_hash.trim()}`,
+        admin_note: `Manual TXID: ${data.tx_hash.trim()}`,
+        status: "pending",
         updated_at: new Date().toISOString(),
       } as any)
       .eq("id", data.request_id)
@@ -623,7 +499,10 @@ export const submitUpgradeTransaction = createServerFn({ method: "POST" })
 
     if (error) throw new Error(error.message);
 
-    return { ok: true, message: "Transaction submitted for verification! Your plan will activate shortly." };
+    return {
+      ok: true,
+      message: "Transaction proof submitted successfully! Our administrators will review and activate your plan shortly.",
+    };
   });
 
 // ─── Admin: Manually activate premium for a user ────────────────────────────
