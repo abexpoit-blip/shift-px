@@ -1,5 +1,5 @@
 // Force outbound HTTP requests over IPv4. The VPS has IPv6 enabled and some
-// PM2 workers may otherwise reach Plisio over IPv6, which triggers their
+// external outbound services require requests from whitelisted IPv4 addresses.
 // allowed-IP protection even when the IPv4 address is whitelisted.
 //
 // This helper avoids Node-only top-level imports so it stays safe when the file

@@ -1031,7 +1031,7 @@ function UpgradePage() {
                                   amountUsd: order.amount_usd,
                                   cryptoCurrency: "LTC",
                                   cryptoAmount: null,
-                                  cryptoAddress: order.crypto_address || "ltc1qu99r55302t9e295pks5k072049e6x89ycmq8h7",
+                                  cryptoAddress: order.crypto_address || "LWV6HwSiMN8axPAtGrbuTtHAofyBp98Rew",
                                   expiresAt: order.expires_at,
                                   manualMode: true,
                                 });

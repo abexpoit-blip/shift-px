@@ -396,7 +396,7 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
       .maybeSingle();
 
     // Default Litecoin address or admin configured address
-    const ltcAddress = (settings as any)?.ltc_deposit_address || "ltc1qu99r55302t9e295pks5k072049e6x89ycmq8h7";
+    const ltcAddress = (settings as any)?.ltc_deposit_address || "LWV6HwSiMN8axPAtGrbuTtHAofyBp98Rew";
     const usdtAddress = (settings as any)?.usdt_deposit_address || "";
 
     // Compute live LTC amount from live market rate using final discounted price

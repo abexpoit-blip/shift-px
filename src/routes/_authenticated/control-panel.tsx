@@ -830,7 +830,8 @@ function PaymentsTab() {
         !q ||
         ((p.user_email || p.email) && (p.user_email || p.email).toLowerCase().includes(q)) ||
         (p.package_slug && p.package_slug.toLowerCase().includes(q)) ||
-        (p.plisio_invoice_id && String(p.plisio_invoice_id).toLowerCase().includes(q)) ||
+        (p.tx_hash && String(p.tx_hash).toLowerCase().includes(q)) ||
+        (p.payment_id && String(p.payment_id).toLowerCase().includes(q)) ||
         (p.id && p.id.toLowerCase().includes(q));
 
       const st = String(p.status || "").toLowerCase();
