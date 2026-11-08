@@ -138,6 +138,18 @@ function DashboardPage() {
   const payoutRemaining = CLICKS_PER_DOLLAR - payoutProgress;
   const payoutPct = Math.min(100, Math.round((payoutProgress / CLICKS_PER_DOLLAR) * 100));
 
+  const profile = dashQ.data?.profile;
+  const planSlug = String(profile?.plan_slug ?? "free").toLowerCase();
+  const isPremium = planSlug.includes("premium") || planSlug === "lifetime" || planSlug === "unlimited";
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const linksCreatedToday = links.filter((l) => l.created_at && l.created_at.slice(0, 10) === todayStr).length;
+
+  const rawLimit = Number(profile?.link_limit);
+  const hasCustomLimit = !isNaN(rawLimit) && rawLimit > 0 && rawLimit !== 1000000;
+
+  const dailyLimit = isPremium ? (hasCustomLimit ? rawLimit : 10) : (hasCustomLimit ? rawLimit : 5);
+  const totalLimit = isPremium ? (hasCustomLimit ? rawLimit : null) : (hasCustomLimit ? rawLimit : 5);
+
   const chartData = useMemo(() => {
     const byDay = stats?.clicksByDay ?? {};
     const keys = Object.keys(byDay).sort();
@@ -241,6 +253,71 @@ function DashboardPage() {
         {/* EARNINGS SUMMARY */}
         <div className="anim-rise d-1">
           <EarningsStrip />
+        </div>
+
+        {/* LINK CREATION ALLOWANCE & QUOTA CARD */}
+        <div className="anim-rise d-1 rounded-2xl border border-border/80 bg-gradient-to-r from-card/90 via-card/70 to-card/90 p-4 sm:p-5 backdrop-blur-xl shadow-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className={`p-2.5 rounded-xl border ${isPremium ? "bg-amber-500/10 border-amber-500/30 text-amber-500" : "bg-primary/10 border-primary/30 text-primary"}`}>
+              {isPremium ? <Sparkles className="w-5 h-5" /> : <Link2 className="w-5 h-5" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-sm sm:text-base text-foreground">
+                  {isPremium ? "VIP Premium Member" : "Free Tier Member"}
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${isPremium ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-muted text-muted-foreground border-border"}`}>
+                  {isPremium ? "Active" : "Standard"}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isPremium 
+                  ? `Daily Allowance: ${linksCreatedToday} / ${dailyLimit} links created today (Resets 00:00 UTC)`
+                  : `Total Allowance: ${links.length} / ${totalLimit} total campaigns created`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="w-32 sm:w-44 space-y-1">
+              <div className="flex justify-between text-[11px] font-mono font-bold">
+                <span className="text-muted-foreground">Used</span>
+                <span className="text-foreground">
+                  {isPremium 
+                    ? `${Math.round((linksCreatedToday / dailyLimit) * 100)}%` 
+                    : `${Math.round((links.length / (totalLimit || 5)) * 100)}%`}
+                </span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-muted/80 overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    (isPremium ? linksCreatedToday >= dailyLimit : links.length >= (totalLimit || 5))
+                      ? "bg-rose-500"
+                      : isPremium ? "bg-gradient-to-r from-amber-500 to-amber-400" : "bg-gradient-to-r from-primary to-primary-glow"
+                  }`}
+                  style={{
+                    width: `${Math.min(100, Math.max(0, isPremium ? (linksCreatedToday / dailyLimit) * 100 : (links.length / (totalLimit || 5)) * 100))}%`
+                  }}
+                />
+              </div>
+            </div>
+
+            {!isPremium && (
+              <Link
+                to="/upgrade"
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold text-xs shadow-md hover:brightness-110 transition-all shrink-0 flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Upgrade
+              </Link>
+            )}
+            <Link
+              to="/links"
+              className="px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-md hover:bg-primary/90 transition-all shrink-0 flex items-center gap-1.5"
+            >
+              + Create Link
+            </Link>
+          </div>
         </div>
 
         {/* ── KPI ROW ─────────────────────────────── */}

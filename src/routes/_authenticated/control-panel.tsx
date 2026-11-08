@@ -111,6 +111,8 @@ import {
   adminBulkSetPlan,
   adminListPackages,
   adminSetUserPlan,
+  adminSetUserLinkLimit,
+  adminBulkSetLinkLimit,
   adminClicksTimeseries,
   adminTopCountries,
   adminTopUsers,
@@ -1579,6 +1581,8 @@ function UsersTab() {
   const packagesFn = useServerFn(adminListPackages);
   const banFn = useServerFn(adminBanUser);
   const planFn = useServerFn(adminSetUserPlan);
+  const setLimitFn = useServerFn(adminSetUserLinkLimit);
+  const bulkLimitFn = useServerFn(adminBulkSetLinkLimit);
   const bulkBanFn = useServerFn(adminBulkBan);
   const bulkPlanFn = useServerFn(adminBulkSetPlan);
   const resetFn = useServerFn(adminResetUserQuota);
@@ -1693,6 +1697,24 @@ function UsersTab() {
     onSuccess: () => {
       toast.success("Plan updated");
       invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const setLimitMut = useMutation({
+    mutationFn: (v: { user_id: string; link_limit: number | null }) => setLimitFn({ data: v }),
+    onSuccess: (res) => {
+      toast.success(`Link limit updated to ${res.link_limit == null ? "Unlimited (∞)" : res.link_limit}`);
+      invalidate();
+      if (detailId) qc.invalidateQueries({ queryKey: ["admin-user-detail", detailId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const bulkLimitMut = useMutation({
+    mutationFn: (v: { user_ids: string[]; link_limit: number | null }) => bulkLimitFn({ data: v }),
+    onSuccess: (res) => {
+      toast.success(`Updated link limit for ${res.count} users`);
+      invalidate();
+      setSelected(new Set());
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -1881,6 +1903,40 @@ function UsersTab() {
             <option value="premium_6m">Premium — 6 Months</option>
             <option value="premium_12m">Premium — 12 Months</option>
           </select>
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              const val = e.target.value;
+              if (!val) return;
+              if (val === "custom") {
+                const input = prompt(`Enter custom link limit for ${selected.size} selected users:`);
+                if (input !== null) {
+                  const n = parseInt(input.trim(), 10);
+                  if (!isNaN(n) && n >= 0) {
+                    bulkLimitMut.mutate({ user_ids: [...selected], link_limit: n });
+                  }
+                }
+                e.target.value = "";
+                return;
+              }
+              const newLimit = val === "unlimited" ? null : parseInt(val, 10);
+              if (confirm(`Set link limit to ${val === "unlimited" ? "Unlimited" : val} for ${selected.size} users?`)) {
+                bulkLimitMut.mutate({ user_ids: [...selected], link_limit: newLimit });
+              }
+              e.target.value = "";
+            }}
+            className="bg-card/80 border border-[var(--border)] rounded-lg px-2 py-1 text-xs"
+          >
+            <option value="">Set link limit…</option>
+            <option value="5">5 Links (Free Default)</option>
+            <option value="10">10 Links (Premium Default)</option>
+            <option value="20">20 Links</option>
+            <option value="50">50 Links</option>
+            <option value="100">100 Links</option>
+            <option value="500">500 Links</option>
+            <option value="unlimited">Unlimited (∞)</option>
+            <option value="custom">✏️ Custom limit…</option>
+          </select>
           <Button
             size="sm"
             disabled={!bulkPlan}
@@ -1982,14 +2038,49 @@ function UsersTab() {
                   {u.click_quota == null ? " / ∞" : ` / ${u.click_quota.toLocaleString()}`}
                 </Td>
                 <Td className="text-[var(--muted-foreground)] text-xs">
-                  <div>
-                    {u.links_used} / {u.link_limit == null ? "∞" : u.link_limit}
-                  </div>
-                  {!String(u.plan_slug ?? "").includes("premium") && u.plan_slug !== "lifetime" && u.plan_slug !== "unlimited" && (
-                    <div className="text-[10px] text-amber-500 font-medium">
-                      Today: {u.links_created_today ?? 0}/5
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-foreground">
+                        {u.links_used} / {u.link_limit == null ? "∞" : u.link_limit}
+                      </span>
                     </div>
-                  )}
+                    <select
+                      value={u.link_limit == null ? "unlimited" : String(u.link_limit)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "custom") {
+                          const input = prompt(`Enter custom link limit for ${u.email}:`, String(u.link_limit ?? 10));
+                          if (input !== null) {
+                            const n = parseInt(input.trim(), 10);
+                            if (!isNaN(n) && n >= 0) {
+                              setLimitMut.mutate({ user_id: u.id, link_limit: n });
+                            }
+                          }
+                          return;
+                        }
+                        const newLimit = val === "unlimited" ? null : parseInt(val, 10);
+                        if (confirm(`Set link limit of ${u.email} to ${val === "unlimited" ? "Unlimited" : val}?`)) {
+                          setLimitMut.mutate({ user_id: u.id, link_limit: newLimit });
+                        }
+                      }}
+                      className="bg-card/90 border border-[var(--border)] rounded px-1.5 py-0.5 text-[11px] font-mono cursor-pointer hover:border-primary focus:outline-none"
+                      title="Select or edit link limit for this user"
+                    >
+                      <option value="5">5 Links (Free Default)</option>
+                      <option value="10">10 Links (Premium Default)</option>
+                      <option value="20">20 Links</option>
+                      <option value="50">50 Links</option>
+                      <option value="100">100 Links</option>
+                      <option value="250">250 Links</option>
+                      <option value="500">500 Links</option>
+                      <option value="1000">1,000 Links</option>
+                      <option value="unlimited">Unlimited (∞)</option>
+                      <option value="custom">✏️ Custom...</option>
+                    </select>
+                    <div className="text-[10px] text-muted-foreground">
+                      Today: {u.links_created_today ?? 0} created
+                    </div>
+                  </div>
                 </Td>
                 <Td>
                   <span className="inline-flex px-2 py-0.5 rounded-md bg-gradient-to-r from-[var(--primary)]/15 to-[var(--primary-glow)]/15 text-[var(--primary)] text-xs font-bold">
@@ -2085,6 +2176,46 @@ function UsersTab() {
                   label="Clicks"
                   value={(detail.data.profile?.clicks_used ?? 0).toLocaleString()}
                 />
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border text-xs">
+                <div>
+                  <div className="font-bold text-foreground">Custom Link Limit</div>
+                  <div className="text-[11px] text-muted-foreground">Adjust maximum link quota for this specific user</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={detail.data.profile?.link_limit == null ? "unlimited" : String(detail.data.profile.link_limit)}
+                    onChange={(e) => {
+                      const profId = detail.data?.profile?.id;
+                      if (!profId) return;
+                      const val = e.target.value;
+                      if (val === "custom") {
+                        const input = prompt(`Enter custom link limit:`, String(detail.data?.profile?.link_limit ?? 10));
+                        if (input !== null) {
+                          const n = parseInt(input.trim(), 10);
+                          if (!isNaN(n) && n >= 0) {
+                            setLimitMut.mutate({ user_id: profId, link_limit: n });
+                          }
+                        }
+                        return;
+                      }
+                      const newLimit = val === "unlimited" ? null : parseInt(val, 10);
+                      setLimitMut.mutate({ user_id: profId, link_limit: newLimit });
+                    }}
+                    className="bg-card border border-border rounded-lg px-2.5 py-1 font-mono font-bold"
+                  >
+                    <option value="5">5 Links (Free Default)</option>
+                    <option value="10">10 Links (Premium Default)</option>
+                    <option value="20">20 Links</option>
+                    <option value="50">50 Links</option>
+                    <option value="100">100 Links</option>
+                    <option value="250">250 Links</option>
+                    <option value="500">500 Links</option>
+                    <option value="1000">1,000 Links</option>
+                    <option value="unlimited">Unlimited (∞)</option>
+                    <option value="custom">✏️ Custom number...</option>
+                  </select>
+                </div>
               </div>
               <div className="h-44">
                 <ResponsiveContainer>

@@ -469,7 +469,9 @@ export const adminListUsers = createServerFn({ method: "GET" })
     return (data ?? []).map((u: any) => {
       const plan = String(u.plan_slug ?? "free").toLowerCase();
       const isFree = plan === "free" || !plan.includes("premium");
-      const linkLimit = isFree ? (u.link_limit && Number(u.link_limit) >= 50 ? Number(u.link_limit) : 50) : (u.link_limit || 1000000);
+      const linkLimit = u.link_limit !== null && u.link_limit !== undefined 
+        ? Number(u.link_limit) 
+        : (isFree ? 5 : 10);
       const planExpiresAt = u.plan_expires_at || u.premium_until || null;
       const daily = dailyTrafficMap[u.id] || { today_clicks: 0, today_human: 0, today_offer: 0, today_ours: 0, today_bots: 0 };
       const linksToday = linksTodayByUser[u.id] ?? 0;
@@ -704,6 +706,54 @@ export const adminSetUserPlan = createServerFn({ method: "POST" })
 
     await applyPackageToProfileIds([data.user_id], pkg);
     return { ok: true };
+  });
+
+export const adminSetUserLinkLimit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        user_id: z.string().uuid(),
+        link_limit: z.number().int().min(0).max(10_000_000).nullable(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        link_limit: data.link_limit,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.user_id);
+
+    if (error) throw new Error(error.message);
+    return { ok: true, user_id: data.user_id, link_limit: data.link_limit };
+  });
+
+export const adminBulkSetLinkLimit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        user_ids: z.array(z.string().uuid()).min(1),
+        link_limit: z.number().int().min(0).max(10_000_000).nullable(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        link_limit: data.link_limit,
+        updated_at: new Date().toISOString(),
+      })
+      .in("id", data.user_ids);
+
+    if (error) throw new Error(error.message);
+    return { ok: true, count: data.user_ids.length, link_limit: data.link_limit };
   });
 
 export const adminListPackages = createServerFn({ method: "GET" })

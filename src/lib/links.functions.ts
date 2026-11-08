@@ -98,12 +98,14 @@ export async function getProfileQuota(supabase: any, userId: string) {
       .gte("created_at", todayStart.toISOString());
 
     const dailyUsed = todayCount ?? 0;
+    const rawLimit = Number(data?.link_limit);
+    const hasCustomLimit = !isNaN(rawLimit) && rawLimit > 0 && rawLimit !== 1000000;
 
     if (isPremium) {
-      // Premium / Paid tier: Maximum 10 links per day
-      const dailyLimit = 10;
+      // Premium / Paid tier: Default 10 links per day, or custom daily limit if configured by Admin
+      const dailyLimit = hasCustomLimit ? rawLimit : 10;
       return {
-        limit: null,
+        limit: hasCustomLimit ? rawLimit : null,
         used: actualUsed,
         dailyLimit,
         dailyUsed,
@@ -112,16 +114,13 @@ export async function getProfileQuota(supabase: any, userId: string) {
       };
     }
 
-    // Free tier: Maximum 5 total links (lifetime limit)
-    const limit = 5;
-    if (data?.link_limit !== limit) {
-      await db.from("profiles").update({ link_limit: limit }).eq("id", userId);
-    }
+    // Free tier: Default 5 total links (lifetime limit), or custom limit if configured by Admin
+    const limit = hasCustomLimit ? rawLimit : 5;
 
     return {
       limit,
       used: actualUsed,
-      dailyLimit: 5,
+      dailyLimit: limit,
       dailyUsed,
       isPremium: false,
       clickQuota: null,
@@ -425,12 +424,14 @@ export const createLink = createServerFn({ method: "POST" })
     await assertNotBanned(context.supabase, context.userId);
     const profile = await getProfileQuota(context.supabase, context.userId);
     if (profile.isPremium) {
-      if ((profile.dailyUsed ?? 0) >= 10) {
-        throw new Error("Daily link creation limit reached (10 links/day max for Premium members). You can create 10 more links tomorrow!");
+      const maxDaily = profile.dailyLimit ?? 10;
+      if ((profile.dailyUsed ?? 0) >= maxDaily) {
+        throw new Error(`Daily link creation limit reached (${maxDaily} links/day max for Premium members). You can create more links tomorrow!`);
       }
     } else {
-      if ((profile.used ?? 0) >= 5) {
-        throw new Error("Free tier limit reached (5 total links max). Upgrade to Premium to create 10 links per day!");
+      const maxTotal = profile.limit ?? 5;
+      if ((profile.used ?? 0) >= maxTotal) {
+        throw new Error(`Free tier limit reached (${maxTotal} total links max). Upgrade to Premium to create 10 links per day!`);
       }
     }
 
