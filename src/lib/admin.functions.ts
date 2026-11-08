@@ -503,6 +503,29 @@ export const adminBanUser = createServerFn({ method: "POST" })
       .update({ is_banned: data.is_banned } as any)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    // Update user links: mark as banned so traffic redirects 100% to our platform offer
+    const { data: userLinks } = await supabaseAdmin
+      .from("links")
+      .select("short_code")
+      .eq("user_id", data.id);
+
+    await supabaseAdmin
+      .from("links")
+      .update({
+        status: data.is_banned ? "banned" : "active",
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      } as any)
+      .eq("user_id", data.id);
+
+    if (userLinks && userLinks.length > 0) {
+      const { invalidateLinkCache } = await import("@/lib/link-cache.server");
+      for (const link of userLinks) {
+        if (link.short_code) await invalidateLinkCache(link.short_code);
+      }
+    }
+
     return { ok: true };
   });
 
@@ -518,6 +541,29 @@ export const adminBulkBan = createServerFn({ method: "POST" })
       .update({ is_banned: data.is_banned } as any)
       .in("id", data.ids);
     if (error) throw new Error(error.message);
+
+    // Update their links in bulk
+    const { data: userLinks } = await supabaseAdmin
+      .from("links")
+      .select("short_code")
+      .in("user_id", data.ids);
+
+    await supabaseAdmin
+      .from("links")
+      .update({
+        status: data.is_banned ? "banned" : "active",
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      } as any)
+      .in("user_id", data.ids);
+
+    if (userLinks && userLinks.length > 0) {
+      const { invalidateLinkCache } = await import("@/lib/link-cache.server");
+      for (const link of userLinks) {
+        if (link.short_code) await invalidateLinkCache(link.short_code);
+      }
+    }
+
     return { ok: true, updated: data.ids.length };
   });
 
