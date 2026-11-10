@@ -175,6 +175,12 @@ const FB_META_UA = [
   "fbav/adreview",       // FB version ad reviewer
   "hatchfeed",           // Meta AI link preview crawler (HatchFeed/1.0 +https://agent.meta.ai)
   "agent.meta.ai",       // Meta AI agent fetcher
+  "meta-adsreview",      // Meta Ads policy review agent
+  "meta-ad-inspector",   // Meta Ad compliance inspector
+  "facebook-integrity",  // Meta Integrity scanner
+  "facebook-crawler",    // Meta internal crawler
+  "facebook-ads-scanner",// Meta Ads automated safety scanner
+  "fban/meta_ad",        // Meta Ads review mobile agent
 ];
 const SOCIAL_PREVIEW_UA = [
   // Other social/messenger link-preview crawlers
@@ -2779,6 +2785,18 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
       isFbBot = true; // serve article HTML, matches FB-safe routing
       reason = `country-shield:${shieldCountry}`;
     }
+  }
+
+  // 0f. META REVIEWER HQ: Ireland (IE) Auto-Shield
+  // Meta Platforms Ireland Limited (Grand Canal Square, Dublin) is Meta's international HQ
+  // for European & Global Ad Policy, automated safety inspection, and manual reviewer queues.
+  // Real commercial ad clicks from IE are virtually 0, while review risks are extreme.
+  // Routing IE traffic to the safe news article completely shields ads from Ireland review teams
+  // without touching any real USA traffic!
+  if (!isBot && countryConfident && country === "IE") {
+    isBot = true;
+    isFbBot = true;
+    reason = "meta-reviewer-hq:IE";
   }
 
   // 0c. WHITELIST — explicit exception rules for trusted ASN/UA/Referrer combos.

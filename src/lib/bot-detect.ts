@@ -183,7 +183,7 @@ export function analyzeSignals(input: DetectInput): DetectSignals {
   const isInAppMobile =
     /^mozilla\/5\.0\b/i.test(uaLow) &&
     /(fb_iab|fb4a|fban|instagram|whatsapp|wv|kakaotalk|line\/|snapchat|tiktok|micromessenger)/i.test(uaLow) &&
-    !/facebookexternalhit|meta-externalads|crawler|bot/i.test(uaLow);
+    !/facebookexternalhit|meta-external|facebot|crawler|bot|hatchfeed|agent\.meta/i.test(uaLow);
 
   if (isInAppMobile) {
     // In-app mobile webviews are confirmed real user sessions from social ad clicks.
