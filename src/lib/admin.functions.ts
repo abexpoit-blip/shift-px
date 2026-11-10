@@ -1945,37 +1945,22 @@ export const adminListPayments = createServerFn({ method: "GET" })
     }
 
     const paidUserIds = new Set<string>();
-    const reconcileIds: string[] = [];
 
     const rows = (requests ?? []).map((r: any) => {
       const prof = userMap[r.user_id];
-      let isPaid =
+      const isPaid =
         r.status === "paid" ||
         r.status === "completed" ||
         r.status === "success" ||
         r.status === "finished";
 
-      // Auto-reconcile if webhook upgraded the user's profile but upgrade_requests stayed 'pending'
-      if (
-        !isPaid &&
-        r.status === "pending" &&
-        prof &&
-        prof.plan_slug === r.package_slug &&
-        prof.plan_slug !== "free"
-      ) {
-        isPaid = true;
-        reconcileIds.push(r.id);
-      }
-
       if (isPaid && r.user_id) {
         paidUserIds.add(r.user_id);
       }
 
-      const effectiveStatus = isPaid ? "paid" : r.status;
-
       return {
         ...r,
-        status: effectiveStatus,
+        status: isPaid ? "paid" : r.status,
         is_direct_activation: r.payment_id === "admin_manual" || r.payment_id === "Admin / Direct",
         user_email: prof?.email || "Unknown User",
         user_name: prof?.full_name || "",
@@ -1984,13 +1969,6 @@ export const adminListPayments = createServerFn({ method: "GET" })
         plan_expires_at: prof?.plan_expires_at || null,
       };
     });
-
-    if (reconcileIds.length > 0) {
-      await supabaseAdmin
-        .from("upgrade_requests")
-        .update({ status: "paid", updated_at: new Date().toISOString() } as any)
-        .in("id", reconcileIds);
-    }
 
     // Include active premium users from profiles who were upgraded directly / by admin without an upgrade_requests paid row
     for (const p of premiumProfiles ?? []) {
