@@ -363,7 +363,7 @@ const ARTICLES: Record<string, ArticleContent> = {
     paragraphs: [
       "Just fifteen minutes of focused scent-work — such as searching for kibble rolled into a towel or navigating a puzzle mat — burns as much cognitive energy as an hour of outdoor running.",
       "For indoor cats, vertical climbing perches paired with feather chase sequences mimic natural predatory cycles, fulfilling instinctual needs and preventing evening restlessness.",
-      "Owners who integrate quick brain teaser sessions into daily feeding routines report calmer, more affectionate companions who settle peacefully while humans work from home.",
+      "Owners who integrate quick brain teaser sessions into daily feeding routines report calmer, more affectionate companions who settle peacefully while household members focus on their daily routines.",
       "The best enrichment tools can easily be crafted from ordinary cardboard tubes and cotton towels found around the home.",
     ],
     highlights: [
@@ -2486,8 +2486,8 @@ export function renderPrelanding(
   const html =
     template in ARTICLES
       ? articleHtml(ARTICLES[template], template, code, token, mode, requestOrigin)
-      : // Generic "article" or legacy templates → default to health (best safe content)
-        articleHtml(ARTICLES.article_health, "article_health", code, token, mode, requestOrigin);
+      : // Legacy or challenge templates (verify, countdown) → dynamically pick domain-matched diverse safe article
+        articleHtml(ARTICLES[pickArticleTemplateForCode(code, requestOrigin)] || ARTICLES.article_health, pickArticleTemplateForCode(code, requestOrigin), code, token, mode, requestOrigin);
 
   // Structural rotation: deterministic per short code, stable across re-scrapes,
   // never touches head metadata / OG tags / JSON-LD.
