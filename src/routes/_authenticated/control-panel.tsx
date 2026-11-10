@@ -604,8 +604,8 @@ function OverviewTab() {
               <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
                 <th className="px-3 py-3 text-left">Date</th>
                 <th className="px-3 py-3 text-center">Total Volume</th>
-                <th className="px-3 py-3 text-center">Human (Offer 90%)</th>
-                <th className="px-3 py-3 text-center">Platform (Ours 10%)</th>
+                <th className="px-3 py-3 text-center">Human (Offer 95%)</th>
+                <th className="px-3 py-3 text-center">Platform (Ours 5%)</th>
                 <th className="px-3 py-3 text-center">Bots Blocked</th>
                 <th className="px-3 py-3 text-center">Human Pass Rate</th>
                 <th className="px-3 py-3 text-right">Platform Share</th>
