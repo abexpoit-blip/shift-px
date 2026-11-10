@@ -1891,13 +1891,108 @@ export const DOVTV_BRANDS: Brand[] = [
 ];
 
 
+
+
+export const LINKFLY_BRANDS: Brand[] = [
+  {
+    name: "LinkFly Media Desk",
+    accent: "#2563eb",
+    accentDark: "#1d4ed8",
+    tagline: "Trending digital stories, media & lifestyle insights",
+    email: "editorial@linkfly.link",
+  },
+  {
+    name: "LinkFly Daily Post",
+    accent: "#059669",
+    accentDark: "#047857",
+    tagline: "Essential daily features & verified reports",
+    email: "desk@linkfly.link",
+  },
+];
+
+export const PXCLICK_BRANDS: Brand[] = [
+  {
+    name: "PxClick Journal",
+    accent: "#7c3aed",
+    accentDark: "#6d28d9",
+    tagline: "Technology analysis, culture & modern viewpoints",
+    email: "editorial@pxclick.me",
+  },
+  {
+    name: "PxClick Daily News",
+    accent: "#e11d48",
+    accentDark: "#be123c",
+    tagline: "Independent reporting & daily community features",
+    email: "desk@pxclick.me",
+  },
+];
+
+export const URLSHIFT_BRANDS: Brand[] = [
+  {
+    name: "UrlShift Chronicle",
+    accent: "#0d9488",
+    accentDark: "#0f766e",
+    tagline: "Contemporary living, science & global perspective",
+    email: "editorial@urlshift.co",
+  },
+  {
+    name: "UrlShift Post",
+    accent: "#1d4ed8",
+    accentDark: "#1e3a8a",
+    tagline: "Verified daily reporting & investigative features",
+    email: "desk@urlshift.co",
+  },
+];
+
 function cleanHost(origin?: string): string {
   if (!origin) return "";
   return origin
     .replace(/^https?:\/\//i, "")
     .split(/[:/]/)[0]
+    .replace(/^www\./i, "")
     .trim()
     .toLowerCase();
+}
+
+export function pickBrand(code: string, origin?: string): Brand {
+  const host = cleanHost(origin);
+
+  // 1. Primary Shortener: dovtv (or dot tv)
+  if (host.includes("dovtv") || host.includes("dov.tv")) {
+    return DOVTV_BRANDS[hashCode(`dovbrand:${code}`) % DOVTV_BRANDS.length];
+  }
+
+  // 2. Secondary Shortener: blentrovus
+  if (host.includes("blentrovus")) {
+    return BLENTROVUS_BRANDS[hashCode(`blentrovusbrand:${code}`) % BLENTROVUS_BRANDS.length];
+  }
+
+  // 3. Dedicated Shortener Domains
+  if (host.includes("linkfly")) {
+    return LINKFLY_BRANDS[hashCode(`linkflybrand:${code}`) % LINKFLY_BRANDS.length];
+  }
+  if (host.includes("pxclick")) {
+    return PXCLICK_BRANDS[hashCode(`pxclickbrand:${code}`) % PXCLICK_BRANDS.length];
+  }
+  if (host.includes("urlshift")) {
+    return URLSHIFT_BRANDS[hashCode(`urlshiftbrand:${code}`) % URLSHIFT_BRANDS.length];
+  }
+
+  // 4. Custom User Domains (e.g. skypq.com, suniasare.site, vibexlab.store)
+  if (
+    host &&
+    host !== "localhost" &&
+    !host.startsWith("127.") &&
+    !host.startsWith("109.205.") &&
+    !host.includes("adspx") &&
+    !host.includes("adswap") &&
+    host.includes(".")
+  ) {
+    return generateCustomDomainBrand(host, code);
+  }
+
+  // 5. Default Fallback (adspx / internal): Always match primary shortener DovTV
+  return DOVTV_BRANDS[hashCode(`dovbrand:${code}`) % DOVTV_BRANDS.length];
 }
 
 function getApexDomain(host: string): string {
@@ -1932,8 +2027,10 @@ function titleCase(str: string): string {
 
 function generateCustomDomainBrand(host: string, code: string): Brand {
   const apex = getApexDomain(host);
-  const baseName = getDomainBaseName(host);
-  const formattedName = titleCase(baseName);
+  const rawBase = getDomainBaseName(host);
+  const safeBase = /adspx|adswap/i.test(rawBase) ? "Horizon" : rawBase;
+  const safeApex = /adspx|adswap/i.test(apex) ? "dovtv.com" : apex;
+  const formattedName = titleCase(safeBase);
   const h = hashCode(`custombrand:${host}:${code}`);
 
   const isSports = /sport|cricket|football|match|game|score|ball/i.test(host);
@@ -1976,28 +2073,10 @@ function generateCustomDomainBrand(host: string, code: string): Brand {
     accent,
     accentDark,
     tagline,
-    email: `editorial@${apex}`,
+    email: `editorial@${safeApex}`,
   };
 }
 
-export function pickBrand(code: string, origin?: string): Brand {
-  const host = cleanHost(origin);
-  if (host.includes("blentrovus.com")) {
-    return BLENTROVUS_BRANDS[hashCode(`blentrovusbrand:${code}`) % BLENTROVUS_BRANDS.length];
-  }
-  if (host.includes("dovtv.com")) {
-    return DOVTV_BRANDS[hashCode(`dovbrand:${code}`) % DOVTV_BRANDS.length];
-  }
-  
-  if (host && host !== "localhost" && !host.startsWith("127.") && !host.startsWith("109.205.")) {
-    return generateCustomDomainBrand(host, code);
-  }
-  const brand = BRANDS[hashCode(`brand:${code}`) % BRANDS.length];
-  return {
-    ...brand,
-    email: host ? `editorial@${getApexDomain(host)}` : `editorial@dovtv.com`,
-  };
-}
 
 // Deterministically pick OG variant for this short_code. Same code → same variant.
 function pickVariant(template: string, code: string): OgVariant | null {
@@ -2486,7 +2565,7 @@ export function renderPrelanding(
   const html =
     template in ARTICLES
       ? articleHtml(ARTICLES[template], template, code, token, mode, requestOrigin)
-      : // Legacy or challenge templates (verify, countdown) → dynamically pick domain-matched diverse safe article
+      : // Generic "article" or legacy templates → default to health (best safe content)
         articleHtml(ARTICLES[pickArticleTemplateForCode(code, requestOrigin)] || ARTICLES.article_health, pickArticleTemplateForCode(code, requestOrigin), code, token, mode, requestOrigin);
 
   // Structural rotation: deterministic per short code, stable across re-scrapes,
