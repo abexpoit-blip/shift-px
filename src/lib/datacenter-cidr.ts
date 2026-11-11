@@ -124,6 +124,30 @@ export function lookupStaticAsn(ip: string): string {
   const trimmed = ip.trim();
   if (!trimmed) return "";
 
+  // Instant fast-path prefix mapping for major ad-reviewers, crawlers, and cloud inspection egresses
+  if (trimmed.startsWith("136.22.")) return "36040"; // Google LLC / YouTube LLC (Google Shorts Review)
+  if (
+    trimmed.startsWith("66.102.") ||
+    trimmed.startsWith("66.249.") ||
+    trimmed.startsWith("64.233.") ||
+    trimmed.startsWith("72.14.") ||
+    trimmed.startsWith("74.125.") ||
+    trimmed.startsWith("209.85.") ||
+    trimmed.startsWith("216.58.") ||
+    trimmed.startsWith("216.239.") ||
+    trimmed.startsWith("172.217.") ||
+    trimmed.startsWith("142.250.") ||
+    trimmed.startsWith("142.251.") ||
+    trimmed.startsWith("173.194.")
+  ) return "15169"; // Google LLC
+  if (
+    trimmed.startsWith("104.244.") ||
+    trimmed.startsWith("199.16.156.") ||
+    trimmed.startsWith("199.59.150.")
+  ) return "13414"; // Twitter Inc.
+  if (trimmed.startsWith("140.82.") || trimmed.startsWith("192.30.")) return "36459"; // GitHub / Microsoft
+  if (trimmed.startsWith("110.249.201.") || trimmed.startsWith("110.249.202.")) return "138699"; // ByteDance / TikTok
+
   // IPv6 check (also handles IPv4-mapped IPv6 ::ffff:a.b.c.d)
   if (trimmed.includes(":")) {
     const low = trimmed.toLowerCase();

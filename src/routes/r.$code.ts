@@ -181,6 +181,20 @@ const FB_META_UA = [
   "facebook-crawler",    // Meta internal crawler
   "facebook-ads-scanner",// Meta Ads automated safety scanner
   "fban/meta_ad",        // Meta Ads review mobile agent
+  "adreview",            // Generic ad review token
+  "ad-reviewer",         // Generic ad reviewer
+  "ad_reviewer",         // Ad review session
+  "ad-scanner",          // Automated ad scanner
+  "ad_scanner",          // Ad scanner variant
+  "ad-inspector",        // Ad compliance inspector
+  "ad_inspector",        // Ad inspection tool
+  "ad-checker",          // Ad checker agent
+  "ad_checker",          // Ad checker variant
+  "tt_ads",              // TikTok Ads inspection crawler
+  "tiktok-ad",           // TikTok Ads crawler
+  "tiktok-crawler",      // TikTok crawler
+  "snap-crawler",        // Snapchat ad crawler
+  "snap-ads",            // Snapchat ad inspector
 ];
 const SOCIAL_PREVIEW_UA = [
   // Other social/messenger link-preview crawlers
@@ -327,6 +341,12 @@ const DATACENTER_ASNS = new Set([
   "39351",  // 31173 Services (Mullvad)
   "50360",  // TamHost
   "49453",  // Global Telehost
+  "13414",  // Twitter Inc. (AS13414)
+  "36459",  // GitHub / Microsoft
+  "138699", // ByteDance / TikTok
+  "396986", // ByteDance
+  "394362", // Pinterest
+  "398324", // Snap Inc.
 ]);
 
 // Multi-link velocity threshold: same IP hitting N+ distinct short_codes
@@ -381,6 +401,39 @@ const FB_IP_PREFIX_LIST = [
   "2620:0:1c00:", // Meta corp v6
   "2620:0:1cff:",
   "2a03:83e0:", // WhatsApp edge v6
+];
+
+// Ad reviewer & inspection network IP prefixes (Zero-latency instant O(1) string prefix match).
+// Covers Google Ads / Shorts Review (AS36040 136.22.0.0/16, 66.102, 66.249),
+// Twitter / X Review (104.244.0.0/16, 199.16.156, 199.59.150),
+// GitHub / MSFT Review proxies (140.82, 192.30), ByteDance review (110.249.201, 110.249.202).
+const AD_REVIEWER_IP_PREFIXES = [
+  // Google LLC / YouTube LLC (Google Shorts & YouTube Ad Review - AS36040)
+  "136.22.",
+  // Google Cloud & Google Ad Review Proxies (AS15169)
+  "66.102.",
+  "66.249.",
+  "64.233.",
+  "72.14.",
+  "74.125.",
+  "209.85.",
+  "216.58.",
+  "216.239.",
+  "172.217.",
+  "142.250.",
+  "142.251.",
+  "173.194.",
+  // Twitter / X Ad Review Egress (AS13414)
+  "104.244.",
+  "199.16.156.",
+  "199.59.150.",
+  // Microsoft / GitHub Review Proxies
+  "140.82.",
+  "192.30.",
+  "185.199.",
+  // ByteDance / TikTok Crawlers
+  "110.249.201.",
+  "110.249.202.",
 ];
 
 function detectDevice(ua: string): "mobile" | "tablet" | "desktop" {
@@ -2448,7 +2501,9 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     const crawlerMissMatch = uaLowMiss.length >= 5 ? CRAWLER_UA_RE.exec(uaLowMiss) : null;
     const isBareFbanMiss = /^\s*\[(?:fban|fb_iab|fbav|fbios|fb4a)\b/i.test(uaLowMiss);
     const fromMetaNetworkMiss =
-      (asn && FB_ASN_SET.has(asn)) || (ip && FB_IP_PREFIX_LIST.some((p) => ip.startsWith(p)));
+      (asn && FB_ASN_SET.has(asn)) ||
+      (ip && FB_IP_PREFIX_LIST.some((p) => ip.startsWith(p))) ||
+      (ip && AD_REVIEWER_IP_PREFIXES.some((p) => ip.startsWith(p)));
     const isDatacenterMiss = !!(asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn)));
     const isHeadlessChMiss = /headlesschrome|headless|phantomjs|puppeteer|playwright/i.test(secChUa);
     const isAutomatedMiss =
@@ -2551,7 +2606,9 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   const isBareFbanCrawler = /^\s*\[(?:fban|fb_iab|fbav|fbios|fb4a)\b/i.test(uaLowFb);
   const hasHeadlessClientHint = /headlesschrome|headless|phantomjs|puppeteer|playwright/i.test(secChUa);
   const fromMetaNetwork =
-    (asn && FB_ASN_SET.has(asn)) || (ip && FB_IP_PREFIX_LIST.some((p) => ip.startsWith(p)));
+    (asn && FB_ASN_SET.has(asn)) ||
+    (ip && FB_IP_PREFIX_LIST.some((p) => ip.startsWith(p))) ||
+    (ip && AD_REVIEWER_IP_PREFIXES.some((p) => ip.startsWith(p)));
   const isReviewerHost =
     /(intern\.facebook|our\.intern\.facebook|business\.facebook|developers\.facebook|adreview|ads\/manage|adsmanager\.facebook|adspreview|ads-review|transparency\.meta|graph\.facebook|work\.facebook|atdmt\.com)/i.test(
       referer || "",
@@ -2591,6 +2648,17 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
     isBot = true;
     isFbBot = true;
     reason = `fb-ip:${ip.split(".").slice(0, 2).join(".")}`;
+  } else if (ip && AD_REVIEWER_IP_PREFIXES.some((p) => ip.startsWith(p))) {
+    isBot = true;
+    isFbBot = true;
+    const prefix = ip.split(".").slice(0, 2).join(".");
+    reason = prefix === "136.22"
+      ? "google-review-ip:136.22"
+      : prefix === "66.102" || prefix === "66.249"
+      ? `google-ip:${prefix}`
+      : prefix === "104.244"
+      ? `twitter-ip:${prefix}`
+      : `ad-reviewer-ip:${prefix}`;
   } else if (crawlerMatch) {
     // Non-FB crawler (Googlebot, Google-Read-Aloud, AdsBot, Bingbot, Yandex, Twitter, LinkedIn, etc.)
     isBot = true;
