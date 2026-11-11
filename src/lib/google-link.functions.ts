@@ -974,6 +974,7 @@ export const addTokensToPoolFn = createServerFn({ method: "POST" })
     z
       .object({
         tokens: z.array(z.string()).min(1),
+        domain: z.string().optional().default("blentrovus.com"),
       })
       .parse(d)
   )
@@ -992,6 +993,11 @@ export const addTokensToPoolFn = createServerFn({ method: "POST" })
       throw new Error("Unauthorized: Admin access required to manage token pool.");
     }
 
+    const targetDomain = (data.domain || "blentrovus.com")
+      .replace(/^https?:\/\//, "")
+      .replace(/\/.*$/, "")
+      .toLowerCase();
+
     const inserted: string[] = [];
     const errors: string[] = [];
 
@@ -1005,6 +1011,7 @@ export const addTokensToPoolFn = createServerFn({ method: "POST" })
           const { error: insErr } = await (supabaseAdmin as any).from("google_token_pool").upsert(
             {
               token: clean,
+              domain: targetDomain,
               google_url: gUrl,
               share_google_url: sUrl,
               status: "available",
@@ -1028,6 +1035,7 @@ export const addTokensToPoolFn = createServerFn({ method: "POST" })
     return {
       success: true,
       addedCount: inserted.length,
+      domain: targetDomain,
       errors,
     };
   });

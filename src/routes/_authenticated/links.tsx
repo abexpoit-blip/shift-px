@@ -30,9 +30,9 @@ import {
   deleteLink,
   toggleLink,
 } from "@/lib/links.functions";
-import { generateGoogleShort } from "@/lib/google-link.functions";
+import { generateGoogleShort, getGoogleTokenPoolStatsFn } from "@/lib/google-link.functions";
 import { listCustomDomains } from "@/lib/custom-domains.functions";
-import { getPrimaryShortenerDomain } from "@/lib/shortener-domains.functions";
+import { getPrimaryShortenerDomain, listShortenerDomains } from "@/lib/shortener-domains.functions";
 import { DEFAULT_SHORT_HOST, isFlaggedShortDomain } from "@/lib/short-domains";
 
 
@@ -197,6 +197,8 @@ function LinksPage() {
 
   const listDomainsFn = useServerFn(listCustomDomains);
   const getPrimaryDomainFn = useServerFn(getPrimaryShortenerDomain);
+  const listShortenerDomainsFn = useServerFn(listShortenerDomains);
+  const getPoolStatsFn = useServerFn(getGoogleTokenPoolStatsFn);
 
   const customDomainsQ = useQuery({
     queryKey: ["user-verified-custom-domains"],
@@ -208,6 +210,17 @@ function LinksPage() {
     queryFn: () => getPrimaryDomainFn(),
     staleTime: 60_000,
   });
+  const shortenerDomainsQ = useQuery({
+    queryKey: ["all-system-shortener-domains"],
+    queryFn: () => listShortenerDomainsFn(),
+    staleTime: 30_000,
+  });
+  const poolQ = useQuery({
+    queryKey: ["google-token-pool-stats"],
+    queryFn: () => getPoolStatsFn(),
+    staleTime: 10_000,
+  });
+
   const verifiedCustomDomains = useMemo(() => {
     return ((customDomainsQ.data?.domains as any[]) || []).filter((d: any) => d.verified);
   }, [customDomainsQ.data]);
@@ -215,8 +228,18 @@ function LinksPage() {
   // The platform primary domain (dovtv.com)
   const primaryDomain = primaryDomainQ.data?.domain ?? "dovtv.com";
 
+  const allAvailableDomains = useMemo(() => {
+    const sys = (shortenerDomainsQ.data?.domains ?? [])
+      .filter((d: any) => d.is_active && d.domain !== "adswapx.com")
+      .map((d: any) => d.domain);
+    const custom = (verifiedCustomDomains ?? []).map((d: any) => d.domain);
+    const combined = ["dovtv.com", ...sys, ...custom];
+    return Array.from(new Set(combined.filter(Boolean)));
+  }, [shortenerDomainsQ.data, verifiedCustomDomains]);
+
   const [domainFilter, setDomainFilter] = useState("all");
   const [createDomain, setCreateDomain] = useState("");
+  const [tokenDomain, setTokenDomain] = useState("blentrovus.com");
 
   // Sync createDomain to the primary domain once it loads (only on first load)
   useEffect(() => {
@@ -260,13 +283,14 @@ function LinksPage() {
     });
   };
 
-  // Token link mutation — uses pool token, no domain selection needed
+  // Token link mutation — uses pool token for selected domain
   const tokenMut = useMutation({
-    mutationFn: (vars: { adsterra_url: string; title?: string }) =>
+    mutationFn: (vars: { adsterra_url: string; title?: string; domain?: string }) =>
       generateShort({
         data: {
           adsterra_url: vars.adsterra_url,
           title: vars.title,
+          domain: vars.domain || tokenDomain,
           mode: "token",
         },
       }),
@@ -286,6 +310,7 @@ function LinksPage() {
     tokenMut.mutate({
       adsterra_url: tokenAdsterra.trim(),
       title: tokenTitle.trim() || undefined,
+      domain: tokenDomain,
     });
   };
 
@@ -449,10 +474,9 @@ function LinksPage() {
                       onChange={(e) => setCreateDomain(e.target.value)}
                       className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-xs font-mono text-foreground focus:outline-none focus:border-primary"
                     >
-                      <option value={primaryDomain}>{primaryDomain} (Primary)</option>
-                      {verifiedCustomDomains.map((d: any) => (
-                        <option key={d.id} value={d.domain}>
-                          {d.domain} (Custom ✓)
+                      {allAvailableDomains.map((dom) => (
+                        <option key={dom} value={dom}>
+                          {dom} {dom === primaryDomain ? "(Primary)" : ""}
                         </option>
                       ))}
                     </select>
@@ -501,13 +525,39 @@ function LinksPage() {
                 <div className="flex items-center gap-2 pb-2 border-b border-indigo-500/30">
                   <Zap className="w-4 h-4 text-indigo-400" />
                   <span className="text-sm font-extrabold text-foreground">Google Token Link</span>
-                  <span className="ml-auto text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">Token Pool</span>
+                  <span className="ml-auto text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">
+                    {((poolQ.data as any)?.byDomain?.[tokenDomain] ?? (tokenDomain === "dovtv.com" ? poolQ.data?.available : 0) ?? 0)} in stock
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground -mt-1">
-                  Uses a <span className="text-indigo-400 font-bold">share.google</span> token — domain is auto-included, no selection needed.
+                  Uses official <span className="text-indigo-400 font-bold">share.google</span> token — pre-minted for your selected domain.
                 </p>
 
                 <form onSubmit={onTokenSubmit} className="space-y-3">
+                  {/* Cloaking Domain Select */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Cloak Domain</label>
+                      <span className="text-[10px] font-mono font-semibold text-indigo-400">
+                        {((poolQ.data as any)?.byDomain?.[tokenDomain] ?? (tokenDomain === "dovtv.com" ? poolQ.data?.available : 0) ?? 0)} ready
+                      </span>
+                    </div>
+                    <select
+                      value={tokenDomain}
+                      onChange={(e) => setTokenDomain(e.target.value)}
+                      className="w-full bg-background border border-indigo-500/30 rounded-xl px-3 py-2.5 text-xs font-mono text-foreground focus:outline-none focus:border-indigo-400"
+                    >
+                      {allAvailableDomains.map((dom) => {
+                        const count = (poolQ.data as any)?.byDomain?.[dom] ?? (dom === "dovtv.com" ? poolQ.data?.available : 0) ?? 0;
+                        return (
+                          <option key={dom} value={dom}>
+                            {dom} ({count} in stock) {dom === primaryDomain ? "(Primary)" : ""}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
                   {/* Title */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Title (Optional)</label>
@@ -519,7 +569,7 @@ function LinksPage() {
                     />
                   </div>
 
-                  {/* Destination URL — NO domain field */}
+                  {/* Destination URL */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Destination / Offer URL *</label>
                     <input
@@ -534,11 +584,28 @@ function LinksPage() {
 
                   <button
                     type="submit"
-                    disabled={tokenMut.isPending || !tokenAdsterra.trim()}
+                    disabled={
+                      tokenMut.isPending ||
+                      !tokenAdsterra.trim() ||
+                      (((poolQ.data as any)?.byDomain?.[tokenDomain] ?? (tokenDomain === "dovtv.com" ? poolQ.data?.available : 0) ?? 0) === 0)
+                    }
                     className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold flex items-center justify-center gap-2 hover:opacity-90 shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
                   >
-                    {tokenMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-                    Create Token Link
+                    {tokenMut.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" /> Minting from Pool...
+                      </>
+                    ) : (((poolQ.data as any)?.byDomain?.[tokenDomain] ?? (tokenDomain === "dovtv.com" ? poolQ.data?.available : 0) ?? 0) === 0) ? (
+                      <>
+                        <AlertTriangle className="h-4 w-4" />
+                        <span>Pool Empty for {tokenDomain}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-4 w-4" />
+                        <span>Create Token Link ({tokenDomain})</span>
+                      </>
+                    )}
                   </button>
                 </form>
               </div>

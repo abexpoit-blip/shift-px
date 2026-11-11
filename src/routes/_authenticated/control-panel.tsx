@@ -5810,10 +5810,11 @@ function GoogleLinksTab() {
   });
 
   const [bulkTokensInput, setBulkTokensInput] = useState("");
+  const [bulkTokenDomain, setBulkTokenDomain] = useState("blentrovus.com");
   const addTokensMut = useMutation({
-    mutationFn: (tokens: string[]) => addTokensFn({ data: { tokens } }),
+    mutationFn: (tokens: string[]) => addTokensFn({ data: { tokens, domain: bulkTokenDomain } }),
     onSuccess: (res: any) => {
-      toast.success(`Added ${res.addedCount} verified tokens to buffer pool!`);
+      toast.success(`Added ${res.addedCount} tokens to buffer pool for ${res.domain || bulkTokenDomain}!`);
       if (res.errors && res.errors.length > 0) {
         toast.error(`Some tokens failed: ${res.errors.join(", ")}`);
       }
@@ -6135,21 +6136,54 @@ function GoogleLinksTab() {
           </div>
         </div>
 
+        {/* Domain Stock Breakdown Pills */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Available Stock by Domain:</span>
+          {availableDomains.map((dom) => {
+            const count = (poolQ.data as any)?.byDomain?.[dom] ?? (dom === "dovtv.com" ? poolQ.data?.available : 0) ?? 0;
+            return (
+              <div
+                key={dom}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold ${
+                  count > 0
+                    ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-300"
+                    : "bg-muted/40 border-border text-muted-foreground"
+                }`}
+              >
+                <Globe className="h-3.5 w-3.5 text-indigo-400" />
+                <span>{dom}:</span>
+                <span className={count > 0 ? "text-emerald-400 font-black" : "text-rose-400"}>{count} in stock</span>
+              </div>
+            );
+          })}
+        </div>
+
         {/* Refill / PC Worker Instruction */}
         <div className="rounded-2xl border border-border/70 bg-background/60 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Zap className="h-4 w-4 text-emerald-400 shrink-0" />
             <span>
-              <strong className="text-foreground">Automated PC Refill:</strong> Open <code className="text-emerald-400 font-mono bg-muted/60 px-1.5 py-0.5 rounded">AdsPx_Token_Worker.bat</code> on your PC desktop to mint and auto-add tokens to this stock anytime.
+              <strong className="text-foreground">Automated PC Refill:</strong> Open <code className="text-emerald-400 font-mono bg-muted/60 px-1.5 py-0.5 rounded">AdsPx_Token_Worker.bat</code> on your PC desktop to mint and auto-add tokens for any domain anytime.
             </span>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 flex-wrap">
+            <select
+              value={bulkTokenDomain}
+              onChange={(e) => setBulkTokenDomain(e.target.value)}
+              className="h-8 rounded-lg border border-input bg-background px-2 text-xs font-mono text-foreground focus:outline-none"
+            >
+              {availableDomains.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
             <Input
               value={bulkTokensInput}
               onChange={(e) => setBulkTokensInput(e.target.value)}
               placeholder="Or paste token / link here..."
-              className="text-xs font-mono h-8 w-full sm:w-56 bg-background/90"
+              className="text-xs font-mono h-8 w-full sm:w-48 bg-background/90"
             />
             <Button
               type="button"
@@ -6164,7 +6198,7 @@ function GoogleLinksTab() {
                 if (lines.length > 0) addTokensMut.mutate(lines);
               }}
             >
-              {addTokensMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add"}
+              {addTokensMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : `Add to ${bulkTokenDomain}`}
             </Button>
           </div>
         </div>
@@ -6276,16 +6310,16 @@ function GoogleLinksTab() {
             </div>
 
             <p className="text-xs text-muted-foreground leading-relaxed">
-              ⚡ <strong>1-Click Instant Assignment (0.05s):</strong> Automatically claims a pre-verified Google token (<code className="text-emerald-400 font-mono">share.google?q=...</code>) from our VPS buffer pool ({poolQ.data?.available ?? 0} available) with <strong>ZERO subdomains</strong> exposed.
+              ⚡ <strong>1-Click Instant Assignment (0.05s):</strong> Automatically claims a pre-verified Google token (<code className="text-emerald-400 font-mono">share.google?q=...</code>) minted for <strong className="text-emerald-400 font-mono">{autoDomain}</strong> ({((poolQ.data as any)?.byDomain?.[autoDomain] ?? (autoDomain === "dovtv.com" ? poolQ.data?.available : 0) ?? 0)} available) with <strong>ZERO subdomains</strong> exposed.
             </p>
 
-            {(poolQ.data?.available ?? 0) === 0 && !googleTokenInput.trim() && (
+            {(((poolQ.data as any)?.byDomain?.[autoDomain] ?? (autoDomain === "dovtv.com" ? poolQ.data?.available : 0) ?? 0) === 0) && !googleTokenInput.trim() && (
               <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-300 flex items-start gap-2.5">
                 <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
                 <div className="space-y-1">
-                  <p className="font-bold text-amber-200">Token Slot Stock is empty (0 Available)</p>
+                  <p className="font-bold text-amber-200">Token Slot Stock for "{autoDomain}" is empty (0 Available)</p>
                   <p className="text-[11px] text-amber-300/90 leading-relaxed">
-                    To generate a clean token with zero subdomains, run <code className="font-mono text-amber-200 bg-amber-950/40 px-1 py-0.5 rounded">AdsPx_Token_Worker.bat</code> on your PC to add slots to the pool, or enter a custom token in <strong>"Use custom token"</strong> below.
+                    To generate a clean token with zero subdomains for {autoDomain}, run <code className="font-mono text-amber-200 bg-amber-950/40 px-1 py-0.5 rounded">AdsPx_Token_Worker.bat</code> on your PC (Select Option 1 for {autoDomain}), or enter a custom token below.
                   </p>
                 </div>
               </div>
