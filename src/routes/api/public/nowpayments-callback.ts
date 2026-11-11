@@ -94,24 +94,57 @@ export const Route = createFileRoute("/api/public/nowpayments-callback")({
 
         const rawStatus = String(fields.payment_status || "").toLowerCase();
         const mappedStatus = mapNowPaymentStatus(rawStatus);
-
-        const { fulfillUpgradeOrder } = await import("@/lib/packages.functions");
         const targetId = orderId || paymentId;
 
-        const result = await fulfillUpgradeOrder(targetId, {
-          txHash: fields.outcome_tx_hash || fields.payin_hash || null,
-          actuallyPaid: Number(fields.actually_paid || fields.pay_amount || 0) || undefined,
-          rawStatus,
-          paymentId,
-        });
+        console.log(`[NOWPayments IPN] Processing status for ${targetId}: raw=${rawStatus}, mapped=${mappedStatus}`);
 
-        if (!result.ok) {
-          console.warn(`[NOWPayments IPN] Order fulfillment warning for ${targetId}: ${result.message}`);
+        const { getAdmin, fulfillUpgradeOrder } = await import("@/lib/packages.functions");
+        const db = await getAdmin();
+
+        if (mappedStatus === "paid") {
+          // Double-check with live API if actually_paid is provided or status is finished/confirmed
+          const actuallyPaid = Number(fields.actually_paid || fields.pay_amount || 0);
+          console.log(`[NOWPayments IPN] Fulfilling order ${targetId}: actuallyPaid=${actuallyPaid}, status=${rawStatus}`);
+
+          const result = await fulfillUpgradeOrder(targetId, {
+            txHash: fields.outcome_tx_hash || fields.payin_hash || null,
+            actuallyPaid: actuallyPaid || undefined,
+            rawStatus,
+            paymentId,
+          });
+
+          if (!result.ok) {
+            console.warn(`[NOWPayments IPN] Order fulfillment warning for ${targetId}: ${result.message}`);
+          } else {
+            console.log(`[NOWPayments IPN] Order ${targetId} successfully fulfilled and upgraded!`);
+          }
+        } else if (mappedStatus === "failed") {
+          console.log(`[NOWPayments IPN] Marking order ${targetId} as expired/failed (${rawStatus})`);
+          await db
+            .from("upgrade_requests")
+            .update({
+              status: "expired",
+              admin_note: `NOWPayments Failed/Expired: ${rawStatus}`,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", targetId);
         } else {
-          console.log(`[NOWPayments IPN] Order ${targetId} successfully processed: status=${mappedStatus}`);
+          // Status is 'waiting' or 'confirming' — DO NOT upgrade, keep pending!
+          console.log(`[NOWPayments IPN] Order ${targetId} is awaiting payment (status: ${rawStatus})`);
+          await db
+            .from("upgrade_requests")
+            .update({
+              status: "pending",
+              payment_id: paymentId || undefined,
+              crypto_address: fields.pay_address || undefined,
+              crypto_amount: Number(fields.pay_amount || 0) || undefined,
+              admin_note: `NOWPayments Status: ${rawStatus} (Awaiting crypto deposit)`,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", targetId);
         }
 
-        return new Response(JSON.stringify({ ok: true, status: mappedStatus }), {
+        return new Response(JSON.stringify({ ok: true, status: mappedStatus, rawStatus }), {
           status: 200,
           headers: { "content-type": "application/json" },
         });

@@ -214,6 +214,16 @@ export async function fulfillUpgradeOrder(
     return { ok: true, message: "Order is already fulfilled", userId: req.user_id, planSlug: req.package_slug };
   }
 
+  // Safety check: ensure rawStatus is actually a paid state if provided
+  if (details?.rawStatus) {
+    const rawLower = details.rawStatus.toLowerCase().trim();
+    const validPaid = ["finished", "confirmed", "sending", "completed", "paid"];
+    if (!validPaid.includes(rawLower)) {
+      console.warn(`[fulfillUpgradeOrder] Aborting fulfillment. Invalid non-paid status: ${details.rawStatus}`);
+      return { ok: false, message: `Cannot fulfill order with status: ${details.rawStatus}` };
+    }
+  }
+
   // Determine months and link_limit based on plan
   let months = 1;
   let linkLimit = 10;
