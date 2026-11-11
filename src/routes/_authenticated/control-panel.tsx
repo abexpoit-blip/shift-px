@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+﻿import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
@@ -104,6 +104,7 @@ import {
   adminStats,
   adminListUsers,
   adminListPayments,
+  adminSyncNowPaymentsTransaction,
   adminDecideUpgradeRequest,
   adminBanUser,
   adminBulkBan,
@@ -754,6 +755,18 @@ function PaymentsTab() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  const syncTxFn = useServerFn(adminSyncNowPaymentsTransaction);
+  const syncTxMut = useMutation({
+    mutationFn: (v: { request_id?: string; payment_id?: string }) => syncTxFn({ data: v }),
+    onSuccess: (res: any) => {
+      toast.success(res.message || "Transaction synced!");
+      qc.invalidateQueries({ queryKey: ["admin-payments"] });
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to sync NOWPayments transaction"),
+  });
+
   const decideMut = useMutation({
     mutationFn: (v: { id: string; decision: "approve" | "reject" }) => decideFn({ data: v }),
     onSuccess: (_, vars) => {
@@ -995,6 +1008,15 @@ function PaymentsTab() {
             >
               Pending ({stats.pendingCount})
             </button>
+                        <button
+              onClick={() => syncTxMut.mutate({})}
+              disabled={syncTxMut.isPending}
+              className="px-3 py-1.5 rounded-xl border border-primary/30 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+              title="Sync & check all pending NOWPayments transactions"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${syncTxMut.isPending ? "animate-spin" : ""}`} />
+              Sync NOWPayments
+            </button>
             <button
               onClick={() => paymentsQuery.refetch()}
               className="p-2 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all"
@@ -1142,6 +1164,17 @@ function PaymentsTab() {
                       <Td className="text-right">
                         {isPending ? (
                           <div className="flex items-center justify-end gap-1.5">
+                            {r.payment_id && /^\d+$/.test(r.payment_id) && (
+                              <button
+                                onClick={() => syncTxMut.mutate({ request_id: r.id })}
+                                disabled={syncTxMut.isPending}
+                                className="px-2 py-1 rounded-lg text-xs font-bold bg-primary/15 text-primary hover:bg-primary hover:text-primary-foreground transition-all flex items-center gap-1 border border-primary/30"
+                                title="Check status on NOWPayments"
+                              >
+                                <RefreshCw className={`w-3 h-3 ${syncTxMut.isPending ? "animate-spin" : ""}`} />
+                                Sync
+                              </button>
+                            )}
                             <button
                               onClick={() => decideMut.mutate({ id: r.id, decision: "approve" })}
                               disabled={decideMut.isPending}

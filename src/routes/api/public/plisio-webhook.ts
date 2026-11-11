@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 /**
  * Plisio Payment Gateway - Decommissioned
- * Shift-px now operates 100% on a secure Manual Payment Approval System.
+ * Shift-px operates 100% on automated NOWPayments cryptocurrency gateway.
  */
 export const Route = createFileRoute("/api/public/plisio-webhook")({
   server: {
@@ -11,7 +11,8 @@ export const Route = createFileRoute("/api/public/plisio-webhook")({
         return new Response(
           JSON.stringify({
             status: "decommissioned",
-            message: "Plisio payment gateway has been decommissioned. Please use the manual payment approval system.",
+            gateway: "NOWPayments",
+            message: "Plisio payment gateway has been decommissioned. Shift-px operates 100% on NOWPayments.",
           }),
           {
             status: 410,
@@ -23,7 +24,8 @@ export const Route = createFileRoute("/api/public/plisio-webhook")({
         return new Response(
           JSON.stringify({
             status: "decommissioned",
-            message: "Plisio payment gateway has been decommissioned. Please use the manual payment approval system.",
+            gateway: "NOWPayments",
+            message: "Plisio payment gateway has been decommissioned. Shift-px operates 100% on NOWPayments.",
           }),
           {
             status: 410,

@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+﻿import { type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
@@ -109,9 +109,7 @@ function AppSidebar({ isAdmin, balance }: { isAdmin: boolean; balance: number })
       label: "Membership",
       items: [
         { title: "Upgrade to Premium", to: "/upgrade", icon: Crown },
-        { title: "Withdraw (Service Off)", to: "/withdraw", icon: Wallet },
-        
-      ],
+        ],
     },
     {
       label: "Communication",

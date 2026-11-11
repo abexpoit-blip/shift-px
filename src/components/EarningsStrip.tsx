@@ -1,4 +1,4 @@
-import { useServerFn } from "@tanstack/react-start";
+﻿import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { Wallet, Users, Bot, TrendingUp, ArrowRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -45,14 +45,6 @@ export function EarningsStrip() {
             {c.label}
           </div>
           <div className="mt-1 text-2xl font-extrabold tabular-nums text-foreground">{c.value}</div>
-          {c.accent && (
-            <Link
-              to="/withdraw"
-              className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-rose-500 hover:underline"
-            >
-              Withdraw (Service Off) <ArrowRight className="w-3 h-3" />
-            </Link>
-          )}
         </div>
       ))}
       <div className="sm:col-span-2 lg:col-span-4 flex items-center justify-between gap-2 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs">

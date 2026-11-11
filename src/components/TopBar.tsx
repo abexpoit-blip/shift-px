@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -305,11 +305,6 @@ export function TopBar({
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a href="/withdraw">
-                  <Wallet className="h-4 w-4 mr-2" /> Withdraw
-                </a>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
                 <a href="/settings">
                   <Settings className="h-4 w-4 mr-2" /> Settings
                 </a>
@@ -346,9 +341,6 @@ export function TopBar({
             </CommandItem>
             <CommandItem onSelect={() => go("/statistics")}>
               <BarChart3 className="h-4 w-4 mr-2" /> Statistics
-            </CommandItem>
-            <CommandItem onSelect={() => go("/withdraw")}>
-              <Wallet className="h-4 w-4 mr-2" /> Withdraw
             </CommandItem>
             <CommandItem onSelect={() => go("/settings")}>
               <Settings className="h-4 w-4 mr-2" /> Settings

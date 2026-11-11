@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+﻿import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -2008,6 +2008,107 @@ export const adminListPayments = createServerFn({ method: "GET" })
     });
 
     return rows;
+  });
+
+// ===== Sync NOWPayments Transactions =====
+export const adminSyncNowPaymentsTransaction = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      request_id: z.string().optional(),
+      payment_id: z.string().optional(),
+    }).parse(d ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin((context as any).userId);
+    const { getNowPaymentStatus, mapNowPaymentStatus } = await import("@/lib/nowpayments.server");
+    const { fulfillUpgradeOrder } = await import("@/lib/packages.functions");
+
+    if (data.request_id || data.payment_id) {
+      let query = supabaseAdmin.from("upgrade_requests").select("*");
+      if (data.request_id) query = query.eq("id", data.request_id);
+      else if (data.payment_id) query = query.eq("payment_id", data.payment_id);
+
+      const { data: req } = await query.maybeSingle();
+      if (!req) throw new Error("Upgrade request not found");
+
+      if (!req.payment_id || !/^\d+$/.test(req.payment_id)) {
+        return { ok: false, message: `Request does not have a numeric NOWPayments ID (Payment ID: ${req.payment_id || "None"})` };
+      }
+
+      const npStatus = await getNowPaymentStatus(req.payment_id);
+      if (!npStatus) throw new Error(`Could not reach NOWPayments API for payment ID: ${req.payment_id}`);
+
+      const mapped = mapNowPaymentStatus(npStatus.payment_status);
+      if (mapped === "paid") {
+        await fulfillUpgradeOrder(req.id, {
+          txHash: (npStatus as any).payin_hash || (npStatus as any).payout_hash || null,
+          actuallyPaid: npStatus.actually_paid || npStatus.pay_amount,
+          rawStatus: npStatus.payment_status,
+          paymentId: req.payment_id,
+        });
+        return {
+          ok: true,
+          status: "paid",
+          rawStatus: npStatus.payment_status,
+          message: `Payment #${req.payment_id} verified as ${npStatus.payment_status.toUpperCase()}! User plan activated.`,
+        };
+      }
+
+      if (mapped === "failed") {
+        await supabaseAdmin
+          .from("upgrade_requests")
+          .update({ status: "failed", updated_at: new Date().toISOString() })
+          .eq("id", req.id);
+        return {
+          ok: true,
+          status: "failed",
+          rawStatus: npStatus.payment_status,
+          message: `Payment #${req.payment_id} status is ${npStatus.payment_status}. Request marked failed.`,
+        };
+      }
+
+      return {
+        ok: true,
+        status: req.status,
+        rawStatus: npStatus.payment_status,
+        message: `NOWPayments status is ${npStatus.payment_status} (Amount paid: ${npStatus.actually_paid ?? 0} LTC)`,
+      };
+    }
+
+    const { data: pendingList } = await supabaseAdmin
+      .from("upgrade_requests")
+      .select("id, payment_id")
+      .eq("status", "pending")
+      .not("payment_id", "is", null);
+
+    let checked = 0;
+    let activated = 0;
+
+    for (const r of (pendingList ?? [])) {
+      if (!r.payment_id || !/^\d+$/.test(r.payment_id)) continue;
+      try {
+        const npStatus = await getNowPaymentStatus(r.payment_id);
+        if (npStatus) {
+          checked++;
+          const mapped = mapNowPaymentStatus(npStatus.payment_status);
+          if (mapped === "paid") {
+            await fulfillUpgradeOrder(r.id, {
+              txHash: (npStatus as any).payin_hash || (npStatus as any).payout_hash || null,
+              actuallyPaid: npStatus.actually_paid || npStatus.pay_amount,
+              rawStatus: npStatus.payment_status,
+              paymentId: r.payment_id,
+            });
+            activated++;
+          }
+        }
+      } catch {}
+    }
+
+    return {
+      ok: true,
+      message: `Checked ${checked} pending NOWPayments transactions. Activated ${activated} paid subscriptions.`,
+    };
   });
 
 // ===== Live Real-Time Traffic Stream =====
