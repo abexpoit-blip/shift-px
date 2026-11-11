@@ -27,9 +27,9 @@ async function assertAdmin(supabase: any, userId: string) {
 // Public — any signed-in user (used by dashboard to display short URLs on the live domain)
 export const getPrimaryShortenerDomain = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { supabase } = context as any;
-    const { data } = await supabase
+  .handler(async () => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await (supabaseAdmin as any)
       .from("shortener_domains")
       .select("domain")
       .eq("is_primary", true)
@@ -38,7 +38,7 @@ export const getPrimaryShortenerDomain = createServerFn({ method: "GET" })
     const primary = data?.domain as string | undefined;
     // A Safe-Browsing-flagged domain must never be served as primary.
     if (!primary || isFlaggedShortDomain(primary)) {
-      const { data: alt } = await supabase
+      const { data: alt } = await (supabaseAdmin as any)
         .from("shortener_domains")
         .select("domain")
         .eq("is_active", true)
@@ -55,8 +55,30 @@ export const listShortenerDomains = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context as any;
-    await assertAdmin(supabase, userId);
-    const { data, error } = await supabase
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    const isAdmin = roleRow?.role === "admin";
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    if (!isAdmin) {
+      // Regular / public users get all active domains for link creation
+      const { data, error } = await (supabaseAdmin as any)
+        .from("shortener_domains")
+        .select("id, domain, is_primary, is_active")
+        .eq("is_active", true)
+        .order("is_primary", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
+      return { domains: data ?? [] };
+    }
+
+    // Admins get full management fields
+    const { data, error } = await (supabaseAdmin as any)
       .from("shortener_domains")
       .select(
         "id, domain, dns_target, is_primary, is_active, verified, verified_at, note, created_at",
