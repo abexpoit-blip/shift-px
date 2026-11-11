@@ -4,8 +4,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchIpv4 } from "@/lib/fetch-ipv4";
 
 /**
- * Package upgrade & Litecoin (LTC) payment integration.
- * Supports automated live LTC rate conversion and self-hosted deposit workflow.
+ * Package upgrade & Automated NOWPayments Cryptocurrency Integration.
+ * Supports automated live LTC rate conversion, instant blockchain IPN verification,
+ * and reliable fallback options.
  */
 
 async function getAdmin() {
@@ -29,7 +30,7 @@ async function getLiveLtcPrice(): Promise<number> {
     const res = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=LTCUSDT", {
       signal: AbortSignal.timeout(4000),
     });
-    const json = await res.json() as any;
+    const json = (await res.json()) as any;
     const price = Number(json?.price);
     if (price > 10 && price < 2000) return price;
   } catch {}
@@ -38,15 +39,15 @@ async function getLiveLtcPrice(): Promise<number> {
     const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=litecoin&vs_currencies=usd", {
       signal: AbortSignal.timeout(4000),
     });
-    const json = await res.json() as any;
+    const json = (await res.json()) as any;
     const price = Number(json?.litecoin?.usd);
     if (price > 10 && price < 2000) return price;
   } catch {}
 
-  return 90.00;
+  return 90.0;
 }
 
-const CANONICAL_PACKAGES: Package[] = [
+export const CANONICAL_PACKAGES: Package[] = [
   {
     id: "pkg-free",
     slug: "free",
@@ -54,12 +55,12 @@ const CANONICAL_PACKAGES: Package[] = [
     price_monthly: 0,
     price_usd: 0,
     duration_months: 0,
-    link_limit: 50,
+    link_limit: 5,
     click_quota: null,
     is_premium: false,
     can_withdraw: false,
     features: [
-      "50 Short Links limit",
+      "5 Short Links Total Limit",
       "Unlimited traffic & visitors",
       "Earning System: Service Off",
       "Standard Meta & Facebook bot cloaking",
@@ -75,12 +76,12 @@ const CANONICAL_PACKAGES: Package[] = [
     price_monthly: 10,
     price_usd: 10,
     duration_months: 1,
-    link_limit: 1000000,
+    link_limit: 10,
     click_quota: null,
     is_premium: true,
     can_withdraw: false,
     features: [
-      "Unlimited Short Links creation",
+      "10 Short Links / day limit",
       "Unlimited traffic & Tier-1 fast routing",
       "Full Facebook & Meta Ad Review Cloaking",
       "Geo-Targeting & Multi-Offer A/B Rotation",
@@ -97,14 +98,14 @@ const CANONICAL_PACKAGES: Package[] = [
     price_monthly: 10,
     price_usd: 60,
     duration_months: 6,
-    link_limit: 1000000,
+    link_limit: 50,
     click_quota: null,
     is_premium: true,
     can_withdraw: false,
     features: [
       "Everything in Monthly Plan included",
+      "50 Short Links / day limit",
       "6 Months Uninterrupted Access",
-      "Unlimited Short Links creation",
       "Unlimited traffic & Tier-1 fast routing",
       "Advanced Facebook Ad Review Cloaking",
       "Geo-Targeting & Multi-Offer A/B Rotation",
@@ -119,14 +120,14 @@ const CANONICAL_PACKAGES: Package[] = [
     price_monthly: 8.33,
     price_usd: 100,
     duration_months: 12,
-    link_limit: 1000000,
+    link_limit: 100,
     click_quota: null,
     is_premium: true,
     can_withdraw: false,
     features: [
       "Everything in 6-Month Plan included",
+      "100 Short Links / day limit",
       "Save $20 (2 Months FREE — $120 → $100)",
-      "Unlimited Short Links & Max Speed CDNs",
       "Custom Short Domains Connection",
       "Dedicated High-Priority Server Queue",
       "Real-Time Click Logs & Audit Export",
@@ -141,16 +142,31 @@ export const listPackages = createServerFn({ method: "GET" }).handler(async () =
   const db = await getAdmin();
   const { data } = await db
     .from("packages")
-    .select("id, slug, name, price_monthly, price_usd, duration_months, link_limit, click_quota, is_premium, can_withdraw, features, sort_order")
+    .select("id, slug, name, price_monthly, price_usd, duration_months, link_limit, click_quota, is_premium, can_withdraw, sort_order")
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
 
-  const rows = (data ?? []) as Package[];
-  const hasMonthly = rows.some((p) => p.slug === "premium_1m");
-  if (!hasMonthly || rows.length < 3) {
+  const rows = (data ?? []) as any[];
+  if (!rows || rows.length < 3) {
     return CANONICAL_PACKAGES;
   }
-  return rows;
+
+  // Merge canonical features and limits with DB rows
+  return CANONICAL_PACKAGES.map((cp) => {
+    const dbRow = rows.find((r) => r.slug === cp.slug);
+    if (!dbRow) return cp;
+    return {
+      ...cp,
+      id: dbRow.id || cp.id,
+      name: dbRow.name || cp.name,
+      price_monthly: Number(dbRow.price_monthly ?? cp.price_monthly),
+      price_usd: Number(dbRow.price_usd ?? cp.price_usd),
+      duration_months: Number(dbRow.duration_months ?? cp.duration_months),
+      link_limit: Number(dbRow.link_limit ?? cp.link_limit),
+      is_premium: Boolean(dbRow.is_premium ?? cp.is_premium),
+      can_withdraw: Boolean(dbRow.can_withdraw ?? cp.can_withdraw),
+    };
+  });
 });
 
 export type Package = {
@@ -168,6 +184,97 @@ export type Package = {
   sort_order: number;
 };
 
+// ─── Order Fulfillment Helper (Idempotent) ──────────────────────────────────
+export async function fulfillUpgradeOrder(
+  orderIdOrPaymentId: string,
+  details?: {
+    txHash?: string | null;
+    actuallyPaid?: number;
+    rawStatus?: string;
+    paymentId?: string;
+  },
+): Promise<{ ok: boolean; message: string; userId?: string; planSlug?: string }> {
+  const db = await getAdmin();
+  const nowIso = new Date().toISOString();
+
+  let query = db.from("upgrade_requests").select("*");
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderIdOrPaymentId);
+  if (isUuid) {
+    query = query.or(`id.eq.${orderIdOrPaymentId},payment_id.eq.${orderIdOrPaymentId}`);
+  } else {
+    query = query.eq("payment_id", orderIdOrPaymentId);
+  }
+
+  const { data: req, error: reqErr } = await query.maybeSingle();
+  if (reqErr || !req) {
+    return { ok: false, message: `Upgrade request not found: ${orderIdOrPaymentId}` };
+  }
+
+  if (req.status === "paid" || req.status === "completed") {
+    return { ok: true, message: "Order is already fulfilled", userId: req.user_id, planSlug: req.package_slug };
+  }
+
+  // Determine months and link_limit based on plan
+  let months = 1;
+  let linkLimit = 10;
+  if (req.package_slug === "premium_12m") {
+    months = 12;
+    linkLimit = 100;
+  } else if (req.package_slug === "premium_6m") {
+    months = 6;
+    linkLimit = 50;
+  } else if (req.package_slug === "premium_1m") {
+    months = 1;
+    linkLimit = 10;
+  }
+
+  // Update request to paid
+  await db
+    .from("upgrade_requests")
+    .update({
+      status: "paid",
+      tx_hash: details?.txHash || req.tx_hash || null,
+      admin_note: details?.paymentId
+        ? `NOWPayments Confirmed (ID: ${details.paymentId}, Status: ${details.rawStatus || "finished"})`
+        : req.admin_note,
+      updated_at: nowIso,
+    })
+    .eq("id", req.id);
+
+  // Read current user profile
+  const { data: currentProfile } = await db
+    .from("profiles")
+    .select("premium_until, plan_started_at")
+    .eq("id", req.user_id)
+    .maybeSingle();
+
+  const currentExpiry = currentProfile?.premium_until ? new Date(currentProfile.premium_until) : new Date();
+  const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
+  const newExpiry = new Date(baseDate.setMonth(baseDate.getMonth() + months)).toISOString();
+
+  // Update profile
+  await db
+    .from("profiles")
+    .update({
+      plan_slug: req.package_slug,
+      plan_started_at: currentProfile?.plan_started_at || nowIso,
+      plan_expires_at: newExpiry,
+      premium_until: newExpiry,
+      can_withdraw: true,
+      link_limit: linkLimit,
+      click_quota: null,
+      updated_at: nowIso,
+    })
+    .eq("id", req.user_id);
+
+  return {
+    ok: true,
+    message: `Plan ${req.package_slug} activated successfully!`,
+    userId: req.user_id,
+    planSlug: req.package_slug,
+  };
+}
+
 // ─── User: Get own upgrade requests / current plan status ───────────────────
 export const getMyPlanStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -183,7 +290,7 @@ export const getMyPlanStatus = createServerFn({ method: "GET" })
         .maybeSingle(),
       db
         .from("upgrade_requests")
-        .select("id, package_slug, amount, status, tx_hash, payment_id, created_at, updated_at")
+        .select("id, package_slug, amount, status, tx_hash, payment_id, crypto_currency, crypto_amount, crypto_address, invoice_url, created_at, updated_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(10),
@@ -219,7 +326,15 @@ export const getMyPlanStatus = createServerFn({ method: "GET" })
     }
     const effectivePlanSlug = isPremiumActive ? rawSlug : "free";
     const canWithdraw = isPremiumActive ? ((profile as any).can_withdraw ?? true) : false;
-    const linkLimit = isPremiumActive ? 1000000 : 50;
+
+    // Daily link limit according to user plan: 1m -> 10, 6m -> 50, 12m -> 100
+    let linkLimit = 5;
+    if (isPremiumActive) {
+      if (effectivePlanSlug === "premium_12m") linkLimit = 100;
+      else if (effectivePlanSlug === "premium_6m") linkLimit = 50;
+      else if (effectivePlanSlug === "premium_1m") linkLimit = 10;
+      else linkLimit = Number((profile as any).link_limit) || 10;
+    }
 
     return {
       planSlug: effectivePlanSlug,
@@ -230,19 +345,27 @@ export const getMyPlanStatus = createServerFn({ method: "GET" })
       daysRemaining,
       formattedExpiry,
       linkLimit,
-      clickQuota: null, // Unlimited clicks across all active plans
+      clickQuota: null,
       canWithdraw,
       balanceAvailable: Number((profile as any).balance_available ?? 0),
       recentUpgrades: ((upgradeRes.data ?? []) as any[]).map((r) => ({
         id: r.id,
         package_slug: r.package_slug,
-        packageName: r.package_slug === "premium_12m" ? "Premium — 12 Months" : r.package_slug === "premium_6m" ? "Premium — 6 Months" : r.package_slug === "premium_1m" ? "Premium — 1 Month" : "Subscription Plan",
+        packageName:
+          r.package_slug === "premium_12m"
+            ? "Premium — 12 Months"
+            : r.package_slug === "premium_6m"
+              ? "Premium — 6 Months"
+              : r.package_slug === "premium_1m"
+                ? "Premium — 1 Month"
+                : "Subscription Plan",
         amount_usd: Number(r.amount ?? (r.package_slug === "premium_12m" ? 100 : r.package_slug === "premium_6m" ? 60 : 10)),
         status: r.status,
         tx_hash: r.tx_hash || null,
-        crypto_currency: "LTC",
-        crypto_amount: null,
-        crypto_address: r.payment_id || null,
+        crypto_currency: r.crypto_currency || "LTC",
+        crypto_amount: r.crypto_amount ? String(r.crypto_amount) : null,
+        crypto_address: r.crypto_address || r.payment_id || null,
+        invoice_url: r.invoice_url || null,
         formattedDate: r.created_at ? new Date(r.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "Recent",
         expires_at: r.updated_at || r.created_at,
         created_at: r.created_at,
@@ -259,11 +382,12 @@ export type UpgradeRequest = {
   crypto_currency: string | null;
   crypto_amount: string | null;
   crypto_address: string | null;
+  invoice_url?: string | null;
   expires_at: string;
   created_at: string;
 };
 
-// ─── User: Create an upgrade request (LTC Deposit Invoice) ──────────────────
+// ─── User: Create an upgrade request (NOWPayments Automated Integration) ────
 export const createUpgradeRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
@@ -288,7 +412,12 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const fallbackPrice = data.package_slug === "premium_12m" ? 100 : data.package_slug === "premium_6m" ? 60 : 10;
-    const fallbackName = data.package_slug === "premium_12m" ? "Premium — 12 Months" : data.package_slug === "premium_6m" ? "Premium — 6 Months" : "Premium — 1 Month";
+    const fallbackName =
+      data.package_slug === "premium_12m"
+        ? "Premium — 12 Months"
+        : data.package_slug === "premium_6m"
+          ? "Premium — 6 Months"
+          : "Premium — 1 Month";
     const priceUsd = Number(pkg?.price_usd ?? fallbackPrice);
     const packageName = pkg?.name ?? fallbackName;
 
@@ -349,6 +478,7 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
     // Instant Free Activation for 100% Discount Coupons
     if (rawDiscountedPrice <= 0 || discountPercent === 100) {
       const months = data.package_slug === "premium_12m" ? 12 : data.package_slug === "premium_6m" ? 6 : 1;
+      const linkLimit = data.package_slug === "premium_12m" ? 100 : data.package_slug === "premium_6m" ? 50 : 10;
       const baseDate = new Date();
       const newExpiry = new Date(baseDate.setMonth(baseDate.getMonth() + months)).toISOString();
       const nowIso = new Date().toISOString();
@@ -362,7 +492,7 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
           plan_expires_at: newExpiry,
           premium_until: newExpiry,
           can_withdraw: true,
-          link_limit: 1000000,
+          link_limit: linkLimit,
           click_quota: null,
           updated_at: nowIso,
         })
@@ -375,6 +505,8 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
         amount: 0,
         status: "paid",
         payment_id: `COUPON:${appliedPromoCode || "100_PERCENT"}`,
+        crypto_currency: "COUPON",
+        crypto_amount: 0,
         created_at: nowIso,
         updated_at: nowIso,
       });
@@ -388,21 +520,6 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
 
     const finalPriceUsd = Math.max(1, rawDiscountedPrice);
 
-    // Fetch official deposit address from app settings
-    const { data: settings } = await db
-      .from("app_settings")
-      .select("ltc_deposit_address, usdt_deposit_address")
-      .limit(1)
-      .maybeSingle();
-
-    // Default Litecoin address or admin configured address
-    const ltcAddress = (settings as any)?.ltc_deposit_address || "LWV6HwSiMN8axPAtGrbuTtHAofyBp98Rew";
-    const usdtAddress = (settings as any)?.usdt_deposit_address || "";
-
-    // Compute live LTC amount from live market rate using final discounted price
-    const ltcPrice = await getLiveLtcPrice();
-    const ltcAmount = (finalPriceUsd / ltcPrice).toFixed(5);
-
     // Expire any older pending requests for this user
     await db
       .from("upgrade_requests")
@@ -411,18 +528,96 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
       .eq("status", "pending");
 
     // Create pending upgrade request in DB
-    const { data: req, error: insertErr } = await db.from("upgrade_requests" as any).insert({
-      user_id: userId,
-      package_slug: data.package_slug,
-      amount: finalPriceUsd,
-      status: "pending",
-      payment_id: ltcAddress,
-      admin_note: appliedPromoCode ? `Promo Applied: ${appliedPromoCode} (${discountPercent}% OFF)` : null,
-    } as any).select().single();
+    const { data: req, error: insertErr } = await db
+      .from("upgrade_requests" as any)
+      .insert({
+        user_id: userId,
+        package_slug: data.package_slug,
+        amount: finalPriceUsd,
+        status: "pending",
+        admin_note: appliedPromoCode ? `Promo Applied: ${appliedPromoCode} (${discountPercent}% OFF)` : null,
+      } as any)
+      .select()
+      .single();
 
     if (insertErr || !req) throw new Error(insertErr?.message || "Failed to create order request");
 
     const requestId = (req as any).id as string;
+
+    // Automated NOWPayments creation
+    let npPayment: any = null;
+    try {
+      const { createNowPayment } = await import("@/lib/nowpayments.server");
+      npPayment = await createNowPayment({
+        usdAmount: finalPriceUsd,
+        orderNumber: requestId,
+        payCurrency: "ltc",
+        callbackUrl: "https://adspx.com/api/public/nowpayments-callback",
+        orderDescription: `AdsPx ${packageName}`,
+      });
+    } catch (npErr) {
+      console.warn("[Upgrade] NOWPayments automated creation error:", npErr);
+    }
+
+    if (npPayment && npPayment.payment_id) {
+      const payAddress = npPayment.pay_address;
+      const payAmount = String(npPayment.pay_amount);
+      const invoiceUrl = `https://nowpayments.io/payment/?iid=${npPayment.payment_id}`;
+
+      await db
+        .from("upgrade_requests")
+        .update({
+          payment_id: String(npPayment.payment_id),
+          crypto_currency: "LTC",
+          crypto_amount: npPayment.pay_amount,
+          crypto_address: payAddress,
+          invoice_url: invoiceUrl,
+          admin_note: `NOWPayments Payment ID: ${npPayment.payment_id}`,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", requestId);
+
+      return {
+        ok: true as const,
+        requestId,
+        packageName,
+        originalPriceUsd: priceUsd,
+        discountAmountUsd,
+        discountPercent,
+        appliedPromoCode,
+        amountUsd: finalPriceUsd,
+        cryptoCurrency: "LTC",
+        cryptoAmount: payAmount,
+        cryptoAddress: payAddress,
+        invoiceUrl,
+        paymentId: String(npPayment.payment_id),
+        expiresAt: npPayment.expiration_estimate_date || new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        manualMode: false,
+      };
+    }
+
+    // Fallback: Manual Deposit Mode if NOWPayments is unreachable
+    const ltcPrice = await getLiveLtcPrice();
+    const ltcAmount = (finalPriceUsd / ltcPrice).toFixed(5);
+    const { data: settings } = await db
+      .from("app_settings")
+      .select("ltc_deposit_address, usdt_deposit_address")
+      .limit(1)
+      .maybeSingle();
+
+    const ltcAddress = (settings as any)?.ltc_deposit_address || "LWV6HwSiMN8axPAtGrbuTtHAofyBp98Rew";
+    const usdtAddress = (settings as any)?.usdt_deposit_address || "";
+
+    await db
+      .from("upgrade_requests")
+      .update({
+        payment_id: ltcAddress,
+        crypto_currency: "LTC",
+        crypto_amount: Number(ltcAmount),
+        crypto_address: ltcAddress,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", requestId);
 
     return {
       ok: true as const,
@@ -436,6 +631,8 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
       cryptoCurrency: "LTC",
       cryptoAmount: ltcAmount,
       cryptoAddress: ltcAddress,
+      invoiceUrl: null,
+      paymentId: null,
       usdtAddress: usdtAddress || null,
       ltcPriceUsd: ltcPrice,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -443,7 +640,7 @@ export const createUpgradeRequest = createServerFn({ method: "POST" })
     };
   });
 
-// ─── User: Check Upgrade Request Status ────────────────────────────────────
+// ─── User: Check Upgrade Request Status (Active Polling & Verification) ─────
 export const checkUpgradeRequestStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
@@ -454,15 +651,44 @@ export const checkUpgradeRequestStatus = createServerFn({ method: "GET" })
     const userId = (context as any).userId as string;
     const { data: req } = await db
       .from("upgrade_requests")
-      .select("id, status, package_slug, tx_hash, created_at")
+      .select("id, status, package_slug, tx_hash, payment_id, created_at")
       .eq("id", data.request_id)
       .eq("user_id", userId)
       .maybeSingle();
 
     if (!req) return { status: "not_found", isPaid: false };
 
-    const status = String((req as any)?.status || "pending").toLowerCase();
-    const isPaid = status === "paid" || status === "completed" || status === "success" || status === "finished";
+    let status = String((req as any)?.status || "pending").toLowerCase();
+    let isPaid = status === "paid" || status === "completed" || status === "success" || status === "finished";
+
+    // If pending and has a NOWPayments payment_id (numeric), check live status
+    if (!isPaid && req.payment_id && /^\d+$/.test(req.payment_id)) {
+      try {
+        const { getNowPaymentStatus, mapNowPaymentStatus } = await import("@/lib/nowpayments.server");
+        const npStatus = await getNowPaymentStatus(req.payment_id);
+        if (npStatus) {
+          const mapped = mapNowPaymentStatus(npStatus.payment_status);
+          if (mapped === "paid") {
+            await fulfillUpgradeOrder(req.id, {
+              txHash: (npStatus as any).payin_hash || (npStatus as any).payout_hash || null,
+              actuallyPaid: npStatus.actually_paid || npStatus.pay_amount,
+              rawStatus: npStatus.payment_status,
+              paymentId: req.payment_id,
+            });
+            status = "paid";
+            isPaid = true;
+          } else if (mapped === "failed") {
+            await db
+              .from("upgrade_requests")
+              .update({ status: "failed", updated_at: new Date().toISOString() })
+              .eq("id", req.id);
+            status = "failed";
+          }
+        }
+      } catch (e) {
+        console.warn("[CheckUpgrade] NOWPayments live status check error:", e);
+      }
+    }
 
     return {
       status,
@@ -522,9 +748,11 @@ export const adminActivatePremium = createServerFn({ method: "POST" })
     const db = await getAdmin();
 
     const months = data.package_slug === "premium_12m" ? 12 : data.package_slug === "premium_6m" ? 6 : 1;
+    const linkLimit = data.package_slug === "premium_12m" ? 100 : data.package_slug === "premium_6m" ? 50 : 10;
+
     const { data: currentProfile } = await db
       .from("profiles")
-      .select("premium_until")
+      .select("premium_until, plan_started_at")
       .eq("id", data.user_id)
       .maybeSingle();
 
@@ -537,12 +765,13 @@ export const adminActivatePremium = createServerFn({ method: "POST" })
       .from("profiles")
       .update({
         plan_slug: data.package_slug,
-        plan_started_at: nowIso,
+        plan_started_at: currentProfile?.plan_started_at || nowIso,
         plan_expires_at: newExpiry,
         premium_until: newExpiry,
         can_withdraw: true,
-        link_limit: 1000000,
+        link_limit: linkLimit,
         click_quota: null,
+        updated_at: nowIso,
       } as any)
       .eq("id", data.user_id);
 
@@ -555,5 +784,5 @@ export const adminActivatePremium = createServerFn({ method: "POST" })
         .eq("id", data.upgrade_request_id);
     }
 
-    return { ok: true, premiumUntil: newExpiry };
+    return { ok: true, premiumUntil: newExpiry, linkLimit };
   });

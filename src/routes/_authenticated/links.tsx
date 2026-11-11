@@ -340,9 +340,18 @@ function LinksPage() {
                 {activeLinks} Active · {links.length} Total
               </span>
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
-                {dashQ.data?.profile?.plan_slug && (dashQ.data.profile.plan_slug.includes("premium") || dashQ.data.profile.plan_slug === "lifetime") 
-                  ? `Today: ${links.filter((l) => l.created_at && l.created_at.slice(0, 10) === new Date().toISOString().slice(0, 10)).length}/10 Links (Premium Daily Limit)` 
-                  : `${links.length}/5 Total Links (Free Tier Limit)`}
+                {(() => {
+                  const p = dashQ.data?.profile;
+                  const slug = String(p?.plan_slug ?? "free").toLowerCase();
+                  const isPrem = slug.includes("premium") || slug === "lifetime" || slug === "unlimited";
+                  if (!isPrem) {
+                    return `${links.length}/5 Total Links (Free Tier Limit)`;
+                  }
+                  const rawL = Number(p?.link_limit);
+                  const maxL = (rawL > 0 && rawL !== 1000000) ? rawL : (slug === "premium_12m" ? 100 : slug === "premium_6m" ? 50 : 10);
+                  const todayCount = links.filter((l) => l.created_at && l.created_at.slice(0, 10) === new Date().toISOString().slice(0, 10)).length;
+                  return `Today: ${todayCount}/${maxL} Links (Daily Limit)`;
+                })()}
               </span>
             </div>
           </div>

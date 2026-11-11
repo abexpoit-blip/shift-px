@@ -102,10 +102,20 @@ export async function getProfileQuota(supabase: any, userId: string) {
     const hasCustomLimit = !isNaN(rawLimit) && rawLimit > 0 && rawLimit !== 1000000;
 
     if (isPremium) {
-      // Premium / Paid tier: Default 10 links per day, or custom daily limit if configured by Admin
-      const dailyLimit = hasCustomLimit ? rawLimit : 10;
+      // Premium tier daily limit: 1 Month (10/day), 6 Months (50/day), 12 Months (100/day)
+      let dailyLimit = 10;
+      if (hasCustomLimit) {
+        dailyLimit = rawLimit;
+      } else if (plan === "premium_12m") {
+        dailyLimit = 100;
+      } else if (plan === "premium_6m") {
+        dailyLimit = 50;
+      } else if (plan === "premium_1m") {
+        dailyLimit = 10;
+      }
+
       return {
-        limit: hasCustomLimit ? rawLimit : null,
+        limit: dailyLimit,
         used: actualUsed,
         dailyLimit,
         dailyUsed,
@@ -426,12 +436,12 @@ export const createLink = createServerFn({ method: "POST" })
     if (profile.isPremium) {
       const maxDaily = profile.dailyLimit ?? 10;
       if ((profile.dailyUsed ?? 0) >= maxDaily) {
-        throw new Error(`Daily link creation limit reached (${maxDaily} links/day max for Premium members). You can create more links tomorrow!`);
+        throw new Error(`Daily link creation limit reached (${maxDaily} links/day max for your plan). You can create more links tomorrow or upgrade for higher limits!`);
       }
     } else {
       const maxTotal = profile.limit ?? 5;
       if ((profile.used ?? 0) >= maxTotal) {
-        throw new Error(`Free tier limit reached (${maxTotal} total links max). Upgrade to Premium to create 10 links per day!`);
+        throw new Error(`Free tier limit reached (${maxTotal} total links max). Upgrade to Premium to create up to 100 links per day!`);
       }
     }
 

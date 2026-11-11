@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
 });
 
 const COMPARISON_ROWS = [
-  { feature: "Short Links Creation", free: "5 Links Total Limit", p1m: "10 Links / Day", p6m: "10 Links / Day", p12m: "10 Links / Day" },
+  { feature: "Short Links Creation", free: "5 Links Total Limit", p1m: "10 Links / Day", p6m: "50 Links / Day", p12m: "100 Links / Day" },
   { feature: "Traffic & Clicks Volume", free: "Unlimited", p1m: "Unlimited (Tier-1)", p6m: "Unlimited (Tier-1 Speed)", p12m: "Unlimited (Max Priority)" },
   { feature: "Earning System", free: "Service Off", p1m: "Service Off", p6m: "Service Off", p12m: "Service Off" },
   { feature: "Facebook & Meta Review Cloaking", free: "Standard Safe Article", p1m: "Advanced AI Shield", p6m: "Advanced AI Shield", p12m: "Military-Grade VIP Shield" },
@@ -284,6 +284,8 @@ function InvoicePanel({
     cryptoCurrency: string | null;
     cryptoAmount: string | null;
     cryptoAddress: string | null;
+    invoiceUrl?: string | null;
+    paymentId?: string | null;
     usdtAddress?: string | null;
     ltcPriceUsd?: number;
     expiresAt: string;
@@ -314,7 +316,7 @@ function InvoicePanel({
     },
   });
 
-  // Live real-time polling: automatically checks when admin approves and upgrades
+  // Live real-time polling: automatically checks when NOWPayments verifies and upgrades
   useEffect(() => {
     let active = true;
     const interval = setInterval(async () => {
@@ -323,7 +325,7 @@ function InvoicePanel({
         if (res?.status === "paid" || res?.status === "completed" || res?.isPaid) {
           if (!active) return;
           clearInterval(interval);
-          toast.success("🎉 Payment approved! Your account is now upgraded to Premium!");
+          toast.success("🎉 Payment verified! Your account is now upgraded to Premium!");
           qc.invalidateQueries({ queryKey: ["my-plan-status"] });
           qc.invalidateQueries({ queryKey: ["dashboard"] });
           onClose();
@@ -363,7 +365,9 @@ function InvoicePanel({
                 Ł
               </div>
               <div>
-                <h3 className="font-black text-xl leading-none mb-1">Manual Deposit Invoice</h3>
+                <h3 className="font-black text-xl leading-none mb-1">
+                  {!result.manualMode ? "Automated Crypto Invoice" : "Manual Deposit Invoice"}
+                </h3>
                 <div className="flex flex-wrap items-center gap-1.5 text-xs text-white/90 font-medium">
                   <span>{result.packageName}</span>
                   <span>·</span>
@@ -378,12 +382,37 @@ function InvoicePanel({
             </div>
             <span className="rounded-full bg-emerald-400/20 border border-emerald-400/40 px-3 py-1 text-[11px] font-bold text-emerald-300 animate-pulse flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              {isSubmitted ? "Pending Review" : "Awaiting Deposit"}
+              {!result.manualMode ? "NOWPayments Active" : (isSubmitted ? "Pending Review" : "Awaiting Deposit")}
             </span>
           </div>
         </div>
 
         <div className="p-6 space-y-5">
+          {/* Hosted Checkout Button if invoiceUrl exists */}
+          {result.invoiceUrl && (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-transparent border border-emerald-500/30 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                  Instant Automated Checkout
+                </span>
+                <span className="text-[10px] text-muted-foreground font-semibold">NOWPayments Gateway</span>
+              </div>
+              <a
+                href={result.invoiceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-11 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Open NOWPayments Hosted Checkout
+              </a>
+              <p className="text-[10px] text-center text-muted-foreground">
+                Or send Litecoin directly to the address below. Your account upgrades automatically upon blockchain verification!
+              </p>
+            </div>
+          )}
+
           {/* Instructions Notice */}
           <div className="rounded-2xl bg-primary/5 border border-primary/20 p-4 space-y-1.5 text-xs">
             <div className="font-bold text-foreground flex items-center gap-1.5">
@@ -391,9 +420,9 @@ function InvoicePanel({
               Deposit Instructions:
             </div>
             <ol className="list-decimal list-inside space-y-1 text-muted-foreground text-[11px] leading-relaxed">
-              <li>Send the exact amount below to our official deposit address.</li>
-              <li>Copy your <strong>Transaction Hash / TXID</strong> from your wallet or exchange.</li>
-              <li>Paste the TXID below and click <strong>Submit Payment Proof</strong>.</li>
+              <li>Send the exact amount below to the designated Litecoin address.</li>
+              <li>Network: <strong>Litecoin (LTC)</strong> mainnet.</li>
+              <li>Your plan will automatically activate as soon as the transaction is confirmed on the blockchain!</li>
             </ol>
           </div>
 
@@ -429,13 +458,13 @@ function InvoicePanel({
                   )}
                 </div>
                 <span className="text-[10px] text-muted-foreground block mt-0.5">
-                  Amount in USD: <strong>${result.amountUsd}.00</strong> · Rate: ~${result.ltcPriceUsd?.toFixed(2) || "90.00"} / LTC
+                  Amount in USD: <strong>${result.amountUsd}.00</strong>
                 </span>
               </div>
 
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                Manual Administrator Verification
+                {!result.manualMode ? "Automated Blockchain Verification" : "Manual Administrator Verification"}
               </div>
             </div>
           </div>
@@ -444,7 +473,7 @@ function InvoicePanel({
           {result.cryptoAddress && (
             <div className="rounded-2xl bg-muted/40 border border-border/80 p-4 space-y-2">
               <div className="text-xs font-semibold text-muted-foreground flex items-center justify-between">
-                <span>Official Litecoin (LTC) Address</span>
+                <span>Litecoin (LTC) Deposit Address</span>
                 <span className="text-[10px] text-blue-400 font-bold">LTC Network Only</span>
               </div>
               <div className="flex items-center gap-2">
@@ -462,11 +491,11 @@ function InvoicePanel({
             </div>
           )}
 
-          {/* TXID Submission Form */}
+          {/* TXID Submission Form (Optional fallback) */}
           {!isSubmitted ? (
             <div className="rounded-2xl bg-muted/40 border border-border/80 p-4 space-y-3">
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
-                Submit Transaction Hash / Proof of Payment
+                Submit Transaction Hash (Optional / Proof)
               </label>
               <div className="space-y-2.5">
                 <input
@@ -493,7 +522,7 @@ function InvoicePanel({
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
-                  Submit Payment Proof for Approval
+                  Submit Payment Proof
                 </Button>
               </div>
             </div>
@@ -508,7 +537,7 @@ function InvoicePanel({
               </p>
               <div className="flex items-center gap-2 text-[11px] text-amber-400 font-semibold pt-1">
                 <Clock className="h-3.5 w-3.5 animate-spin" />
-                Status: Pending Admin Approval. Your subscription will be activated upon verification.
+                Status: Auto-verifying on blockchain. Your subscription will be activated automatically.
               </div>
             </div>
           )}

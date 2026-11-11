@@ -52,6 +52,7 @@ import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authentica
 import { Route as ApiPublicTokenPoolRouteImport } from './routes/api/public/token-pool'
 import { Route as ApiPublicSafePoolRefreshRouteImport } from './routes/api/public/safe-pool-refresh'
 import { Route as ApiPublicPlisioWebhookRouteImport } from './routes/api/public/plisio-webhook'
+import { Route as ApiPublicNowpaymentsCallbackRouteImport } from './routes/api/public/nowpayments-callback'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicPreviewPrelandingCodeRouteImport } from './routes/api/public/preview-prelanding.$code'
 import { Route as ApiPublicHooksMetaCrawlerProbeRouteImport } from './routes/api/public/hooks/meta-crawler-probe'
@@ -277,6 +278,12 @@ const ApiPublicPlisioWebhookRoute = ApiPublicPlisioWebhookRouteImport.update({
   path: '/api/public/plisio-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicNowpaymentsCallbackRoute =
+  ApiPublicNowpaymentsCallbackRouteImport.update({
+    id: '/api/public/nowpayments-callback',
+    path: '/api/public/nowpayments-callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   id: '/api/public/health',
   path: '/api/public/health',
@@ -353,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/shop/$slug': typeof ShopSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/nowpayments-callback': typeof ApiPublicNowpaymentsCallbackRoute
   '/api/public/plisio-webhook': typeof ApiPublicPlisioWebhookRoute
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
   '/api/public/token-pool': typeof ApiPublicTokenPoolRoute
@@ -402,6 +410,7 @@ export interface FileRoutesByTo {
   '/shop/$slug': typeof ShopSlugRoute
   '/blog': typeof BlogIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/nowpayments-callback': typeof ApiPublicNowpaymentsCallbackRoute
   '/api/public/plisio-webhook': typeof ApiPublicPlisioWebhookRoute
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
   '/api/public/token-pool': typeof ApiPublicTokenPoolRoute
@@ -454,6 +463,7 @@ export interface FileRoutesById {
   '/shop/$slug': typeof ShopSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/nowpayments-callback': typeof ApiPublicNowpaymentsCallbackRoute
   '/api/public/plisio-webhook': typeof ApiPublicPlisioWebhookRoute
   '/api/public/safe-pool-refresh': typeof ApiPublicSafePoolRefreshRoute
   '/api/public/token-pool': typeof ApiPublicTokenPoolRoute
@@ -506,6 +516,7 @@ export interface FileRouteTypes {
     | '/shop/$slug'
     | '/blog/'
     | '/api/public/health'
+    | '/api/public/nowpayments-callback'
     | '/api/public/plisio-webhook'
     | '/api/public/safe-pool-refresh'
     | '/api/public/token-pool'
@@ -555,6 +566,7 @@ export interface FileRouteTypes {
     | '/shop/$slug'
     | '/blog'
     | '/api/public/health'
+    | '/api/public/nowpayments-callback'
     | '/api/public/plisio-webhook'
     | '/api/public/safe-pool-refresh'
     | '/api/public/token-pool'
@@ -606,6 +618,7 @@ export interface FileRouteTypes {
     | '/shop/$slug'
     | '/blog/'
     | '/api/public/health'
+    | '/api/public/nowpayments-callback'
     | '/api/public/plisio-webhook'
     | '/api/public/safe-pool-refresh'
     | '/api/public/token-pool'
@@ -642,6 +655,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   RCodeRoute: typeof RCodeRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
+  ApiPublicNowpaymentsCallbackRoute: typeof ApiPublicNowpaymentsCallbackRoute
   ApiPublicPlisioWebhookRoute: typeof ApiPublicPlisioWebhookRoute
   ApiPublicSafePoolRefreshRoute: typeof ApiPublicSafePoolRefreshRoute
   ApiPublicTokenPoolRoute: typeof ApiPublicTokenPoolRoute
@@ -955,6 +969,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPlisioWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/nowpayments-callback': {
+      id: '/api/public/nowpayments-callback'
+      path: '/api/public/nowpayments-callback'
+      fullPath: '/api/public/nowpayments-callback'
+      preLoaderRoute: typeof ApiPublicNowpaymentsCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/health': {
       id: '/api/public/health'
       path: '/api/public/health'
@@ -1084,6 +1105,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   RCodeRoute: RCodeRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
+  ApiPublicNowpaymentsCallbackRoute: ApiPublicNowpaymentsCallbackRoute,
   ApiPublicPlisioWebhookRoute: ApiPublicPlisioWebhookRoute,
   ApiPublicSafePoolRefreshRoute: ApiPublicSafePoolRefreshRoute,
   ApiPublicTokenPoolRoute: ApiPublicTokenPoolRoute,
