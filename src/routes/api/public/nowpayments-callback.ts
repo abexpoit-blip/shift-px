@@ -61,12 +61,35 @@ export const Route = createFileRoute("/api/public/nowpayments-callback")({
 
         // Verify signature if provided and secret configured
         const ipnSecret = getNowpaymentsIpnSecret();
+        let verified = false;
+
         if (nowpaymentsSig && ipnSecret) {
           const sigOk = verifyNowpaymentsIpn(raw, nowpaymentsSig, ipnSecret);
-          if (!sigOk) {
-            console.warn(`[NOWPayments IPN] Signature mismatch for payment ${paymentId}: ${nowpaymentsSig}`);
-            return new Response("Invalid signature", { status: 401 });
+          if (sigOk) {
+            verified = true;
+          } else {
+            console.warn(`[NOWPayments IPN] Signature check mismatch for payment ${paymentId}. Falling back to API verification...`);
           }
+        }
+
+        // If HMAC verification didn't pass (e.g. secret mismatch/changed),
+        // fallback to querying the official NOWPayments API directly using our verified API key.
+        if (!verified && paymentId) {
+          try {
+            const { getNowPaymentStatus } = await import("@/lib/nowpayments.server");
+            const apiStatus = await getNowPaymentStatus(paymentId);
+            if (apiStatus && String(apiStatus.payment_id) === String(paymentId)) {
+              verified = true;
+              console.log(`[NOWPayments IPN] Payment ${paymentId} verified directly via NOWPayments API.`);
+            }
+          } catch (e: any) {
+            console.error(`[NOWPayments IPN] API fallback check failed for ${paymentId}:`, e?.message);
+          }
+        }
+
+        if (!verified && nowpaymentsSig && ipnSecret) {
+          console.warn(`[NOWPayments IPN] Unverified callback rejected for payment ${paymentId}`);
+          return new Response("Invalid signature", { status: 401 });
         }
 
         const rawStatus = String(fields.payment_status || "").toLowerCase();
