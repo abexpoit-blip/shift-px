@@ -201,7 +201,7 @@ function PlanCard({
                   ${pkg.price_usd}
                 </span>
                 <span className="text-xs font-semibold text-muted-foreground">
-                  / {pkg.duration_months} Mos
+                  / {pkg.duration_months} Months
                 </span>
                 {isYearly && (
                   <span className="text-xs font-bold text-muted-foreground line-through opacity-70">
