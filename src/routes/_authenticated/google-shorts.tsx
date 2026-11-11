@@ -97,6 +97,7 @@ function GoogleShortsPage() {
 
   // Right form: Google Token System (share.google)
   const [tokenOfferUrl, setTokenOfferUrl] = useState("");
+  const [tokenDomain, setTokenDomain] = useState("dovtv.com");
   const [tokenLabel, setTokenLabel] = useState("");
 
   const [result, setResult] = useState<{
@@ -318,16 +319,16 @@ function GoogleShortsPage() {
               </div>
               <div>
                 <h2 className="text-base font-black text-foreground">Google Token Link</h2>
-                <p className="text-[11px] text-muted-foreground">Clean share.google token • Zero domain selection</p>
+                <p className="text-[11px] text-muted-foreground">Clean share.google token • Official Google domain</p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
-                (poolQ.data?.available ?? 0) > 0
+                ((poolQ.data as any)?.byDomain?.[tokenDomain] ?? (tokenDomain === "dovtv.com" ? poolQ.data?.available : 0) ?? 0) > 0
                   ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
                   : "bg-rose-500/15 text-rose-400 border-rose-500/30"
               }`}>
-                {(poolQ.data?.available ?? 0)} Available in Stock
+                {((poolQ.data as any)?.byDomain?.[tokenDomain] ?? (tokenDomain === "dovtv.com" ? poolQ.data?.available : 0) ?? 0)} in stock ({tokenDomain})
               </span>
             </div>
           </div>
@@ -392,6 +393,30 @@ function GoogleShortsPage() {
               />
             </div>
 
+            {/* Cloaking Domain */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold text-foreground">Cloak Domain</Label>
+                <span className="text-[10px] font-mono font-semibold text-indigo-400">
+                  {((poolQ.data as any)?.byDomain?.[tokenDomain] ?? (tokenDomain === "dovtv.com" ? poolQ.data?.available : 0) ?? 0)} tokens ready
+                </span>
+              </div>
+              <select
+                value={tokenDomain}
+                onChange={(e) => setTokenDomain(e.target.value)}
+                className="w-full h-11 rounded-xl border border-input bg-background/70 px-3 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              >
+                {availableDomains.map((d) => {
+                  const count = (poolQ.data as any)?.byDomain?.[d] ?? (d === "dovtv.com" ? poolQ.data?.available : 0) ?? 0;
+                  return (
+                    <option key={d} value={d}>
+                      {d} ({count} in stock) {d === "dovtv.com" ? "(Primary)" : ""}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
             {/* Campaign Label */}
             <div className="space-y-1.5">
               <Label className="text-xs font-bold text-foreground">Campaign Name (Optional)</Label>
@@ -404,15 +429,20 @@ function GoogleShortsPage() {
             </div>
 
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Domain is auto-managed by the token engine. Runs through clean <code className="text-indigo-400 font-mono">share.google</code> infrastructure.
+              Token is minted for <span className="text-indigo-400 font-mono font-semibold">{tokenDomain}</span>. Runs through official <code className="text-indigo-400 font-mono">share.google</code> infrastructure.
             </p>
 
             <Button
               className="w-full h-11 text-xs font-bold gap-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white shadow-md shadow-indigo-500/20 border-0 mt-3"
-              disabled={!tokenOfferUrl.trim() || generateMut.isPending || (poolQ.data?.available ?? 0) === 0}
+              disabled={
+                !tokenOfferUrl.trim() ||
+                generateMut.isPending ||
+                (((poolQ.data as any)?.byDomain?.[tokenDomain] ?? (tokenDomain === "dovtv.com" ? poolQ.data?.available : 0) ?? 0) === 0)
+              }
               onClick={() =>
                 generateMut.mutate({
                   offerUrl: tokenOfferUrl.trim(),
+                  domain: tokenDomain,
                   notes: tokenLabel.trim() || undefined,
                   mode: "token",
                 })
@@ -422,10 +452,10 @@ function GoogleShortsPage() {
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" /> Minting from Pool...
                 </>
-              ) : (poolQ.data?.available ?? 0) === 0 ? (
+              ) : (((poolQ.data as any)?.byDomain?.[tokenDomain] ?? (tokenDomain === "dovtv.com" ? poolQ.data?.available : 0) ?? 0) === 0) ? (
                 <>
                   <AlertTriangle className="h-4 w-4" />
-                  <span>Pool Empty · Run Token Worker</span>
+                  <span>Pool Empty for {tokenDomain} · Run Token Worker</span>
                 </>
               ) : (
                 <>

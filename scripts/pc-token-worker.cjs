@@ -113,15 +113,15 @@ async function apiRequest(urlStr, method = "GET", body = null) {
   });
 }
 
-async function checkPoolStock() {
+async function checkPoolStock(domain = null) {
   try {
-    const res = await apiRequest(API_ENDPOINT, "GET");
-    if (
-      res.status === 200 &&
-      res.data &&
-      typeof res.data.available === "number"
-    ) {
-      return res.data.available;
+    const url = domain ? `${API_ENDPOINT}?domain=${domain}` : API_ENDPOINT;
+    const res = await apiRequest(url, "GET");
+    if (res.status === 200 && res.data) {
+      return {
+        total: res.data.available ?? 0,
+        byDomain: res.data.byDomain || {},
+      };
     }
     return null;
   } catch {
@@ -133,7 +133,12 @@ async function submitTokenToApi(tokenData) {
   try {
     const res = await apiRequest(API_ENDPOINT, "POST", tokenData);
     if (res.status === 200 && res.data && res.data.success) {
-      return { ok: true, total: res.data.total_available };
+      return {
+        ok: true,
+        total: res.data.total_available,
+        domain_available: res.data.domain_available,
+        domain: res.data.domain,
+      };
     }
     return { ok: false, error: res.data?.error || `HTTP ${res.status}` };
   } catch (err) {
@@ -144,24 +149,14 @@ async function submitTokenToApi(tokenData) {
 // ─── CORE MINT ────────────────────────────────────────────────────────────────
 
 /**
- * Mints ONE Google share token for a given dovtv short code.
- *
- * Flow (zero search-bar clicks):
- *  1. Force-stop Google App & Chrome → clean slate
- *  2. Clear logcat buffer
- *  3. Fire WEB_SEARCH intent → Google App opens Custom Tab directly with URL loaded
- *  4. Tap Share icon at (370, 75)
- *  5. Tap "Copy Link" at (207, 610) → Share Catcher captures share.google token
- *  6. Read logcat for SHARE_CATCHER pattern
- *  7. Close Custom Tab via back arrow at (65, 80)
- *  8. Force-stop Google App → clean for next round
+ * Mints ONE Google share token for a given domain and short code.
  */
-async function mintOneToken(device) {
+async function mintOneToken(device, targetDomain = "blentrovus.com") {
   const shortCode = generateRandomCode(7);
-  const targetUrl = `https://dovtv.com/?p=${shortCode}`;
+  const targetUrl = `https://${targetDomain}/?p=${shortCode}`;
 
   log(`\n--------------------------------------------------`);
-  log(`🔹 Target: ${targetUrl}`);
+  log(`🔹 Domain: ${targetDomain} | Target: ${targetUrl}`);
 
   // ── Step 1: Force stop both apps for a completely clean state ──
   log(`🧹 Force-stopping Google App & Chrome...`);
@@ -284,11 +279,12 @@ function readCapturedToken(device) {
     .trim();
 
   log(`🎯 Token:   ${capturedTokenUrl}`);
-  log(`🔗 Mapped:  https://dovtv.com/?p=${shortCode}`);
+  log(`🔗 Mapped:  https://${targetDomain}/?p=${shortCode}`);
 
   return {
     token: tokenOnly,
     short_code: shortCode,
+    domain: targetDomain,
     google_url: `https://www.google.com/share.google?q=${tokenOnly}`,
     share_google_url: capturedTokenUrl,
   };
@@ -298,8 +294,8 @@ function readCapturedToken(device) {
 
 async function main() {
   console.log("==================================================");
-  console.log("   🚀 AdsPx Automated Google Token Worker (v3.0)  ");
-  console.log("   Strategy: WEB_SEARCH Intent — Zero Misclick    ");
+  console.log("   🚀 AdsPx Automated Google Token Worker (v3.1)  ");
+  console.log("   Strategy: WEB_SEARCH Intent — Multi-Domain     ");
   console.log("==================================================");
 
   const device = getActiveDevice();
@@ -310,32 +306,43 @@ async function main() {
   }
   log(`📱 Connected to Android Device: ${device}`);
 
-  const stockBefore = await checkPoolStock();
-  log(
-    `📦 Current Server Pool Stock: ${
-      stockBefore !== null ? stockBefore : "Unknown"
-    } available`
-  );
-
   const args = process.argv.slice(2);
   const countIdx = args.indexOf("--count");
   const targetCount =
     countIdx !== -1 ? parseInt(args[countIdx + 1], 10) || 5 : 5;
+
+  const domainIdx = args.indexOf("--domain");
+  let chosenDomain = domainIdx !== -1 ? args[domainIdx + 1].trim().toLowerCase() : "blentrovus.com";
+
+  log(`🌐 Target Domain Mode: ${chosenDomain}`);
+
+  const stockBefore = await checkPoolStock();
+  log(
+    `📦 Current Server Stock: Total = ${
+      stockBefore ? stockBefore.total : "Unknown"
+    } | dovtv.com = ${stockBefore?.byDomain?.["dovtv.com"] ?? 0} | blentrovus.com = ${stockBefore?.byDomain?.["blentrovus.com"] ?? 0}`
+  );
 
   log(`🎯 Tokens to mint this session: ${targetCount}`);
   let successful = 0;
   let failed = 0;
 
   for (let i = 0; i < targetCount; i++) {
-    log(`\n[Round ${i + 1} / ${targetCount}]`);
-    const minted = await mintOneToken(device);
+    // If user specified "all", alternate between blentrovus.com and dovtv.com
+    const roundDomain =
+      chosenDomain === "all"
+        ? (i % 2 === 0 ? "blentrovus.com" : "dovtv.com")
+        : chosenDomain;
+
+    log(`\n[Round ${i + 1} / ${targetCount}] Target Domain: ${roundDomain}`);
+    const minted = await mintOneToken(device, roundDomain);
 
     if (minted) {
-      log(`📡 Syncing token to AdsPx API...`);
+      log(`📡 Syncing token to AdsPx API for ${roundDomain}...`);
       const syncResult = await submitTokenToApi(minted);
       if (syncResult.ok) {
         successful++;
-        log(`✅ Saved! Server pool now has ${syncResult.total} tokens.`);
+        log(`✅ Saved! Server pool now has ${syncResult.domain_available} tokens for ${syncResult.domain} (Total: ${syncResult.total}).`);
       } else {
         log(`⚠️  API sync failed: ${syncResult.error}`);
         failed++;
@@ -355,9 +362,7 @@ async function main() {
   const stockAfter = await checkPoolStock();
   log(`🏁 Done: ${successful} minted, ${failed} failed.`);
   log(
-    `🎉 Server Pool Stock: ${
-      stockAfter !== null ? stockAfter : "OK"
-    } available`
+    `🎉 Server Stock: Total = ${stockAfter?.total ?? "OK"} | dovtv.com = ${stockAfter?.byDomain?.["dovtv.com"] ?? 0} | blentrovus.com = ${stockAfter?.byDomain?.["blentrovus.com"] ?? 0}`
   );
   console.log("==================================================");
 }

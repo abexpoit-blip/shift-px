@@ -335,15 +335,30 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
         shareGoogleAltUrl = `https://share.google/${encodeURIComponent(token)}`;
       }
     } else if (data.mode === "token") {
-      // Clean Token Mode (?q=) — Auto-claim available pre-verified token from google_token_pool (<5ms instant)
+      // Clean Token Mode (?q=) — Auto-claim available pre-verified token for selectedDomain from google_token_pool (<5ms instant)
       let claimed: any = null;
       try {
-        const { data: candidates } = await (supabaseAdmin as any)
+        // First try to find token for the exact selectedDomain
+        let query = (supabaseAdmin as any)
           .from("google_token_pool")
-          .select("id, token, google_url, share_google_url, short_code")
+          .select("id, token, google_url, share_google_url, short_code, domain")
           .eq("status", "available")
+          .eq("domain", selectedDomain)
           .order("created_at", { ascending: true })
           .limit(1);
+
+        let { data: candidates } = await query;
+
+        // Backwards compatibility: if selectedDomain is dovtv.com and none matched, check domain is null or dovtv.com
+        if ((!candidates || candidates.length === 0) && selectedDomain === "dovtv.com") {
+          const { data: fallbackCandidates } = await (supabaseAdmin as any)
+            .from("google_token_pool")
+            .select("id, token, google_url, share_google_url, short_code, domain")
+            .eq("status", "available")
+            .order("created_at", { ascending: true })
+            .limit(1);
+          candidates = fallbackCandidates;
+        }
 
         if (candidates && candidates.length > 0) {
           const candidate = candidates[0];
@@ -367,7 +382,7 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
             if (claimed.short_code && claimed.short_code !== shortCode) {
               await (supabaseAdmin as any)
                 .from("links")
-                .update({ short_code: claimed.short_code })
+                .update({ short_code: claimed.short_code, custom_domain: selectedDomain })
                 .eq("id", linkId);
               shortCode = claimed.short_code;
               destinationShortUrl = `https://${selectedDomain}/${shortCode}`;
@@ -383,7 +398,7 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
         shareGoogleAltUrl = claimed.share_google_url || `https://share.google/${claimed.token}`;
       } else {
         throw new Error(
-          "Token Buffer Pool is currently empty (0 available in stock). Please run the AdsPx Token Worker on your PC to refill token stock."
+          `Token Buffer Pool for "${selectedDomain}" is currently empty (0 available in stock). Please run the AdsPx Token Worker with --domain ${selectedDomain} on your PC to refill token stock.`
         );
       }
     } else {
@@ -931,10 +946,22 @@ export const getGoogleTokenPoolStatsFn = createServerFn({ method: "GET" }).handl
     .from("google_token_pool")
     .select("*", { count: "exact", head: true });
 
+  const { data: availableRows } = await (supabaseAdmin as any)
+    .from("google_token_pool")
+    .select("domain")
+    .eq("status", "available");
+
+  const byDomain: Record<string, number> = {};
+  for (const row of availableRows || []) {
+    const d = row.domain || "dovtv.com";
+    byDomain[d] = (byDomain[d] || 0) + 1;
+  }
+
   return {
     available: availableCount || 0,
     assigned: assignedCount || 0,
     total: totalCount || 0,
+    byDomain,
     isAdmin,
   };
 });
