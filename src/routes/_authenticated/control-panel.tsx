@@ -289,49 +289,49 @@ function AdminPage() {
             <Header />
             <Tabs value={tab} onValueChange={setTab} className="w-full">
               <TabsContent value="overview">
-                <OverviewTab />
+                {tab === "overview" && <OverviewTab />}
               </TabsContent>
               <TabsContent value="users">
-                <UsersTab />
+                {tab === "users" && <UsersTab />}
               </TabsContent>
               <TabsContent value="payments">
-                <PaymentsTab />
+                {tab === "payments" && <PaymentsTab />}
               </TabsContent>
               <TabsContent value="promos">
-                <PromoCodesTab />
+                {tab === "promos" && <PromoCodesTab />}
               </TabsContent>
               <TabsContent value="links">
-                <LinksTab />
+                {tab === "links" && <LinksTab />}
               </TabsContent>
               <TabsContent value="withdrawals">
-                <WithdrawalsTab />
+                {tab === "withdrawals" && <WithdrawalsTab />}
               </TabsContent>
               <TabsContent value="traffic">
-                <TrafficTab />
+                {tab === "traffic" && <TrafficTab />}
               </TabsContent>
               <TabsContent value="domains">
-                <DomainsTab />
+                {tab === "domains" && <DomainsTab />}
               </TabsContent>
               <TabsContent value="user_domains">
-                <UserDomainsTab />
+                {tab === "user_domains" && <UserDomainsTab />}
               </TabsContent>
               <TabsContent value="leaks">
-                <LeakMonitorTab />
+                {tab === "leaks" && <LeakMonitorTab />}
               </TabsContent>
               <TabsContent value="support">
-                <SupportTab />
+                {tab === "support" && <SupportTab />}
               </TabsContent>
               <TabsContent value="broadcasts">
-                <BroadcastsTab />
+                {tab === "broadcasts" && <BroadcastsTab />}
               </TabsContent>
               <TabsContent value="errors">
-                <ErrorsTab />
+                {tab === "errors" && <ErrorsTab />}
               </TabsContent>
               <TabsContent value="maintenance">
-                <MaintenanceTab />
+                {tab === "maintenance" && <MaintenanceTab />}
               </TabsContent>
               <TabsContent value="google_links">
-                <GoogleLinksTab />
+                {tab === "google_links" && <GoogleLinksTab />}
               </TabsContent>
             </Tabs>
           </div>
@@ -447,7 +447,11 @@ function AdminNav({
 
 function Header() {
   const statsFn = useServerFn(adminStats);
-  const { data: s } = useQuery({ queryKey: ["admin-stats"], queryFn: () => statsFn() });
+  const { data: s } = useQuery({
+    queryKey: ["admin-stats"],
+    queryFn: () => statsFn(),
+    staleTime: 60_000,
+  });
 
   const chips = [
     { icon: Users, label: "Users", value: (s?.users ?? 0).toLocaleString() },
@@ -494,10 +498,10 @@ function OverviewTab() {
   const tsFn = useServerFn(adminClicksTimeseries);
   const ctyFn = useServerFn(adminTopCountries);
   const topUsersFn = useServerFn(adminTopUsers);
-  const stats = useQuery({ queryKey: ["admin-stats"], queryFn: () => statsFn() });
-  const ts = useQuery({ queryKey: ["admin-ts"], queryFn: () => tsFn() });
-  const cty = useQuery({ queryKey: ["admin-cty"], queryFn: () => ctyFn() });
-  const top = useQuery({ queryKey: ["admin-top-users"], queryFn: () => topUsersFn() });
+  const stats = useQuery({ queryKey: ["admin-stats"], queryFn: () => statsFn(), staleTime: 60_000 });
+  const ts = useQuery({ queryKey: ["admin-ts"], queryFn: () => tsFn(), staleTime: 60_000 });
+  const cty = useQuery({ queryKey: ["admin-cty"], queryFn: () => ctyFn(), staleTime: 60_000 });
+  const top = useQuery({ queryKey: ["admin-top-users"], queryFn: () => topUsersFn(), staleTime: 60_000 });
 
   const s = stats.data;
   const botPct = s && s.clicks ? ((s.bots / s.clicks) * 100).toFixed(1) : "0";

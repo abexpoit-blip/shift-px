@@ -285,10 +285,30 @@ export async function fulfillUpgradeOrder(
   };
 }
 
+// ─── Auto-fail Unpaid Requests Older than 30 Minutes ────────────────────────
+export async function autoFailExpiredUpgradeRequests(): Promise<void> {
+  try {
+    const db = await getAdmin();
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    await db
+      .from("upgrade_requests")
+      .update({
+        status: "failed",
+        admin_note: "Expired: Payment not completed within 30 minutes",
+        updated_at: new Date().toISOString(),
+      })
+      .in("status", ["pending", "waiting"])
+      .lt("created_at", thirtyMinutesAgo);
+  } catch (e) {
+    console.warn("[autoFailExpiredUpgradeRequests] error:", e);
+  }
+}
+
 // ─── User: Get own upgrade requests / current plan status ───────────────────
 export const getMyPlanStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    void autoFailExpiredUpgradeRequests();
     const db = await getAdmin();
     const userId = (context as any).userId as string;
 
@@ -657,6 +677,7 @@ export const checkUpgradeRequestStatus = createServerFn({ method: "GET" })
     z.object({ request_id: z.string().uuid() }).parse(data),
   )
   .handler(async ({ data, context }) => {
+    void autoFailExpiredUpgradeRequests();
     const db = await getAdmin();
     const userId = (context as any).userId as string;
     const { data: req } = await db

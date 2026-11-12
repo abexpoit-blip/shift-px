@@ -93,12 +93,22 @@ export const Route = createFileRoute("/api/public/nowpayments-callback")({
         }
 
         const rawStatus = String(fields.payment_status || "").toLowerCase();
-        const mappedStatus = mapNowPaymentStatus(rawStatus);
+        let mappedStatus = mapNowPaymentStatus(rawStatus);
         const targetId = orderId || paymentId;
+
+        const actuallyPaid = Number(fields.actually_paid || fields.pay_amount || 0);
+        const payAmount = Number(fields.pay_amount || 0);
+
+        // If partially_paid but customer paid at least 90% (e.g. minor network/exchange fee deducted), accept as paid!
+        if (rawStatus === "partially_paid" && actuallyPaid > 0 && payAmount > 0 && (actuallyPaid / payAmount) >= 0.90) {
+          console.log(`[NOWPayments IPN] Payment ${paymentId} is partially_paid but covers >=90% (${actuallyPaid}/${payAmount}). Accepting as paid!`);
+          mappedStatus = "paid";
+        }
 
         console.log(`[NOWPayments IPN] Processing status for ${targetId}: raw=${rawStatus}, mapped=${mappedStatus}`);
 
-        const { getAdmin, fulfillUpgradeOrder } = await import("@/lib/packages.functions");
+        const { getAdmin, fulfillUpgradeOrder, autoFailExpiredUpgradeRequests } = await import("@/lib/packages.functions");
+        void autoFailExpiredUpgradeRequests();
         const db = await getAdmin();
 
         if (mappedStatus === "paid") {
