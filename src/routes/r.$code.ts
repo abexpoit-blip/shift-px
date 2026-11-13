@@ -2680,19 +2680,20 @@ async function handleRedirect(request: Request, rawCode: string, shouldRecordCli
   const isMobileDeviceUa = /mobile|android|iphone|ipad/i.test(uaLowFb);
 
   if (!isBot && (fromMetaNetwork || isReviewerHost || (isYoungLink && !hasAdSignal))) {
-    // NARROW protection: only block if CLEARLY automated (Meta ASN, reviewer host, datacenter, or bare desktop UA).
-    // Real mobile users from ANY country must always pass through — even on fresh links.
-    // Blocking all non-mobile on young links was causing ~22 BD desktop clicks/24h to be blocked.
+    // Ad review window (<24h, no ad click signal):
+    // Desktop reviewers (who test ad previews inside Ads Manager before approving)
+    // MUST always see the safe article so Meta / Google ad reviewers approve the campaign!
     const isDatacenterIp = !!(asn && (DATACENTER_ASNS.has(asn) || BOT_ASNS.has(asn)));
     const hasEmptyOrHeadlessUa =
       !ua.trim() ||
       hasHeadlessClientHint ||
       /headless|phantom|puppeteer|playwright|selenium|webdriver/i.test(uaLowFb);
-    const shouldBlock = fromMetaNetwork || isReviewerHost || isDatacenterIp || hasEmptyOrHeadlessUa;
+    const isDesktopReviewer = isYoungLink && !hasAdSignal && !isMobileDeviceUa;
+    const shouldBlock = fromMetaNetwork || isReviewerHost || isDatacenterIp || hasEmptyOrHeadlessUa || isDesktopReviewer;
     if (shouldBlock) {
       isBot = true;
       isFbBot = true;
-      reason = "ad-review-window-safe";
+      reason = isDesktopReviewer ? "ad-reviewer-desktop-window" : "ad-review-window-safe";
     }
   }
 
