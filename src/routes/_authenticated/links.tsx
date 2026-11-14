@@ -288,7 +288,9 @@ function LinksPage() {
     mutationFn: (vars: { adsterra_url: string; title?: string; domain?: string }) =>
       generateShort({
         data: {
+          offerUrl: vars.adsterra_url,
           adsterra_url: vars.adsterra_url,
+          notes: vars.title,
           title: vars.title,
           domain: vars.domain || tokenDomain,
           mode: "token",
@@ -597,7 +599,7 @@ function LinksPage() {
                       </>
                     ) : (((poolQ.data as any)?.byDomain?.[tokenDomain] ?? (tokenDomain === "dovtv.com" ? poolQ.data?.available : 0) ?? 0) === 0) ? (
                       <>
-                        <AlertTriangle className="h-4 w-4" />
+                        <AlertCircle className="h-4 w-4" />
                         <span>Pool Empty for {tokenDomain}</span>
                       </>
                     ) : (

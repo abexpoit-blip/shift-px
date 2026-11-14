@@ -148,7 +148,7 @@ function DashboardPage() {
   const hasCustomLimit = !isNaN(rawLimit) && rawLimit > 0 && rawLimit !== 1000000;
   const planDailyFallback = planSlug === "premium_12m" ? 100 : planSlug === "premium_6m" ? 50 : 10;
   const dailyLimit = isPremium ? (hasCustomLimit ? rawLimit : planDailyFallback) : (hasCustomLimit ? rawLimit : 5);
-  const totalLimit = isPremium ? (hasCustomLimit ? rawLimit : null) : (hasCustomLimit ? rawLimit : 5);
+  const totalLimit = isPremium ? null : (hasCustomLimit ? rawLimit : 5);
 
   const chartData = useMemo(() => {
     const byDay = stats?.clicksByDay ?? {};

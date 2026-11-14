@@ -9,7 +9,7 @@ import { fetchIpv4 } from "@/lib/fetch-ipv4";
  * and reliable fallback options.
  */
 
-async function getAdmin() {
+export async function getAdmin() {
   const mod = await import("@/integrations/supabase/client.server");
   return mod.supabaseAdmin as any;
 }

@@ -2134,10 +2134,23 @@ function UsersTab() {
                 </Td>
                 <Td className="text-[var(--muted-foreground)] text-xs">
                   <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono font-bold text-foreground">
-                        {u.links_used} / {u.link_limit == null ? "∞" : u.link_limit}
-                      </span>
+                    <div className="flex flex-col gap-0.5">
+                      {String(u.plan_slug ?? "").includes("premium") || u.plan_slug === "lifetime" || u.plan_slug === "unlimited" ? (
+                        <>
+                          <span className="font-mono font-bold text-foreground flex items-center gap-1">
+                            <span className="text-emerald-400 font-extrabold">{u.links_created_today ?? 0}</span>
+                            <span className="text-[10px] text-muted-foreground font-normal">today /</span>
+                            <span>{u.link_limit == null ? "∞" : `${u.link_limit}/d`}</span>
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            Total: {u.links_used}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="font-mono font-bold text-foreground">
+                          {u.links_used} / {u.link_limit == null ? "5" : u.link_limit} total
+                        </span>
+                      )}
                     </div>
                     <select
                       value={u.link_limit == null ? "unlimited" : String(u.link_limit)}

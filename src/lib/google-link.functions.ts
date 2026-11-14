@@ -187,17 +187,28 @@ export async function verifyGoogleTokenLive(
  * Public/User & Admin 1-Click Generator for Google Short links
  */
 export const generateGoogleShort = createServerFn({ method: "POST" })
-  .inputValidator((d) =>
-    z
+  .inputValidator((d: any) => {
+    const raw = typeof d === "object" && d !== null ? d : {};
+    const offer = String(raw.offerUrl || raw.adsterra_url || "").trim();
+    if (!offer) {
+      throw new Error("Destination or Offer URL is required");
+    }
+    return z
       .object({
         offerUrl: z.string().min(1, "Destination or Offer URL is required"),
+        adsterra_url: z.string().optional(),
         googleShareCode: z.string().optional(),
         domain: z.string().optional().default("dovtv.com"),
         notes: z.string().optional(),
+        title: z.string().optional(),
         mode: z.enum(["token", "fast"]).optional().default("fast"),
       })
-      .parse(d)
-  )
+      .parse({
+        ...raw,
+        offerUrl: offer,
+        notes: raw.notes || raw.title,
+      });
+  })
   .handler(async ({ data }) => {
     const context = await getRequestAuth();
     const userId = context.userId;
