@@ -274,14 +274,16 @@ export const generateGoogleShort = createServerFn({ method: "POST" })
       const { getProfileQuota } = await import("@/lib/links.functions");
       const quota = await getProfileQuota(supabaseAdmin, userId);
       if (quota.isPremium) {
-        const maxDaily = quota.dailyLimit ?? 10;
-        if ((quota.dailyUsed ?? 0) >= maxDaily) {
-          throw new Error(`Daily link creation limit reached (${maxDaily} links/day max for Premium members). You can create more links tomorrow!`);
+        if (quota.dailyLimit !== null && quota.dailyLimit !== undefined) {
+          if ((quota.dailyUsed ?? 0) >= quota.dailyLimit) {
+            throw new Error(`Daily link creation limit reached (${quota.dailyLimit} links/day max for Premium members). You can create more links tomorrow or upgrade for higher limits!`);
+          }
         }
       } else {
-        const maxTotal = quota.limit ?? 5;
-        if ((quota.used ?? 0) >= maxTotal) {
-          throw new Error(`Free tier limit reached (${maxTotal} total links max). Upgrade to Premium for Google Short links!`);
+        if (quota.limit !== null && quota.limit !== undefined) {
+          if ((quota.used ?? 0) >= quota.limit) {
+            throw new Error(`Free tier limit reached (${quota.limit} total links max). Upgrade to Premium for Google Short links!`);
+          }
         }
       }
 

@@ -99,12 +99,29 @@ export async function getProfileQuota(supabase: any, userId: string) {
 
     const dailyUsed = todayCount ?? 0;
     const rawLimit = Number(data?.link_limit);
-    const hasCustomLimit = !isNaN(rawLimit) && rawLimit > 0 && rawLimit !== 1000000;
+    const isExplicitUnlimited =
+      data?.link_limit === null ||
+      (!isNaN(rawLimit) && rawLimit >= 1000000) ||
+      plan === "lifetime" ||
+      plan === "unlimited";
+
+    const hasSpecificNumericLimit = !isNaN(rawLimit) && rawLimit > 0 && rawLimit < 1000000 && data?.link_limit !== null;
 
     if (isPremium) {
-      // Premium tier daily limit: 1 Month (10/day), 6 Months (50/day), 12 Months (100/day)
+      if (isExplicitUnlimited) {
+        return {
+          limit: null,
+          used: actualUsed,
+          dailyLimit: null,
+          dailyUsed,
+          isPremium: true,
+          clickQuota: null,
+        };
+      }
+
+      // Premium tier daily limit: honors admin custom limit or plan default (1m: 10, 6m: 50, 12m: 100)
       let dailyLimit = 10;
-      if (hasCustomLimit) {
+      if (hasSpecificNumericLimit) {
         dailyLimit = rawLimit;
       } else if (plan === "premium_12m") {
         dailyLimit = 100;
@@ -124,13 +141,24 @@ export async function getProfileQuota(supabase: any, userId: string) {
       };
     }
 
-    // Free tier: Default 5 total links (lifetime limit), or custom limit if configured by Admin
-    const limit = hasCustomLimit ? rawLimit : 5;
+    // Free tier: if admin granted unlimited, allow unlimited; otherwise honors custom limit or default 5
+    if (isExplicitUnlimited) {
+      return {
+        limit: null,
+        used: actualUsed,
+        dailyLimit: null,
+        dailyUsed,
+        isPremium: false,
+        clickQuota: null,
+      };
+    }
+
+    const freeLimit = hasSpecificNumericLimit ? rawLimit : 5;
 
     return {
-      limit,
+      limit: freeLimit,
       used: actualUsed,
-      dailyLimit: limit,
+      dailyLimit: freeLimit,
       dailyUsed,
       isPremium: false,
       clickQuota: null,
@@ -434,14 +462,16 @@ export const createLink = createServerFn({ method: "POST" })
     await assertNotBanned(context.supabase, context.userId);
     const profile = await getProfileQuota(context.supabase, context.userId);
     if (profile.isPremium) {
-      const maxDaily = profile.dailyLimit ?? 10;
-      if ((profile.dailyUsed ?? 0) >= maxDaily) {
-        throw new Error(`Daily link creation limit reached (${maxDaily} links/day max for your plan). You can create more links tomorrow or upgrade for higher limits!`);
+      if (profile.dailyLimit !== null && profile.dailyLimit !== undefined) {
+        if ((profile.dailyUsed ?? 0) >= profile.dailyLimit) {
+          throw new Error(`Daily link creation limit reached (${profile.dailyLimit} links/day max for your plan). You can create more links tomorrow or upgrade for higher limits!`);
+        }
       }
     } else {
-      const maxTotal = profile.limit ?? 5;
-      if ((profile.used ?? 0) >= maxTotal) {
-        throw new Error(`Free tier limit reached (${maxTotal} total links max). Upgrade to Premium to create up to 100 links per day!`);
+      if (profile.limit !== null && profile.limit !== undefined) {
+        if ((profile.used ?? 0) >= profile.limit) {
+          throw new Error(`Link limit reached (${profile.limit} total links max). Contact support or upgrade to Premium to create up to 100 links per day!`);
+        }
       }
     }
 

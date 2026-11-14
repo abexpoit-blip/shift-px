@@ -1,5 +1,5 @@
 -- Fix check_link_limit to properly enforce Daily Limit for Premium users
--- and Total Limit for Free users.
+-- and Total Limit for Free users, honoring Admin Custom Overrides and Unlimited permissions.
 
 CREATE OR REPLACE FUNCTION public.check_link_limit()
 RETURNS trigger
@@ -33,14 +33,15 @@ BEGIN
     v_plan IN ('lifetime', 'unlimited', 'monthly', 'yearly')
   );
 
-  -- 3. If user is Premium: link_limit is their DAILY limit (links per UTC day)
-  IF v_is_premium THEN
-    -- If unlimited (null or >= 1000000 or lifetime/unlimited plan), allow unlimited
-    IF v_link_limit IS NULL OR v_link_limit >= 1000000 OR v_plan IN ('lifetime', 'unlimited') THEN
-      RETURN NEW;
-    END IF;
+  -- 3. If user has unlimited limit explicitly (link_limit IS NULL or >= 1000000 or lifetime/unlimited plan)
+  -- When Admin gives Unlimited permission, user can create unlimited links without any restriction.
+  IF v_link_limit IS NULL OR v_link_limit >= 1000000 OR v_plan IN ('lifetime', 'unlimited') THEN
+    RETURN NEW;
+  END IF;
 
-    -- Daily allowance:
+  -- 4. If user is Premium: link_limit is their DAILY limit (links per UTC day)
+  -- If Admin granted a custom limit (e.g. 20, 50, 100, 500/day), it is strictly honored.
+  IF v_is_premium THEN
     v_daily_limit := COALESCE(v_link_limit, 10);
 
     SELECT COUNT(*) INTO v_today_count
@@ -55,27 +56,30 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- 4. If user is Free: link_limit is their LIFETIME total limit (default 5)
+  -- 5. If user is Free:
+  -- Admin might have granted a custom limit (e.g. 20, 50, 100 links), or default 5.
   v_free_limit := COALESCE(v_link_limit, 5);
-  IF v_free_limit < 1000000 THEN
-    SELECT COUNT(*) INTO v_total_count
-    FROM public.links
-    WHERE user_id = NEW.user_id
-      AND (is_active IS NULL OR is_active = true);
 
-    IF v_total_count >= v_free_limit THEN
-      RAISE EXCEPTION 'Free tier link limit reached (%/% total links max). Upgrade to Premium to create up to 100 links per day!', v_total_count, v_free_limit;
-    END IF;
-  END IF;
-
-  -- Daily safety for free tier: maximum 5 links per UTC day
-  SELECT COUNT(*) INTO v_today_count
+  -- Total active links check against their allowed limit
+  SELECT COUNT(*) INTO v_total_count
   FROM public.links
   WHERE user_id = NEW.user_id
-    AND created_at >= (NOW() AT TIME ZONE 'UTC')::date;
+    AND (is_active IS NULL OR is_active = true);
 
-  IF v_today_count >= 5 THEN
-    RAISE EXCEPTION 'Free tier daily limit reached (5/5 links created today). Upgrade to Premium for higher limits!';
+  IF v_total_count >= v_free_limit THEN
+    RAISE EXCEPTION 'Link limit reached (%/% total links max). Contact support or upgrade to Premium for higher limits!', v_total_count, v_free_limit;
+  END IF;
+
+  -- Daily safety for standard free tier (if limit is <= 5)
+  IF v_free_limit <= 5 THEN
+    SELECT COUNT(*) INTO v_today_count
+    FROM public.links
+    WHERE user_id = NEW.user_id
+      AND created_at >= (NOW() AT TIME ZONE 'UTC')::date;
+
+    IF v_today_count >= 5 THEN
+      RAISE EXCEPTION 'Free tier daily limit reached (5/5 links created today). Upgrade to Premium for higher limits!';
+    END IF;
   END IF;
 
   RETURN NEW;

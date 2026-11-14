@@ -35,7 +35,7 @@ async function applyPackageToProfileIds(userIds: string[], pkg: any) {
     const update = {
       plan_slug: pkg.slug,
       click_quota: pkg.click_quota ?? null,
-      link_limit: isFree ? 50 : 1000000,
+      link_limit: pkg.slug === "lifetime" || pkg.slug === "unlimited" ? null : pkg.link_limit !== undefined && pkg.link_limit !== null ? Number(pkg.link_limit) : isFree ? 5 : pkg.slug === "premium_12m" ? 100 : pkg.slug === "premium_6m" ? 50 : 10,
       can_withdraw: !isFree,
       plan_started_at: isFree ? null : resetAt,
       premium_until: expiryDate,
@@ -744,7 +744,7 @@ export const adminSetUserPlan = createServerFn({ method: "POST" })
       pkg = {
         slug: data.package_slug,
         duration_months: isFree ? 0 : is12m ? 12 : is6m ? 6 : 1,
-        link_limit: isFree ? 50 : 1000000,
+        link_limit: data.package_slug === "lifetime" || data.package_slug === "unlimited" ? null : isFree ? 5 : is12m ? 100 : is6m ? 50 : 10,
         click_quota: null,
         price_usd: isFree ? 0 : is12m ? 100 : is6m ? 60 : 10,
       } as any;
